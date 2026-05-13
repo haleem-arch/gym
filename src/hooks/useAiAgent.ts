@@ -81,7 +81,7 @@ export const useAiAgent = () => {
       const ai = new GoogleGenAI({ apiKey: API_KEY });
       const { data: { session } } = await supabase.auth.getSession();
       
-      const contextPrompt = \`\${SYSTEM_PROMPT}\n\nCURRENT CONTEXT:\nDate: \${new Date().toISOString().split('T')[0]}\nUser ID: \${session?.user?.id}\`;
+      const contextPrompt = `${SYSTEM_PROMPT}\n\nCURRENT CONTEXT:\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${session?.user?.id}`;
 
       chatSessionRef.current = ai.chats.create({
         model: 'gemini-2.5-flash',
@@ -192,7 +192,7 @@ export const useAiAgent = () => {
         setMessages(prev => [...prev, { 
           id: crypto.randomUUID(), 
           role: 'model', 
-          text: \`Executing: \${functionCall.name}...\`, 
+          text: `Executing: ${functionCall.name}...`, 
           isAction: true 
         }]);
 
