@@ -59,13 +59,17 @@ ${ctx}
 ALWAYS return ONLY this JSON format:
 {"reply":"short text","actions":[]}
 
-MEAL LOG EXAMPLE (copy this structure exactly):
-{"reply":"Logged 100g rice — 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"THE_ID_FROM_TODAY_DIET_LOG_ID","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+TABLE PURPOSES:
+- diet_meals: ALWAYS use this for logging what was eaten TODAY.
+- food_inventory: ONLY for user's custom foods library. NEVER use this for daily logs.
+
+MEAL LOG EXAMPLE (Logging for TODAY):
+{"reply":"Logged 100g rice \u2014 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"THE_ID_FROM_TODAY_DIET_LOG_ID","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
 SCHEDULE EXAMPLE:
-{"reply":"Done — REST day set","actions":[{"type":"update","table":"schedules","match":{"id":"SCHEDULE_ID"},"data":{"days":{"${today}":"REST"}}}]}
+{"reply":"Done \u2014 REST day set","actions":[{"type":"update","table":"schedules","match":{"id":"SCHEDULE_ID"},"data":{"days":{"${today}":"REST"}}}]}
 
-RULES: Use exact diet_log_id from TODAY_DIET_LOG_ID. Generate a random UUID for item id. Use your food macro knowledge. actions:[] if no DB change.`;
+RULES: Use exact TODAY_DIET_LOG_ID. Generate UUID for item id. NEVER insert into food_inventory for daily meals. Use diet_meals ONLY.`;
 };
 
 // ─── Intent detection ─────────────────────────────────────────────────────────
@@ -99,8 +103,14 @@ export const useAiAgent = () => {
         if (!action.table) continue;
 
         if (action.type === 'insert') {
-          const payload = { ...action.data, user_id: session.user.id };
-          await supabase.from(action.table).insert(payload);
+          const payload = { ...action.data };
+          // Only inject user_id for top-level tables that require it
+          const tablesRequiringUserId = ['diet_logs', 'workouts', 'schedules', 'food_inventory', 'profiles'];
+          if (tablesRequiringUserId.includes(action.table) && !payload.user_id) {
+            payload.user_id = session.user.id;
+          }
+          const { error } = await supabase.from(action.table).insert(payload);
+          if (error) throw error;
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
           Object.entries(action.match).forEach(([k, v]) => { q = (q as any).eq(k, v); });
