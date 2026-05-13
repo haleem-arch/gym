@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 export interface WorkoutSet {
   setNum: number;
@@ -133,5 +134,38 @@ export const useActiveWorkout = () => {
     setWorkout(savedWorkout);
   };
 
-  return { workout, startWorkout, updateSet, addSet, removeSet, updateExerciseNotes, updateWorkoutNotes, endWorkout, loadWorkout };
+  const replaceExercise = async (oldExerciseName: string, newExerciseName: string) => {
+    const { data: newEx } = await supabase.from('exercises').select('*').eq('name', newExerciseName).single();
+    if (!newEx) return;
+
+    setWorkout(prev => {
+      if (!prev) return prev;
+      const newExercises = prev.exercises.map(ex => {
+        if (ex.name.toLowerCase() === oldExerciseName.toLowerCase()) {
+          return {
+            ...ex,
+            id: newEx.id,
+            name: newEx.name,
+            muscle_group: newEx.muscle_group,
+            tier: newEx.tier || 'A',
+            cue: newEx.cue || '',
+            rationale: newEx.rationale || ''
+          };
+        }
+        return ex;
+      });
+      return { ...prev, exercises: newExercises };
+    });
+  };
+
+  useEffect(() => {
+    const handleReplace = (e: any) => {
+      const { oldName, newName } = e.detail;
+      replaceExercise(oldName, newName);
+    };
+    window.addEventListener('replace_active_exercise', handleReplace);
+    return () => window.removeEventListener('replace_active_exercise', handleReplace);
+  }, []);
+
+  return { workout, startWorkout, updateSet, addSet, removeSet, updateExerciseNotes, updateWorkoutNotes, endWorkout, loadWorkout, replaceExercise };
 };

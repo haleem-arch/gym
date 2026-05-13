@@ -18,7 +18,7 @@ export interface AiMessage {
 }
 
 export interface DbAction {
-  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule' | 'update_workout_plan';
+  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule' | 'update_workout_plan' | 'replace_active_exercise';
   table?: string;
   data?: any;
   match?: Record<string, any>;
@@ -27,6 +27,8 @@ export interface DbAction {
   dayType?: string;
   planType?: string;
   exercises?: string[];
+  oldExercise?: string;
+  newExercise?: string;
 }
 
 interface AiResponse {
@@ -86,7 +88,8 @@ RULES:
 - For diet_meals, the "time" MUST be exactly formatted as "HH:MM:00" (e.g. "14:30:00"). Do NOT use ISO format.
 - For water/hydration, convert to ml and use water_logs (NOT diet_meals).
 - To change schedule, use type="update_schedule" and dayType="REST" | "PUSH" | "PULL" | "LEGS" | "RUN".
-- To modify a workout plan, use type="update_workout_plan" and provide the FULL LIST of exercises for that planType.
+- To modify a workout plan template permanently, use type="update_workout_plan" and provide the FULL LIST of exercises for that planType. Ensure new exercises logically target the same muscle group!
+- If the user is currently doing a workout (ACTIVE_WORKOUT_IN_PROGRESS exists) and asks to swap an exercise, use type="replace_active_exercise" and provide oldExercise and newExercise (exact names). Ensure it's a logical substitute (same muscle/tier).
 - actions:[] if no change.`;
 };
 
@@ -187,6 +190,15 @@ export const useAiAgent = () => {
             // Force reload of WorkoutHome by broadcasting an event (or user can refresh)
             window.dispatchEvent(new CustomEvent('plan_updated', { detail: action.planType }));
           }
+        } else if (action.type === 'replace_active_exercise') {
+           if (!action.oldExercise || !action.newExercise) {
+             allSuccess = false;
+             lastError = "Missing oldExercise or newExercise";
+             continue;
+           }
+           window.dispatchEvent(new CustomEvent('replace_active_exercise', { 
+             detail: { oldName: action.oldExercise, newName: action.newExercise } 
+           }));
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
           Object.entries(action.match).forEach(([k, v]) => { q = (q as any).eq(k, v); });
@@ -284,6 +296,15 @@ export const useAiAgent = () => {
       });
     }
     parts.push(`CURRENT_WORKOUT_PLANS: ${JSON.stringify(currentPlans)}`);
+
+    const activeWorkoutStr = localStorage.getItem('athlete_dashboard_active_workout');
+    if (activeWorkoutStr) {
+       try {
+         const aw = JSON.parse(activeWorkoutStr);
+         const activeEx = aw.exercises.map((e: any) => e.name);
+         parts.push(`ACTIVE_WORKOUT_IN_PROGRESS: ${JSON.stringify(activeEx)}`);
+       } catch (e) {}
+    }
 
     return parts.join('\n');
   };
