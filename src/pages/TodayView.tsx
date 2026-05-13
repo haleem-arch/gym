@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Play, Utensils, Droplets } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useActiveWorkout } from '../hooks/useActiveWorkout';
 
 const TodayView = () => {
   const navigate = useNavigate();
+  const { workout } = useActiveWorkout();
   // Mock data for Phase 1 UI building
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const plan = {
@@ -53,11 +55,17 @@ const TodayView = () => {
         </ul>
 
         <button 
-          onClick={() => navigate('/workout', { state: { startNew: true, plan } })}
-          className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98]"
+          onClick={() => {
+            if (workout) {
+              navigate('/workout/active');
+            } else {
+              navigate('/workout/active', { state: { startNew: true, plan } });
+            }
+          }}
+          className={`w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black' : 'bg-primary hover:bg-blue-600 text-white'}`}
         >
           <Play size={18} fill="currentColor" />
-          START WORKOUT
+          {workout ? 'RESUME SESSION' : 'START WORKOUT'}
         </button>
       </motion.div>
 
