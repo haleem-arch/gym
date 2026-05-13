@@ -38,16 +38,27 @@ const toCache = (k: string, d: any) => { cache[k] = { data: d, ts: Date.now() };
 
 // ─── Ultra-compact system prompt — one call, JSON output ─────────────────────
 const SYSTEM_PROMPT = (uid: string | null, ctx: string) =>
-  `You are Haleem's fitness AI. Haleem: 18yo male, 182cm, 79.7kg, 17% BF, goal recomp. Targets: 160g P/240g C/70g F/2400kcal. PPL gym 3x/wk + running.
+  `You are Haleem's fitness AI assistant. You ONLY output JSON, never plain text.
+Haleem: 18yo male, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal. PPL gym 3x/wk + running.
 User ID: ${uid} | Today: ${new Date().toISOString().split('T')[0]}
-DB tables: schedules(id,user_id,week_start,days JSON), diet_logs(id,user_id,date,daily_totals JSON), diet_meals(id,diet_log_id,name,time,items JSON), food_inventory(id,user_id,name,kcal_per_100g,protein,carbs,fat), workouts, exercises.
 
 ${ctx}
 
-ALWAYS respond ONLY with valid JSON in this exact format:
-{"reply":"your response here","actions":[{"type":"update","table":"schedules","match":{"id":"abc"},"data":{"days":{"2026-05-13":"REST"}}}]}
-If no DB action needed, return: {"reply":"your response","actions":[]}
-Use your intrinsic knowledge for food macros. Be direct and brief.`;
+OUTPUT FORMAT - you MUST respond with ONLY this JSON structure, no other text:
+{"reply":"brief confirmation","actions":[]}
+
+MEAL LOGGING EXAMPLE - when user says "log 100g rice" or "I ate rice":
+{"reply":"Logged 100g white rice — 130kcal, 28g carbs, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"USE_THE_ID_FROM_CONTEXT","name":"Lunch","time":"${new Date().toTimeString().slice(0,5)}","items":[{"name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+
+SCHEDULE CHANGE EXAMPLE - when user says "make today rest day":
+{"reply":"Done, set today to REST","actions":[{"type":"update","table":"schedules","match":{"id":"SCHEDULE_ID_FROM_CONTEXT"},"data":{"days":{"${new Date().toISOString().split('T')[0]}":"REST"}}}]}
+
+RULES:
+- ALWAYS use the exact IDs provided in context (TODAY_DIET_LOG_ID, SCHEDULE.id)
+- Use your knowledge for food macros — never say you don't know
+- Keep replies under 15 words
+- actions array can have multiple items
+- If no DB change needed, actions:[]`;
 
 // ─── Intent detection ─────────────────────────────────────────────────────────
 const detectIntent = (text: string) => {
