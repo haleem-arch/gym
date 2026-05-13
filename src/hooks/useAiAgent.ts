@@ -38,7 +38,7 @@ Example: "I just ate 100g of Tahini for breakfast"
 - Insert into diet_meals.
 `;
 
-const tools = [{
+const tools: any = [{
   functionDeclarations: [
     {
       name: 'execute_database_query',
