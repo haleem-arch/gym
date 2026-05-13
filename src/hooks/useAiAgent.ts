@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -96,8 +96,15 @@ RULES:
 // ─── Intent detection removed to guarantee context injection ─────────────────
 
 export const useAiAgent = () => {
-  const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [messages, setMessages] = useState<AiMessage[]>(() => {
+    const saved = localStorage.getItem('ai_chat_messages');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('ai_chat_messages', JSON.stringify(messages));
+  }, [messages]);
   const [sessionId, setSessionId] = useState<string>(() => {
     const saved = localStorage.getItem('ai_session_id');
     if (saved) return saved;
@@ -386,23 +393,13 @@ export const useAiAgent = () => {
       return;
     }
 
-    if (userIdRef.current) {
-      const { data } = await supabase.from('ai_chat')
-        .select('*')
-        .eq('user_id', userIdRef.current)
-        .eq('session_id', sessionId)
-        .order('timestamp', { ascending: true });
-
-      if (data && data.length > 0) {
-        setMessages(data.map((row: any) => ({
-          id: row.id,
-          role: row.role === 'assistant' ? 'model' : 'user',
-          text: row.content
-        })));
-      } else {
-        setMessages([{ id: '1', role: 'model', text: "Coach connected. What do you need?" }]);
+    // Since we initialize from localStorage, we just ensure there's at least one message
+    setMessages(prev => {
+      if (prev.length === 0) {
+        return [{ id: '1', role: 'model', text: "Coach connected. What do you need?" }];
       }
-    }
+      return prev;
+    });
   };
 
   const startNewChat = () => {
@@ -420,16 +417,6 @@ export const useAiAgent = () => {
     const userMsgId = crypto.randomUUID();
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', text }]);
     setIsTyping(true);
-
-    if (userIdRef.current) {
-      supabase.from('ai_chat').insert({
-        id: userMsgId,
-        user_id: userIdRef.current,
-        session_id: sessionId,
-        role: 'user',
-        content: text
-      });
-    }
 
     try {
       const context = await loadContext();
@@ -450,15 +437,6 @@ export const useAiAgent = () => {
       const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiText };
       setMessages(prev => [...prev, modelMsg]);
 
-      if (userIdRef.current) {
-        supabase.from('ai_chat').insert({
-          id: modelMsgId,
-          user_id: userIdRef.current,
-          session_id: sessionId,
-          role: 'assistant',
-          content: aiRes.reply
-        });
-      }
     } catch (e: any) {
       const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
       setMessages(prev => [...prev, {
