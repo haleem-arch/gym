@@ -25,22 +25,17 @@ DATABASE SCHEMA:
 - diet_logs (id, user_id, date, daily_totals {"kcal": 0, "protein": 0, "carbs": 0, "fat": 0, "water": 0})
 - diet_meals (id, diet_log_id, name, time, items [{"food_id":"...","name":"Tahini","grams":100,"macros":{...}}])
 
-INSTRUCTIONS:
-1. When asked to do something, use the \`execute_database_query\` tool. 
-2. You can chain queries (e.g., first SELECT to find an ID, then INSERT/UPDATE using that ID).
-3. If asked to log a food, FIRST query \`food_inventory\`.
-4. If the food is NOT in \`food_inventory\`, use the \`search_external_food_database\` tool to find its macros.
-5. Then, autonomously use \`execute_database_query\` to INSERT that new food into \`food_inventory\` so it's saved for next time.
-6. Finally, proceed to log the meal in \`diet_meals\`.
-7. Always confirm what you did briefly in your response.
-8. BE CONFIDENT AND DIRECT. You are in full control of his dashboard.
+INSTRUCTIONS TO MINIMIZE QUOTA (CRITICAL):
+1. You have a very strict API quota. You MUST minimize tool calls. Do as much as possible in a single call.
+2. If asked to log a food, DO NOT search food_inventory and DO NOT search external databases. You are an AI, use your INTRINSIC KNOWLEDGE to estimate the macros (kcal, protein, carbs, fat) for that food.
+3. To log a meal, first query `diet_logs` for today's date to get the `id`.
+4. Then use `execute_database_query` to INSERT the meal directly into `diet_meals`. You can omit `food_id` and just provide `name`, `grams`, and the intrinsic `macros`.
+5. BE CONFIDENT AND DIRECT. You are in full control of his dashboard.
 
-Example: "I just ate 100g of Doritos"
-- Query \`food_inventory\` for 'Doritos'. (Not found)
-- Call \`search_external_food_database\` for 'Doritos'.
-- Get macros, insert 'Doritos' into \`food_inventory\`.
-- Get \`diet_log_id\` for today.
-- Insert into \`diet_meals\`.
+Example: "I just ate 100g of rice"
+- Call `execute_database_query` to SELECT `diet_logs` for today's date to get the ID.
+- Call `execute_database_query` to INSERT into `diet_meals` using your intrinsic macro estimation for 100g of rice.
+- Confirm briefly.
 `;
 
 const tools: any = [{
@@ -68,17 +63,6 @@ const tools: any = [{
           path: { type: Type.STRING, description: 'Route path (e.g., "/", "/workout", "/diet", "/diet/inventory")' }
         },
         required: ['path']
-      }
-    },
-    {
-      name: 'search_external_food_database',
-      description: 'Search the Open Food Facts global database for a specific food to get its nutritional information per 100g.',
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          query: { type: Type.STRING, description: 'The name of the food to search for (e.g., "Doritos", "Oats", "Chicken Breast")' }
-        },
-        required: ['query']
       }
     }
   ]
@@ -154,30 +138,6 @@ export const useAiAgent = () => {
     if (name === 'navigate_to') {
       navigate(args.path);
       return { status: 'success', navigated_to: args.path };
-    }
-
-    if (name === 'search_external_food_database') {
-      try {
-        const response = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(args.query)}&search_simple=1&action=process&json=1&page_size=3`);
-        const data = await response.json();
-        
-        if (!data.products || data.products.length === 0) {
-          return { status: 'not_found', message: "No food found matching that query." };
-        }
-        
-        const results = data.products.map((p: any) => ({
-          name: p.product_name || args.query,
-          brand: p.brands || '',
-          kcal_per_100g: p.nutriments?.['energy-kcal_100g'] || 0,
-          protein: p.nutriments?.proteins_100g || 0,
-          carbs: p.nutriments?.carbohydrates_100g || 0,
-          fat: p.nutriments?.fat_100g || 0,
-        })).filter((p: any) => p.kcal_per_100g > 0);
-
-        return { status: 'success', results: results.length > 0 ? results : data.products.slice(0,1) };
-      } catch (err: any) {
-        return { error: "External API failed: " + err.message };
-      }
     }
 
     if (name === 'execute_database_query') {
