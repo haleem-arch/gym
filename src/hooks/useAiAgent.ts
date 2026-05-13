@@ -28,13 +28,13 @@ DATABASE SCHEMA:
 INSTRUCTIONS TO MINIMIZE QUOTA (CRITICAL):
 1. You have a very strict API quota. You MUST minimize tool calls. Do as much as possible in a single call.
 2. If asked to log a food, DO NOT search food_inventory and DO NOT search external databases. You are an AI, use your INTRINSIC KNOWLEDGE to estimate the macros (kcal, protein, carbs, fat) for that food.
-3. To log a meal, first query `diet_logs` for today's date to get the `id`.
-4. Then use `execute_database_query` to INSERT the meal directly into `diet_meals`. You can omit `food_id` and just provide `name`, `grams`, and the intrinsic `macros`.
+3. To log a meal, first query \`diet_logs\` for today's date to get the \`id\`.
+4. Then use \`execute_database_query\` to INSERT the meal directly into \`diet_meals\`. You can omit \`food_id\` and just provide \`name\`, \`grams\`, and the intrinsic \`macros\`.
 5. BE CONFIDENT AND DIRECT. You are in full control of his dashboard.
 
 Example: "I just ate 100g of rice"
-- Call `execute_database_query` to SELECT `diet_logs` for today's date to get the ID.
-- Call `execute_database_query` to INSERT into `diet_meals` using your intrinsic macro estimation for 100g of rice.
+- Call \`execute_database_query\` to SELECT \`diet_logs\` for today's date to get the ID.
+- Call \`execute_database_query\` to INSERT into \`diet_meals\` using your intrinsic macro estimation for 100g of rice.
 - Confirm briefly.
 `;
 
