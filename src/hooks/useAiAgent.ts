@@ -80,6 +80,9 @@ SCHEDULE CHANGE EXAMPLE:
 PLAN CHANGE EXAMPLE:
 {"reply":"Changed Leg Press to Leg Extension","actions":[{"type":"update_workout_plan","planType":"LEGS","exercises":["Leg Extension", "DB Romanian Deadlift", "DB Bulgarian Split Squat", "Seated Leg Curl", "45° Back Extension (BW/DB)", "Standing Calf Raise"]}]}
 
+ACTIVE WORKOUT SWAP EXAMPLE (When ACTIVE_WORKOUT_IN_PROGRESS is in context):
+{"reply":"Swapped DB Romanian Deadlift with Leg Extension","actions":[{"type":"replace_active_exercise","oldExercise":"DB Romanian Deadlift","newExercise":"Leg Extension"}]}
+
 RULES:
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
