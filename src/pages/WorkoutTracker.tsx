@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useActiveWorkout, WorkoutExercise } from '../hooks/useActiveWorkout';
+import { useActiveWorkout } from '../hooks/useActiveWorkout';
+import type { WorkoutExercise } from '../hooks/useActiveWorkout';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { RestTimer } from '../components/RestTimer';
 import { Check, ArrowLeft, Clock } from 'lucide-react';

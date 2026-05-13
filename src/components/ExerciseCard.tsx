@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Info, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { WorkoutExercise, WorkoutSet } from '../hooks/useActiveWorkout';
+import type { WorkoutExercise, WorkoutSet } from '../hooks/useActiveWorkout';
 
 interface ExerciseCardProps {
   exercise: WorkoutExercise;
