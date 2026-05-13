@@ -1,19 +1,12 @@
 import { useState, useRef } from 'react';
-import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
-// Clear any stale cached key from localStorage that may be suspended
-try { localStorage.removeItem('gemini_api_key'); } catch (_) {}
+const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
 
-// Valid model chain for the @google/genai SDK
-const MODEL_CHAIN = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
-const isQuotaError = (e: any) => {
-  const msg = JSON.stringify(e?.message || e || '');
-  // Only switch on real quota errors (429), NOT on 404 model-not-found errors
-  return (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) && !msg.includes('404') && !msg.includes('NOT_FOUND');
-};
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+// Llama 3.3 70B — supports tool calling, 14,400 free req/day
+const MODEL = 'llama-3.3-70b-versatile';
 
 export interface AiMessage {
   id: string;
@@ -22,129 +15,102 @@ export interface AiMessage {
   isAction?: boolean;
 }
 
-// Compact system prompt — sent ONCE per session, not per message
+// Internal Groq message format
+interface GroqMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  tool_calls?: any[];
+  tool_call_id?: string;
+  name?: string;
+}
+
 const SYSTEM_PROMPT = `You are Haleem's Omnipotent AI Coach with full DB read/write access.
 
 TABLES: profiles, exercises, food_inventory(user_id,name,kcal_per_100g,protein,carbs,fat), schedules, workouts, workout_exercises(sets JSON), diet_logs(date,daily_totals), diet_meals(diet_log_id,name,time,items JSON).
 
 RULES:
-- Minimize tool calls. Use intrinsic knowledge for food macros — never search externally.
+- Minimize tool calls. Use your own knowledge for food macros — never search externally.
 - To log food: SELECT diet_logs for today → INSERT into diet_meals with macros from your own knowledge.
-- For DB writes always include user_id (injected automatically for inserts).
+- For DB writes, user_id is injected automatically.
 - Be brief and direct in responses.`;
 
-const tools: any = [{
-  functionDeclarations: [
-    {
+const GROQ_TOOLS = [
+  {
+    type: 'function',
+    function: {
       name: 'execute_database_query',
       description: 'Run select/insert/update/delete on any Supabase table.',
       parameters: {
-        type: Type.OBJECT,
+        type: 'object',
         properties: {
-          action: { type: Type.STRING, description: 'select | insert | update | delete' },
-          table: { type: Type.STRING, description: 'Table name' },
-          payload: { type: Type.OBJECT, description: 'Match criteria for select/delete, or record data for insert/update. For update, include id.' },
-          select_columns: { type: Type.STRING, description: 'Columns to return for select (default "*")' }
+          action: { type: 'string', description: 'select | insert | update | delete' },
+          table: { type: 'string', description: 'Table name' },
+          payload: { type: 'object', description: 'Match criteria for select/delete, or record data for insert/update. For update, include id.' },
+          select_columns: { type: 'string', description: 'Columns to return for select (default "*")' }
         },
         required: ['action', 'table', 'payload']
       }
-    },
-    {
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'navigate_to',
-      description: 'Navigate the app to a route',
+      description: 'Navigate the app to a specific route',
       parameters: {
-        type: Type.OBJECT,
+        type: 'object',
         properties: {
-          path: { type: Type.STRING, description: 'Route: "/", "/workout", "/diet", "/diet/inventory", "/ai"' }
+          path: { type: 'string', description: 'Route: "/", "/workout", "/diet", "/diet/inventory", "/ai"' }
         },
         required: ['path']
       }
     }
-  ]
-}];
+  }
+];
 
 export const useAiAgent = () => {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [currentModel, setCurrentModel] = useState(MODEL_CHAIN[0]);
   const navigate = useNavigate();
-  const chatSessionRef = useRef<any>(null);
-  const modelIndexRef = useRef(0);
-  const aiRef = useRef<any>(null);
+  // Full conversation history for Groq (stateless API needs full context)
+  const historyRef = useRef<GroqMessage[]>([]);
   const userIdRef = useRef<string | null>(null);
+  const initialized = useRef(false);
 
-  const createSession = (modelName: string) => {
-    if (!aiRef.current) return null;
-    return aiRef.current.chats.create({
-      model: modelName,
-      config: {
-        systemInstruction: `${SYSTEM_PROMPT}\n\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${userIdRef.current}`,
+  const callGroq = async (msgs: GroqMessage[]): Promise<any> => {
+    const key = getApiKey();
+    if (!key) throw new Error('No VITE_GROQ_API_KEY found in environment');
+
+    const res = await fetch(GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: msgs,
+        tools: GROQ_TOOLS,
+        tool_choice: 'auto',
         temperature: 0.1,
-        tools: tools as any,
-      }
+        max_tokens: 1024
+      })
     });
-  };
 
-  const switchToNextModel = () => {
-    modelIndexRef.current = Math.min(modelIndexRef.current + 1, MODEL_CHAIN.length - 1);
-    const nextModel = MODEL_CHAIN[modelIndexRef.current];
-    setCurrentModel(nextModel);
-    chatSessionRef.current = createSession(nextModel);
-    return nextModel;
-  };
-
-  const initChat = async (providedKey?: string) => {
-    if (chatSessionRef.current) return;
-
-    const keyToUse = providedKey || getApiKey();
-    if (!keyToUse) {
-      setMessages([{ id: 'no-key', role: 'model', text: "No API key found. Paste your Gemini API Key (starts with AIzaSy...) here to connect." }]);
-      return;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(JSON.stringify(err));
     }
-
-    try {
-      aiRef.current = new GoogleGenAI({ apiKey: keyToUse });
-      const { data: { session } } = await supabase.auth.getSession();
-      userIdRef.current = session?.user?.id || null;
-
-      chatSessionRef.current = createSession(MODEL_CHAIN[0]);
-
-      // Do NOT save to localStorage — keys get suspended and get stuck in browsers
-
-      // Load saved history (UI only — no replay cost)
-      if (userIdRef.current) {
-        const { data } = await supabase.from('ai_chat').select('messages').eq('user_id', userIdRef.current).maybeSingle();
-        if (data?.messages && (data.messages as any[]).length > 0) {
-          setMessages(data.messages);
-        } else {
-          setMessages([{ id: '1', role: 'model', text: `Connected on ${MODEL_CHAIN[0]}. Full dashboard access active. What do you need?` }]);
-        }
-      }
-    } catch (e: any) {
-      setMessages([{ id: 'error', role: 'model', text: `Failed to connect: ${e.message}` }]);
-    }
+    return res.json();
   };
 
-  const saveHistory = async (newMessages: AiMessage[]) => {
-    if (!userIdRef.current) return;
-    // Only save last 30 messages to keep storage lean
-    const trimmed = newMessages.slice(-30);
-    const { data } = await supabase.from('ai_chat').select('id').eq('user_id', userIdRef.current).maybeSingle();
-    if (data) {
-      await supabase.from('ai_chat').update({ messages: trimmed, updated_at: new Date().toISOString() }).eq('id', data.id);
-    } else {
-      await supabase.from('ai_chat').insert({ user_id: userIdRef.current, messages: trimmed });
-    }
-  };
-
-  const executeToolCall = async (call: any): Promise<any> => {
-    const { name, args } = call;
+  const executeToolCall = async (name: string, args: any): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { error: 'Not authenticated' };
+    if (!session) return JSON.stringify({ error: 'Not authenticated' });
 
     if (name === 'navigate_to') {
       navigate(args.path);
-      return { status: 'success', navigated_to: args.path };
+      return JSON.stringify({ status: 'success', navigated_to: args.path });
     }
 
     if (name === 'execute_database_query') {
@@ -164,7 +130,7 @@ export const useAiAgent = () => {
         } else if (action === 'insert') {
           result = await supabase.from(table).insert(payload).select();
         } else if (action === 'update') {
-          if (!payload.id) return { error: "Update requires 'id' in payload" };
+          if (!payload.id) return JSON.stringify({ error: "Update requires 'id' in payload" });
           const { id, ...updates } = payload;
           result = await supabase.from(table).update(updates).eq('id', id).select();
         } else if (action === 'delete') {
@@ -173,75 +139,131 @@ export const useAiAgent = () => {
           result = await query;
         }
         if (result?.error) throw result.error;
-        return { status: 'success', data: result?.data };
+        return JSON.stringify({ status: 'success', data: result?.data });
       } catch (err: any) {
-        return { error: err.message || 'Query failed' };
+        return JSON.stringify({ error: err.message || 'Query failed' });
       }
     }
 
-    return { error: 'Unknown tool' };
+    return JSON.stringify({ error: 'Unknown tool' });
+  };
+
+  const initChat = async () => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const key = getApiKey();
+    if (!key) {
+      setMessages([{ id: 'no-key', role: 'model', text: 'No API key found. Add VITE_GROQ_API_KEY to your Vercel environment variables.' }]);
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      userIdRef.current = session?.user?.id || null;
+
+      // System message initializes the conversation
+      historyRef.current = [{
+        role: 'system',
+        content: `${SYSTEM_PROMPT}\n\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${userIdRef.current}`
+      }];
+
+      // Load saved UI messages (display only, don't replay)
+      if (userIdRef.current) {
+        const { data } = await supabase.from('ai_chat').select('messages').eq('user_id', userIdRef.current).maybeSingle();
+        if (data?.messages && (data.messages as any[]).length > 0) {
+          setMessages(data.messages);
+        } else {
+          setMessages([{ id: '1', role: 'model', text: `Connected via Groq (Llama 3.3 70B). Full dashboard access active. What do you need?` }]);
+        }
+      }
+    } catch (e: any) {
+      setMessages([{ id: 'error', role: 'model', text: `Failed to connect: ${e.message}` }]);
+    }
+  };
+
+  const saveHistory = async (newMessages: AiMessage[]) => {
+    if (!userIdRef.current) return;
+    const trimmed = newMessages.slice(-30);
+    const { data } = await supabase.from('ai_chat').select('id').eq('user_id', userIdRef.current).maybeSingle();
+    if (data) {
+      await supabase.from('ai_chat').update({ messages: trimmed, updated_at: new Date().toISOString() }).eq('id', data.id);
+    } else {
+      await supabase.from('ai_chat').insert({ user_id: userIdRef.current, messages: trimmed });
+    }
   };
 
   const sendMessage = async (text: string) => {
-    let keyProvidedNow = false;
-
-    if (!chatSessionRef.current) {
-      await initChat();
-    }
-
-    if (!chatSessionRef.current) return;
-    if (keyProvidedNow) return;
+    if (!initialized.current) await initChat();
+    if (!getApiKey()) return;
 
     const userMsg: AiMessage = { id: crypto.randomUUID(), role: 'user', text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsTyping(true);
 
-    const attemptSend = async (retryCount = 0): Promise<string> => {
-      try {
-        let response = await chatSessionRef.current.sendMessage({ message: text });
-
-        while (response.functionCalls && response.functionCalls.length > 0) {
-          const functionCall = response.functionCalls[0];
-          setMessages(prev => [...prev, {
-            id: crypto.randomUUID(),
-            role: 'model',
-            text: `⚡ ${functionCall.name.replace(/_/g, ' ')}...`,
-            isAction: true
-          }]);
-          const toolResult = await executeToolCall(functionCall);
-          response = await chatSessionRef.current.sendMessage({
-            message: [{ functionResponse: { name: functionCall.name, response: toolResult } }]
-          });
-        }
-
-        return response.text || 'Done.';
-      } catch (e: any) {
-        if (isQuotaError(e) && retryCount < MODEL_CHAIN.length - 1) {
-          const nextModel = switchToNextModel();
-          setMessages(prev => [...prev, {
-            id: crypto.randomUUID(),
-            role: 'model',
-            text: `⚠️ Quota hit. Switching to ${nextModel}...`,
-            isAction: true
-          }]);
-          return attemptSend(retryCount + 1);
-        }
-        throw e;
-      }
-    };
+    // Add user message to Groq history
+    historyRef.current = [...historyRef.current, { role: 'user', content: text }];
 
     try {
-      const modelText = await attemptSend();
-      const finalMessages = [...newMessages, { id: crypto.randomUUID(), role: 'model', text: modelText } as AiMessage];
+      let currentHistory = [...historyRef.current];
+      let finalText = '';
+
+      // Agentic loop — keeps going until no more tool calls
+      while (true) {
+        const groqRes = await callGroq(currentHistory);
+        const choice = groqRes.choices[0];
+        const assistantMsg = choice.message;
+
+        // Add assistant response to history
+        currentHistory = [...currentHistory, assistantMsg];
+
+        if (choice.finish_reason === 'tool_calls' && assistantMsg.tool_calls?.length > 0) {
+          // Execute all tool calls in this response
+          const toolResultMsgs: GroqMessage[] = [];
+
+          for (const tc of assistantMsg.tool_calls) {
+            const toolName = tc.function.name;
+            const toolArgs = JSON.parse(tc.function.arguments || '{}');
+
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'model',
+              text: `⚡ ${toolName.replace(/_/g, ' ')}...`,
+              isAction: true
+            }]);
+
+            const result = await executeToolCall(toolName, toolArgs);
+            toolResultMsgs.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              content: result
+            });
+          }
+
+          // Add all tool results to history and loop
+          currentHistory = [...currentHistory, ...toolResultMsgs];
+        } else {
+          // No more tool calls — we have the final answer
+          finalText = assistantMsg.content || 'Done.';
+          break;
+        }
+      }
+
+      // Save the final history
+      historyRef.current = currentHistory;
+
+      const finalMessages = [...newMessages, { id: crypto.randomUUID(), role: 'model', text: finalText } as AiMessage];
       setMessages(finalMessages);
       saveHistory(finalMessages);
+
     } catch (e: any) {
-      setMessages([...newMessages, { id: crypto.randomUUID(), role: 'model', text: `All models exhausted. Try again later. (${e.message})` }]);
+      console.error(e);
+      setMessages([...newMessages, { id: crypto.randomUUID(), role: 'model', text: `Error: ${e.message}` }]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  return { messages, isTyping, sendMessage, initChat, currentModel, clearHistory: () => setMessages([]) };
+  return { messages, isTyping, sendMessage, initChat, currentModel: MODEL, clearHistory: () => { setMessages([]); historyRef.current = []; } };
 };
