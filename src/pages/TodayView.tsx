@@ -142,6 +142,28 @@ const TodayView = () => {
         </div>
       </motion.div>
       
+      {/* Dev Reset Button */}
+      <div className="mt-2 text-center">
+        <button 
+          onClick={() => {
+            if (window.confirm("This will clear all local app data and force update. Continue?")) {
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for(let registration of registrations) {
+                    registration.unregister();
+                  } 
+                });
+              }
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}
+          className="text-[10px] text-gray-600 uppercase font-bold tracking-widest hover:text-danger transition-colors p-2"
+        >
+          Force Reset App Cache
+        </button>
+      </div>
+
       {/* Spacer for bottom nav */}
       <div className="h-4"></div>
     </div>
