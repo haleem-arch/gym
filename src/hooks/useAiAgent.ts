@@ -36,29 +36,37 @@ const TTL = 5 * 60 * 1000;
 const fromCache = (k: string) => { const e = cache[k]; return e && Date.now() - e.ts < TTL ? e.data : null; };
 const toCache = (k: string, d: any) => { cache[k] = { data: d, ts: Date.now() }; };
 
-// ─── Ultra-compact system prompt — one call, JSON output ─────────────────────
-const SYSTEM_PROMPT = (uid: string | null, ctx: string) =>
-  `You are Haleem's fitness AI assistant. You ONLY output JSON, never plain text.
-Haleem: 18yo male, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal. PPL gym 3x/wk + running.
-User ID: ${uid} | Today: ${new Date().toISOString().split('T')[0]}
+// ─── Local date helpers (match useDiet timezone logic) ───────────────────────
+const getLocalDate = () => {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+};
+const getLocalTime = () => {
+  const d = new Date();
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:00`;
+};
+
+// ─── System prompt — explicit examples with correct schema ───────────────────
+const SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
+  const today = getLocalDate();
+  const time = getLocalTime();
+  return `You are Haleem's fitness AI. Output ONLY valid JSON. Never plain text.
+Haleem: 18yo, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal.
+User ID: ${uid} | Today: ${today}
 
 ${ctx}
 
-OUTPUT FORMAT - you MUST respond with ONLY this JSON structure, no other text:
-{"reply":"brief confirmation","actions":[]}
+ALWAYS return ONLY this JSON format:
+{"reply":"short text","actions":[]}
 
-MEAL LOGGING EXAMPLE - when user says "log 100g rice" or "I ate rice":
-{"reply":"Logged 100g white rice — 130kcal, 28g carbs, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"USE_THE_ID_FROM_CONTEXT","name":"Lunch","time":"${new Date().toTimeString().slice(0,5)}","items":[{"name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+MEAL LOG EXAMPLE (copy this structure exactly):
+{"reply":"Logged 100g rice — 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"THE_ID_FROM_TODAY_DIET_LOG_ID","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
-SCHEDULE CHANGE EXAMPLE - when user says "make today rest day":
-{"reply":"Done, set today to REST","actions":[{"type":"update","table":"schedules","match":{"id":"SCHEDULE_ID_FROM_CONTEXT"},"data":{"days":{"${new Date().toISOString().split('T')[0]}":"REST"}}}]}
+SCHEDULE EXAMPLE:
+{"reply":"Done — REST day set","actions":[{"type":"update","table":"schedules","match":{"id":"SCHEDULE_ID"},"data":{"days":{"${today}":"REST"}}}]}
 
-RULES:
-- ALWAYS use the exact IDs provided in context (TODAY_DIET_LOG_ID, SCHEDULE.id)
-- Use your knowledge for food macros — never say you don't know
-- Keep replies under 15 words
-- actions array can have multiple items
-- If no DB change needed, actions:[]`;
+RULES: Use exact diet_log_id from TODAY_DIET_LOG_ID. Generate a random UUID for item id. Use your food macro knowledge. actions:[] if no DB change.`;
+};
 
 // ─── Intent detection ─────────────────────────────────────────────────────────
 const detectIntent = (text: string) => {
@@ -128,43 +136,40 @@ export const useAiAgent = () => {
     }
 
     if (intent.needsNutrition) {
-      const today = new Date().toISOString().split('T')[0];
-      const ckey = `diet_${today}`;
-      let log = fromCache(ckey);
+    const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
+    let log = fromCache(ckey);
 
-      if (!log) {
-        // Try to get existing log
-        const { data: existing } = await supabase
+    if (!log) {
+      const localToday = getLocalDate();
+      const { data: existing } = await supabase
+        .from('diet_logs')
+        .select('id,daily_totals')
+        .eq('user_id', uid)
+        .eq('date', localToday)
+        .maybeSingle();
+
+      if (existing) {
+        log = existing;
+      } else {
+        const { data: created } = await supabase
           .from('diet_logs')
+          .insert({
+            user_id: uid,
+            date: localToday,
+            daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+          })
           .select('id,daily_totals')
-          .eq('user_id', uid)
-          .eq('date', today)
-          .maybeSingle();
-
-        if (existing) {
-          log = existing;
-        } else {
-          // Auto-create today's diet log so AI always has a valid ID
-          const { data: created } = await supabase
-            .from('diet_logs')
-            .insert({
-              user_id: uid,
-              date: today,
-              daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0 }
-            })
-            .select('id,daily_totals')
-            .single();
-          log = created;
-        }
-        if (log) toCache(ckey, log);
+          .single();
+        log = created;
       }
+      if (log) toCache(ckey, log);
+    }
 
-      if (log) {
-        // Give AI the exact ID to use — no guessing
-        parts.push(`TODAY_DIET_LOG_ID: ${log.id}`);
-        parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
-        parts.push(`IMPORTANT: To log a meal, insert into diet_meals with diet_log_id="${log.id}"`);
-      }
+    if (log) {
+      parts.push(`TODAY_DIET_LOG_ID: ${log.id}`);
+      parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
+      parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
+    }
     }
 
     return parts.join('\n');
@@ -272,9 +277,9 @@ export const useAiAgent = () => {
       const context = await loadContext(text);
       const aiRes = await callGroq(text, context);
 
-      // Execute DB actions silently in background
+      // Await so insert is complete before confirming
       if (aiRes.actions?.length) {
-        executeActions(aiRes.actions);
+        await executeActions(aiRes.actions);
       }
 
       const modelMsg: AiMessage = { id: crypto.randomUUID(), role: 'model', text: aiRes.reply };
