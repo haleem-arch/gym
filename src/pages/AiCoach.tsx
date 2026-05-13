@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAiAgent } from '../hooks/useAiAgent';
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AiCoach = () => {

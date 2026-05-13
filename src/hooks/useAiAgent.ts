@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { useState, useRef } from 'react';
+import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,12 +44,12 @@ const tools = [{
       name: 'execute_database_query',
       description: 'Execute a read or write query against the Supabase database. You have full access to all tables.',
       parameters: {
-        type: 'OBJECT',
+        type: Type.OBJECT,
         properties: {
-          action: { type: 'STRING', description: 'One of: select, insert, update, delete' },
-          table: { type: 'STRING', description: 'The table name' },
-          payload: { type: 'OBJECT', description: 'For insert/update: the record data. For select/delete: the match criteria (e.g. {"name": "Tahini"} or {"id": "123"}).' },
-          select_columns: { type: 'STRING', description: 'For select action: columns to return. Default "*"' }
+          action: { type: Type.STRING, description: 'One of: select, insert, update, delete' },
+          table: { type: Type.STRING, description: 'The table name' },
+          payload: { type: Type.OBJECT, description: 'For insert/update: the record data. For select/delete: the match criteria (e.g. {"name": "Tahini"} or {"id": "123"}).' },
+          select_columns: { type: Type.STRING, description: 'For select action: columns to return. Default "*"' }
         },
         required: ['action', 'table', 'payload']
       }
@@ -58,9 +58,9 @@ const tools = [{
       name: 'navigate_to',
       description: 'Navigate the user to a specific page in the app',
       parameters: {
-        type: 'OBJECT',
+        type: Type.OBJECT,
         properties: {
-          path: { type: 'STRING', description: 'Route path (e.g., "/", "/workout", "/diet", "/diet/inventory")' }
+          path: { type: Type.STRING, description: 'Route path (e.g., "/", "/workout", "/diet", "/diet/inventory")' }
         },
         required: ['path']
       }
@@ -147,7 +147,6 @@ export const useAiAgent = () => {
         } else if (action === 'insert') {
           result = await supabase.from(table).insert(payload).select();
         } else if (action === 'update') {
-          let query = supabase.from(table).update(payload);
           // Need an ID or match criteria. Assuming payload isn't the match, wait, payload needs to separate data vs match.
           // Since the tool definition only has payload, let's assume update requires { id: ... } in payload.
           if (payload.id) {
