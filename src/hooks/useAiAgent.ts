@@ -66,10 +66,13 @@ TABLE PURPOSES:
 MEAL LOG EXAMPLE (Logging for TODAY):
 {"reply":"Logged 100g rice \u2014 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"THE_ID_FROM_TODAY_DIET_LOG_ID","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
-SCHEDULE EXAMPLE:
-{"reply":"Done \u2014 REST day set","actions":[{"type":"update","table":"schedules","match":{"id":"SCHEDULE_ID"},"data":{"days":{"${today}":"REST"}}}]}
-
-RULES: Use exact TODAY_DIET_LOG_ID. Generate UUID for item id. NEVER insert into food_inventory for daily meals. Use diet_meals ONLY.`;
+RULES:
+- Use exact TODAY_DIET_LOG_ID from context.
+- Generate UUID for item id.
+- If MATCHING_FOODS_IN_INVENTORY is provided, use those macros first!
+- Otherwise, use your high-quality intrinsic knowledge.
+- NEVER return 0 for macros unless the food actually has 0 (like water).
+- Use diet_meals ONLY for logging.`;
 };
 
 // ─── Intent detection ─────────────────────────────────────────────────────────
@@ -79,6 +82,7 @@ const detectIntent = (text: string) => {
     needsNutrition: /protein|calor|kcal|carb|fat|food|eat|meal|diet|macro|water|log/.test(t),
     needsSchedule: /schedule|plan|week|today|tomorrow|when|session|rest|push|pull|leg|day/.test(t),
     needsWorkout: /workout|exercise|gym|lift|set|rep|volume|progress/.test(t),
+    foodKeywords: t.split(/\s+/).filter(w => w.length > 3 && !/log|ate|have|with|added|meal/.test(w))
   };
 };
 
@@ -146,8 +150,22 @@ export const useAiAgent = () => {
     }
 
     if (intent.needsNutrition) {
-    const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
-    let log = fromCache(ckey);
+      // 1. Check for matching foods in inventory to provide accurate macros
+      if (intent.foodKeywords?.length) {
+        const { data: foods } = await supabase
+          .from('food_inventory')
+          .select('name,kcal_per_100g,protein,carbs,fat')
+          .eq('user_id', uid)
+          .or(intent.foodKeywords.map(k => `name.ilike.%${k}%`).join(','));
+        
+        if (foods?.length) {
+          parts.push(`MATCHING_FOODS_IN_INVENTORY: ${JSON.stringify(foods)}`);
+          parts.push(`RULE: If a food above matches the user request, use its EXACT macros (scaled to grams).`);
+        }
+      }
+
+      const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
+      let log = fromCache(ckey);
 
     if (!log) {
       const localToday = getLocalDate();
