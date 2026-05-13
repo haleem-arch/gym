@@ -41,6 +41,9 @@ export const useSchedule = (activeDateStr: string) => {
   const updateDayType = async (newType: string) => {
     setDayType(newType); // Optimistic UI update
     
+    // Broadcast event so other instances of useSchedule (like in useDiet) update instantly
+    window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
+    
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -70,6 +73,12 @@ export const useSchedule = (activeDateStr: string) => {
   useEffect(() => {
     loadSchedule();
 
+    // Listen for local updates across components
+    const handleLocalUpdate = (e: any) => {
+      setDayType(e.detail);
+    };
+    window.addEventListener('schedule_updated', handleLocalUpdate);
+
     const channelId = `schedules-channel-${Date.now()}-${Math.random()}`;
     const subscription = supabase.channel(channelId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, (payload: any) => {
@@ -80,6 +89,7 @@ export const useSchedule = (activeDateStr: string) => {
       .subscribe();
 
     return () => {
+      window.removeEventListener('schedule_updated', handleLocalUpdate);
       supabase.removeChannel(subscription);
     };
   }, [loadSchedule, activeDateStr]);
