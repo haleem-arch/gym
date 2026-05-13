@@ -84,11 +84,11 @@ export const useAiAgent = () => {
       const contextPrompt = `${SYSTEM_PROMPT}\n\nCURRENT CONTEXT:\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${session?.user?.id}`;
 
       chatSessionRef.current = ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.0-flash',
         config: {
           systemInstruction: contextPrompt,
           temperature: 0.2,
-          tools: tools,
+          tools: tools as any,
         }
       });
       
@@ -103,7 +103,7 @@ export const useAiAgent = () => {
           setMessages([{ id: '1', role: 'model', text: "I'm connected and have full control of your dashboard. What's the plan for today?" }]);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to init AI:", e);
     }
   };
@@ -181,6 +181,7 @@ export const useAiAgent = () => {
     setIsTyping(true);
 
     try {
+      if (!chatSessionRef.current) throw new Error("Brain not initialized");
       let response = await chatSessionRef.current.sendMessage(text);
       
       // Handle tool calls recursively
@@ -212,7 +213,7 @@ export const useAiAgent = () => {
 
     } catch (e: any) {
       console.error(e);
-      setMessages([...newMessages, { id: crypto.randomUUID(), role: 'model', text: 'Error connecting to brain.' }]);
+      setMessages([...newMessages, { id: crypto.randomUUID(), role: 'model', text: `Error connecting to brain: ${e.message}` }]);
     } finally {
       setIsTyping(false);
     }

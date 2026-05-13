@@ -24,7 +24,7 @@ const AiCoach = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background relative pb-16">
+    <div className="flex flex-col min-h-full bg-background relative">
       {/* Header */}
       <div className="bg-surface/90 backdrop-blur-md px-5 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2">
