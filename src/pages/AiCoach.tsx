@@ -61,7 +61,7 @@ const AiCoach = () => {
           </div>
           <div>
             <h1 className="font-bold text-white text-sm tracking-tight">AI Coach</h1>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Llama 3.3 · Groq</p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Llama 3.1 8B · Groq</p>
           </div>
         </div>
         <button
