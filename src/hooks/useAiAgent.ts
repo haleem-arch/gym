@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 
 const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+// llama-3.1-8b-instant: 131,072 TPM (vs 12k for 70b) — perfect for tool calling
+const MODEL = 'llama-3.1-8b-instant';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface AiMessage {
@@ -38,25 +39,8 @@ const detectIntent = (text: string) => {
   };
 };
 
-// ─── System prompt ────────────────────────────────────────────────────────────
-const buildSystemPrompt = (userId: string | null, extraContext: string) => `
-You are Haleem's personal AI coach — direct, evidence-based, no-bullshit.
-
-ABOUT HALEEM:
-Age: 18 · Height: 182 cm · Weight: 79.7 kg · BF: 17.2% · SMM: 37.6 kg
-BMR: 1,796 kcal · InBody: 82 · Goal: Recompose to 11-13% BF + 40kg muscle by Aug 2026
-Runner 4-5x/week + Gym 3x/week (Push/Pull/Legs)
-Targets: 160g protein / 240g carbs / 70g fat / 2,400 kcal
-
-PERSONALITY: Speak like a knowledgeable friend. Concise on mobile. Use bullets for multi-step.
-Never show loading steps or internal monologue. Respond clean and immediately.
-
-DB TABLES: profiles, exercises, food_inventory, schedules, workouts, workout_exercises, diet_logs, diet_meals
-USER ID: ${userId}
-TODAY: ${new Date().toISOString().split('T')[0]}
-
-${extraContext}
-`.trim();
+// ─── System prompt — kept ultra-compact to save TPM ─────────────────────────
+const buildSystemPrompt = (userId: string | null, extraContext: string) => `Haleem's AI coach. User:${userId}. Goal: 11-13% BF +40kg muscle by Aug 2026. Today:${new Date().toISOString().split('T')[0]}. DB tables: profiles,exercises,food_inventory,schedules,workouts,workout_exercises,diet_logs,diet_meals. Concise bullets. No filler.\n${extraContext}`.trim();
 
 // ─── Tools ────────────────────────────────────────────────────────────────────
 const GROQ_TOOLS = [
@@ -294,8 +278,8 @@ export const useAiAgent = () => {
 
       // 3. Update history ref (strip system message for next turns)
       historyRef.current = [...historyRef.current, userGroqMsg, { role: 'assistant', content: finalText }];
-      // Keep last 20 turns to avoid context bloat
-      if (historyRef.current.length > 40) historyRef.current = historyRef.current.slice(-40);
+      // Keep last 4 turns (8 messages) to stay well under TPM
+      if (historyRef.current.length > 8) historyRef.current = historyRef.current.slice(-8);
 
       const modelMsg: AiMessage = { id: crypto.randomUUID(), role: 'model', text: finalText };
       setMessages(prev => {
@@ -304,7 +288,12 @@ export const useAiAgent = () => {
         return next;
       });
     } catch (e: any) {
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: `Error: ${e.message}` }]);
+      const msg = e.message || '';
+      const isRateLimit = msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('429');
+      const friendlyError = isRateLimit
+        ? '⏱️ Rate limit hit — wait 10 seconds and try again. (Free tier: 131k tokens/min on 8b model)'
+        : `Error: ${msg.slice(0, 120)}`;
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: friendlyError }]);
     } finally {
       setIsTyping(false);
     }

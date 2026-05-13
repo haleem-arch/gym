@@ -96,10 +96,10 @@ const AiCoach = () => {
                   text-sm leading-relaxed break-words
                   ${msg.role === 'user'
                     ? 'max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5'
-                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 overflow-y-auto'
+                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 overflow-y-auto overflow-x-hidden'
                   }
                 `}
-                style={msg.role === 'model' ? { maxHeight: '420px' } : {}}
+                style={msg.role === 'model' ? { maxHeight: '420px', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
               >
                 {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
               </div>
