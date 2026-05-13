@@ -109,7 +109,7 @@ const WorkoutHome = () => {
     
     const timeout = setTimeout(() => loadData(), 500);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [dayType]);
 
   const handleStartWorkout = async () => {
     if (workout) {
