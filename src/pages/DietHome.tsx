@@ -49,9 +49,18 @@ const DietHome = () => {
 
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold tracking-tight">Nutrition</h1>
-        <span className="text-sm text-gray-400 font-semibold uppercase tracking-wider mt-1 block">Daily Dashboard</span>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Nutrition</h1>
+          <span className="text-sm text-gray-400 font-semibold uppercase tracking-wider mt-1 block">Daily Dashboard</span>
+        </div>
+        <button 
+          onClick={() => navigate('/diet/inventory')}
+          className="text-xs font-bold bg-surface border border-gray-700 text-gray-300 px-3 py-2 rounded-lg flex items-center gap-1.5 active:scale-95 transition-transform shadow-md"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+          MY FOODS
+        </button>
       </motion.div>
 
       {/* Macro Summary Dashboard */}

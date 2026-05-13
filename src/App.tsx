@@ -11,6 +11,7 @@ import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
 import DietSearch from './pages/DietSearch';
 import FoodCreator from './pages/FoodCreator';
+import FoodInventory from './pages/FoodInventory';
 
 function App() {
   const [session, setSession] = useState<any>(undefined);
@@ -60,6 +61,7 @@ function App() {
             <Route path="/diet/meal/:id" element={<DietMealBuilder />} />
             <Route path="/diet/search" element={<DietSearch />} />
             <Route path="/diet/food/new" element={<FoodCreator />} />
+            <Route path="/diet/inventory" element={<FoodInventory />} />
             <Route path="/inbody" element={<div className="p-4">InBody (Coming Soon)</div>} />
             <Route path="/ai" element={<div className="p-4">AI Coach (Coming Soon)</div>} />
             <Route path="*" element={<Navigate to="/" />} />
