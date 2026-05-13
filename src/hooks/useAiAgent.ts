@@ -84,7 +84,7 @@ export const useAiAgent = () => {
       const contextPrompt = `${SYSTEM_PROMPT}\n\nCURRENT CONTEXT:\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${session?.user?.id}`;
 
       chatSessionRef.current = ai.chats.create({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         config: {
           systemInstruction: contextPrompt,
           temperature: 0.2,
