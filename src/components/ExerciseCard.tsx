@@ -3,16 +3,19 @@ import { ChevronDown, ChevronUp, Info, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WorkoutExercise, WorkoutSet } from '../hooks/useActiveWorkout';
 
+import { SwipeToDeleteRow } from './SwipeToDeleteRow';
+
 interface ExerciseCardProps {
   exercise: WorkoutExercise;
   exerciseIndex: number;
   onUpdateSet: (exerciseIndex: number, setIndex: number, updates: Partial<WorkoutSet>) => void;
   onAddSet: (exerciseIndex: number) => void;
+  onRemoveSet: (exerciseIndex: number, setIndex: number) => void;
   onUpdateNotes: (exerciseIndex: number, notes: string) => void;
   onSetComplete: (restTime: number) => void;
 }
 
-export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, onUpdateNotes, onSetComplete }: ExerciseCardProps) => {
+export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, onRemoveSet, onUpdateNotes, onSetComplete }: ExerciseCardProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
 
@@ -91,48 +94,55 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
               </div>
 
               {/* Sets */}
-              {exercise.sets.map((set, setIndex) => (
-                <div key={setIndex} className={`grid grid-cols-12 gap-2 mb-2 items-center text-center ${set.done ? 'opacity-50' : ''}`}>
-                  <div className="col-span-2 text-sm font-bold text-gray-400">{set.setNum}</div>
-                  <div className="col-span-3">
-                    <input 
-                      type="number" 
-                      value={set.weight || ''}
-                      onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { weight: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
-                      disabled={set.done}
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <input 
-                      type="number" 
-                      value={set.reps || ''}
-                      onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { reps: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
-                      disabled={set.done}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <input 
-                      type="number" 
-                      value={set.rpe || ''}
-                      onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
-                      disabled={set.done}
-                    />
-                  </div>
-                  <div className="col-span-2 flex justify-center">
-                    <button 
-                      onClick={() => handleSetToggle(setIndex, set.done)}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                        set.done ? 'bg-success text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
-                    >
-                      {set.done ? '✓' : ''}
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <div className="flex flex-col gap-1">
+                {exercise.sets.map((set, setIndex) => (
+                  <SwipeToDeleteRow 
+                    key={setIndex}
+                    onDelete={() => onRemoveSet(exerciseIndex, setIndex)}
+                  >
+                    <div className={`grid grid-cols-12 gap-2 py-1 items-center text-center ${set.done ? 'opacity-50' : ''}`}>
+                      <div className="col-span-2 text-sm font-bold text-gray-400">{set.setNum}</div>
+                      <div className="col-span-3">
+                        <input 
+                          type="number" 
+                          value={set.weight || ''}
+                          onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { weight: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
+                          disabled={set.done}
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <input 
+                          type="number" 
+                          value={set.reps || ''}
+                          onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { reps: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
+                          disabled={set.done}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input 
+                          type="number" 
+                          value={set.rpe || ''}
+                          onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
+                          disabled={set.done}
+                        />
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        <button 
+                          onClick={() => handleSetToggle(setIndex, set.done)}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                            set.done ? 'bg-success text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                          }`}
+                        >
+                          {set.done ? '✓' : ''}
+                        </button>
+                      </div>
+                    </div>
+                  </SwipeToDeleteRow>
+                ))}
+              </div>
 
               <button 
                 onClick={() => onAddSet(exerciseIndex)}

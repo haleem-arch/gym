@@ -96,6 +96,22 @@ export const useActiveWorkout = () => {
     });
   };
 
+  const removeSet = (exerciseIndex: number, setIndex: number) => {
+    setWorkout(prev => {
+      if (!prev) return prev;
+      const newExercises = [...prev.exercises];
+      newExercises[exerciseIndex] = { ...newExercises[exerciseIndex] };
+      newExercises[exerciseIndex].sets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex);
+      
+      // Re-number the sets
+      newExercises[exerciseIndex].sets.forEach((set, i) => {
+        set.setNum = i + 1;
+      });
+      
+      return { ...prev, exercises: newExercises };
+    });
+  };
+
   const updateExerciseNotes = (exerciseIndex: number, notes: string) => {
      setWorkout(prev => {
       if (!prev) return prev;
@@ -113,5 +129,9 @@ export const useActiveWorkout = () => {
     setWorkout(null);
   };
 
-  return { workout, startWorkout, updateSet, addSet, updateExerciseNotes, updateWorkoutNotes, endWorkout };
+  const loadWorkout = (savedWorkout: ActiveWorkout) => {
+    setWorkout(savedWorkout);
+  };
+
+  return { workout, startWorkout, updateSet, addSet, removeSet, updateExerciseNotes, updateWorkoutNotes, endWorkout, loadWorkout };
 };

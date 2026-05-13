@@ -10,11 +10,12 @@ import { Check, ArrowLeft, Clock } from 'lucide-react';
 const WorkoutTracker = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { workout, startWorkout, updateSet, addSet, updateExerciseNotes, updateWorkoutNotes, endWorkout } = useActiveWorkout();
+  const { workout, startWorkout, updateSet, addSet, removeSet, updateExerciseNotes, updateWorkoutNotes, endWorkout } = useActiveWorkout();
   
   const [restTimer, setRestTimer] = useState<{ active: boolean; time: number }>({ active: false, time: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveSheet, setShowSaveSheet] = useState(false);
 
   useEffect(() => {
     if (state?.startNew && !workout && state.plan?.exercises?.length > 0) {
@@ -56,9 +57,25 @@ const WorkoutTracker = () => {
     }, 50);
   };
 
-  const handleEndWorkout = async () => {
+  const handleSaveClick = () => {
+    let hasIncomplete = false;
+    workout?.exercises.forEach(ex => {
+      ex.sets.forEach(s => {
+        if (!s.done || !s.weight || !s.reps) hasIncomplete = true;
+      });
+    });
+
+    if (hasIncomplete) {
+      setShowSaveSheet(true);
+    } else {
+      executeSave('completed');
+    }
+  };
+
+  const executeSave = async (status: 'completed' | 'in_progress') => {
     if (!workout) return;
     setIsSaving(true);
+    setShowSaveSheet(false);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -70,7 +87,7 @@ const WorkoutTracker = () => {
       let totalVolume = 0;
       workout.exercises.forEach(ex => {
         ex.sets.forEach(set => {
-          if (set.done) {
+          if (set.done && set.weight && set.reps) {
             totalVolume += (set.weight * set.reps);
           }
         });
@@ -82,16 +99,21 @@ const WorkoutTracker = () => {
       const d = new Date();
       const localDateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-      const { data: workoutData, error: workoutError } = await supabase.from('workouts').insert({
+      const { data: workoutData, error: workoutError } = await supabase.from('workouts').upsert({
+        id: workout.id, // Primary key match triggers update if resumed
         user_id: session.user.id,
         date: localDateStr,
         day_type: workout.dayType,
         duration: duration,
         total_volume: totalVolume,
-        notes: workout.notes
+        notes: workout.notes,
+        status: status
       }).select().single();
 
       if (workoutError || !workoutData) throw workoutError;
+
+      // For resumed workouts, clear old sets before inserting new ones
+      await supabase.from('workout_exercises').delete().eq('workout_id', workout.id);
 
       const exerciseInserts = workout.exercises.map(ex => ({
         workout_id: workoutData.id,
@@ -154,6 +176,7 @@ const WorkoutTracker = () => {
             exerciseIndex={idx}
             onUpdateSet={updateSet}
             onAddSet={addSet}
+            onRemoveSet={removeSet}
             onUpdateNotes={updateExerciseNotes}
             onSetComplete={handleSetComplete}
           />
@@ -170,7 +193,7 @@ const WorkoutTracker = () => {
         </div>
 
         <button 
-          onClick={handleEndWorkout}
+          onClick={handleSaveClick}
           disabled={isSaving}
           className="w-full mt-6 bg-success hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-success/20 transition-transform active:scale-[0.98] disabled:opacity-50"
         >
@@ -202,6 +225,38 @@ const WorkoutTracker = () => {
         isActive={restTimer.active} 
         onClose={() => setRestTimer({ active: false, time: 0 })} 
       />
+
+      {/* Save Bottom Sheet */}
+      {showSaveSheet && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSaveSheet(false)} />
+          <div className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 animate-in slide-in-from-bottom-full duration-300">
+            <h3 className="text-xl font-bold text-white mb-2">Incomplete Sets Detected</h3>
+            <p className="text-sm text-gray-400 mb-6">You have sets that aren't marked as done or are missing weight/reps. How would you like to proceed?</p>
+            
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => executeSave('completed')}
+                className="w-full bg-success text-white font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              >
+                <Check size={20} /> Finish & Save Anyway
+              </button>
+              <button 
+                onClick={() => executeSave('in_progress')}
+                className="w-full bg-yellow-500 text-black font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+              >
+                Save & Resume Later
+              </button>
+              <button 
+                onClick={() => setShowSaveSheet(false)}
+                className="w-full text-gray-500 font-semibold py-4 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

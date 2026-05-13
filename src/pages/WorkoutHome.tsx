@@ -4,29 +4,32 @@ import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { Play, History, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
-  const { workout } = useActiveWorkout();
+  const { workout, loadWorkout } = useActiveWorkout();
   
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
+  const [inProgressWorkout, setInProgressWorkout] = useState<any>(null);
   const [todayPlan, setTodayPlan] = useState<any>({
     type: 'PUSH',
     title: 'Push (Chest/Shoulders/Triceps)',
-    exercises: [] // Will be populated with real DB exercises
+    exercises: []
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return; // Wait for auto-login in App.tsx
+      if (!session) return;
 
-      // 1. Fetch Past Workouts
+      // 1. Fetch Past Workouts (completed only)
       const { data: workoutsData } = await supabase
         .from('workouts')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('status', 'completed')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
         
@@ -34,8 +37,20 @@ const WorkoutHome = () => {
         setPastWorkouts(workoutsData);
       }
 
-      // 2. Fetch real exercises for the "Start Today's Workout" button
-      // We grab 4 random exercises to simulate a plan
+      // 2. Fetch In Progress session for today (or recent)
+      const { data: inProgressData } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (inProgressData && inProgressData.length > 0) {
+        setInProgressWorkout(inProgressData[0]);
+      }
+
+      // 3. Fetch real exercises
       const { data: exData } = await supabase
         .from('exercises')
         .select('*')
@@ -48,21 +63,60 @@ const WorkoutHome = () => {
       setLoading(false);
     };
     
-    // Slight delay to ensure App.tsx auth completes
     const timeout = setTimeout(() => loadData(), 500);
     return () => clearTimeout(timeout);
   }, []);
 
-  const handleStartWorkout = () => {
+  const handleStartWorkout = async () => {
     if (workout) {
       navigate('/workout/active');
-    } else {
-      if (todayPlan.exercises.length === 0) {
-        alert("Loading exercises, please wait a second...");
+      return;
+    } 
+    
+    if (inProgressWorkout) {
+      // Resume from Supabase
+      const { data: exercisesData } = await supabase
+        .from('workout_exercises')
+        .select(`*, exercises(*)`)
+        .eq('workout_id', inProgressWorkout.id);
+
+      if (exercisesData) {
+        const reconstructedExercises = exercisesData.map((we: any) => ({
+          id: we.exercises.id,
+          name: we.exercises.name,
+          muscle_group: we.exercises.muscle_group,
+          tier: we.exercises.tier || 'A',
+          cue: we.exercises.cue || '',
+          rationale: we.exercises.rationale || '',
+          sets: we.sets || [],
+          notes: we.notes || '',
+          restTime: 120
+        }));
+
+        loadWorkout({
+          id: inProgressWorkout.id, // Re-use the same ID to update instead of insert
+          dayType: inProgressWorkout.day_type,
+          title: `${inProgressWorkout.day_type} Workout`,
+          startTime: new Date().toISOString(),
+          exercises: reconstructedExercises,
+          notes: inProgressWorkout.notes || ''
+        });
+        navigate('/workout/active');
         return;
       }
-      navigate('/workout/active', { state: { startNew: true, plan: todayPlan } });
     }
+
+    // Start fresh
+    if (todayPlan.exercises.length === 0) {
+      alert("Loading exercises, please wait a second...");
+      return;
+    }
+    navigate('/workout/active', { state: { startNew: true, plan: todayPlan } });
+  };
+
+  const handleDeleteSession = async (id: string) => {
+    setPastWorkouts(prev => prev.filter(w => w.id !== id));
+    await supabase.from('workouts').delete().eq('id', id);
   };
 
   const formatDate = (dateString: string) => {
@@ -86,7 +140,7 @@ const WorkoutHome = () => {
         <button 
           onClick={handleStartWorkout}
           className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-colors active:scale-[0.98] shadow-lg ${
-            workout ? 'bg-yellow-500 text-black shadow-yellow-500/20' : 'bg-primary text-white shadow-primary/20'
+            workout || inProgressWorkout ? 'bg-yellow-500 text-black shadow-yellow-500/20' : 'bg-primary text-white shadow-primary/20'
           }`}
         >
           {workout ? (
@@ -95,7 +149,15 @@ const WorkoutHome = () => {
                 <Play size={20} fill="currentColor" />
                 RESUME SESSION
               </div>
-              <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">You have an active {workout.dayType} workout</span>
+              <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
+            </>
+          ) : inProgressWorkout ? (
+            <>
+              <div className="flex items-center gap-2 text-xl">
+                <Play size={20} fill="currentColor" />
+                RESUME WORKOUT
+              </div>
+              <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
             </>
           ) : (
             <>
@@ -122,25 +184,30 @@ const WorkoutHome = () => {
         ) : (
           <div className="flex flex-col gap-3">
             {pastWorkouts.map((session) => (
-              <div 
+              <SwipeToDeleteRow 
                 key={session.id} 
-                onClick={() => navigate(`/workout/${session.id}`)}
-                className="bg-surface rounded-xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform"
+                onDelete={() => handleDeleteSession(session.id)}
+                backgroundRounded="rounded-xl"
               >
-                <div>
-                  <span className="text-xs text-gray-500 mb-1 block">{formatDate(session.date)}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-gray-800 text-gray-300 border-gray-700">
-                      {session.day_type}
-                    </span>
-                    <span className="text-sm font-bold text-white">{session.total_volume} kg</span>
-                    <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                <div 
+                  onClick={() => navigate(`/workout/${session.id}`)}
+                  className="bg-surface rounded-xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform w-full"
+                >
+                  <div>
+                    <span className="text-xs text-gray-500 mb-1 block">{formatDate(session.date)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-gray-800 text-gray-300 border-gray-700">
+                        {session.day_type}
+                      </span>
+                      <span className="text-sm font-bold text-white">{session.total_volume} kg</span>
+                      <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                    </div>
                   </div>
+                  <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full">
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
-                <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full">
-                  <ChevronRight size={18} />
-                </button>
-              </div>
+              </SwipeToDeleteRow>
             ))}
           </div>
         )}
