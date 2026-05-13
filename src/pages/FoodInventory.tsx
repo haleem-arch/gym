@@ -15,7 +15,7 @@ const FoodInventory = () => {
     if (!session) return;
 
     // Fetch only foods created by or saved by this user (excludes global presets with null user_id)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('food_inventory')
       .select('*')
       .eq('user_id', session.user.id)
