@@ -3,50 +3,75 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
-
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-// Llama 3.3 70B — supports tool calling, 14,400 free req/day
 const MODEL = 'llama-3.3-70b-versatile';
 
+// ─── Types ───────────────────────────────────────────────────────────────────
 export interface AiMessage {
   id: string;
   role: 'user' | 'model';
   text: string;
-  isAction?: boolean;
 }
 
-// Internal Groq message format
 interface GroqMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
   tool_calls?: any[];
   tool_call_id?: string;
-  name?: string;
 }
 
-const SYSTEM_PROMPT = `You are Haleem's Omnipotent AI Coach with full DB read/write access.
+// ─── In-memory cache (5-min TTL) ─────────────────────────────────────────────
+interface CacheEntry { data: any; ts: number; }
+const cache: Record<string, CacheEntry> = {};
+const TTL = 5 * 60 * 1000;
+const fromCache = (k: string) => { const e = cache[k]; return e && Date.now() - e.ts < TTL ? e.data : null; };
+const toCache = (k: string, data: any) => { cache[k] = { data, ts: Date.now() }; };
 
-TABLES: profiles, exercises, food_inventory(user_id,name,kcal_per_100g,protein,carbs,fat), schedules, workouts, workout_exercises(sets JSON), diet_logs(date,daily_totals), diet_meals(diet_log_id,name,time,items JSON).
+// ─── Intent detection — determines what context to pre-load ─────────────────
+const detectIntent = (text: string) => {
+  const t = text.toLowerCase();
+  return {
+    needsNutrition: /protein|calor|kcal|carb|fat|food|eat|meal|diet|macro|water/.test(t),
+    needsWorkout: /workout|exercise|gym|lift|push|pull|leg|set|rep|volume|progress|stronger/.test(t),
+    needsBodyComp: /inbody|weight|bmi|body fat|bf%|muscle|progress|physique|scan/.test(t),
+    needsSchedule: /schedule|plan|week|today|tomorrow|when|session|split/.test(t),
+  };
+};
 
-RULES:
-- Minimize tool calls. Use your own knowledge for food macros — never search externally.
-- To log food: SELECT diet_logs for today → INSERT into diet_meals with macros from your own knowledge.
-- For DB writes, user_id is injected automatically.
-- Be brief and direct in responses.`;
+// ─── System prompt ────────────────────────────────────────────────────────────
+const buildSystemPrompt = (userId: string | null, extraContext: string) => `
+You are Haleem's personal AI coach — direct, evidence-based, no-bullshit.
 
+ABOUT HALEEM:
+Age: 18 · Height: 182 cm · Weight: 79.7 kg · BF: 17.2% · SMM: 37.6 kg
+BMR: 1,796 kcal · InBody: 82 · Goal: Recompose to 11-13% BF + 40kg muscle by Aug 2026
+Runner 4-5x/week + Gym 3x/week (Push/Pull/Legs)
+Targets: 160g protein / 240g carbs / 70g fat / 2,400 kcal
+
+PERSONALITY: Speak like a knowledgeable friend. Concise on mobile. Use bullets for multi-step.
+Never show loading steps or internal monologue. Respond clean and immediately.
+
+DB TABLES: profiles, exercises, food_inventory, schedules, workouts, workout_exercises, diet_logs, diet_meals
+USER ID: ${userId}
+TODAY: ${new Date().toISOString().split('T')[0]}
+
+${extraContext}
+`.trim();
+
+// ─── Tools ────────────────────────────────────────────────────────────────────
 const GROQ_TOOLS = [
   {
     type: 'function',
     function: {
-      name: 'execute_database_query',
-      description: 'Run select/insert/update/delete on any Supabase table.',
+      name: 'db_query',
+      description: 'Run select/insert/update/delete on Supabase. Use this to read or write any user data.',
       parameters: {
         type: 'object',
         properties: {
           action: { type: 'string', description: 'select | insert | update | delete' },
           table: { type: 'string', description: 'Table name' },
-          payload: { type: 'object', description: 'Match criteria for select/delete, or record data for insert/update. For update, include id.' },
-          select_columns: { type: 'string', description: 'Columns to return for select (default "*")' }
+          payload: { type: 'object', description: 'For select/delete: match criteria. For insert/update: record data (include id for update).' },
+          select_columns: { type: 'string', description: 'Columns for select, default "*"' }
         },
         required: ['action', 'table', 'payload']
       }
@@ -56,12 +81,10 @@ const GROQ_TOOLS = [
     type: 'function',
     function: {
       name: 'navigate_to',
-      description: 'Navigate the app to a specific route',
+      description: 'Navigate app to a route',
       parameters: {
         type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Route: "/", "/workout", "/diet", "/diet/inventory", "/ai"' }
-        },
+        properties: { path: { type: 'string', description: '"/", "/workout", "/diet", "/diet/inventory", "/ai"' } },
         required: ['path']
       }
     }
@@ -72,119 +95,153 @@ export const useAiAgent = () => {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const navigate = useNavigate();
-  // Full conversation history for Groq (stateless API needs full context)
   const historyRef = useRef<GroqMessage[]>([]);
   const userIdRef = useRef<string | null>(null);
   const initialized = useRef(false);
 
-  const callGroq = async (msgs: GroqMessage[]): Promise<any> => {
-    const key = getApiKey();
-    if (!key) throw new Error('No VITE_GROQ_API_KEY found in environment');
-
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: msgs,
-        tools: GROQ_TOOLS,
-        tool_choice: 'auto',
-        temperature: 0.1,
-        max_tokens: 1024
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(JSON.stringify(err));
-    }
-    return res.json();
-  };
-
-  const executeToolCall = async (name: string, args: any): Promise<string> => {
+  // ─── DB tool executor ───────────────────────────────────────────────────────
+  const runDbTool = async (name: string, args: any): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return JSON.stringify({ error: 'Not authenticated' });
 
     if (name === 'navigate_to') {
       navigate(args.path);
-      return JSON.stringify({ status: 'success', navigated_to: args.path });
+      return JSON.stringify({ ok: true, path: args.path });
     }
 
-    if (name === 'execute_database_query') {
+    if (name === 'db_query') {
       const { action, table, payload, select_columns = '*' } = args;
-
-      // Auto-inject user_id for inserts
-      if (action === 'insert' && typeof payload === 'object' && !Array.isArray(payload) && !payload.user_id && table !== 'exercises') {
+      if (action === 'insert' && !payload.user_id && table !== 'exercises') {
         payload.user_id = session.user.id;
       }
-
       try {
         let result: any;
         if (action === 'select') {
-          let query = supabase.from(table).select(select_columns);
-          Object.entries(payload).forEach(([k, v]) => { query = (query as any).eq(k, v); });
-          result = await query;
+          let q = supabase.from(table).select(select_columns);
+          Object.entries(payload).forEach(([k, v]) => { q = (q as any).eq(k, v); });
+          result = await q;
         } else if (action === 'insert') {
           result = await supabase.from(table).insert(payload).select();
         } else if (action === 'update') {
-          if (!payload.id) return JSON.stringify({ error: "Update requires 'id' in payload" });
-          const { id, ...updates } = payload;
-          result = await supabase.from(table).update(updates).eq('id', id).select();
+          if (!payload.id) return JSON.stringify({ error: "Need id for update" });
+          const { id, ...rest } = payload;
+          result = await supabase.from(table).update(rest).eq('id', id).select();
         } else if (action === 'delete') {
-          let query = supabase.from(table).delete();
-          Object.entries(payload).forEach(([k, v]) => { query = (query as any).eq(k, v); });
-          result = await query;
+          let q = supabase.from(table).delete();
+          Object.entries(payload).forEach(([k, v]) => { q = (q as any).eq(k, v); });
+          result = await q;
         }
         if (result?.error) throw result.error;
-        return JSON.stringify({ status: 'success', data: result?.data });
-      } catch (err: any) {
-        return JSON.stringify({ error: err.message || 'Query failed' });
+        return JSON.stringify({ ok: true, data: result?.data });
+      } catch (e: any) {
+        return JSON.stringify({ error: e.message });
       }
     }
-
     return JSON.stringify({ error: 'Unknown tool' });
   };
 
+  // ─── Smart context pre-loader ───────────────────────────────────────────────
+  const loadContext = async (text: string): Promise<string> => {
+    const uid = userIdRef.current;
+    if (!uid) return '';
+    const intent = detectIntent(text);
+    const ctx: string[] = [];
+
+    // Always-loaded lightweight data (cached)
+    let schedule = fromCache('schedule');
+    if (!schedule) {
+      const { data } = await supabase.from('schedules').select('days').eq('user_id', uid).order('week_start', { ascending: false }).limit(1).maybeSingle();
+      schedule = data?.days || null;
+      if (schedule) toCache('schedule', schedule);
+    }
+    if (schedule) ctx.push(`CURRENT SCHEDULE: ${JSON.stringify(schedule)}`);
+
+    // Load today's diet log only if nutrition question
+    if (intent.needsNutrition) {
+      const today = new Date().toISOString().split('T')[0];
+      const ckey = `diet_${today}`;
+      let dietLog = fromCache(ckey);
+      if (!dietLog) {
+        const { data: log } = await supabase.from('diet_logs').select('id,daily_totals').eq('user_id', uid).eq('date', today).maybeSingle();
+        if (log) {
+          const { data: meals } = await supabase.from('diet_meals').select('name,time,items').eq('diet_log_id', log.id);
+          dietLog = { totals: log.daily_totals, meals };
+          toCache(ckey, dietLog);
+        }
+      }
+      if (dietLog) ctx.push(`TODAY'S NUTRITION: ${JSON.stringify(dietLog)}`);
+    }
+
+    // Load last 4 workouts only if performance question
+    if (intent.needsWorkout) {
+      const ckey = 'recent_workouts';
+      let workouts = fromCache(ckey);
+      if (!workouts) {
+        const { data } = await supabase.from('workouts').select('date,day_type,total_volume,status').eq('user_id', uid).order('date', { ascending: false }).limit(4);
+        workouts = data;
+        if (workouts) toCache(ckey, workouts);
+      }
+      if (workouts) ctx.push(`RECENT WORKOUTS: ${JSON.stringify(workouts)}`);
+    }
+
+    // Load InBody only if body comp question
+    if (intent.needsBodyComp) {
+      const ckey = 'inbody';
+      let scans = fromCache(ckey);
+      if (!scans) {
+        const { data } = await supabase.from('profiles').select('targets').eq('id', uid).maybeSingle();
+        scans = data;
+        if (scans) toCache(ckey, scans);
+      }
+      if (scans) ctx.push(`PROFILE/TARGETS: ${JSON.stringify(scans)}`);
+    }
+
+    return ctx.join('\n\n');
+  };
+
+  // ─── Groq API call ──────────────────────────────────────────────────────────
+  const callGroq = async (msgs: GroqMessage[]): Promise<any> => {
+    const key = getApiKey();
+    if (!key) throw new Error('VITE_GROQ_API_KEY not set in environment');
+    const res = await fetch(GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: MODEL, messages: msgs, tools: GROQ_TOOLS, tool_choice: 'auto', temperature: 0.15, max_tokens: 1024 })
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(JSON.stringify(e)); }
+    return res.json();
+  };
+
+  // ─── Init ───────────────────────────────────────────────────────────────────
   const initChat = async () => {
     if (initialized.current) return;
     initialized.current = true;
-
-    const key = getApiKey();
-    if (!key) {
-      setMessages([{ id: 'no-key', role: 'model', text: 'No API key found. Add VITE_GROQ_API_KEY to your Vercel environment variables.' }]);
+    if (!getApiKey()) {
+      setMessages([{ id: 'no-key', role: 'model', text: 'Add VITE_GROQ_API_KEY to Vercel environment variables to activate AI Coach.' }]);
       return;
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    userIdRef.current = session?.user?.id || null;
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      userIdRef.current = session?.user?.id || null;
-
-      // System message initializes the conversation
-      historyRef.current = [{
-        role: 'system',
-        content: `${SYSTEM_PROMPT}\n\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${userIdRef.current}`
-      }];
-
-      // Load saved UI messages (display only, don't replay)
-      if (userIdRef.current) {
-        const { data } = await supabase.from('ai_chat').select('messages').eq('user_id', userIdRef.current).maybeSingle();
-        if (data?.messages && (data.messages as any[]).length > 0) {
-          setMessages(data.messages);
-        } else {
-          setMessages([{ id: '1', role: 'model', text: `Connected via Groq (Llama 3.3 70B). Full dashboard access active. What do you need?` }]);
-        }
+    if (userIdRef.current) {
+      const { data } = await supabase.from('ai_chat').select('messages').eq('user_id', userIdRef.current).maybeSingle();
+      if (data?.messages && (data.messages as any[]).length > 0) {
+        setMessages(data.messages as AiMessage[]);
+        // Rebuild history for Groq from saved messages
+        historyRef.current = (data.messages as AiMessage[]).map(m => ({
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.text
+        }));
+      } else {
+        setMessages([{ id: '1', role: 'model', text: "Coach connected. Ready to work — what's the plan?" }]);
       }
-    } catch (e: any) {
-      setMessages([{ id: 'error', role: 'model', text: `Failed to connect: ${e.message}` }]);
     }
   };
 
-  const saveHistory = async (newMessages: AiMessage[]) => {
+  // ─── Save ───────────────────────────────────────────────────────────────────
+  const saveHistory = async (msgs: AiMessage[]) => {
     if (!userIdRef.current) return;
-    const trimmed = newMessages.slice(-30);
+    const trimmed = msgs.slice(-30);
     const { data } = await supabase.from('ai_chat').select('id').eq('user_id', userIdRef.current).maybeSingle();
     if (data) {
       await supabase.from('ai_chat').update({ messages: trimmed, updated_at: new Date().toISOString() }).eq('id', data.id);
@@ -193,77 +250,71 @@ export const useAiAgent = () => {
     }
   };
 
+  // ─── Send message ────────────────────────────────────────────────────────────
   const sendMessage = async (text: string) => {
     if (!initialized.current) await initChat();
     if (!getApiKey()) return;
 
     const userMsg: AiMessage = { id: crypto.randomUUID(), role: 'user', text };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Add user message to Groq history
-    historyRef.current = [...historyRef.current, { role: 'user', content: text }];
-
     try {
-      let currentHistory = [...historyRef.current];
-      let finalText = '';
+      // 1. Load relevant context INVISIBLY before first API call
+      const extraContext = await loadContext(text);
+      const systemMsg: GroqMessage = {
+        role: 'system',
+        content: buildSystemPrompt(userIdRef.current, extraContext)
+      };
 
-      // Agentic loop — keeps going until no more tool calls
+      // Build full message list: system + history + new user message
+      const userGroqMsg: GroqMessage = { role: 'user', content: text };
+      let currentHistory: GroqMessage[] = [systemMsg, ...historyRef.current, userGroqMsg];
+
+      // 2. Agentic loop — all tool calls happen silently
+      let finalText = '';
       while (true) {
         const groqRes = await callGroq(currentHistory);
         const choice = groqRes.choices[0];
         const assistantMsg = choice.message;
-
-        // Add assistant response to history
         currentHistory = [...currentHistory, assistantMsg];
 
         if (choice.finish_reason === 'tool_calls' && assistantMsg.tool_calls?.length > 0) {
-          // Execute all tool calls in this response
-          const toolResultMsgs: GroqMessage[] = [];
-
+          const toolResults: GroqMessage[] = [];
           for (const tc of assistantMsg.tool_calls) {
-            const toolName = tc.function.name;
-            const toolArgs = JSON.parse(tc.function.arguments || '{}');
-
-            setMessages(prev => [...prev, {
-              id: crypto.randomUUID(),
-              role: 'model',
-              text: `⚡ ${toolName.replace(/_/g, ' ')}...`,
-              isAction: true
-            }]);
-
-            const result = await executeToolCall(toolName, toolArgs);
-            toolResultMsgs.push({
-              role: 'tool',
-              tool_call_id: tc.id,
-              content: result
-            });
+            const result = await runDbTool(tc.function.name, JSON.parse(tc.function.arguments || '{}'));
+            toolResults.push({ role: 'tool', tool_call_id: tc.id, content: result });
           }
-
-          // Add all tool results to history and loop
-          currentHistory = [...currentHistory, ...toolResultMsgs];
+          currentHistory = [...currentHistory, ...toolResults];
         } else {
-          // No more tool calls — we have the final answer
           finalText = assistantMsg.content || 'Done.';
           break;
         }
       }
 
-      // Save the final history
-      historyRef.current = currentHistory;
+      // 3. Update history ref (strip system message for next turns)
+      historyRef.current = [...historyRef.current, userGroqMsg, { role: 'assistant', content: finalText }];
+      // Keep last 20 turns to avoid context bloat
+      if (historyRef.current.length > 40) historyRef.current = historyRef.current.slice(-40);
 
-      const finalMessages = [...newMessages, { id: crypto.randomUUID(), role: 'model', text: finalText } as AiMessage];
-      setMessages(finalMessages);
-      saveHistory(finalMessages);
-
+      const modelMsg: AiMessage = { id: crypto.randomUUID(), role: 'model', text: finalText };
+      setMessages(prev => {
+        const next = [...prev, modelMsg];
+        saveHistory(next);
+        return next;
+      });
     } catch (e: any) {
-      console.error(e);
-      setMessages([...newMessages, { id: crypto.randomUUID(), role: 'model', text: `Error: ${e.message}` }]);
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: `Error: ${e.message}` }]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  return { messages, isTyping, sendMessage, initChat, currentModel: MODEL, clearHistory: () => { setMessages([]); historyRef.current = []; } };
+  const clearHistory = () => {
+    setMessages([]);
+    historyRef.current = [];
+    cache['schedule'] = { data: null, ts: 0 };
+  };
+
+  return { messages, isTyping, sendMessage, initChat, currentModel: MODEL, clearHistory };
 };
