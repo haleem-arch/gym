@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { Play, Utensils, Droplets } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const TodayView = () => {
+  const navigate = useNavigate();
   // Mock data for Phase 1 UI building
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const plan = {
@@ -50,7 +52,10 @@ const TodayView = () => {
           ))}
         </ul>
 
-        <button className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98]">
+        <button 
+          onClick={() => navigate('/workout', { state: { startNew: true, plan } })}
+          className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98]"
+        >
           <Play size={18} fill="currentColor" />
           START WORKOUT
         </button>
