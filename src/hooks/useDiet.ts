@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface DailyMacros {
@@ -7,6 +7,7 @@ export interface DailyMacros {
   carbs: number;
   fat: number;
   water?: number;
+  completed?: boolean;
 }
 
 export interface DietLog {
@@ -33,53 +34,44 @@ export interface DietMeal {
 }
 
 export const useDiet = () => {
-  const [log, setLog] = useState<DietLog | null>(null);
-  const [meals, setMeals] = useState<DietMeal[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Targets (Hardcoded for now as requested)
-  const targets = {
-    kcal: 2400,
-    protein: 160,
-    carbs: 250,
-    fat: 80
-  };
-
-  const getLocalDateString = () => {
-    const d = new Date();
+  const getLocalDateString = (d: Date = new Date()) => {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   };
 
-  const loadTodayData = useCallback(async () => {
+  const [activeDate, setActiveDate] = useState<Date>(new Date());
+  const activeDateStr = useMemo(() => getLocalDateString(activeDate), [activeDate]);
+
+  const [log, setLog] = useState<DietLog | null>(null);
+  const [meals, setMeals] = useState<DietMeal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [targets, setTargets] = useState({
+    kcal: 2400,
+    protein: 160,
+    carbs: 240, // Corrected from 250
+    fat: 70     // Corrected from 80
+  });
+
+  const loadDateData = useCallback(async () => {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setLoading(false);
+      return;
+    }
 
-    const todayStr = getLocalDateString();
+    // Try to load profile targets
+    const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+    if (profile && profile.targets && profile.targets.kcal) {
+      setTargets(profile.targets);
+    }
 
-    // 1. Fetch or create diet_log for today
+    // 1. Fetch diet_log for active date
     let { data: dietLog } = await supabase
       .from('diet_logs')
       .select('*')
       .eq('user_id', session.user.id)
-      .eq('date', todayStr)
+      .eq('date', activeDateStr)
       .maybeSingle();
-
-    if (!dietLog) {
-      // Create new log
-      const { data: newLog, error: insertError } = await supabase
-        .from('diet_logs')
-        .insert({
-          user_id: session.user.id,
-          date: todayStr,
-          daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0 }
-        })
-        .select()
-        .single();
-      
-      if (insertError) console.error("Error creating log:", insertError);
-      dietLog = newLog;
-    }
 
     if (dietLog) {
       setLog(dietLog);
@@ -94,16 +86,51 @@ export const useDiet = () => {
       if (mealsError) console.error("Error fetching meals:", mealsError);
       if (mealsData) {
         setMeals(mealsData);
-        // Automatically recalculate totals to ensure sync, passing existing water
-        recalculateTotals(dietLog.id, mealsData, dietLog.daily_totals?.water || 0);
+        // Automatically recalculate totals to ensure sync, passing existing water & completed status
+        recalculateTotals(dietLog.id, mealsData, dietLog.daily_totals?.water || 0, dietLog.daily_totals?.completed);
       }
+    } else {
+      setLog(null);
+      setMeals([]);
     }
 
     setLoading(false);
-  }, []);
+  }, [activeDateStr]);
 
-  const recalculateTotals = async (logId: string, currentMeals: DietMeal[], existingWater?: number) => {
-    let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0, water: existingWater || 0 };
+  const startDay = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    setLoading(true);
+    const { data: newLog, error: insertError } = await supabase
+      .from('diet_logs')
+      .insert({
+        user_id: session.user.id,
+        date: activeDateStr,
+        daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+      })
+      .select()
+      .single();
+    
+    if (insertError) console.error("Error starting day:", insertError);
+    if (newLog) {
+      setLog(newLog);
+      setMeals([]);
+    }
+    setLoading(false);
+  };
+
+  const toggleDayCompletion = async () => {
+    if (!log) return;
+    const isCompleted = log.daily_totals.completed || false;
+    const updatedTotals = { ...log.daily_totals, completed: !isCompleted };
+    
+    setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
+    await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
+  };
+
+  const recalculateTotals = async (logId: string, currentMeals: DietMeal[], existingWater?: number, existingCompleted?: boolean) => {
+    let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0, water: existingWater || 0, completed: existingCompleted || false };
     
     currentMeals.forEach(meal => {
       meal.items.forEach(item => {
@@ -121,6 +148,7 @@ export const useDiet = () => {
       carbs: Math.round(totals.carbs * 10) / 10,
       fat: Math.round(totals.fat * 10) / 10,
       water: totals.water,
+      completed: totals.completed
     };
 
     // Update state
@@ -168,17 +196,29 @@ export const useDiet = () => {
     await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
   };
 
+  const resetWater = async () => {
+    if (!log) return;
+    const updatedTotals = { ...log.daily_totals, water: 0 };
+    setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
+    await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
+  };
+
   useEffect(() => {
-    loadTodayData();
-  }, [loadTodayData]);
+    loadDateData();
+  }, [loadDateData]);
 
   return {
     log,
     meals,
     loading,
     targets,
+    activeDate,
+    setActiveDate,
     createMeal,
     logWater,
-    reload: loadTodayData
+    resetWater,
+    startDay,
+    toggleDayCompletion,
+    reload: loadDateData
   };
 };

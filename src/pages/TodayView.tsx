@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
 
+import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+
 const TodayView = () => {
   const navigate = useNavigate();
   const { workout } = useActiveWorkout();
-  const { log, targets, logWater } = useDiet();
+  const { log, targets, logWater, resetWater } = useDiet();
 
   // Mock data for Phase 1 UI building
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -104,21 +106,27 @@ const TodayView = () => {
 
         <motion.div 
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
+          className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden"
         >
-           <div className="flex items-center gap-2 text-gray-400 mb-2">
-            <Droplets size={16} />
-            <span className="text-xs font-medium uppercase tracking-wider">Hydration</span>
-          </div>
-          <div className="flex-1 flex items-end justify-center pb-2">
-             <span className="text-2xl font-bold">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal"> / {waterTarget}L</span></span>
-          </div>
-           <button 
-             onClick={() => logWater(0.25)} 
-             className="w-full bg-gray-800 hover:bg-gray-700 active:scale-95 text-xs font-semibold py-2 rounded-lg transition-all"
-           >
-            + 250ml WATER
-          </button>
+           <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
+             <div className="p-4 flex flex-col h-full bg-surface">
+               <div className="flex items-center justify-between text-gray-400 mb-2">
+                 <div className="flex items-center gap-2">
+                   <Droplets size={16} />
+                   <span className="text-xs font-medium uppercase tracking-wider">Hydration</span>
+                 </div>
+               </div>
+               <div className="flex-1 flex items-end justify-center pb-2">
+                 <span className="text-2xl font-bold">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal"> / {waterTarget}L</span></span>
+               </div>
+               <button 
+                 onClick={() => logWater(0.25)} 
+                 className="w-full bg-gray-800 hover:bg-gray-700 active:scale-95 text-xs font-semibold py-2 rounded-lg transition-all"
+               >
+                 + 250ml WATER
+               </button>
+             </div>
+           </SwipeToDeleteRow>
         </motion.div>
       </div>
 
