@@ -203,9 +203,39 @@ export const useAiAgent = () => {
              lastError = "Missing oldExercise or newExercise";
              continue;
            }
-           window.dispatchEvent(new CustomEvent('replace_active_exercise', { 
-             detail: { oldName: action.oldExercise, newName: action.newExercise } 
-           }));
+           const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
+           if (!activeStr) {
+             allSuccess = false;
+             lastError = "No active workout found in memory";
+             continue;
+           }
+           try {
+             const activeWk = JSON.parse(activeStr);
+             const { data: newEx } = await supabase.from('exercises').select('*').eq('name', action.newExercise).single();
+             if (!newEx) {
+               allSuccess = false;
+               lastError = "Exercise not found in database";
+               continue;
+             }
+             activeWk.exercises = activeWk.exercises.map((ex: any) => {
+               if (ex.name.toLowerCase() === action.oldExercise!.toLowerCase()) {
+                 return {
+                   ...ex,
+                   id: newEx.id,
+                   name: newEx.name,
+                   muscle_group: newEx.muscle_group,
+                   tier: newEx.tier || 'A',
+                   cue: newEx.cue || '',
+                   rationale: newEx.rationale || ''
+                 };
+               }
+               return ex;
+             });
+             localStorage.setItem('athlete_dashboard_active_workout', JSON.stringify(activeWk));
+           } catch (e: any) {
+             allSuccess = false;
+             lastError = "Failed to update active workout";
+           }
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
           Object.entries(action.match).forEach(([k, v]) => { q = (q as any).eq(k, v); });
