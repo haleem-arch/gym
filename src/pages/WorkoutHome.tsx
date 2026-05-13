@@ -91,7 +91,18 @@ const WorkoutHome = () => {
       if (dayType === 'REST' || dayType === 'RUN') {
         setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
       } else if (planMap[dayType]) {
-        const targetNames = planMap[dayType];
+        // Fetch custom plan from database if it exists
+        const { data: customPlan } = await supabase
+          .from('user_workout_plans')
+          .select('exercises')
+          .eq('user_id', session.user.id)
+          .eq('plan_type', dayType)
+          .maybeSingle();
+
+        const targetNames = (customPlan?.exercises && customPlan.exercises.length > 0) 
+          ? customPlan.exercises 
+          : planMap[dayType];
+
         const { data: exData } = await supabase
           .from('exercises')
           .select('*')
@@ -108,7 +119,16 @@ const WorkoutHome = () => {
     };
     
     const timeout = setTimeout(() => loadData(), 500);
-    return () => clearTimeout(timeout);
+    
+    const handlePlanUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('plan_updated', handlePlanUpdated);
+    
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('plan_updated', handlePlanUpdated);
+    };
   }, [dayType]);
 
   const handleStartWorkout = async () => {

@@ -18,13 +18,15 @@ export interface AiMessage {
 }
 
 export interface DbAction {
-  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule';
+  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule' | 'update_workout_plan';
   table?: string;
   data?: any;
   match?: Record<string, any>;
   path?: string;
   date?: string;
   dayType?: string;
+  planType?: string;
+  exercises?: string[];
 }
 
 interface AiResponse {
@@ -73,6 +75,9 @@ WATER LOG EXAMPLE:
 SCHEDULE CHANGE EXAMPLE:
 {"reply":"Changed today to REST","actions":[{"type":"update_schedule","date":"${today}","dayType":"REST"}]}
 
+PLAN CHANGE EXAMPLE:
+{"reply":"Changed Leg Press to Leg Extension","actions":[{"type":"update_workout_plan","planType":"LEGS","exercises":["Leg Extension", "DB Romanian Deadlift", "DB Bulgarian Split Squat", "Seated Leg Curl", "45° Back Extension (BW/DB)", "Standing Calf Raise"]}]}
+
 RULES:
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
@@ -81,6 +86,7 @@ RULES:
 - For diet_meals, the "time" MUST be exactly formatted as "HH:MM:00" (e.g. "14:30:00"). Do NOT use ISO format.
 - For water/hydration, convert to ml and use water_logs (NOT diet_meals).
 - To change schedule, use type="update_schedule" and dayType="REST" | "PUSH" | "PULL" | "LEGS" | "RUN".
+- To modify a workout plan, use type="update_workout_plan" and provide the FULL LIST of exercises for that planType.
 - actions:[] if no change.`;
 };
 
@@ -160,6 +166,26 @@ export const useAiAgent = () => {
           } else {
              // Broadcast event to instantly update UI
              window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
+          }
+        } else if (action.type === 'update_workout_plan') {
+          if (!action.planType || !action.exercises) {
+            allSuccess = false;
+            lastError = "Missing planType or exercises";
+            continue;
+          }
+          const { error } = await supabase.from('user_workout_plans').upsert({
+            user_id: session.user.id,
+            plan_type: action.planType,
+            exercises: action.exercises
+          }, { onConflict: 'user_id, plan_type' });
+          
+          if (error) {
+             console.error("Supabase upsert plan error:", error);
+             allSuccess = false;
+             lastError = error.message || error.details || "Failed to update plan";
+          } else {
+            // Force reload of WorkoutHome by broadcasting an event (or user can refresh)
+            window.dispatchEvent(new CustomEvent('plan_updated', { detail: action.planType }));
           }
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
@@ -241,6 +267,23 @@ export const useAiAgent = () => {
       parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
       parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
     }
+
+    // Load custom workout plans
+    const { data: customPlans } = await supabase.from('user_workout_plans').select('plan_type, exercises').eq('user_id', uid);
+    
+    const defaultPlans = {
+      PUSH: ['Incline DB Press', 'Machine Chest Press', 'Lateral Raises', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
+      PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
+      LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
+    };
+
+    const currentPlans = { ...defaultPlans };
+    if (customPlans) {
+      customPlans.forEach(p => {
+        if (p.exercises && p.exercises.length > 0) currentPlans[p.plan_type as keyof typeof currentPlans] = p.exercises;
+      });
+    }
+    parts.push(`CURRENT_WORKOUT_PLANS: ${JSON.stringify(currentPlans)}`);
 
     return parts.join('\n');
   };
