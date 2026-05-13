@@ -4,8 +4,12 @@ import { useNavigate } from 'react-router-dom';
 
 const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-// gemma2-9b-it: fast, supports JSON mode, generous free limits
-const MODEL = 'gemma2-9b-it';
+// Model fallback chain — if one hits rate limit, auto-switch to next
+const MODELS = [
+  'gemma2-9b-it',          // primary: JSON mode support, good limits
+  'llama-3.1-8b-instant',  // fallback 1: 131k TPM
+  'mixtral-8x7b-32768',    // fallback 2: different pool of rate limits
+];
 
 export interface AiMessage {
   id: string;
@@ -126,42 +130,61 @@ export const useAiAgent = () => {
     return parts.join('\n');
   };
 
-  // ─── Single Groq call ──────────────────────────────────────────────────────
+  // ─── Groq call with model fallback chain ──────────────────────────────────
   const callGroq = async (userText: string, context: string): Promise<AiResponse> => {
     const key = getApiKey();
     if (!key) throw new Error('VITE_GROQ_API_KEY not set');
 
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT(userIdRef.current, context) },
-          { role: 'user', content: userText }
-        ],
-        temperature: 0.1,
-        max_tokens: 512,
-        response_format: { type: 'json_object' }
-      })
-    });
+    const msgs = [
+      { role: 'system', content: SYSTEM_PROMPT(userIdRef.current, context) },
+      { role: 'user', content: userText }
+    ];
 
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      const msg = JSON.stringify(e);
-      if (msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM')) {
-        throw new Error('RATE_LIMIT');
+    // Try each model in order — switch automatically on rate limit
+    for (let i = 0; i < MODELS.length; i++) {
+      const model = MODELS[i];
+      // mixtral doesn't support json_object mode
+      const supportsJson = model !== 'mixtral-8x7b-32768';
+
+      try {
+        const res = await fetch(GROQ_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify({
+            model,
+            messages: msgs,
+            temperature: 0.1,
+            max_tokens: 512,
+            ...(supportsJson ? { response_format: { type: 'json_object' } } : {})
+          })
+        });
+
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          const msg = JSON.stringify(e);
+          const isRateLimit = msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP');
+          if (isRateLimit && i < MODELS.length - 1) {
+            // Rate limited — silently try next model
+            continue;
+          }
+          throw new Error(isRateLimit ? 'RATE_LIMIT_ALL' : msg.slice(0, 100));
+        }
+
+        const data = await res.json();
+        const raw = data.choices[0].message.content;
+        try {
+          return JSON.parse(raw) as AiResponse;
+        } catch {
+          // Non-JSON response (mixtral) — wrap it
+          return { reply: raw.replace(/```json|```/g, '').trim(), actions: [] };
+        }
+      } catch (err: any) {
+        if (i < MODELS.length - 1 && !err.message?.startsWith('VITE_')) continue;
+        throw err;
       }
-      throw new Error(msg.slice(0, 100));
     }
 
-    const data = await res.json();
-    const raw = data.choices[0].message.content;
-    try {
-      return JSON.parse(raw) as AiResponse;
-    } catch {
-      return { reply: raw, actions: [] };
-    }
+    throw new Error('RATE_LIMIT_ALL');
   };
 
   // ─── Init ──────────────────────────────────────────────────────────────────
@@ -221,11 +244,11 @@ export const useAiAgent = () => {
         return next;
       });
     } catch (e: any) {
-      const isRate = e.message === 'RATE_LIMIT';
+      const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: 'model',
-        text: isRate ? '⏱️ Rate limit — wait 10 seconds and retry.' : `Error: ${e.message}`
+        text: isRate ? '⏱️ All 3 models rate-limited. Wait 60 seconds.' : `Error: ${e.message}`
       }]);
     } finally {
       setIsTyping(false);
