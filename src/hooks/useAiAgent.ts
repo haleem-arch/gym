@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyA469hM1KSfjhw-qatKuBz00TrmhnNGgnw";
 
 export interface AiMessage {
   id: string;
