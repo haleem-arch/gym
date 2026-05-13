@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { useSchedule } from './useSchedule';
 
 export interface DailyMacros {
   kcal: number;
@@ -41,15 +42,47 @@ export const useDiet = () => {
   const [activeDate, setActiveDate] = useState<Date>(new Date());
   const activeDateStr = useMemo(() => getLocalDateString(activeDate), [activeDate]);
 
+  const { dayType } = useSchedule(activeDateStr);
+
   const [log, setLog] = useState<DietLog | null>(null);
   const [meals, setMeals] = useState<DietMeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState({
     kcal: 2400,
     protein: 160,
-    carbs: 240, // Corrected from 250
-    fat: 70     // Corrected from 80
+    carbs: 240,
+    fat: 70
   });
+
+  // Effect to update targets when dayType changes
+  useEffect(() => {
+    const fetchAndAdjustTargets = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      let baseTargets = { kcal: 2400, protein: 160, carbs: 240, fat: 70 };
+      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+      
+      if (profile && profile.targets && profile.targets.kcal) {
+        baseTargets = profile.targets;
+      }
+
+      let adjustedTargets = { ...baseTargets };
+      
+      if (dayType === 'REST') {
+        adjustedTargets.kcal = 2100;
+        adjustedTargets.carbs = Math.round(baseTargets.carbs * 0.6); // ~140g
+        adjustedTargets.fat = Math.round(baseTargets.fat * 0.85); // ~60g
+      } else if (dayType === 'RUN') {
+        adjustedTargets.kcal = Math.round(baseTargets.kcal + 400); // 2800
+        adjustedTargets.carbs = Math.round(baseTargets.carbs + 100); // 340
+      }
+
+      setTargets(adjustedTargets);
+    };
+
+    fetchAndAdjustTargets();
+  }, [dayType]);
 
   const loadDateData = useCallback(async () => {
     setLoading(true);
@@ -57,12 +90,6 @@ export const useDiet = () => {
     if (!session) {
       setLoading(false);
       return;
-    }
-
-    // Try to load profile targets
-    const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
-    if (profile && profile.targets && profile.targets.kcal) {
-      setTargets(profile.targets);
     }
 
     // 1. Fetch diet_log for active date

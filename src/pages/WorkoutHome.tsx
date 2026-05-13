@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
+import { useSchedule } from '../hooks/useSchedule';
 import { Play, History, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
@@ -10,14 +11,23 @@ const WorkoutHome = () => {
   const navigate = useNavigate();
   const { workout, loadWorkout } = useActiveWorkout();
   
+  // Use today's schedule
+  const getLocalDateString = () => new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const { dayType } = useSchedule(getLocalDateString());
+
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
   const [inProgressWorkout, setInProgressWorkout] = useState<any>(null);
   const [todayPlan, setTodayPlan] = useState<any>({
     type: 'PUSH',
-    title: 'Push (Chest/Shoulders/Triceps)',
+    title: 'Workout Session',
     exercises: []
   });
   const [loading, setLoading] = useState(true);
+
+  // Sync todayPlan type with dayType from schedule
+  useEffect(() => {
+    setTodayPlan((prev: any) => ({ ...prev, type: dayType, title: `${dayType} Session` }));
+  }, [dayType]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,7 +60,8 @@ const WorkoutHome = () => {
         setInProgressWorkout(inProgressData[0]);
       }
 
-      // 3. Fetch real exercises
+      // 3. Fetch real exercises based on day_type (mocked to just fetch 4 for now)
+      // We will enhance this later when we have specific day type mappings
       const { data: exData } = await supabase
         .from('exercises')
         .select('*')
