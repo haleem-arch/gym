@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Search, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
-import { useDiet, DietMeal, DietMealItem } from '../hooks/useDiet';
+import { useDiet, type DietMeal, type DietMealItem } from '../hooks/useDiet';
 
 const DietMealBuilder = () => {
   const { id } = useParams();
@@ -15,7 +15,7 @@ const DietMealBuilder = () => {
 
   const fetchMeal = async () => {
     if (!id) return;
-    const { data, error } = await supabase.from('diet_meals').select('*').eq('id', id).single();
+    const { data } = await supabase.from('diet_meals').select('*').eq('id', id).single();
     if (data) setMeal(data);
     setLoading(false);
   };

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { useDiet } from '../hooks/useDiet';
 import { MacroProgressBar } from '../components/MacroProgressBar';
-import { Plus, ChevronRight, Utensils } from 'lucide-react';
+import { Plus, Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { supabase } from '../lib/supabase';

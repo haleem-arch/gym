@@ -57,7 +57,7 @@ export const useDiet = () => {
     const todayStr = getLocalDateString();
 
     // 1. Fetch or create diet_log for today
-    let { data: dietLog, error: logError } = await supabase
+    let { data: dietLog } = await supabase
       .from('diet_logs')
       .select('*')
       .eq('user_id', session.user.id)

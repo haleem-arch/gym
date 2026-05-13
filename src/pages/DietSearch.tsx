@@ -27,7 +27,7 @@ const DietSearch = () => {
       setLoading(true);
 
       // Search by name (ILIKE) or exact barcode match
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('food_inventory')
         .select('*')
         .or(`name.ilike.%${query}%,barcode.eq.${query}`)
