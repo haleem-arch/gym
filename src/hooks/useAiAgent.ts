@@ -182,7 +182,7 @@ export const useAiAgent = () => {
 
     try {
       if (!chatSessionRef.current) throw new Error("Brain not initialized");
-      let response = await chatSessionRef.current.sendMessage(text);
+      let response = await chatSessionRef.current.sendMessage({ message: text });
       
       // Handle tool calls recursively
       while (response.functionCalls && response.functionCalls.length > 0) {
@@ -199,9 +199,9 @@ export const useAiAgent = () => {
         const toolResult = await executeToolCall(functionCall);
         
         // Send result back to model
-        response = await chatSessionRef.current.sendMessage(
-          [{ functionResponse: { name: functionCall.name, response: toolResult } }]
-        );
+        response = await chatSessionRef.current.sendMessage({
+          message: [{ functionResponse: { name: functionCall.name, response: toolResult } }]
+        });
       }
 
       const modelText = response.text || 'Done.';
