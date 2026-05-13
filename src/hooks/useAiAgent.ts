@@ -78,6 +78,7 @@ RULES:
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
 - Use diet_meals for caloric foods/drinks.
+- For diet_meals, the "time" MUST be exactly formatted as "HH:MM:00" (e.g. "14:30:00"). Do NOT use ISO format.
 - For water/hydration, convert to ml and use water_logs (NOT diet_meals).
 - To change schedule, use type="update_schedule" and dayType="REST" | "PUSH" | "PULL" | "LEGS" | "RUN".
 - actions:[] if no change.`;

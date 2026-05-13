@@ -210,9 +210,10 @@ const WorkoutTracker = () => {
         <button 
           onClick={async () => {
             if (window.confirm('Are you sure you want to discard this workout? This cannot be undone.')) {
-              if (workout?.id) {
-                // Delete the in-progress session so it doesn't linger on WorkoutHome
-                await supabase.from('workouts').delete().eq('id', workout.id).eq('status', 'in_progress');
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user?.id) {
+                // Delete ALL in_progress sessions for this user to completely clear ghost sessions
+                await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
               }
               endWorkout();
               navigate('/workout', { replace: true });
