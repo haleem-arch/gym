@@ -60,15 +60,48 @@ const WorkoutHome = () => {
         setInProgressWorkout(inProgressData[0]);
       }
 
-      // 3. Fetch real exercises based on day_type (mocked to just fetch 4 for now)
-      // We will enhance this later when we have specific day type mappings
-      const { data: exData } = await supabase
-        .from('exercises')
-        .select('*')
-        .limit(4);
-        
-      if (exData && exData.length > 0) {
-        setTodayPlan((prev: any) => ({ ...prev, exercises: exData }));
+      // 3. Fetch real exercises based on day_type
+      const planMap: Record<string, string[]> = {
+        PUSH: [
+          'Incline DB Bench Press (45°)',
+          'DB Shoulder Press (seated neutral)',
+          'Incline DB Y-Raise (20-30°)',
+          'Cable Chest Fly (low pulley)',
+          'Overhead Cable Extension (rope)',
+          'DB Lateral Raise (elbow-lead)'
+        ],
+        PULL: [
+          'Lat Pulldown (wide grip)',
+          'Chest-Supported DB Row',
+          'Sideways One-Arm Rear Delt Fly',
+          'Face Pull (rope eye height)',
+          'Incline DB Curl - Bayesian',
+          'Zottman Curl'
+        ],
+        LEGS: [
+          'Leg Press (feet high for glutes)',
+          'DB Romanian Deadlift',
+          'DB Bulgarian Split Squat',
+          'Seated Leg Curl',
+          '45° Back Extension (BW/DB)',
+          'Standing Calf Raise'
+        ]
+      };
+
+      if (dayType === 'REST' || dayType === 'RUN') {
+        setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
+      } else if (planMap[dayType]) {
+        const targetNames = planMap[dayType];
+        const { data: exData } = await supabase
+          .from('exercises')
+          .select('*')
+          .in('name', targetNames);
+          
+        if (exData && exData.length > 0) {
+          // Sort to match the plan's exact order
+          const sorted = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
+          setTodayPlan((prev: any) => ({ ...prev, exercises: sorted }));
+        }
       }
       
       setLoading(false);
