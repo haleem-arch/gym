@@ -140,13 +140,17 @@ alter table public.ai_chat enable row level security;
 create policy "Users can view own profile." on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile." on public.profiles for update using (auth.uid() = id);
 
--- Exercises: anyone authenticated can read (global).
+-- Exercises: anyone authenticated can read/write (global library).
 create policy "Anyone can read exercises." on public.exercises for select using (auth.role() = 'authenticated');
 create policy "Users can insert exercises." on public.exercises for insert with check (auth.role() = 'authenticated');
+create policy "Users can update exercises." on public.exercises for update using (auth.role() = 'authenticated');
+create policy "Users can delete exercises." on public.exercises for delete using (auth.role() = 'authenticated');
 
 -- Food Inventory: read global presets (user_id is null) OR own items.
 create policy "Read global or own food." on public.food_inventory for select using (auth.role() = 'authenticated' and (user_id is null or user_id = auth.uid()));
 create policy "Insert own food." on public.food_inventory for insert with check (auth.uid() = user_id);
+create policy "Update own food." on public.food_inventory for update using (auth.uid() = user_id);
+create policy "Delete own food." on public.food_inventory for delete using (auth.uid() = user_id);
 
 -- Standard User Policies
 create policy "All schedules operations." on public.schedules for all using (auth.uid() = user_id);
