@@ -243,7 +243,7 @@ const DietSearch = () => {
       {/* Log Amount Bottom Sheet */}
       <AnimatePresence>
         {selectedFood && (
-          <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div className="fixed inset-0 z-[100] flex flex-col justify-end">
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
