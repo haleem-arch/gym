@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Search, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Plus, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DietSearch = () => {
@@ -26,14 +26,50 @@ const DietSearch = () => {
       }
       setLoading(true);
 
-      // Search by name (ILIKE) or exact barcode match
+      let localResults: any[] = [];
       const { data } = await supabase
         .from('food_inventory')
         .select('*')
         .or(`name.ilike.%${query}%,barcode.eq.${query}`)
         .limit(20);
 
-      if (data) setResults(data);
+      if (data) localResults = data;
+
+      // OpenFoodFacts API Integration
+      // If query is a barcode (only digits, length >= 6) and we don't have an exact match locally
+      const isNumericBarcode = /^\d{6,}$/.test(query.trim());
+      const hasExactLocalMatch = localResults.some(item => item.barcode === query.trim());
+
+      if (isNumericBarcode && !hasExactLocalMatch) {
+        try {
+          const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${query.trim()}.json`);
+          const apiData = await response.json();
+          
+          if (apiData.status === 1 && apiData.product) {
+            const p = apiData.product;
+            const n = p.nutriments || {};
+            
+            // Some products don't have per 100g values if they only have per serving. 
+            // We'll fallback to 0 if missing.
+            const globalProduct = {
+              id: 'api_' + query.trim(),
+              name: p.product_name || 'Unknown Global Product',
+              barcode: query.trim(),
+              kcal_per_100g: Number(n['energy-kcal_100g']) || 0,
+              protein: Number(n.proteins_100g) || 0,
+              carbs: Number(n.carbohydrates_100g) || 0,
+              fat: Number(n.fat_100g) || 0,
+              source: 'api' // special flag for UI
+            };
+            
+            localResults = [globalProduct, ...localResults];
+          }
+        } catch (err) {
+          console.error("OpenFoodFacts API Error:", err);
+        }
+      }
+
+      setResults(localResults);
       setLoading(false);
     };
 
@@ -52,6 +88,39 @@ const DietSearch = () => {
       return;
     }
 
+    let foodId = selectedFood.id;
+
+    // If it's an API product, save it to Supabase first!
+    if (selectedFood.source === 'api') {
+      const { data: { session } } = await supabase.auth.getSession();
+      const newLocalFood = {
+        user_id: session?.user?.id || null,
+        name: selectedFood.name,
+        barcode: selectedFood.barcode,
+        kcal_per_100g: selectedFood.kcal_per_100g,
+        protein: selectedFood.protein,
+        carbs: selectedFood.carbs,
+        fat: selectedFood.fat,
+        source: 'barcode' // Store as barcode so it's a permanent local item now
+      };
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('food_inventory')
+        .insert(newLocalFood)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Error saving API food to DB:", insertError);
+        alert("Failed to save product to local inventory.");
+        setIsAdding(false);
+        return;
+      }
+      if (inserted) {
+        foodId = inserted.id; // Use the real DB UUID
+      }
+    }
+
     const multiplier = amount / 100;
     const calculatedMacros = {
       kcal: selectedFood.kcal_per_100g * multiplier,
@@ -62,7 +131,7 @@ const DietSearch = () => {
 
     const newItem = {
       id: crypto.randomUUID(),
-      food_id: selectedFood.id,
+      food_id: foodId,
       name: selectedFood.name,
       grams: amount,
       macros: calculatedMacros
@@ -128,12 +197,12 @@ const DietSearch = () => {
           </div>
         ) : results.length === 0 ? (
           <div className="p-8 text-center flex flex-col items-center text-gray-500 gap-2 mt-10">
-            <p className="text-sm">No results found for "{query}".</p>
+            <p className="text-sm mb-4">No results found for "{query}".</p>
             <button 
               onClick={() => navigate('/diet/food/new')}
-              className="mt-2 text-primary font-bold"
+              className="bg-surface border border-gray-700 text-primary font-bold py-3 px-6 rounded-xl flex items-center gap-2 mx-auto"
             >
-              + Create New Food
+              <Plus size={18} /> Create New Food
             </button>
           </div>
         ) : (
@@ -145,13 +214,22 @@ const DietSearch = () => {
                 className="p-4 bg-background hover:bg-surface transition-colors cursor-pointer active:scale-[0.98]"
               >
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-bold text-white">{food.name}</h3>
-                  <span className="text-primary font-bold">{Math.round(food.kcal_per_100g)} <span className="text-xs font-normal text-gray-500">kcal/100g</span></span>
+                  <h3 className="font-bold text-white flex items-center gap-2">
+                    {food.name}
+                    {food.source === 'api' && (
+                      <span className="bg-purple-900/40 text-purple-400 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-800/50">
+                        <Globe size={10} /> Global API
+                      </span>
+                    )}
+                  </h3>
+                  <span className="text-primary font-bold whitespace-nowrap ml-2">
+                    {Math.round(food.kcal_per_100g)} <span className="text-xs font-normal text-gray-500">kcal/100g</span>
+                  </span>
                 </div>
-                <div className="flex gap-3 text-xs text-gray-400">
-                  <span>P: {food.protein}g</span>
-                  <span>C: {food.carbs}g</span>
-                  <span>F: {food.fat}g</span>
+                <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                  <span>P: {Math.round(food.protein)}g</span>
+                  <span>C: {Math.round(food.carbs)}g</span>
+                  <span>F: {Math.round(food.fat)}g</span>
                 </div>
                 {food.source === 'preset' && (
                   <span className="inline-block mt-2 text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded">Verified Preset</span>

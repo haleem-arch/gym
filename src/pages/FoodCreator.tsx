@@ -144,7 +144,7 @@ const FoodCreator = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-gray-800 z-10 max-w-[390px] mx-auto">
+        <div className="mt-8 mb-8">
           <button 
             onClick={handleSave}
             disabled={loading}
