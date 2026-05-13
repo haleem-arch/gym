@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
 
 export interface AiMessage {
   id: string;
@@ -74,11 +74,18 @@ export const useAiAgent = () => {
   const navigate = useNavigate();
   const chatSessionRef = useRef<any>(null);
 
-  const initChat = async () => {
+  const initChat = async (providedKey?: string) => {
     if (chatSessionRef.current) return;
     
+    const keyToUse = providedKey || getApiKey();
+    
+    if (!keyToUse) {
+      setMessages([{ id: 'no-key', role: 'model', text: "API Key missing! Since Vercel doesn't have your key, please paste your Gemini API Key here in the chat to connect. It will be saved locally on your device." }]);
+      return;
+    }
+
     try {
-      const ai = new GoogleGenAI({ apiKey: API_KEY });
+      const ai = new GoogleGenAI({ apiKey: keyToUse });
       const { data: { session } } = await supabase.auth.getSession();
       
       const contextPrompt = `${SYSTEM_PROMPT}\n\nCURRENT CONTEXT:\nDate: ${new Date().toISOString().split('T')[0]}\nUser ID: ${session?.user?.id}`;
@@ -92,19 +99,22 @@ export const useAiAgent = () => {
         }
       });
       
+      if (providedKey) {
+        localStorage.setItem('gemini_api_key', providedKey);
+      }
+
       // Load history
       if (session?.user?.id) {
         const { data } = await supabase.from('ai_chat').select('messages').eq('user_id', session.user.id).maybeSingle();
         if (data?.messages && data.messages.length > 0) {
           setMessages(data.messages);
-          // Note: Full history reconstruction for the genai client is complex, we just keep UI history for now
-          // and let the agent rely on current context queries.
         } else {
           setMessages([{ id: '1', role: 'model', text: "I'm connected and have full control of your dashboard. What's the plan for today?" }]);
         }
       }
     } catch (e: any) {
       console.error("Failed to init AI:", e);
+      setMessages([{ id: 'error', role: 'model', text: `Failed to initialize brain: ${e.message}` }]);
     }
   };
 
@@ -133,7 +143,6 @@ export const useAiAgent = () => {
     if (name === 'execute_database_query') {
       const { action, table, payload, select_columns = '*' } = args;
       
-      // Auto-inject user_id for inserts if table requires it and it's missing
       if (action === 'insert' && typeof payload === 'object' && !Array.isArray(payload) && !payload.user_id && table !== 'exercises') {
         payload.user_id = session.user.id;
       }
@@ -147,13 +156,10 @@ export const useAiAgent = () => {
         } else if (action === 'insert') {
           result = await supabase.from(table).insert(payload).select();
         } else if (action === 'update') {
-          // Need an ID or match criteria. Assuming payload isn't the match, wait, payload needs to separate data vs match.
-          // Since the tool definition only has payload, let's assume update requires { id: ... } in payload.
           if (payload.id) {
             const { id, ...updates } = payload;
             result = await supabase.from(table).update(updates).eq('id', id).select();
           } else {
-             // If they provide match criteria in a different way, this might fail, but let's assume they provide ID
             return { error: "Update requires 'id' in payload" };
           }
         } else if (action === 'delete') {
@@ -173,15 +179,27 @@ export const useAiAgent = () => {
   };
 
   const sendMessage = async (text: string) => {
-    if (!chatSessionRef.current) await initChat();
+    let keyProvidedNow = false;
+
+    if (!chatSessionRef.current) {
+      if (!getApiKey() && text.startsWith('AIzaSy')) {
+        setMessages([...messages, { id: crypto.randomUUID(), role: 'user', text: "🔑 Providing API Key..." }]);
+        await initChat(text);
+        keyProvidedNow = true;
+      } else {
+        await initChat();
+      }
+    }
     
+    if (!chatSessionRef.current) return; // Still failed to init
+    if (keyProvidedNow) return; // Don't send the key as a message to the AI
+
     const userMsg: AiMessage = { id: crypto.randomUUID(), role: 'user', text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsTyping(true);
 
     try {
-      if (!chatSessionRef.current) throw new Error("Brain not initialized");
       let response = await chatSessionRef.current.sendMessage({ message: text });
       
       // Handle tool calls recursively
@@ -206,7 +224,6 @@ export const useAiAgent = () => {
 
       const modelText = response.text || 'Done.';
       
-      // Filter out action messages for final state to keep it clean, or keep them. Let's keep them but faded.
       const finalMessages = [...newMessages, { id: crypto.randomUUID(), role: 'model', text: modelText } as AiMessage];
       setMessages(finalMessages);
       saveHistory(finalMessages);
