@@ -3,7 +3,9 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
+const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
+// Clear any stale cached key from localStorage that may be suspended
+try { localStorage.removeItem('gemini_api_key'); } catch (_) {}
 
 // Model fallback chain — auto-switches on quota exhaustion
 const MODEL_CHAIN = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
@@ -106,7 +108,7 @@ export const useAiAgent = () => {
 
       chatSessionRef.current = createSession(MODEL_CHAIN[0]);
 
-      if (providedKey) localStorage.setItem('gemini_api_key', providedKey);
+      // Do NOT save to localStorage — keys get suspended and get stuck in browsers
 
       // Load saved history (UI only — no replay cost)
       if (userIdRef.current) {
@@ -183,13 +185,7 @@ export const useAiAgent = () => {
     let keyProvidedNow = false;
 
     if (!chatSessionRef.current) {
-      if (!getApiKey() && text.startsWith('AIzaSy')) {
-        setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text: '🔑 Connecting with API Key...' }]);
-        await initChat(text);
-        keyProvidedNow = true;
-      } else {
-        await initChat();
-      }
+      await initChat();
     }
 
     if (!chatSessionRef.current) return;
