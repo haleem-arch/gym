@@ -118,13 +118,42 @@ export const useAiAgent = () => {
 
     if (intent.needsNutrition) {
       const today = new Date().toISOString().split('T')[0];
-      let log = fromCache(`diet_${today}`);
+      const ckey = `diet_${today}`;
+      let log = fromCache(ckey);
+
       if (!log) {
-        const { data } = await supabase.from('diet_logs').select('id,daily_totals').eq('user_id', uid).eq('date', today).maybeSingle();
-        log = data;
-        if (log) toCache(`diet_${today}`, log);
+        // Try to get existing log
+        const { data: existing } = await supabase
+          .from('diet_logs')
+          .select('id,daily_totals')
+          .eq('user_id', uid)
+          .eq('date', today)
+          .maybeSingle();
+
+        if (existing) {
+          log = existing;
+        } else {
+          // Auto-create today's diet log so AI always has a valid ID
+          const { data: created } = await supabase
+            .from('diet_logs')
+            .insert({
+              user_id: uid,
+              date: today,
+              daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0 }
+            })
+            .select('id,daily_totals')
+            .single();
+          log = created;
+        }
+        if (log) toCache(ckey, log);
       }
-      if (log) parts.push(`TODAY_DIET: ${JSON.stringify(log)}`);
+
+      if (log) {
+        // Give AI the exact ID to use — no guessing
+        parts.push(`TODAY_DIET_LOG_ID: ${log.id}`);
+        parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
+        parts.push(`IMPORTANT: To log a meal, insert into diet_meals with diet_log_id="${log.id}"`);
+      }
     }
 
     return parts.join('\n');
