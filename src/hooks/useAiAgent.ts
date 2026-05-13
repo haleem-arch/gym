@@ -7,8 +7,8 @@ const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
 // Clear any stale cached key from localStorage that may be suspended
 try { localStorage.removeItem('gemini_api_key'); } catch (_) {}
 
-// Model fallback chain — auto-switches on quota exhaustion
-const MODEL_CHAIN = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+// Model fallback chain — 1.5-flash = 1500 free req/day!
+const MODEL_CHAIN = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.0-pro'];
 const isQuotaError = (e: any) => {
   const msg = JSON.stringify(e?.message || e || '');
   return msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
