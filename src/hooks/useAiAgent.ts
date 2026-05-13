@@ -83,15 +83,7 @@ RULES:
 - actions:[] if no change.`;
 };
 
-// ─── Intent detection ─────────────────────────────────────────────────────────
-const detectIntent = (text: string) => {
-  const t = text.toLowerCase();
-  return {
-    needsNutrition: /protein|calor|kcal|carb|fat|food|eat|meal|diet|macro|water|log/.test(t),
-    needsSchedule: /schedule|plan|week|today|tomorrow|when|session|rest|push|pull|leg|day/.test(t),
-    needsWorkout: /workout|exercise|gym|lift|set|rep|volume|progress/.test(t),
-  };
-};
+// ─── Intent detection removed to guarantee context injection ─────────────────
 
 export const useAiAgent = () => {
   const [messages, setMessages] = useState<AiMessage[]>([]);
@@ -182,57 +174,54 @@ export const useAiAgent = () => {
   };
 
   // ─── Load only relevant context ────────────────────────────────────────────
-  const loadContext = async (text: string): Promise<string> => {
+  const loadContext = async (): Promise<string> => {
     const uid = userIdRef.current;
     if (!uid) return '';
-    const intent = detectIntent(text);
     const parts: string[] = [];
 
-    if (intent.needsSchedule) {
-      let sched = fromCache('sched');
-      if (!sched) {
-        const { data } = await supabase.from('schedules').select('id,week_start,days').eq('user_id', uid).order('week_start', { ascending: false }).limit(1).maybeSingle();
-        sched = data;
-        if (sched) toCache('sched', sched);
+    // Always load schedule (cached)
+    let sched = fromCache('sched');
+    if (!sched) {
+      const { data } = await supabase.from('schedules').select('id,week_start,days').eq('user_id', uid).order('week_start', { ascending: false }).limit(1).maybeSingle();
+      sched = data;
+      if (sched) toCache('sched', sched);
+    }
+    if (sched) parts.push(`SCHEDULE: ${JSON.stringify(sched)}`);
+
+    // Always load diet (cached)
+    const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
+    let log = fromCache(ckey);
+
+    if (!log) {
+      const localToday = getLocalDate();
+      const { data: existing } = await supabase
+        .from('diet_logs')
+        .select('id,daily_totals')
+        .eq('user_id', uid)
+        .eq('date', localToday)
+        .maybeSingle();
+
+      if (existing) {
+        log = existing;
+      } else {
+        const { data: created } = await supabase
+          .from('diet_logs')
+          .insert({
+            user_id: uid,
+            date: localToday,
+            daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+          })
+          .select('id,daily_totals')
+          .single();
+        log = created;
       }
-      if (sched) parts.push(`SCHEDULE: ${JSON.stringify(sched)}`);
+      if (log) toCache(ckey, log);
     }
 
-    if (intent.needsNutrition) {
-      const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
-      let log = fromCache(ckey);
-
-      if (!log) {
-        const localToday = getLocalDate();
-        const { data: existing } = await supabase
-          .from('diet_logs')
-          .select('id,daily_totals')
-          .eq('user_id', uid)
-          .eq('date', localToday)
-          .maybeSingle();
-
-        if (existing) {
-          log = existing;
-        } else {
-          const { data: created } = await supabase
-            .from('diet_logs')
-            .insert({
-              user_id: uid,
-              date: localToday,
-              daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
-            })
-            .select('id,daily_totals')
-            .single();
-          log = created;
-        }
-        if (log) toCache(ckey, log);
-      }
-
-      if (log) {
-        parts.push(`TODAY_DIET_LOG_ID: ${log.id}`);
-        parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
-        parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
-      }
+    if (log) {
+      parts.push(`TODAY_DIET_LOG_ID: ${log.id}`);
+      parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
+      parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
     }
 
     return parts.join('\n');
@@ -361,7 +350,7 @@ export const useAiAgent = () => {
     }
 
     try {
-      const context = await loadContext(text);
+      const context = await loadContext();
       const aiRes = await callGroq(text, context);
       let aiText = aiRes.reply;
 
