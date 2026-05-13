@@ -183,6 +183,18 @@ const WorkoutTracker = () => {
             </>
           )}
         </button>
+
+        <button 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to discard this workout? This cannot be undone.')) {
+              endWorkout();
+              navigate('/workout', { replace: true });
+            }
+          }}
+          className="w-full mt-4 text-gray-500 font-semibold py-3 text-sm flex items-center justify-center transition-colors hover:text-danger active:scale-[0.98]"
+        >
+          Discard Session
+        </button>
       </div>
 
       <RestTimer 

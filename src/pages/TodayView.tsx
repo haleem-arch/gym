@@ -59,7 +59,7 @@ const TodayView = () => {
             if (workout) {
               navigate('/workout/active');
             } else {
-              navigate('/workout/active', { state: { startNew: true, plan } });
+              navigate('/workout'); // Redirect to Workout Home to fetch real DB exercises
             }
           }}
           className={`w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black' : 'bg-primary hover:bg-blue-600 text-white'}`}
