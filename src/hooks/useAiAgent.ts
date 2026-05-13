@@ -50,6 +50,9 @@ const getLocalTime = () => {
 const SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
   const today = getLocalDate();
   const time = getLocalTime();
+  const dietLogMatch = ctx.match(/TODAY_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
+  const dietLogId = dietLogMatch ? dietLogMatch[1] : "INSERT_DIET_LOG_ID_HERE";
+
   return `You are Haleem's fitness AI. Output ONLY valid JSON. Never plain text.
 Haleem: 18yo, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal.
 User ID: ${uid} | Today: ${today}
@@ -60,7 +63,7 @@ ALWAYS return ONLY this JSON format:
 {"reply":"short text","actions":[]}
 
 MEAL LOG EXAMPLE:
-{"reply":"Logged 100g rice \u2014 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"<insert_diet_log_id_here>","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+{"reply":"Logged 100g rice \u2014 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
 WATER LOG EXAMPLE:
 {"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
