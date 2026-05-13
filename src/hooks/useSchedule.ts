@@ -70,7 +70,8 @@ export const useSchedule = (activeDateStr: string) => {
   useEffect(() => {
     loadSchedule();
 
-    const subscription = supabase.channel('schedules-channel')
+    const channelId = `schedules-channel-${Date.now()}-${Math.random()}`;
+    const subscription = supabase.channel(channelId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, (payload: any) => {
         if (payload.new && payload.new.days && payload.new.days[activeDateStr]) {
           setDayType(payload.new.days[activeDateStr]);
