@@ -7,11 +7,12 @@ const getApiKey = () => import.meta.env.VITE_GEMINI_API_KEY;
 // Clear any stale cached key from localStorage that may be suspended
 try { localStorage.removeItem('gemini_api_key'); } catch (_) {}
 
-// gemini-2.0-flash = free, fast, works with new SDK
-const MODEL_CHAIN = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash-latest'];
+// Valid model chain for the @google/genai SDK
+const MODEL_CHAIN = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
 const isQuotaError = (e: any) => {
   const msg = JSON.stringify(e?.message || e || '');
-  return msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
+  // Only switch on real quota errors (429), NOT on 404 model-not-found errors
+  return (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) && !msg.includes('404') && !msg.includes('NOT_FOUND');
 };
 
 export interface AiMessage {
