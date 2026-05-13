@@ -44,7 +44,7 @@ const TodayView = () => {
   
   const waterTotalMl = waterLogs?.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0) || 0;
   const waterCurrent = waterTotalMl / 1000;
-  const waterTarget = 3; // 3 Liters
+  const waterTarget = 3.5; // 3.5 Liters
 
   const inbody = {
     weight: 79.7,

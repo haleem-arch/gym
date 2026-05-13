@@ -12,7 +12,7 @@ const DietHome = () => {
   const { log, meals, waterLogs, loading, targets, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload } = useDiet();
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
-  const WATER_GOAL_ML = 4000;
+  const WATER_GOAL_ML = 3500; // 3.5 Liters
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
