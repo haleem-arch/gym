@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import type { WorkoutExercise } from '../hooks/useActiveWorkout';
 import { ExerciseCard } from '../components/ExerciseCard';
@@ -13,34 +14,31 @@ const WorkoutTracker = () => {
   
   const [restTimer, setRestTimer] = useState<{ active: boolean; time: number }>({ active: false, time: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // If a new workout is passed via navigation state and no workout is active, start it.
   useEffect(() => {
-    if (state?.startNew && !workout) {
-      // In a real scenario, we'd fetch the rich exercise data from Supabase here.
-      // For Phase 2 UI, we mock the fetched rich data based on the plan string array passed.
-      const mockExercises: WorkoutExercise[] = state.plan.exercises.map((name: string, i: number) => ({
-        id: `mock-id-${i}`,
-        name,
-        muscle_group: state.plan.type,
-        tier: i === 0 ? 'S+' : 'A',
-        cue: 'Keep chest up and drive through the heels.',
-        rationale: 'Maximizes mechanical tension across the target muscle.',
+    if (state?.startNew && !workout && state.plan?.exercises?.length > 0) {
+      const realExercises: WorkoutExercise[] = state.plan.exercises.map((dbEx: any) => ({
+        id: dbEx.id,
+        name: dbEx.name,
+        muscle_group: dbEx.muscle_group,
+        tier: dbEx.tier || 'A',
+        cue: dbEx.cue || '',
+        rationale: dbEx.rationale || '',
         restTime: 120,
         notes: '',
         sets: [
           { setNum: 1, weight: 0, reps: 0, rpe: 8, done: false },
           { setNum: 2, weight: 0, reps: 0, rpe: 8, done: false },
+          { setNum: 3, weight: 0, reps: 0, rpe: 8, done: false },
         ]
       }));
       
-      startWorkout(state.plan.type, state.plan.title, mockExercises);
-      // Clear history state so refresh doesn't trigger start again
+      startWorkout(state.plan.type, state.plan.title, realExercises);
       window.history.replaceState({}, document.title);
     }
   }, [state, workout, startWorkout]);
 
-  // Elapsed time counter
   useEffect(() => {
     if (!workout?.startTime) return;
     const interval = setInterval(() => {
@@ -52,17 +50,66 @@ const WorkoutTracker = () => {
   }, [workout?.startTime]);
 
   const handleSetComplete = (time: number) => {
-    setRestTimer({ active: false, time: 0 }); // reset
+    setRestTimer({ active: false, time: 0 });
     setTimeout(() => {
       setRestTimer({ active: true, time });
     }, 50);
   };
 
-  const handleEndWorkout = () => {
-    // In Phase 3, this will send the payload to Supabase
-    alert('Workout Saved to Supabase!');
-    endWorkout();
-    navigate('/');
+  const handleEndWorkout = async () => {
+    if (!workout) return;
+    setIsSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        alert("Not authenticated. Please ensure you are logged in.");
+        setIsSaving(false);
+        return;
+      }
+
+      let totalVolume = 0;
+      workout.exercises.forEach(ex => {
+        ex.sets.forEach(set => {
+          if (set.done) {
+            totalVolume += (set.weight * set.reps);
+          }
+        });
+      });
+
+      const duration = workout.startTime ? Math.floor((new Date().getTime() - new Date(workout.startTime).getTime()) / 1000) : 0;
+      
+      // Fix timezone offset for proper date insertion
+      const d = new Date();
+      const localDateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+      const { data: workoutData, error: workoutError } = await supabase.from('workouts').insert({
+        user_id: session.user.id,
+        date: localDateStr,
+        day_type: workout.dayType,
+        duration: duration,
+        total_volume: totalVolume,
+        notes: workout.notes
+      }).select().single();
+
+      if (workoutError || !workoutData) throw workoutError;
+
+      const exerciseInserts = workout.exercises.map(ex => ({
+        workout_id: workoutData.id,
+        exercise_id: ex.id, 
+        sets: ex.sets,
+        notes: ex.notes
+      }));
+
+      const { error: exError } = await supabase.from('workout_exercises').insert(exerciseInserts);
+      if (exError) throw exError;
+
+      endWorkout();
+      navigate('/workout', { replace: true });
+    } catch (e: any) {
+      alert("Error saving workout: " + e.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!workout) {
@@ -70,7 +117,7 @@ const WorkoutTracker = () => {
       <div className="p-6 flex flex-col items-center justify-center h-full text-center mt-20">
         <h2 className="text-xl font-bold mb-2">No Active Workout</h2>
         <p className="text-gray-400 mb-6">You don't have a workout in progress.</p>
-        <button onClick={() => navigate('/')} className="bg-primary px-6 py-3 rounded-xl font-bold text-white">Go to Today View</button>
+        <button onClick={() => navigate('/workout')} className="bg-primary px-6 py-3 rounded-xl font-bold text-white">Go to Workouts</button>
       </div>
     );
   }
@@ -84,10 +131,9 @@ const WorkoutTracker = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-background relative">
-      {/* Header */}
+    <div className="flex flex-col min-h-full bg-background relative pb-28">
       <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white">
+        <button onClick={() => navigate('/workout')} className="text-gray-400 hover:text-white p-1">
           <ArrowLeft size={24} />
         </button>
         <div className="text-center">
@@ -97,11 +143,10 @@ const WorkoutTracker = () => {
             {formatElapsed(elapsedTime)}
           </div>
         </div>
-        <div className="w-6"></div> {/* Spacer */}
+        <div className="w-6"></div>
       </div>
 
-      {/* Exercises */}
-      <div className="p-4 flex-1 pb-32">
+      <div className="p-4 flex-1">
         {workout.exercises.map((ex, idx) => (
           <ExerciseCard
             key={idx}
@@ -114,7 +159,6 @@ const WorkoutTracker = () => {
           />
         ))}
 
-        {/* Global Workout Notes */}
         <div className="mt-6">
           <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Session Notes</label>
           <textarea
@@ -125,13 +169,19 @@ const WorkoutTracker = () => {
           ></textarea>
         </div>
 
-        {/* End Workout Button */}
         <button 
           onClick={handleEndWorkout}
-          className="w-full mt-6 bg-success hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-success/20 transition-transform active:scale-[0.98]"
+          disabled={isSaving}
+          className="w-full mt-6 bg-success hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-success/20 transition-transform active:scale-[0.98] disabled:opacity-50"
         >
-          <Check size={20} />
-          FINISH & SAVE WORKOUT
+          {isSaving ? (
+            'SAVING...'
+          ) : (
+            <>
+              <Check size={20} />
+              FINISH & SAVE WORKOUT
+            </>
+          )}
         </button>
       </div>
 
