@@ -7,6 +7,11 @@ import WorkoutTracker from './pages/WorkoutTracker';
 import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
 
+import DietHome from './pages/DietHome';
+import DietMealBuilder from './pages/DietMealBuilder';
+import DietSearch from './pages/DietSearch';
+import FoodCreator from './pages/FoodCreator';
+
 function App() {
   const [session, setSession] = useState<any>(undefined);
 
@@ -51,7 +56,10 @@ function App() {
             <Route path="/workout" element={<WorkoutHome />} />
             <Route path="/workout/active" element={<WorkoutTracker />} />
             <Route path="/workout/:id" element={<WorkoutDetail />} />
-            <Route path="/diet" element={<div className="p-4">Diet Tracker (Coming Soon)</div>} />
+            <Route path="/diet" element={<DietHome />} />
+            <Route path="/diet/meal/:id" element={<DietMealBuilder />} />
+            <Route path="/diet/search" element={<DietSearch />} />
+            <Route path="/diet/food/new" element={<FoodCreator />} />
             <Route path="/inbody" element={<div className="p-4">InBody (Coming Soon)</div>} />
             <Route path="/ai" element={<div className="p-4">AI Coach (Coming Soon)</div>} />
             <Route path="*" element={<Navigate to="/" />} />
