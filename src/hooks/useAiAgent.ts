@@ -17,12 +17,14 @@ export interface AiMessage {
   text: string;
 }
 
-interface DbAction {
-  type: 'select' | 'insert' | 'update' | 'delete' | 'navigate';
+export interface DbAction {
+  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule';
   table?: string;
+  data?: any;
   match?: Record<string, any>;
-  data?: Record<string, any>;
   path?: string;
+  date?: string;
+  dayType?: string;
 }
 
 interface AiResponse {
@@ -68,12 +70,16 @@ MEAL LOG EXAMPLE:
 WATER LOG EXAMPLE:
 {"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
+SCHEDULE CHANGE EXAMPLE:
+{"reply":"Changed today to REST","actions":[{"type":"update_schedule","date":"${today}","dayType":"REST"}]}
+
 RULES:
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
 - Use diet_meals for caloric foods/drinks.
 - For water/hydration, convert to ml and use water_logs (NOT diet_meals).
+- To change schedule, use type="update_schedule" and dayType="REST" | "PUSH" | "PULL" | "LEGS" | "RUN".
 - actions:[] if no change.`;
 };
 
@@ -128,6 +134,22 @@ export const useAiAgent = () => {
              console.error("Supabase insert error:", error);
              allSuccess = false;
              lastError = error.message || error.details || "Insert failed";
+          }
+        } else if (action.type === 'update_schedule') {
+          const dateStr = action.date || getLocalDate();
+          const newType = action.dayType;
+          
+          const { data: schedData } = await supabase.from('schedules').select('*').eq('user_id', session.user.id).order('week_start', { ascending: false }).limit(1).maybeSingle();
+          if (schedData) {
+            const updatedDays = { ...schedData.days, [dateStr]: newType };
+            const { error } = await supabase.from('schedules').update({ days: updatedDays }).eq('id', schedData.id);
+            if (error) {
+               allSuccess = false;
+               lastError = "Failed to update schedule";
+            } else {
+               // Broadcast event to instantly update UI
+               window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
+            }
           }
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
