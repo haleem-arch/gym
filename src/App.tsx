@@ -8,22 +8,39 @@ import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
 
 function App() {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<any>(undefined);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Session error:', error);
+        setSession(null);
+        return;
+      }
       if (!session) {
         supabase.auth.signInWithPassword({
           email: 'haleem@example.com',
           password: 'athletepassword123'
-        }).then(({ data }) => setSession(data.session));
+        }).then(({ data, error }) => {
+           if (error) console.error('Auth error:', error);
+           setSession(data?.session || null);
+        });
       } else {
         setSession(session);
       }
+    }).catch(err => {
+      console.error('Unhandled auth error:', err);
+      setSession(null);
     });
   }, []);
 
-  if (session === undefined) return <div className="bg-background h-screen"></div>;
+  if (session === undefined) {
+    return (
+      <div className="bg-background h-[100dvh] flex items-center justify-center text-primary font-bold animate-pulse">
+        LOADING ATHLETE PROFILE...
+      </div>
+    );
+  }
 
   return (
     <Router>

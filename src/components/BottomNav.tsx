@@ -1,7 +1,8 @@
 import { Home, Dumbbell, Apple, Activity, MessageSquare } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 const BottomNav = () => {
+  const location = useLocation();
   const navItems = [
     { to: '/', icon: <Home size={24} />, label: 'Today' },
     { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout' },
