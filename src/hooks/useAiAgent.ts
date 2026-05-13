@@ -102,11 +102,13 @@ export const useAiAgent = () => {
   const initialized = useRef(false);
 
   // ─── Execute DB actions returned by AI ────────────────────────────────────
-  const executeActions = async (actions: DbAction[]): Promise<boolean> => {
+  const executeActions = async (actions: DbAction[]): Promise<{success: boolean, errorMsg?: string}> => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session || !actions?.length) return false;
+    if (!session || !actions?.length) return { success: false, errorMsg: "No session or actions" };
 
     let allSuccess = true;
+    let lastError = "";
+
     for (const action of actions) {
       try {
         if (action.type === 'navigate' && action.path) {
@@ -117,7 +119,6 @@ export const useAiAgent = () => {
 
         if (action.type === 'insert') {
           const payload = { ...action.data };
-          // Only inject user_id for top-level tables that require it
           const tablesRequiringUserId = ['diet_logs', 'workouts', 'schedules', 'food_inventory', 'profiles', 'water_logs'];
           if (tablesRequiringUserId.includes(action.table) && !payload.user_id) {
             payload.user_id = session.user.id;
@@ -126,6 +127,7 @@ export const useAiAgent = () => {
           if (error) {
              console.error("Supabase insert error:", error);
              allSuccess = false;
+             lastError = error.message || error.details || "Insert failed";
           }
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
@@ -134,6 +136,7 @@ export const useAiAgent = () => {
           if (error) {
              console.error("Supabase update error:", error);
              allSuccess = false;
+             lastError = error.message || error.details || "Update failed";
           }
         } else if (action.type === 'delete' && action.match) {
           let q = supabase.from(action.table).delete();
@@ -142,16 +145,18 @@ export const useAiAgent = () => {
           if (error) {
              console.error("Supabase delete error:", error);
              allSuccess = false;
+             lastError = error.message || error.details || "Delete failed";
           }
         }
         // Bust cache for affected table
         Object.keys(cache).forEach(k => { if (k.includes(action.table!)) delete cache[k]; });
-      } catch (e) {
+      } catch (e: any) {
         console.error('Action failed:', e);
         allSuccess = false;
+        lastError = e.message || "Unknown error";
       }
     }
-    return allSuccess;
+    return { success: allSuccess, errorMsg: lastError };
   };
 
   // ─── Load only relevant context ────────────────────────────────────────────
@@ -336,19 +341,20 @@ export const useAiAgent = () => {
     try {
       const context = await loadContext(text);
       const aiRes = await callGroq(text, context);
+      let aiText = aiRes.reply;
 
-      // Await so insert is complete before confirming
-      if (aiRes.actions?.length) {
-        const success = await executeActions(aiRes.actions);
-        if (success && !aiRes.reply.includes('Logged')) {
-          aiRes.reply += '\n\n*(✓ Successfully saved to database)*';
-        } else if (!success) {
-          aiRes.reply += '\n\n*(⚠ Failed to save to database. Please try again)*';
+      // Handle DB Actions
+      if (aiRes.actions && aiRes.actions.length > 0) {
+        const { success, errorMsg } = await executeActions(aiRes.actions);
+        if (success) {
+          aiText += "\n\n*(✓ Successfully saved to database)*";
+        } else {
+          aiText += `\n\n*(⚠ Failed to save to database. Error: ${errorMsg || 'Please try again'})*`;
         }
       }
 
       const modelMsgId = crypto.randomUUID();
-      const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiRes.reply };
+      const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiText };
       setMessages(prev => [...prev, modelMsg]);
 
       if (userIdRef.current) {

@@ -230,13 +230,22 @@ export const useDiet = () => {
   const logWater = async (amountLiters: number) => {
     if (!log) return;
     
-    const currentWater = log.daily_totals.water || 0;
-    const newWater = Math.round((currentWater + amountLiters) * 10) / 10;
+    const amountMl = Math.round(amountLiters * 1000);
+    const d = new Date();
     
-    const updatedTotals = { ...log.daily_totals, water: newWater };
+    const newLog = {
+      user_id: log.user_id,
+      date: activeDateStr,
+      time: d.toISOString(),
+      amount_ml: amountMl
+    };
     
-    setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
-    await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
+    const { data: inserted, error } = await supabase.from('water_logs').insert(newLog).select().single();
+    if (!error && inserted) {
+      setWaterLogs(prev => [...prev, inserted]);
+    } else {
+      console.error("Failed to log water:", error);
+    }
   };
 
   const resetWater = async () => {
