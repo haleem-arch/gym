@@ -122,6 +122,17 @@ const DietMealBuilder = () => {
             ))}
           </div>
         )}
+        
+        {meal.items.length > 0 && (
+          <div className="mt-8">
+            <button 
+              onClick={() => navigate('/diet')}
+              className="w-full border-2 border-success text-success font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-success hover:text-white transition-colors active:scale-95 shadow-lg shadow-success/10"
+            >
+              SAVE MEAL
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

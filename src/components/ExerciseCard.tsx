@@ -38,6 +38,8 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
     }
   };
 
+  const cleanName = (name: string) => name.replace(/\$\^\\circ\$/g, '°').replace(/\$\^\{\\circ\}\$/g, '°');
+
   return (
     <div className="bg-surface rounded-2xl border border-gray-800 overflow-hidden mb-4 shadow-lg">
       <div 
@@ -51,7 +53,7 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
             </span>
             <span className="text-[10px] text-gray-400 uppercase tracking-wider">{exercise.muscle_group}</span>
           </div>
-          <h3 className="text-lg font-bold text-white leading-tight">{exercise.name}</h3>
+          <h3 className="text-lg font-bold text-white leading-tight">{cleanName(exercise.name)}</h3>
         </div>
         <div className="text-gray-500 pl-4">
           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
