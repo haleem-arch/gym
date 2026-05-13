@@ -133,16 +133,33 @@ export const useAiAgent = () => {
           const newType = action.dayType;
           
           const { data: schedData } = await supabase.from('schedules').select('*').eq('user_id', session.user.id).order('week_start', { ascending: false }).limit(1).maybeSingle();
+          
+          let error;
           if (schedData) {
             const updatedDays = { ...schedData.days, [dateStr]: newType };
-            const { error } = await supabase.from('schedules').update({ days: updatedDays }).eq('id', schedData.id);
-            if (error) {
-               allSuccess = false;
-               lastError = "Failed to update schedule";
-            } else {
-               // Broadcast event to instantly update UI
-               window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
-            }
+            const { error: updError } = await supabase.from('schedules').update({ days: updatedDays }).eq('id', schedData.id);
+            error = updError;
+          } else {
+            // Calculate week_start for the new row
+            const d = new Date(dateStr);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+            const weekStart = new Date(d.setDate(diff)).toISOString().split('T')[0];
+            
+            const { error: insError } = await supabase.from('schedules').insert({
+              user_id: session.user.id,
+              week_start: weekStart,
+              days: { [dateStr]: newType }
+            });
+            error = insError;
+          }
+
+          if (error) {
+             allSuccess = false;
+             lastError = error.message || "Failed to update schedule";
+          } else {
+             // Broadcast event to instantly update UI
+             window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
           }
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
