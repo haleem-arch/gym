@@ -62,11 +62,16 @@ ALWAYS return ONLY this JSON format:
 MEAL LOG EXAMPLE:
 {"reply":"Logged 100g rice \u2014 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"THE_ID_FROM_TODAY_DIET_LOG_ID","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
+WATER LOG EXAMPLE:
+{"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
+
 RULES:
-- Use EXACT TODAY_DIET_LOG_ID from context.
+- Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
-- Use your food knowledge. NEVER return 0 for macros unless it's water.
-- Use diet_meals for logging. actions:[] if no change.`;
+- Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
+- Use diet_meals for caloric foods/drinks.
+- For water/hydration, convert to ml and use water_logs (NOT diet_meals).
+- actions:[] if no change.`;
 };
 
 // ─── Intent detection ─────────────────────────────────────────────────────────
@@ -82,15 +87,23 @@ const detectIntent = (text: string) => {
 export const useAiAgent = () => {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId, setSessionId] = useState<string>(() => {
+    const saved = localStorage.getItem('ai_session_id');
+    if (saved) return saved;
+    const newId = crypto.randomUUID();
+    localStorage.setItem('ai_session_id', newId);
+    return newId;
+  });
   const navigate = useNavigate();
   const userIdRef = useRef<string | null>(null);
   const initialized = useRef(false);
 
   // ─── Execute DB actions returned by AI ────────────────────────────────────
-  const executeActions = async (actions: DbAction[]) => {
+  const executeActions = async (actions: DbAction[]): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session || !actions?.length) return;
+    if (!session || !actions?.length) return false;
 
+    let allSuccess = true;
     for (const action of actions) {
       try {
         if (action.type === 'navigate' && action.path) {
@@ -102,27 +115,40 @@ export const useAiAgent = () => {
         if (action.type === 'insert') {
           const payload = { ...action.data };
           // Only inject user_id for top-level tables that require it
-          const tablesRequiringUserId = ['diet_logs', 'workouts', 'schedules', 'food_inventory', 'profiles'];
+          const tablesRequiringUserId = ['diet_logs', 'workouts', 'schedules', 'food_inventory', 'profiles', 'water_logs'];
           if (tablesRequiringUserId.includes(action.table) && !payload.user_id) {
             payload.user_id = session.user.id;
           }
           const { error } = await supabase.from(action.table).insert(payload);
-          if (error) throw error;
+          if (error) {
+             console.error("Supabase insert error:", error);
+             allSuccess = false;
+          }
         } else if (action.type === 'update' && action.match) {
           let q = supabase.from(action.table).update(action.data || {});
           Object.entries(action.match).forEach(([k, v]) => { q = (q as any).eq(k, v); });
-          await q;
+          const { error } = await q;
+          if (error) {
+             console.error("Supabase update error:", error);
+             allSuccess = false;
+          }
         } else if (action.type === 'delete' && action.match) {
           let q = supabase.from(action.table).delete();
           Object.entries(action.match).forEach(([k, v]) => { q = (q as any).eq(k, v); });
-          await q;
+          const { error } = await q;
+          if (error) {
+             console.error("Supabase delete error:", error);
+             allSuccess = false;
+          }
         }
         // Bust cache for affected table
         Object.keys(cache).forEach(k => { if (k.includes(action.table!)) delete cache[k]; });
       } catch (e) {
         console.error('Action failed:', e);
+        allSuccess = false;
       }
     }
+    return allSuccess;
   };
 
   // ─── Load only relevant context ────────────────────────────────────────────
@@ -224,10 +250,18 @@ export const useAiAgent = () => {
 
         const data = await res.json();
         const raw = data.choices[0].message.content;
+        let cleanedRaw = raw.trim();
+        if (cleanedRaw.startsWith('```')) {
+          cleanedRaw = cleanedRaw.replace(/```json|```/g, '').trim();
+        }
         try {
-          return JSON.parse(raw) as AiResponse;
+          return JSON.parse(cleanedRaw) as AiResponse;
         } catch {
-          // Non-JSON response (mixtral) — wrap it
+          // fallback regex extraction
+          const jsonMatch = raw.match(/\{[\s\S]*"reply"[\s\S]*\}/);
+          if (jsonMatch) {
+            try { return JSON.parse(jsonMatch[0]) as AiResponse; } catch {}
+          }
           return { reply: raw.replace(/```json|```/g, '').trim(), actions: [] };
         }
       } catch (err: any) {
@@ -252,24 +286,29 @@ export const useAiAgent = () => {
     }
 
     if (userIdRef.current) {
-      const { data } = await supabase.from('ai_chat').select('messages').eq('user_id', userIdRef.current).maybeSingle();
-      if (data?.messages && (data.messages as any[]).length > 0) {
-        setMessages(data.messages as AiMessage[]);
+      const { data } = await supabase.from('ai_chat')
+        .select('*')
+        .eq('user_id', userIdRef.current)
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+
+      if (data && data.length > 0) {
+        setMessages(data.map((row: any) => ({
+          id: row.id,
+          role: row.role === 'assistant' ? 'model' : 'user',
+          text: row.content
+        })));
       } else {
         setMessages([{ id: '1', role: 'model', text: "Coach connected. What do you need?" }]);
       }
     }
   };
 
-  const saveHistory = async (msgs: AiMessage[]) => {
-    if (!userIdRef.current) return;
-    const trimmed = msgs.slice(-20);
-    const { data } = await supabase.from('ai_chat').select('id').eq('user_id', userIdRef.current).maybeSingle();
-    if (data) {
-      supabase.from('ai_chat').update({ messages: trimmed, updated_at: new Date().toISOString() }).eq('id', data.id);
-    } else {
-      supabase.from('ai_chat').insert({ user_id: userIdRef.current, messages: trimmed });
-    }
+  const startNewChat = () => {
+    const newId = crypto.randomUUID();
+    localStorage.setItem('ai_session_id', newId);
+    setSessionId(newId);
+    setMessages([{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
   };
 
   // ─── Send ──────────────────────────────────────────────────────────────────
@@ -277,8 +316,19 @@ export const useAiAgent = () => {
     if (!initialized.current) await initChat();
     if (!getApiKey()) return;
 
-    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text }]);
+    const userMsgId = crypto.randomUUID();
+    setMessages(prev => [...prev, { id: userMsgId, role: 'user', text }]);
     setIsTyping(true);
+
+    if (userIdRef.current) {
+      supabase.from('ai_chat').insert({
+        id: userMsgId,
+        user_id: userIdRef.current,
+        session_id: sessionId,
+        role: 'user',
+        content: text
+      });
+    }
 
     try {
       const context = await loadContext(text);
@@ -286,15 +336,27 @@ export const useAiAgent = () => {
 
       // Await so insert is complete before confirming
       if (aiRes.actions?.length) {
-        await executeActions(aiRes.actions);
+        const success = await executeActions(aiRes.actions);
+        if (success && !aiRes.reply.includes('Logged')) {
+          aiRes.reply += '\n\n*(✓ Successfully saved to database)*';
+        } else if (!success) {
+          aiRes.reply += '\n\n*(⚠ Failed to save to database. Please try again)*';
+        }
       }
 
-      const modelMsg: AiMessage = { id: crypto.randomUUID(), role: 'model', text: aiRes.reply };
-      setMessages(prev => {
-        const next = [...prev, modelMsg];
-        saveHistory(next);
-        return next;
-      });
+      const modelMsgId = crypto.randomUUID();
+      const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiRes.reply };
+      setMessages(prev => [...prev, modelMsg]);
+
+      if (userIdRef.current) {
+        supabase.from('ai_chat').insert({
+          id: modelMsgId,
+          user_id: userIdRef.current,
+          session_id: sessionId,
+          role: 'assistant',
+          content: aiRes.reply
+        });
+      }
     } catch (e: any) {
       const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
       setMessages(prev => [...prev, {
@@ -307,10 +369,12 @@ export const useAiAgent = () => {
     }
   };
 
-  const clearHistory = () => {
-    setMessages([]);
-    Object.keys(cache).forEach(k => delete cache[k]);
+  return {
+    messages,
+    isTyping,
+    sendMessage,
+    startNewChat,
+    initChat,
+    sessionId
   };
-
-  return { messages, isTyping, sendMessage, initChat, clearHistory };
 };

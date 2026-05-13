@@ -9,7 +9,10 @@ import { supabase } from '../lib/supabase';
 
 const DietHome = () => {
   const navigate = useNavigate();
-  const { log, meals, loading, targets, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload } = useDiet();
+  const { log, meals, waterLogs, loading, targets, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload } = useDiet();
+
+  const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
+  const WATER_GOAL_ML = 4000;
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
@@ -131,8 +134,44 @@ const DietHome = () => {
             </div>
           </motion.div>
 
+          {/* Water Tracker Dashboard */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            transition={{ delay: 0.15 }}
+            className="bg-surface rounded-2xl p-5 border border-blue-900/40 shadow-xl mt-4"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">💧</span>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-400">Hydration</h2>
+            </div>
+            
+            <MacroProgressBar 
+              label="Water Intake" 
+              current={waterTotalMl} 
+              target={WATER_GOAL_ML} 
+              colorClass="bg-blue-400" 
+              unit="ml" 
+            />
+
+            {waterLogs && waterLogs.length > 0 && (
+              <div className="mt-4 flex flex-col gap-2 pt-4 border-t border-gray-800">
+                {waterLogs.map((log: any) => {
+                  const d = new Date(log.time);
+                  const timeStr = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                  return (
+                    <div key={log.id} className="flex justify-between items-center text-xs">
+                      <span className="text-gray-400">{timeStr}</span>
+                      <span className="font-bold text-blue-200">+{log.amount_ml} ml</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+
           {/* Meals List */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-col gap-3">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-col gap-3 mt-4">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Logged Meals</h2>
             </div>

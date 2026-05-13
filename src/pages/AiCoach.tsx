@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAiAgent } from '../hooks/useAiAgent';
-import { Send, Bot, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Renders model text with line breaks and basic markdown (bold, bullets)
@@ -30,7 +30,7 @@ const MessageText = ({ text }: { text: string }) => {
 };
 
 const AiCoach = () => {
-  const { messages, isTyping, sendMessage, initChat, clearHistory } = useAiAgent();
+  const { messages, isTyping, sendMessage, initChat, startNewChat } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -61,15 +61,16 @@ const AiCoach = () => {
           </div>
           <div>
             <h1 className="font-bold text-white text-sm tracking-tight">AI Coach</h1>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Gemma 2 9B · Groq</p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+              Session · {messages.length} msg{messages.length !== 1 && 's'}
+            </p>
           </div>
         </div>
         <button
-          onClick={clearHistory}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-400 hover:bg-gray-800 transition-colors"
-          title="Clear chat"
+          onClick={startNewChat}
+          className="px-3 py-1.5 rounded-full text-xs font-bold bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
         >
-          <Trash2 size={13} />
+          + New Chat
         </button>
       </div>
 

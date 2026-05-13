@@ -46,6 +46,7 @@ export const useDiet = () => {
 
   const [log, setLog] = useState<DietLog | null>(null);
   const [meals, setMeals] = useState<DietMeal[]>([]);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState({
     kcal: 2400,
@@ -113,12 +114,26 @@ export const useDiet = () => {
       if (mealsError) console.error("Error fetching meals:", mealsError);
       if (mealsData) {
         setMeals(mealsData);
-        // Automatically recalculate totals to ensure sync, passing existing water & completed status
+        // We will now calculate water from waterLogs rather than dietLog.daily_totals.water
         recalculateTotals(dietLog.id, mealsData, dietLog.daily_totals?.water || 0, dietLog.daily_totals?.completed);
       }
     } else {
       setLog(null);
       setMeals([]);
+    }
+
+    // 3. Fetch water logs separately
+    const { data: waterData } = await supabase
+      .from('water_logs')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('date', activeDateStr)
+      .order('time', { ascending: true });
+
+    if (waterData) {
+      setWaterLogs(waterData);
+    } else {
+      setWaterLogs([]);
     }
 
     setLoading(false);
@@ -143,6 +158,7 @@ export const useDiet = () => {
     if (newLog) {
       setLog(newLog);
       setMeals([]);
+      setWaterLogs([]);
     }
     setLoading(false);
   };
@@ -225,9 +241,19 @@ export const useDiet = () => {
 
   const resetWater = async () => {
     if (!log) return;
-    const updatedTotals = { ...log.daily_totals, water: 0 };
-    setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
-    await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
+    
+    const { error } = await supabase
+      .from('water_logs')
+      .delete()
+      .eq('user_id', log.user_id)
+      .eq('date', activeDateStr);
+
+    if (!error) {
+      setWaterLogs([]);
+      const updatedTotals = { ...log.daily_totals, water: 0 };
+      setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
+      await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
+    }
   };
 
   useEffect(() => {
@@ -237,6 +263,7 @@ export const useDiet = () => {
   return {
     log,
     meals,
+    waterLogs,
     loading,
     targets,
     activeDate,

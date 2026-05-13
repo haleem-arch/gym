@@ -208,8 +208,12 @@ const WorkoutTracker = () => {
         </button>
 
         <button 
-          onClick={() => {
+          onClick={async () => {
             if (window.confirm('Are you sure you want to discard this workout? This cannot be undone.')) {
+              if (workout?.id) {
+                // Delete the in-progress session so it doesn't linger on WorkoutHome
+                await supabase.from('workouts').delete().eq('id', workout.id).eq('status', 'in_progress');
+              }
               endWorkout();
               navigate('/workout', { replace: true });
             }

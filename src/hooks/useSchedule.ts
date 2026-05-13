@@ -69,7 +69,19 @@ export const useSchedule = (activeDateStr: string) => {
 
   useEffect(() => {
     loadSchedule();
-  }, [loadSchedule]);
+
+    const subscription = supabase.channel('schedules-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, (payload: any) => {
+        if (payload.new && payload.new.days && payload.new.days[activeDateStr]) {
+          setDayType(payload.new.days[activeDateStr]);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [loadSchedule, activeDateStr]);
 
   return { dayType, setDayType: updateDayType, loading };
 };

@@ -181,38 +181,58 @@ const WorkoutHome = () => {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-        <button 
-          onClick={handleStartWorkout}
-          className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-colors active:scale-[0.98] shadow-lg ${
-            workout || inProgressWorkout ? 'bg-yellow-500 text-black shadow-yellow-500/20' : 'bg-primary text-white shadow-primary/20'
-          }`}
-        >
-          {workout ? (
-            <>
-              <div className="flex items-center gap-2 text-xl">
-                <Play size={20} fill="currentColor" />
-                RESUME SESSION
-              </div>
-              <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
-            </>
-          ) : inProgressWorkout ? (
-            <>
-              <div className="flex items-center gap-2 text-xl">
-                <Play size={20} fill="currentColor" />
-                RESUME WORKOUT
-              </div>
-              <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 text-xl">
-                <Play size={20} fill="currentColor" />
-                START TODAY'S WORKOUT
-              </div>
-              <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
-            </>
-          )}
-        </button>
+        {dayType === 'REST' ? (
+          <div className="bg-surface border border-gray-800 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg">
+            <span className="text-4xl mb-3">💤</span>
+            <h2 className="text-xl font-bold text-white mb-2">Rest Day</h2>
+            <p className="text-sm text-gray-400">Recovery is part of training. Sleep well, hydrate, and hit the sauna if possible.</p>
+          </div>
+        ) : dayType === 'RUN' ? (
+          <div className="bg-surface border border-blue-900/30 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10">
+            <span className="text-4xl mb-3">🏃</span>
+            <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
+            <p className="text-sm text-gray-400 mb-4">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
+            <button 
+              onClick={() => alert("Run logging coming soon!")}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl transition-colors active:scale-95"
+            >
+              Log Run
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={handleStartWorkout}
+            className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-colors active:scale-[0.98] shadow-lg ${
+              workout || inProgressWorkout ? 'bg-yellow-500 text-black shadow-yellow-500/20' : 'bg-primary text-white shadow-primary/20'
+            }`}
+          >
+            {workout ? (
+              <>
+                <div className="flex items-center gap-2 text-xl">
+                  <Play size={20} fill="currentColor" />
+                  RESUME SESSION
+                </div>
+                <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
+              </>
+            ) : inProgressWorkout ? (
+              <>
+                <div className="flex items-center gap-2 text-xl">
+                  <Play size={20} fill="currentColor" />
+                  RESUME WORKOUT
+                </div>
+                <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 text-xl">
+                  <Play size={20} fill="currentColor" />
+                  START TODAY'S WORKOUT
+                </div>
+                <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
+              </>
+            )}
+          </button>
+        )}
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-2">
