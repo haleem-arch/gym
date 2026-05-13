@@ -2,10 +2,13 @@ import { motion } from 'framer-motion';
 import { Play, Utensils, Droplets } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
+import { useDiet } from '../hooks/useDiet';
 
 const TodayView = () => {
   const navigate = useNavigate();
   const { workout } = useActiveWorkout();
+  const { log, targets, logWater } = useDiet();
+
   // Mock data for Phase 1 UI building
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const plan = {
@@ -14,10 +17,9 @@ const TodayView = () => {
     exercises: ['Incline DB Press', 'Overhead Cable Extension', 'Lateral Raises', 'Machine Chest Press']
   };
 
-  const macros = {
-    cals: { current: 950, target: 2400 },
-    protein: { current: 95, target: 160 },
-  };
+  const macros = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0 };
+  const waterCurrent = macros.water || 0;
+  const waterTarget = 3; // 3 Liters
 
   const inbody = {
     weight: 79.7,
@@ -73,7 +75,8 @@ const TodayView = () => {
       <div className="grid grid-cols-2 gap-4">
         <motion.div 
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
+          className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer"
+          onClick={() => navigate('/diet')}
         >
           <div className="flex items-center gap-2 text-gray-400 mb-2">
             <Utensils size={16} />
@@ -82,19 +85,19 @@ const TodayView = () => {
           <div className="mb-2">
             <div className="flex justify-between text-xs mb-1">
               <span>Calories</span>
-              <span className="text-gray-400">{macros.cals.current} / {macros.cals.target}</span>
+              <span className="text-gray-400">{Math.round(macros.kcal)} / {targets.kcal}</span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-success h-1.5 rounded-full" style={{ width: `${(macros.cals.current/macros.cals.target)*100}%` }}></div>
+              <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
             </div>
           </div>
           <div>
             <div className="flex justify-between text-xs mb-1">
               <span>Protein</span>
-              <span className="text-gray-400">{macros.protein.current} / {macros.protein.target}g</span>
+              <span className="text-gray-400">{Math.round(macros.protein)} / {targets.protein}g</span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-primary h-1.5 rounded-full" style={{ width: `${(macros.protein.current/macros.protein.target)*100}%` }}></div>
+              <div className="bg-primary h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
             </div>
           </div>
         </motion.div>
@@ -108,10 +111,13 @@ const TodayView = () => {
             <span className="text-xs font-medium uppercase tracking-wider">Hydration</span>
           </div>
           <div className="flex-1 flex items-end justify-center pb-2">
-             <span className="text-2xl font-bold">1.5<span className="text-sm text-gray-500 font-normal"> / 3L</span></span>
+             <span className="text-2xl font-bold">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal"> / {waterTarget}L</span></span>
           </div>
-           <button className="w-full bg-gray-800 hover:bg-gray-700 text-xs font-semibold py-2 rounded-lg transition-colors">
-            + LOG WATER
+           <button 
+             onClick={() => logWater(0.25)} 
+             className="w-full bg-gray-800 hover:bg-gray-700 active:scale-95 text-xs font-semibold py-2 rounded-lg transition-all"
+           >
+            + 250ml WATER
           </button>
         </motion.div>
       </div>

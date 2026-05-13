@@ -6,6 +6,7 @@ export interface DailyMacros {
   protein: number;
   carbs: number;
   fat: number;
+  water?: number;
 }
 
 export interface DietLog {
@@ -93,16 +94,16 @@ export const useDiet = () => {
       if (mealsError) console.error("Error fetching meals:", mealsError);
       if (mealsData) {
         setMeals(mealsData);
-        // Automatically recalculate totals to ensure sync
-        recalculateTotals(dietLog.id, mealsData);
+        // Automatically recalculate totals to ensure sync, passing existing water
+        recalculateTotals(dietLog.id, mealsData, dietLog.daily_totals?.water || 0);
       }
     }
 
     setLoading(false);
   }, []);
 
-  const recalculateTotals = async (logId: string, currentMeals: DietMeal[]) => {
-    let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const recalculateTotals = async (logId: string, currentMeals: DietMeal[], existingWater?: number) => {
+    let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0, water: existingWater || 0 };
     
     currentMeals.forEach(meal => {
       meal.items.forEach(item => {
@@ -119,6 +120,7 @@ export const useDiet = () => {
       protein: Math.round(totals.protein * 10) / 10,
       carbs: Math.round(totals.carbs * 10) / 10,
       fat: Math.round(totals.fat * 10) / 10,
+      water: totals.water,
     };
 
     // Update state
@@ -154,6 +156,18 @@ export const useDiet = () => {
     return newMeal;
   };
 
+  const logWater = async (amountLiters: number) => {
+    if (!log) return;
+    
+    const currentWater = log.daily_totals.water || 0;
+    const newWater = Math.round((currentWater + amountLiters) * 10) / 10;
+    
+    const updatedTotals = { ...log.daily_totals, water: newWater };
+    
+    setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
+    await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
+  };
+
   useEffect(() => {
     loadTodayData();
   }, [loadTodayData]);
@@ -164,6 +178,7 @@ export const useDiet = () => {
     loading,
     targets,
     createMeal,
+    logWater,
     reload: loadTodayData
   };
 };
