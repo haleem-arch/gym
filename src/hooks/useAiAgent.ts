@@ -76,6 +76,8 @@ WATER LOG EXAMPLE:
 
 RULES:
 - Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
+- When giving feedback on workouts or runs, ALWAYS analyze the specific stats (e.g., pace, distance, duration, weight, reps). Give detailed, thoughtful, and insightful feedback. Do not just say "Good job".
+- DO NOT hallucinate metrics! If heart rate, cadence, calories, or other stats are NOT explicitly provided in the context, do NOT invent them.
 - If the user explicitly asks you to LOG a new run, LOG a workout, or CHANGE their schedule/plan, refuse and say: "I cannot log workouts/runs or change your plans directly. Please use the app interface for that."
 - HOWEVER, if the user asks for FEEDBACK on past runs or workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
@@ -343,7 +345,7 @@ export const useAiAgent = () => {
       .eq('user_id', uid)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
-      .limit(3);
+      .limit(5);
     
     if (recentWorkouts && recentWorkouts.length > 0) {
       const summary = recentWorkouts.map(w => {
@@ -391,7 +393,7 @@ export const useAiAgent = () => {
           body: JSON.stringify({
             model,
             messages: msgs,
-            temperature: 0.1,
+            temperature: 0.6,
             max_tokens: 512,
             ...(supportsJson ? { response_format: { type: 'json_object' } } : {})
           })
