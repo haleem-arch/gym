@@ -338,10 +338,10 @@ export const useAiAgent = () => {
 
     // Load recent past workouts for performance tracking context
     const { data: recentWorkouts } = await supabase.from('workouts')
-      .select('day_type, end_time, title, notes, workout_exercises(sets, exercises(name))')
+      .select('day_type, created_at, title, notes, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('status', 'completed')
-      .order('end_time', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(3);
     
     if (recentWorkouts && recentWorkouts.length > 0) {
@@ -349,7 +349,7 @@ export const useAiAgent = () => {
          if (w.day_type === 'RUN' && w.notes && w.notes.includes('"type":"run_stats"')) {
            try {
              const runStats = JSON.parse(w.notes);
-             return `${w.day_type} on ${new Date(w.end_time).toLocaleDateString()}: Distance ${runStats.distance_km}km, Elev ${runStats.elevation_m}m, Pace ${runStats.pace}/km`;
+             return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: Distance ${runStats.distance_km}km, Elev ${runStats.elevation_m}m, Pace ${runStats.pace}/km`;
            } catch (e) {}
          }
 
@@ -358,7 +358,7 @@ export const useAiAgent = () => {
            const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
            return `${name}: [${setInfo}]`;
          }).join(' | ') || '';
-         return `${w.day_type} on ${new Date(w.end_time).toLocaleDateString()}: ${exSummary}`;
+         return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: ${exSummary}`;
       });
       parts.push(`RECENT_COMPLETED_WORKOUTS (with weights and sets): \n${summary.join('\n')}`);
     }

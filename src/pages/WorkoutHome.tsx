@@ -52,8 +52,7 @@ const WorkoutHome = () => {
         duration: durationSeconds,
         total_volume: 0,
         notes: JSON.stringify(runData),
-        status: 'completed',
-        end_time: new Date().toISOString()
+        status: 'completed'
       }).select().single();
 
       if (error) throw error;

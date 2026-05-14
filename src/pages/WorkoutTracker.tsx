@@ -107,8 +107,7 @@ const WorkoutTracker = () => {
         duration: duration,
         total_volume: totalVolume,
         notes: workout.notes,
-        status: status,
-        end_time: status === 'completed' ? new Date().toISOString() : null
+        status: status
       }).select().single();
 
       if (workoutError || !workoutData) throw workoutError;
