@@ -45,7 +45,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
 
       // 2. Fetch InBody (Weight)
       const { data: inbody, error: inbodyErr } = await supabase
-        .from('inbody')
+        .from('inbody_scans')
         .select('date, weight')
         .eq('user_id', userId)
         .order('date', { ascending: true });

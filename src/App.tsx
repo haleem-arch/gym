@@ -14,6 +14,7 @@ import FoodCreator from './pages/FoodCreator';
 import FoodInventory from './pages/FoodInventory';
 
 import AiCoach from './pages/AiCoach';
+import InBodyView from './pages/InBodyView';
 
 function App() {
   const [session, setSession] = useState<any>(undefined);
@@ -64,7 +65,7 @@ function App() {
             <Route path="/diet/search" element={<DietSearch />} />
             <Route path="/diet/food/new" element={<FoodCreator />} />
             <Route path="/diet/inventory" element={<FoodInventory />} />
-            <Route path="/inbody" element={<div className="p-4">InBody (Coming Soon)</div>} />
+            <Route path="/inbody" element={<InBodyView />} />
             <Route path="/ai" element={<AiCoach />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
