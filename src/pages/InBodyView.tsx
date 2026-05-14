@@ -385,27 +385,16 @@ export default function InBodyView() {
                           <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1">
                             <Brain size={14} /> Segmental Lean Analysis
                           </h4>
-                          <div className="bg-gray-800/30 p-6 rounded-2xl border border-gray-700/50 relative overflow-hidden flex flex-col items-center justify-center">
-                            
-                            {/* Abstract body layout background */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-48 h-48">
-                                <circle cx="12" cy="4" r="2" />
-                                <path d="M12 6v8" />
-                                <path d="M6 8l6-2 6 2" />
-                                <path d="M12 14l-4 8" />
-                                <path d="M12 14l4 8" />
-                              </svg>
-                            </div>
+                          <div className="bg-gray-800/30 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center justify-center gap-4">
                             
                             {/* Arms */}
-                            <div className="flex justify-between w-full z-10 mb-2">
-                              <div className="text-center bg-gray-900/60 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                            <div className="flex justify-between w-full">
+                              <div className="text-center bg-gray-900/60 p-2 rounded-xl border border-gray-700/50 w-24">
                                 <p className="text-[10px] text-gray-500 mb-1">Left Arm</p>
                                 <p className="text-sm font-bold text-white">{seg.laLean || 0}kg</p>
                                 <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.laLean, prevSeg.laLean)}</p>
                               </div>
-                              <div className="text-center bg-gray-900/60 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                              <div className="text-center bg-gray-900/60 p-2 rounded-xl border border-gray-700/50 w-24">
                                 <p className="text-[10px] text-gray-500 mb-1">Right Arm</p>
                                 <p className="text-sm font-bold text-white">{seg.raLean || 0}kg</p>
                                 <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.raLean, prevSeg.raLean)}</p>
@@ -413,22 +402,22 @@ export default function InBodyView() {
                             </div>
                             
                             {/* Trunk */}
-                            <div className="flex justify-center w-full z-10 mb-2">
-                              <div className="text-center bg-gray-900/80 px-6 py-3 rounded-xl backdrop-blur-sm border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                                <p className="text-[10px] text-emerald-500 uppercase font-bold tracking-widest mb-1">Trunk</p>
-                                <p className="text-lg font-bold text-white">{seg.trunkLean || 0}kg</p>
-                                <p className="text-xs text-gray-500">{prev && calculateDelta(seg.trunkLean, prevSeg.trunkLean)}</p>
+                            <div className="flex justify-center w-full">
+                              <div className="text-center bg-gray-900/60 p-2 rounded-xl border border-gray-700/50 w-24">
+                                <p className="text-[10px] text-gray-500 mb-1">Trunk</p>
+                                <p className="text-sm font-bold text-white">{seg.trunkLean || 0}kg</p>
+                                <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.trunkLean, prevSeg.trunkLean)}</p>
                               </div>
                             </div>
 
                             {/* Legs */}
-                            <div className="flex justify-between w-full z-10">
-                              <div className="text-center bg-gray-900/60 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24 mt-4">
+                            <div className="flex justify-between w-full">
+                              <div className="text-center bg-gray-900/60 p-2 rounded-xl border border-gray-700/50 w-24">
                                 <p className="text-[10px] text-gray-500 mb-1">Left Leg</p>
                                 <p className="text-sm font-bold text-white">{seg.llLean || 0}kg</p>
                                 <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.llLean, prevSeg.llLean)}</p>
                               </div>
-                              <div className="text-center bg-gray-900/60 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24 mt-4">
+                              <div className="text-center bg-gray-900/60 p-2 rounded-xl border border-gray-700/50 w-24">
                                 <p className="text-[10px] text-gray-500 mb-1">Right Leg</p>
                                 <p className="text-sm font-bold text-white">{seg.rlLean || 0}kg</p>
                                 <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.rlLean, prevSeg.rlLean)}</p>
