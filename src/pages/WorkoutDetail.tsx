@@ -106,28 +106,65 @@ const WorkoutDetail = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Volume</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-white tracking-tight">{workout.total_volume}</span>
-                <span className="text-sm font-semibold text-gray-500">kg</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Duration</p>
-              <div className="flex items-center gap-1 text-xl font-bold text-white tracking-tight">
-                <Clock size={18} className="text-gray-400" />
-                {formatDuration(workout.duration)}
-              </div>
-            </div>
-          </div>
-          
-          {workout.notes && (
-            <div className="mt-4 pt-4 border-t border-gray-800">
-              <p className="text-sm text-gray-300 italic">"{workout.notes}"</p>
-            </div>
-          )}
+          {(() => {
+            let isRun = false;
+            let runStats: any = null;
+            let regularNotes = workout.notes;
+
+            if (workout.day_type === 'RUN' && workout.notes && workout.notes.includes('"type":"run_stats"')) {
+              isRun = true;
+              try {
+                runStats = JSON.parse(workout.notes);
+                regularNotes = runStats.text || ''; // if any text notes exist
+              } catch(e) {}
+            }
+
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 font-semibold uppercase mb-1">
+                      {isRun ? 'Distance' : 'Volume'}
+                    </p>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-3xl font-bold tracking-tight ${isRun ? 'text-blue-400' : 'text-white'}`}>
+                        {isRun ? runStats?.distance_km || 0 : workout.total_volume}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-500">
+                        {isRun ? 'km' : 'kg'}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Duration</p>
+                    <div className="flex items-center gap-1 text-xl font-bold text-white tracking-tight mt-1.5">
+                      <Clock size={18} className="text-gray-400" />
+                      {formatDuration(workout.duration)}
+                    </div>
+                  </div>
+                </div>
+
+                {isRun && runStats && (
+                  <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-800">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Avg Pace</p>
+                      <div className="text-xl font-bold text-white">{runStats.pace}<span className="text-sm text-gray-500 font-normal ml-1">/km</span></div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Elevation</p>
+                      <div className="text-xl font-bold text-white">{runStats.elevation_m}<span className="text-sm text-gray-500 font-normal ml-1">m</span></div>
+                    </div>
+                  </div>
+                )}
+                
+                {regularNotes && (
+                  <div className="mt-4 pt-4 border-t border-gray-800">
+                    <p className="text-sm text-gray-300 italic">"{regularNotes}"</p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </motion.div>
 
         {/* Exercises */}
