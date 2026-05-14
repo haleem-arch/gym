@@ -74,25 +74,14 @@ MEAL LOG EXAMPLE:
 WATER LOG EXAMPLE:
 {"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
-SCHEDULE CHANGE EXAMPLE:
-{"reply":"Changed today to REST","actions":[{"type":"update_schedule","date":"${today}","dayType":"REST"}]}
-
-PLAN CHANGE EXAMPLE:
-{"reply":"Changed Leg Press to Leg Extension","actions":[{"type":"update_workout_plan","planType":"LEGS","exercises":["Leg Extension", "DB Romanian Deadlift", "DB Bulgarian Split Squat", "Seated Leg Curl", "45° Back Extension (BW/DB)", "Standing Calf Raise"]}]}
-
-ACTIVE WORKOUT SWAP EXAMPLE (When ACTIVE_WORKOUT_IN_PROGRESS is in context):
-{"reply":"Swapped DB Romanian Deadlift with Leg Extension","actions":[{"type":"replace_active_exercise","oldExercise":"DB Romanian Deadlift","newExercise":"Leg Extension"}]}
-
 RULES:
+- DO NOT attempt to change the user's schedule, workout plan, or exercises. If asked to do so, politely inform the user that you can only log food/water and provide performance tracking and reports.
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
 - Use diet_meals for caloric foods/drinks.
 - For diet_meals, the "time" MUST be exactly formatted as "HH:MM:00" (e.g. "14:30:00"). Do NOT use ISO format.
 - For water/hydration, convert to ml and use water_logs (NOT diet_meals).
-- To change schedule, use type="update_schedule" and dayType="REST" | "PUSH" | "PULL" | "LEGS" | "RUN".
-- To modify a workout plan template permanently, use type="update_workout_plan" and provide the FULL LIST of exercises for that planType. Ensure new exercises logically target the same muscle group!
-- If the user is currently doing a workout (ACTIVE_WORKOUT_IN_PROGRESS exists) and asks to swap an exercise, use type="replace_active_exercise" and provide oldExercise and newExercise (exact names). Ensure it's a logical substitute (same muscle/tier).
 - actions:[] if no change.`;
 };
 
@@ -344,6 +333,26 @@ export const useAiAgent = () => {
          const activeEx = aw.exercises.map((e: any) => e.name);
          parts.push(`ACTIVE_WORKOUT_IN_PROGRESS: ${JSON.stringify(activeEx)}`);
        } catch (e) {}
+    }
+
+    // Load recent past workouts for performance tracking context
+    const { data: recentWorkouts } = await supabase.from('workouts')
+      .select('day_type, end_time, title, workout_exercises(sets, exercises(name))')
+      .eq('user_id', uid)
+      .eq('status', 'completed')
+      .order('end_time', { ascending: false })
+      .limit(3);
+    
+    if (recentWorkouts && recentWorkouts.length > 0) {
+      const summary = recentWorkouts.map(w => {
+         const exSummary = w.workout_exercises?.map((we: any) => {
+           const name = we.exercises?.name;
+           const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
+           return `${name}: [${setInfo}]`;
+         }).join(' | ') || '';
+         return `${w.day_type} on ${new Date(w.end_time).toLocaleDateString()}: ${exSummary}`;
+      });
+      parts.push(`RECENT_COMPLETED_WORKOUTS (with weights and sets): \n${summary.join('\n')}`);
     }
 
     return parts.join('\n');
