@@ -66,15 +66,16 @@ User ID: ${uid} | Today: ${today}
 ${ctx}
 
 ALWAYS return ONLY this JSON format:
-{"reply":"short text","actions":[]}
+{"reply":"Your enthusiastic, engaging, and helpful response here","actions":[]}
 
 MEAL LOG EXAMPLE:
-{"reply":"Logged 100g rice \u2014 130kcal, 28g C, 2.7g P","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+{"reply":"Got it! I've logged your rice. That's a solid 28g of carbs to fuel your next session! 🍚🔥","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
 WATER LOG EXAMPLE:
 {"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
 RULES:
+- Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
 - If the user explicitly asks you to LOG a new run, LOG a workout, or CHANGE their schedule/plan, refuse and say: "I cannot log workouts/runs or change your plans directly. Please use the app interface for that."
 - HOWEVER, if the user asks for FEEDBACK on past runs or workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
@@ -338,7 +339,7 @@ export const useAiAgent = () => {
 
     // Load recent past workouts for performance tracking context
     const { data: recentWorkouts } = await supabase.from('workouts')
-      .select('day_type, created_at, title, notes, workout_exercises(sets, exercises(name))')
+      .select('day_type, created_at, title, duration, notes, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
@@ -349,7 +350,8 @@ export const useAiAgent = () => {
          if (w.day_type === 'RUN' && w.notes && w.notes.includes('"type":"run_stats"')) {
            try {
              const runStats = JSON.parse(w.notes);
-             return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: Distance ${runStats.distance_km}km, Elev ${runStats.elevation_m}m, Pace ${runStats.pace}/km`;
+             const durationMins = w.duration ? Math.floor(w.duration / 60) : 0;
+             return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: Distance ${runStats.distance_km}km, Elev ${runStats.elevation_m}m, Pace ${runStats.pace}/km, Duration ${durationMins}m`;
            } catch (e) {}
          }
 
