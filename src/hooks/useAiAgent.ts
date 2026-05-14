@@ -76,10 +76,11 @@ WATER LOG EXAMPLE:
 
 RULES:
 - Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
-- When giving feedback on workouts or runs, ALWAYS analyze the specific stats (e.g., pace, distance, duration, weight, reps). Give detailed, thoughtful, and insightful feedback. Do not just say "Good job".
-- DO NOT hallucinate metrics! If heart rate, cadence, calories, or other stats are NOT explicitly provided in the context, do NOT invent them.
-- If the user explicitly asks you to LOG a new run, LOG a workout, or CHANGE their schedule/plan, refuse and say: "I cannot log workouts/runs or change your plans directly. Please use the app interface for that."
-- HOWEVER, if the user asks for FEEDBACK on past runs or workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
+- You DO NOT track or analyze running data. If the user asks about a run, their running stats, or running feedback, you MUST reply: "I don't track running data! I only analyze your weightlifting sessions and nutrition."
+- When giving feedback on weightlifting workouts, ONLY mention the EXACT metrics provided in the text (weight, reps). Do NOT invent stats.
+- STRICT RULE: 'CURRENT_WORKOUT_PLANS' is just their *planned* schedule. 'RECENT_COMPLETED_WORKOUTS' contains what they *actually* did in reality. Base all performance feedback EXCLUSIVELY on 'RECENT_COMPLETED_WORKOUTS'.
+- If the user explicitly asks you to LOG a workout or CHANGE their schedule/plan, refuse and say: "I cannot log workouts or change your plans directly. Please use the app interface for that."
+- HOWEVER, if the user asks for FEEDBACK on past weightlifting workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
@@ -348,15 +349,9 @@ export const useAiAgent = () => {
       .limit(5);
     
     if (recentWorkouts && recentWorkouts.length > 0) {
-      const summary = recentWorkouts.map(w => {
-         if (w.day_type === 'RUN' && w.notes && w.notes.includes('"type":"run_stats"')) {
-           try {
-             const runStats = JSON.parse(w.notes);
-             const durationMins = w.duration ? Math.floor(w.duration / 60) : 0;
-             return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: Distance ${runStats.distance_km}km, Elev ${runStats.elevation_m}m, Pace ${runStats.pace}/km, Duration ${durationMins}m`;
-           } catch (e) {}
-         }
-
+      const summary = recentWorkouts
+        .filter(w => w.day_type !== 'RUN') // Hide runs from AI completely
+        .map(w => {
          const exSummary = w.workout_exercises?.map((we: any) => {
            const name = we.exercises?.name;
            const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
@@ -379,6 +374,9 @@ export const useAiAgent = () => {
       { role: 'system', content: SYSTEM_PROMPT(userIdRef.current, context) },
       { role: 'user', content: userText }
     ];
+
+    console.log("AI CONTEXT DUMP:", context);
+    console.log("AI MESSAGES:", msgs);
 
     // Try each model in order — switch automatically on rate limit
     for (let i = 0; i < MODELS.length; i++) {
