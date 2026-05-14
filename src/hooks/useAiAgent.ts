@@ -342,7 +342,7 @@ export const useAiAgent = () => {
 
     // Load recent past workouts for performance tracking context
     const { data: recentWorkouts } = await supabase.from('workouts')
-      .select('day_type, created_at, title, duration, notes, workout_exercises(sets, exercises(name))')
+      .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
@@ -360,6 +360,17 @@ export const useAiAgent = () => {
          return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: ${exSummary}`;
       });
       parts.push(`RECENT_COMPLETED_WORKOUTS (with weights and sets): \n${summary.join('\n')}`);
+
+      // Calculate recent volume trend
+      const recentLifts = recentWorkouts.filter(w => w.day_type !== 'RUN' && w.total_volume > 0);
+      if (recentLifts.length >= 2) {
+        const latestVol = recentLifts[0].total_volume;
+        const prevVol = recentLifts[1].total_volume;
+        const diff = latestVol - prevVol;
+        if (diff > 0) {
+          parts.push(`VOLUME TREND: The user lifted ${diff}kg MORE in their last session (${latestVol}kg) compared to the previous session (${prevVol}kg). Congratulate them on the progressive overload!`);
+        }
+      }
     }
 
     return parts.join('\n');

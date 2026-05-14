@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Info, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WorkoutExercise, WorkoutSet } from '../hooks/useActiveWorkout';
+import { supabase } from '../lib/supabase';
 
 import { SwipeToDeleteRow } from './SwipeToDeleteRow';
 
@@ -18,6 +19,40 @@ interface ExerciseCardProps {
 export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, onRemoveSet, onUpdateNotes, onSetComplete }: ExerciseCardProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
+  const [prevBest, setPrevBest] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPrevious = async () => {
+      if (!exercise.id) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data } = await supabase
+        .from('workout_exercises')
+        .select('sets, workouts!inner(status, user_id)')
+        .eq('exercise_id', exercise.id)
+        .eq('workouts.user_id', session.user.id)
+        .eq('workouts.status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0 && data[0].sets) {
+         const sets = data[0].sets as WorkoutSet[];
+         const doneSets = sets.filter(s => s.done);
+         if (doneSets.length > 0) {
+           const bestSet = doneSets.reduce((max, s) => {
+             const w = parseFloat(String(s.weight)) || 0;
+             const m = parseFloat(String(max.weight)) || 0;
+             return w > m ? s : max;
+           }, doneSets[0]);
+           if (bestSet.weight && bestSet.reps) {
+             setPrevBest(`${bestSet.weight}kg x ${bestSet.reps}`);
+           }
+         }
+      }
+    };
+    fetchPrevious();
+  }, [exercise.id]);
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -52,6 +87,11 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
               {exercise.tier} TIER
             </span>
             <span className="text-[10px] text-gray-400 uppercase tracking-wider">{exercise.muscle_group}</span>
+            {prevBest && (
+              <span className="text-[10px] font-semibold text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded ml-auto">
+                Prev: {prevBest}
+              </span>
+            )}
           </div>
           <h3 className="text-lg font-bold text-white leading-tight">{cleanName(exercise.name)}</h3>
         </div>

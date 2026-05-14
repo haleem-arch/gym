@@ -6,6 +6,8 @@ import { useSchedule } from '../hooks/useSchedule';
 import { Play, History, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+import { AnalyticsCharts } from '../components/AnalyticsCharts';
+import { BarChart2 } from 'lucide-react';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -27,6 +29,9 @@ const WorkoutHome = () => {
   const [showRunModal, setShowRunModal] = useState(false);
   const [runStats, setRunStats] = useState({ distance: '', elevation: '', pace: '', duration: '' });
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
+  
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   const handleLogRun = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +83,7 @@ const WorkoutHome = () => {
     const loadData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      setCurrentUserId(session.user.id);
 
       // 1. Fetch Past Workouts (completed only)
       const { data: workoutsData } = await supabase
@@ -241,10 +247,29 @@ const WorkoutHome = () => {
 
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
+        <div className="flex bg-slate-800 p-1 rounded-lg">
+          <button 
+            onClick={() => setShowAnalytics(false)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${!showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
+          >
+            History
+          </button>
+          <button 
+            onClick={() => setShowAnalytics(true)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 ${showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
+          >
+            <BarChart2 size={16} className={showAnalytics ? 'text-black' : ''} />
+            <span>Insights</span>
+          </button>
+        </div>
       </motion.div>
 
+      {showAnalytics ? (
+        <AnalyticsCharts userId={currentUserId} />
+      ) : (
+        <>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
         {dayType === 'REST' ? (
           <div className="bg-surface border border-gray-800 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg">
@@ -442,6 +467,8 @@ const WorkoutHome = () => {
             </form>
           </motion.div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
