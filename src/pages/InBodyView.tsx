@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload, User } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InBodyView() {
@@ -387,9 +387,9 @@ export default function InBodyView() {
                           </h4>
                           <div className="bg-gray-800/30 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
                             
-                            {/* Abstract Body Icon */}
+                            {/* Generated Silhouette Image */}
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                              <User size={200} strokeWidth={1} className="text-gray-500 opacity-10" />
+                              <img src="/inbody-silhouette.png" alt="Body Silhouette" className="h-[250px] object-contain opacity-20 filter grayscale" />
                             </div>
 
                             {/* Arms */}
