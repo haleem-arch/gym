@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InBodyView() {
@@ -8,7 +8,9 @@ export default function InBodyView() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -93,6 +95,107 @@ export default function InBodyView() {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      if (!text) {
+        setIsImporting(false);
+        return;
+      }
+
+      // Simple CSV split
+      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length < 2) {
+        alert('Invalid CSV file or empty file.');
+        setIsImporting(false);
+        return;
+      }
+
+      // Parse headers
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setIsImporting(false);
+        return;
+      }
+
+      const payloads = [];
+
+      // Parse rows
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(v => v.trim());
+        if (row.length < 5) continue; // Skip malformed rows
+
+        const getValue = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? parseFloat(row[idx]) : 0;
+        };
+        
+        const getString = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? row[idx] : '';
+        };
+
+        const dateRaw = getString('date'); // format: 20260506155832
+        if (!dateRaw) continue;
+
+        let dateStr = new Date().toISOString().split('T')[0];
+        if (dateRaw.length >= 8) {
+           dateStr = `${dateRaw.substring(0,4)}-${dateRaw.substring(4,6)}-${dateRaw.substring(6,8)}`;
+        }
+
+        const segmental = {
+          visceralFat: getValue('visceral fat level'),
+          tbw: getValue('total body water'),
+          protein: getValue('protein'),
+          minerals: getValue('mineral'),
+          raLean: getValue('right arm lean'),
+          laLean: getValue('left arm lean'),
+          trunkLean: getValue('trunk lean'),
+          rlLean: getValue('right leg lean'),
+          llLean: getValue('left leg lean'),
+        };
+
+        payloads.push({
+          user_id: session.user.id,
+          date: dateStr,
+          weight: getValue('weight(kg)'),
+          smm: getValue('skeletal muscle mass'),
+          bfm: getValue('body fat mass'),
+          bf_percent: getValue('percent body fat'),
+          bmr: getValue('basal metabolic rate'),
+          score: getValue('inbody score'),
+          segmental: segmental
+        });
+      }
+
+      if (payloads.length > 0) {
+         // Batch insert (will fail on exact user_id + date unique constraint if it existed, but we don't have one for inbody_scans, so it will just add them)
+         // To avoid duplicating same date, maybe we should skip existing dates or just insert.
+         const { error } = await supabase.from('inbody_scans').insert(payloads);
+         if (error) {
+           alert("Error during bulk upload: " + error.message);
+         } else {
+           alert(`Successfully imported ${payloads.length} scans!`);
+           fetchScans();
+         }
+      } else {
+         alert("No valid data found in CSV.");
+      }
+
+      setIsImporting(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
   const calculateDelta = (current: number, previous: number, invertColors = false) => {
     if (!previous || previous === 0) return null;
     const diff = current - previous;
@@ -125,12 +228,29 @@ export default function InBodyView() {
           </h1>
           <p className="text-sm text-gray-400">Body composition tracking</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 hover:bg-blue-500 text-white p-2.5 rounded-xl shadow-lg transition-colors flex items-center justify-center"
-        >
-          <Plus size={20} />
-        </button>
+        <div className="flex gap-3">
+          <input 
+            type="file" 
+            accept=".csv" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className="bg-gray-800 hover:bg-gray-700 text-white p-2.5 rounded-xl shadow-lg transition-colors flex items-center justify-center disabled:opacity-50"
+            title="Upload CSV"
+          >
+            <Upload size={20} className={isImporting ? "animate-pulse text-blue-400" : ""} />
+          </button>
+          <button 
+            onClick={() => setShowModal(true)}
+            className="bg-blue-600 hover:bg-blue-500 text-white p-2.5 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
       </motion.div>
 
       {loading ? (
@@ -315,7 +435,7 @@ export default function InBodyView() {
 
       {/* Log Scan Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] overflow-y-auto no-scrollbar">
           <div className="min-h-full py-10 px-4 flex items-center justify-center">
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
