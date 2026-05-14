@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload, Accessibility } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function InBodyView() {
@@ -389,7 +389,7 @@ export default function InBodyView() {
                             
                             {/* Abstract Body Icon */}
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                              <Accessibility size={200} strokeWidth={1} className="text-gray-500 opacity-20" />
+                              <User size={200} strokeWidth={1} className="text-gray-500 opacity-10" />
                             </div>
 
                             {/* Arms */}
