@@ -75,7 +75,7 @@ WATER LOG EXAMPLE:
 {"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
 RULES:
-- DO NOT attempt to change the user's schedule, workout plan, or exercises. If asked to do so, politely inform the user that you can only log food/water and provide performance tracking and reports.
+- DO NOT attempt to log runs, log workouts, change the user's schedule, change workout plans, or change exercises. If asked to do any of these things, politely inform the user: "I cannot log workouts/runs or change your plans directly. Please use the app interface for that. I can only log your meals/water, and provide performance feedback based on your past data."
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
