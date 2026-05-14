@@ -24,6 +24,51 @@ const WorkoutHome = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const [showRunModal, setShowRunModal] = useState(false);
+  const [runStats, setRunStats] = useState({ distance: '', elevation: '', pace: '', duration: '' });
+  const [isSubmittingRun, setIsSubmittingRun] = useState(false);
+
+  const handleLogRun = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingRun(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const localDateStr = getLocalDateString();
+      const durationSeconds = (parseFloat(runStats.duration) || 0) * 60;
+      
+      const runData = {
+        type: 'run_stats',
+        distance_km: parseFloat(runStats.distance) || 0,
+        elevation_m: parseInt(runStats.elevation) || 0,
+        pace: runStats.pace
+      };
+
+      const { data, error } = await supabase.from('workouts').insert({
+        user_id: session.user.id,
+        date: localDateStr,
+        day_type: 'RUN',
+        duration: durationSeconds,
+        total_volume: 0,
+        notes: JSON.stringify(runData),
+        status: 'completed'
+      }).select().single();
+
+      if (error) throw error;
+      
+      // Update past workouts state
+      setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      setShowRunModal(false);
+      setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to log run");
+    } finally {
+      setIsSubmittingRun(false);
+    }
+  };
+
   // Sync todayPlan type with dayType from schedule
   useEffect(() => {
     setTodayPlan((prev: any) => ({ ...prev, type: dayType, title: `${dayType} Session` }));
@@ -213,7 +258,7 @@ const WorkoutHome = () => {
             <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
             <p className="text-sm text-gray-400 mb-4">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
             <button 
-              onClick={() => alert("Run logging coming soon!")}
+              onClick={() => setShowRunModal(true)}
               className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl transition-colors active:scale-95"
             >
               Log Run
@@ -283,8 +328,26 @@ const WorkoutHome = () => {
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-gray-800 text-gray-300 border-gray-700">
                         {session.day_type}
                       </span>
-                      <span className="text-sm font-bold text-white">{session.total_volume} kg</span>
-                      <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                      {(() => {
+                        if (session.day_type === 'RUN' && session.notes && session.notes.includes('"type":"run_stats"')) {
+                          try {
+                            const stats = JSON.parse(session.notes);
+                            return (
+                              <>
+                                <span className="text-sm font-bold text-blue-400">{stats.distance_km} km</span>
+                                <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{stats.pace}/km</span>
+                                <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                              </>
+                            );
+                          } catch (e) {}
+                        }
+                        return (
+                          <>
+                            <span className="text-sm font-bold text-white">{session.total_volume} kg</span>
+                            <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full">
@@ -296,6 +359,90 @@ const WorkoutHome = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Run Log Modal */}
+      {showRunModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-surface w-full max-w-sm rounded-2xl p-6 border border-gray-800 shadow-2xl relative"
+          >
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span>🏃</span> Log Run
+            </h3>
+            
+            <form onSubmit={handleLogRun} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Distance (km)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  required
+                  value={runStats.distance}
+                  onChange={e => setRunStats({...runStats, distance: e.target.value})}
+                  className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                  placeholder="5.0"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Elevation (m)</label>
+                  <input 
+                    type="number" 
+                    value={runStats.elevation}
+                    onChange={e => setRunStats({...runStats, elevation: e.target.value})}
+                    className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                    placeholder="120"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Avg Pace</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={runStats.pace}
+                    onChange={e => setRunStats({...runStats, pace: e.target.value})}
+                    className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                    placeholder="5:30"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Duration (mins)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  required
+                  value={runStats.duration}
+                  onChange={e => setRunStats({...runStats, duration: e.target.value})}
+                  className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                  placeholder="27.5"
+                />
+              </div>
+              
+              <div className="flex gap-3 mt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setShowRunModal(false)}
+                  className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:bg-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmittingRun}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors disabled:opacity-50"
+                >
+                  {isSubmittingRun ? 'Saving...' : 'Save Run'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
