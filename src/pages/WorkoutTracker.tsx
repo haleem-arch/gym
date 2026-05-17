@@ -15,7 +15,6 @@ const WorkoutTracker = () => {
   const [restTimer, setRestTimer] = useState<{ active: boolean; time: number }>({ active: false, time: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSaveSheet, setShowSaveSheet] = useState(false);
 
   useEffect(() => {
     if (state?.startNew && !workout && state.plan?.exercises?.length > 0) {
@@ -58,24 +57,12 @@ const WorkoutTracker = () => {
   };
 
   const handleSaveClick = () => {
-    let hasIncomplete = false;
-    workout?.exercises.forEach(ex => {
-      ex.sets.forEach(s => {
-        if (!s.done || !s.weight || !s.reps) hasIncomplete = true;
-      });
-    });
-
-    if (hasIncomplete) {
-      setShowSaveSheet(true);
-    } else {
-      executeSave('completed');
-    }
+    executeSave('completed');
   };
 
   const executeSave = async (status: 'completed' | 'in_progress') => {
     if (!workout) return;
     setIsSaving(true);
-    setShowSaveSheet(false);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -230,38 +217,6 @@ const WorkoutTracker = () => {
         isActive={restTimer.active} 
         onClose={() => setRestTimer({ active: false, time: 0 })} 
       />
-
-      {/* Save Bottom Sheet */}
-      {showSaveSheet && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSaveSheet(false)} />
-          <div className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 animate-in slide-in-from-bottom-full duration-300">
-            <h3 className="text-xl font-bold text-white mb-2">Incomplete Sets Detected</h3>
-            <p className="text-sm text-gray-400 mb-6">You have sets that aren't marked as done or are missing weight/reps. How would you like to proceed?</p>
-            
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={() => executeSave('completed')}
-                className="w-full bg-success text-white font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-              >
-                <Check size={20} /> Finish & Save Anyway
-              </button>
-              <button 
-                onClick={() => executeSave('in_progress')}
-                className="w-full bg-yellow-500 text-black font-bold py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-              >
-                Save & Resume Later
-              </button>
-              <button 
-                onClick={() => setShowSaveSheet(false)}
-                className="w-full text-gray-500 font-semibold py-4 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
