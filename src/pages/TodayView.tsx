@@ -12,54 +12,62 @@ import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
 
 
-const LOCAL_EXERCISES_DICTIONARY = [
-  // Chest
-  { id: 'dict-incline-db', name: 'Incline DB Bench Press', muscle_group: 'Chest' },
-  { id: 'dict-flat-db', name: 'Flat DB Bench Press', muscle_group: 'Chest' },
-  { id: 'dict-flat-bb', name: 'Flat Barbell Bench Press', muscle_group: 'Chest' },
-  { id: 'dict-cable-fly-low', name: 'Cable Chest Fly (Low Pulley)', muscle_group: 'Chest' },
-  { id: 'dict-cable-fly-high', name: 'Cable Chest Fly (High Pulley)', muscle_group: 'Chest' },
-  { id: 'dict-pec-deck', name: 'Pec Deck Fly', muscle_group: 'Chest' },
-  { id: 'dict-dips', name: 'Chest Dips (Bodyweight/Weighted)', muscle_group: 'Chest' },
+import { LOCAL_EXERCISES_DICTIONARY } from '../utils/localExercises';
+
+const fuzzyMatch = (text: string, query: string): boolean => {
+  text = text.toLowerCase().trim();
+  query = query.toLowerCase().trim();
   
-  // Back
-  { id: 'dict-weighted-pullup', name: 'Weighted Pull-up', muscle_group: 'Back' },
-  { id: 'dict-chinup', name: 'Pull-up / Chin-up (Bodyweight)', muscle_group: 'Back' },
-  { id: 'dict-lat-pulldown', name: 'Lat Pulldown (Wide Grip)', muscle_group: 'Back' },
-  { id: 'dict-chest-sup-row', name: 'Chest-Supported Row', muscle_group: 'Back' },
-  { id: 'dict-db-row', name: 'Single-Arm DB Row', muscle_group: 'Back' },
-  { id: 'dict-barbell-row', name: 'Barbell Row', muscle_group: 'Back' },
-  { id: 'dict-facepull', name: 'Face Pull (Rope)', muscle_group: 'Back' },
-  { id: 'dict-reverse-pec-deck', name: 'Reverse Pec Deck Fly', muscle_group: 'Back' },
+  if (!query) return false;
+  if (text.includes(query)) return true;
   
-  // Shoulders
-  { id: 'dict-bb-ohp', name: 'Barbell Overhead Press', muscle_group: 'Shoulders' },
-  { id: 'dict-db-shoulder-press', name: 'DB Shoulder Press (Seated)', muscle_group: 'Shoulders' },
-  { id: 'dict-db-lateral-raise', name: 'DB Lateral Raise', muscle_group: 'Shoulders' },
-  { id: 'dict-cable-lateral-raise', name: 'Cable Lateral Raise', muscle_group: 'Shoulders' },
-  { id: 'dict-incline-y-raise', name: 'Incline DB Y-Raise', muscle_group: 'Shoulders' },
+  // Clean special characters
+  const cleanText = text.replace(/[^a-z0-9\s]/g, '');
+  const cleanQuery = query.replace(/[^a-z0-9\s]/g, '');
   
-  // Legs
-  { id: 'dict-back-squat', name: 'Barbell Back Squat', muscle_group: 'Legs' },
-  { id: 'dict-front-squat', name: 'Barbell Front Squat', muscle_group: 'Legs' },
-  { id: 'dict-leg-press', name: 'Leg Press (Feet High)', muscle_group: 'Legs' },
-  { id: 'dict-db-rdl', name: 'DB Romanian Deadlift', muscle_group: 'Legs' },
-  { id: 'dict-bb-rdl', name: 'Barbell Romanian Deadlift', muscle_group: 'Legs' },
-  { id: 'dict-bulgarian-split', name: 'DB Bulgarian Split Squat', muscle_group: 'Legs' },
-  { id: 'dict-seated-leg-curl', name: 'Seated Leg Curl', muscle_group: 'Legs' },
-  { id: 'dict-leg-extension', name: 'Leg Extension', muscle_group: 'Legs' },
-  { id: 'dict-standing-calf-raise', name: 'Standing Calf Raise', muscle_group: 'Legs' },
-  { id: 'dict-back-extension', name: '45° Back Extension', muscle_group: 'Legs' },
+  // 1. Subsequence character matching (character ordering)
+  let qIdx = 0;
+  const noSpaceText = cleanText.replace(/\s+/g, '');
+  const noSpaceQuery = cleanQuery.replace(/\s+/g, '');
   
-  // Arms
-  { id: 'dict-incline-db-curl', name: 'Incline DB Curl', muscle_group: 'Arms' },
-  { id: 'dict-hammer-curl', name: 'Hammer Curl', muscle_group: 'Arms' },
-  { id: 'dict-zottman-curl', name: 'Zottman Curl', muscle_group: 'Arms' },
-  { id: 'dict-cable-bicep-curl', name: 'Cable Bicep Curl', muscle_group: 'Arms' },
-  { id: 'dict-cable-pushdown', name: 'Cable Tricep Pushdown (Straight Bar)', muscle_group: 'Arms' },
-  { id: 'dict-overhead-cable-ext', name: 'Overhead Cable Tricep Extension', muscle_group: 'Arms' },
-  { id: 'dict-db-skullcrusher', name: 'DB Skullcrusher', muscle_group: 'Arms' }
-];
+  for (let i = 0; i < noSpaceText.length; i++) {
+    if (noSpaceText[i] === noSpaceQuery[qIdx]) {
+      qIdx++;
+    }
+    if (qIdx === noSpaceQuery.length) return true;
+  }
+  
+  // 2. Token overlap and close mistypings (e.g. "dumbl" -> "dumbbell")
+  const queryTokens = cleanQuery.split(/\s+/);
+  const textTokens = cleanText.split(/\s+/);
+  
+  for (const qToken of queryTokens) {
+    if (qToken.length < 3) continue;
+    for (const tToken of textTokens) {
+      if (tToken.length < 3) continue;
+      
+      // Count shared characters regardless of order
+      let shared = 0;
+      const charMap: Record<string, number> = {};
+      for (const char of tToken) {
+        charMap[char] = (charMap[char] || 0) + 1;
+      }
+      for (const char of qToken) {
+        if (charMap[char] && charMap[char] > 0) {
+          shared++;
+          charMap[char]--;
+        }
+      }
+      
+      const lengthDiff = Math.abs(tToken.length - qToken.length);
+      if (shared >= qToken.length - 2 && lengthDiff <= 2) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+};
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
 
@@ -764,215 +772,221 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 240 }}
-              className="fixed inset-0 z-50 w-full max-w-[390px] mx-auto bg-black flex flex-col h-full shadow-2xl overflow-hidden border-x border-gray-800"
+              className="fixed inset-0 z-50 w-full h-full bg-black flex flex-col shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="flex justify-between items-center px-4 py-4 border-b border-gray-800 bg-surface/50 backdrop-blur-xl">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                    <User size={16} />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-wide">User Settings</h3>
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{userEmail}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Scrollable Form Body */}
-              <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-6 no-scrollbar pb-10">
-                
-                {/* Section 1: Baseline Diet Program */}
-                <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">
-                    Diet Program (Macro Targets)
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-3.5 bg-surface/30 p-4 border border-white/5 rounded-2xl">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Calories (kcal)</label>
-                      <input 
-                        type="number" 
-                        value={kcalInput}
-                        onChange={(e) => setKcalInput(e.target.value)}
-                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                      />
+              <div className="border-b border-gray-800 bg-surface/50 backdrop-blur-xl">
+                <div className="max-w-xl mx-auto w-full flex justify-between items-center px-4 py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                      <User size={16} />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Protein (g)</label>
-                      <input 
-                        type="number" 
-                        value={proteinInput}
-                        onChange={(e) => setProteinInput(e.target.value)}
-                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Carbs (g)</label>
-                      <input 
-                        type="number" 
-                        value={carbsInput}
-                        onChange={(e) => setCarbsInput(e.target.value)}
-                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Fat (g)</label>
-                      <input 
-                        type="number" 
-                        value={fatInput}
-                        onChange={(e) => setFatInput(e.target.value)}
-                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                      />
+                    <div>
+                      <h3 className="font-black text-white text-sm uppercase tracking-wide">User Settings</h3>
+                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{userEmail}</p>
                     </div>
                   </div>
-                </div>
-
-                {/* Section 2: Gym Workout Customizer */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center pl-1">
-                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                      Gym Program Editor
-                    </h4>
-                  </div>
-
-                  <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                    {/* Day Selection Slider Tabs */}
-                    <div className="flex bg-black/40 rounded-xl p-1 border border-white/5">
-                      {(['PUSH', 'PULL', 'LEGS'] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => { setPlanToEdit(t); setSearchQuery(''); }}
-                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer ${
-                            planToEdit === t ? 'bg-surface text-primary shadow' : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Active Exercises List in selected day */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
-                        Active {planToEdit} List ({customExercises.length})
-                      </span>
-                      
-                      <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar pr-1">
-                        {customExercises.map((exName, idx) => (
-                          <div 
-                            key={idx} 
-                            className="flex justify-between items-center bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-xs font-semibold animate-fade-in"
-                          >
-                            <span className="truncate max-w-[200px]">{exName}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCustomExercises(prev => prev.filter(e => e !== exName));
-                              }}
-                              className="text-danger/60 hover:text-danger p-1 transition-colors cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Add Exercise autocomplete lookup */}
-                    <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
-                        Add New Exercise
-                      </span>
-                      <div className="relative flex items-center">
-                        <Search size={13} className="absolute left-3 text-gray-500" />
-                        <input
-                          type="text"
-                          placeholder="Search database..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl pl-9 pr-3 py-2 text-xs outline-none placeholder-gray-600 font-medium"
-                        />
-                      </div>
-
-                      {/* Display matched autocomplete results */}
-                      {searchQuery.trim().length > 0 && (
-                        <div className="bg-black/60 border border-white/5 rounded-xl max-h-[140px] overflow-y-auto no-scrollbar flex flex-col p-1.5 gap-1 shadow-lg animate-fade-in">
-                          {globalExercises
-                            .filter(ex => 
-                              ex.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-                              !customExercises.includes(ex.name)
-                            )
-                            .slice(0, 5)
-                            .map((ex) => (
-                              <button
-                                key={ex.id}
-                                type="button"
-                                onClick={() => {
-                                  setCustomExercises(prev => [...prev, ex.name]);
-                                  setSearchQuery('');
-                                }}
-                                className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer"
-                              >
-                                <span>{ex.name}</span>
-                                <Plus size={13} className="text-primary" />
-                              </button>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3: Logout Action Row */}
-                <div className="border-t border-white/5 pt-4 flex flex-col gap-2 mt-2">
                   <button
-                    type="button"
-                    onClick={async () => {
-                      if (window.confirm("Are you sure you want to sign out?")) {
-                        await supabase.auth.signOut();
-                        setShowSettingsModal(false);
-                      }
-                    }}
-                    className="w-full bg-danger/10 hover:bg-danger/25 border border-danger/25 text-danger font-black text-[10px] uppercase py-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest shadow-inner active:scale-[0.98]"
+                    onClick={() => setShowSettingsModal(false)}
+                    className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer"
                   >
-                    <LogOut size={13} />
-                    Sign Out Account
+                    <X size={16} />
                   </button>
                 </div>
               </div>
 
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col no-scrollbar pb-10 bg-gradient-to-b from-black to-slate-950">
+                <div className="max-w-xl mx-auto w-full flex flex-col gap-6">
+                  
+                  {/* Section 1: Baseline Diet Program */}
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">
+                      Diet Program (Macro Targets)
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 gap-3.5 bg-surface/30 p-4 border border-white/5 rounded-2xl">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Calories (kcal)</label>
+                        <input 
+                          type="number" 
+                          value={kcalInput}
+                          onChange={(e) => setKcalInput(e.target.value)}
+                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Protein (g)</label>
+                        <input 
+                          type="number" 
+                          value={proteinInput}
+                          onChange={(e) => setProteinInput(e.target.value)}
+                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Carbs (g)</label>
+                        <input 
+                          type="number" 
+                          value={carbsInput}
+                          onChange={(e) => setCarbsInput(e.target.value)}
+                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Fat (g)</label>
+                        <input 
+                          type="number" 
+                          value={fatInput}
+                          onChange={(e) => setFatInput(e.target.value)}
+                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Gym Workout Customizer */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center pl-1">
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                        Gym Program Editor
+                      </h4>
+                    </div>
+
+                    <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                      {/* Day Selection Slider Tabs */}
+                      <div className="flex bg-black/40 rounded-xl p-1 border border-white/5">
+                        {(['PUSH', 'PULL', 'LEGS'] as const).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => { setPlanToEdit(t); setSearchQuery(''); }}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer ${
+                              planToEdit === t ? 'bg-surface text-primary shadow' : 'text-gray-400 hover:text-white'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Active Exercises List in selected day */}
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
+                          Active {planToEdit} List ({customExercises.length})
+                        </span>
+                        
+                        <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar pr-1">
+                          {customExercises.map((exName, idx) => (
+                            <div 
+                              key={idx} 
+                              className="flex justify-between items-center bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-xs font-semibold animate-fade-in"
+                            >
+                              <span className="truncate max-w-[200px]">{exName}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomExercises(prev => prev.filter(e => e !== exName));
+                                }}
+                                className="text-danger/60 hover:text-danger p-1 transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Add Exercise autocomplete lookup */}
+                      <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
+                          Add New Exercise
+                        </span>
+                        <div className="relative flex items-center">
+                          <Search size={13} className="absolute left-3 text-gray-500" />
+                          <input
+                            type="text"
+                            placeholder="Search database..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl pl-9 pr-3 py-2 text-xs outline-none placeholder-gray-600 font-medium"
+                          />
+                        </div>
+
+                        {/* Display matched autocomplete results */}
+                        {searchQuery.trim().length > 0 && (
+                          <div className="bg-black/60 border border-white/5 rounded-xl max-h-[240px] overflow-y-auto no-scrollbar flex flex-col p-1.5 gap-1 shadow-lg animate-fade-in">
+                            {globalExercises
+                              .filter(ex => 
+                                fuzzyMatch(ex.name, searchQuery) &&
+                                !customExercises.includes(ex.name)
+                              )
+                              .slice(0, 10)
+                              .map((ex) => (
+                                <button
+                                  key={ex.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setCustomExercises(prev => [...prev, ex.name]);
+                                    setSearchQuery('');
+                                  }}
+                                  className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                                >
+                                  <span>{ex.name}</span>
+                                  <Plus size={13} className="text-primary" />
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Logout Action Row */}
+                  <div className="border-t border-white/5 pt-4 flex flex-col gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (window.confirm("Are you sure you want to sign out?")) {
+                          await supabase.auth.signOut();
+                          setShowSettingsModal(false);
+                        }
+                      }}
+                      className="w-full bg-danger/10 hover:bg-danger/25 border border-danger/25 text-danger font-black text-[10px] uppercase py-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest shadow-inner active:scale-[0.98]"
+                    >
+                      <LogOut size={13} />
+                      Sign Out Account
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Bottom Fixed Action Actions */}
-              <div className="p-4 border-t border-gray-800 bg-surface/50 backdrop-blur-xl flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowSettingsModal(false)}
-                  className="flex-1 border border-white/5 hover:bg-gray-800 text-gray-300 font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider text-center"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={savingSettings}
-                  onClick={handleSaveSettings}
-                  className="flex-1 bg-primary hover:bg-blue-600 disabled:opacity-50 text-white font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider flex items-center justify-center gap-1.5"
-                >
-                  {savingSettings ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Check size={14} />
-                      Save Changes
-                    </>
-                  )}
-                </button>
+              <div className="border-t border-gray-800 bg-surface/50 backdrop-blur-xl">
+                <div className="max-w-xl mx-auto w-full p-4 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowSettingsModal(false)}
+                    className="flex-1 border border-white/5 hover:bg-gray-800 text-gray-300 font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingSettings}
+                    onClick={handleSaveSettings}
+                    className="flex-1 bg-primary hover:bg-blue-600 disabled:opacity-50 text-white font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider flex items-center justify-center gap-1.5"
+                  >
+                    {savingSettings ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Check size={14} />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>
