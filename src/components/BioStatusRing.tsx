@@ -38,6 +38,11 @@ export const BioStatusRing = ({
   const trackHydration = 'rgba(56, 189, 248, 0.15)';
   const trackTraining = 'rgba(167, 139, 250, 0.15)';
 
+  // Calculate today's dynamic average daily biometric completion score
+  const dailyBioScore = Math.round(
+    ((Math.min(kcalPct, 1) + Math.min(waterPct, 1) + workoutStatus) / 3) * 100
+  );
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.96 }}
@@ -54,9 +59,9 @@ export const BioStatusRing = ({
         opacity: { duration: 0.25 }
       }}
       style={{ backgroundColor: '#0D1117' }}
-      className="rounded-[20px] p-4 pl-6 pr-6 border border-gray-800 shadow-2xl flex items-center justify-between gap-6"
+      className="rounded-[20px] p-4 border border-gray-800 shadow-2xl flex items-center justify-between gap-6 w-full"
     >
-      {/* Centered Compact SVG Ring (No Center Text) */}
+      {/* Centered Compact SVG Ring with Centered Complietance Percentage */}
       <div className="relative w-[100px] h-[100px] flex items-center justify-center flex-shrink-0">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
           {/* ─── Outer Ring: Nutrition (Orange) ─── */}
@@ -128,6 +133,13 @@ export const BioStatusRing = ({
             transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.2 }}
           />
         </svg>
+
+        {/* Small readable percentage inside the inner ring */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
+          <span className="text-[12px] font-black text-white tracking-tight leading-none">
+            {dailyBioScore}%
+          </span>
+        </div>
       </div>
 
       {/* Redesigned Legend: Stacked Stat Rows (Status Words Only) */}
@@ -136,8 +148,8 @@ export const BioStatusRing = ({
         <div className="flex items-start gap-2.5">
           <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nutrition</span>
-            <span className="text-xs font-bold" style={{ color: colorNutrition }}>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nutrition</span>
+            <span className="text-sm font-black" style={{ color: colorNutrition }}>
               {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : 'Behind'}
             </span>
           </div>
@@ -147,8 +159,8 @@ export const BioStatusRing = ({
         <div className="flex items-start gap-2.5">
           <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorHydration }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hydration</span>
-            <span className="text-xs font-bold" style={{ color: colorHydration }}>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Hydration</span>
+            <span className="text-sm font-black" style={{ color: colorHydration }}>
               {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : 'Behind'}
             </span>
           </div>
@@ -158,8 +170,8 @@ export const BioStatusRing = ({
         <div className="flex items-start gap-2.5">
           <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Training</span>
-            <span className="text-xs font-bold" style={{ color: colorTraining }}>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Training</span>
+            <span className="text-sm font-black" style={{ color: colorTraining }}>
               {workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Rest'}
             </span>
           </div>

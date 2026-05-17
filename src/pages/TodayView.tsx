@@ -132,7 +132,7 @@ const TodayView = () => {
   };
 
   return (
-    <div className="p-5 flex flex-col gap-6">
+    <div className="px-4 py-6 flex flex-col gap-6 w-full max-w-[390px] mx-auto overflow-x-hidden">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
@@ -149,7 +149,7 @@ const TodayView = () => {
       </motion.div>
 
       {/* Date Navigation */}
-      <div className="flex items-center justify-between bg-surface border border-gray-800 rounded-xl p-2">
+      <div className="flex items-center justify-between bg-surface border border-gray-800 rounded-xl p-2.5 w-full">
         <button onClick={handlePrevDay} className="p-2 hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
@@ -166,27 +166,27 @@ const TodayView = () => {
         initial={{ opacity: 0, scale: 0.95 }} 
         animate={{ opacity: 1, scale: 1 }} 
         transition={{ delay: 0.1 }}
-        className="bg-surface rounded-2xl p-5 border border-gray-800 shadow-lg relative overflow-hidden flex flex-col"
+        className="bg-surface rounded-2xl p-5 border border-gray-800 shadow-lg relative overflow-hidden flex flex-col w-full"
       >
         <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-semibold text-primary uppercase tracking-wider">Scheduled Plan</span>
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-sm font-bold text-primary uppercase tracking-wider">Scheduled Plan</span>
           <select 
             value={dayType} 
             onChange={(e) => setDayType(e.target.value)}
-            className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2 py-1 outline-none"
+            className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none"
           >
             {DAY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
           </select>
         </div>
-        <h2 className="text-xl font-bold text-white mb-4">{plan.title}</h2>
+        <h2 className="text-xl font-extrabold text-white mb-4">{plan.title}</h2>
         
         {dayType !== 'REST' && (
           <ul className="space-y-2 mb-6 text-sm text-gray-300">
             {plan.exercises.map((ex, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                {ex}
+              <li key={i} className="flex items-center gap-2.5">
+                <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
+                <span className="text-sm font-semibold text-gray-200">{ex}</span>
               </li>
             ))}
           </ul>
@@ -201,7 +201,7 @@ const TodayView = () => {
                 navigate('/workout'); // Redirect to Workout Home to fetch real DB exercises
               }
             }}
-            className={`w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black' : 'bg-primary hover:bg-blue-600 text-white'}`}
+            className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
           >
             <Play size={18} fill="currentColor" />
             {workout ? 'RESUME SESSION' : 'START WORKOUT'}
@@ -210,65 +210,65 @@ const TodayView = () => {
       </motion.div>
 
       {/* Subtle Separation Divider */}
-      <div className="border-t border-white/10 my-1" />
+      <div className="w-full border-t border-white/10 my-1" />
 
       {/* DETAILS Header & Bottom Cards */}
-      <div className="flex flex-col gap-4">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Details</span>
+      <div className="flex flex-col gap-4 w-full">
+        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Details</span>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 w-full">
           {/* Nutrition Card (4 progress bars) */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer hover:border-gray-700 transition-colors"
+            className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer hover:border-gray-700 transition-colors w-full"
             onClick={() => navigate('/diet')}
           >
             <div className="flex items-center gap-2 text-gray-400 mb-3">
               <Utensils size={16} />
-              <span className="text-xs font-bold uppercase tracking-wider">Nutrition</span>
+              <span className="text-sm font-bold uppercase tracking-wider">Nutrition</span>
             </div>
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-3">
               {/* Calories */}
               <div>
-                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Calories</span>
-                  <span className="text-gray-400 font-bold">{Math.round(macros.kcal)}/{targets.kcal} kcal</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-1">
-                  <div className="bg-[#F97316] h-1 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
+                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
                 </div>
               </div>
 
               {/* Protein */}
               <div>
-                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Protein</span>
-                  <span className="text-gray-400 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-1">
-                  <div className="bg-success h-1 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
+                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
                 </div>
               </div>
 
               {/* Carbs */}
               <div>
-                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Carbs</span>
-                  <span className="text-gray-400 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-1">
-                  <div className="bg-[#38BDF8] h-1 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
+                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
                 </div>
               </div>
 
               {/* Fat */}
               <div>
-                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Fat</span>
-                  <span className="text-gray-400 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-1">
-                  <div className="bg-[#A78BFA] h-1 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
+                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
                 </div>
               </div>
             </div>
@@ -277,27 +277,27 @@ const TodayView = () => {
           {/* Hydration Card (Prominent Button & Timestamp) */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden justify-between"
+            className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden justify-between w-full"
           >
              <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
                <div className="p-4 flex flex-col justify-between h-full bg-surface">
                  <div className="flex items-center justify-between text-gray-400 mb-2">
                    <div className="flex items-center gap-2">
                      <Droplets size={16} />
-                     <span className="text-xs font-bold uppercase tracking-wider">Hydration</span>
+                     <span className="text-sm font-bold uppercase tracking-wider">Hydration</span>
                    </div>
                  </div>
-                 <div className="my-auto flex items-center justify-center py-2.5">
-                   <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal"> / {waterTarget}L</span></span>
+                 <div className="my-auto flex items-center justify-center py-3">
+                   <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal">/{waterTarget}L</span></span>
                  </div>
                  <div className="w-full flex flex-col items-center">
                    <button 
                      onClick={() => logWater(0.25)} 
-                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5"
+                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5"
                    >
                      + 250ml WATER
                    </button>
-                   <span className="text-[10px] text-gray-500 mt-2 block text-center leading-none">
+                   <span className="text-xs font-semibold text-gray-500 mt-2 block text-center leading-none">
                      {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
                    </span>
                  </div>
@@ -309,36 +309,36 @@ const TodayView = () => {
         {/* InBody Snapshot */}
         <motion.div 
            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-           className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in"
+           className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full"
         >
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 block">Latest InBody Scan</span>
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <span className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3.5 block">Latest InBody Scan</span>
+          <div className="grid grid-cols-4 gap-2.5 text-center">
             <div>
-              <span className="block text-lg font-bold text-white">{inbody.weight}</span>
-              <span className="text-[10px] text-gray-500">Weight (kg)</span>
+              <span className="block text-lg font-extrabold text-white">{inbody.weight}</span>
+              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Weight (kg)</span>
             </div>
             <div>
-               <span className="block text-lg font-bold text-danger">{inbody.bf}%</span>
-              <span className="text-[10px] text-gray-500">Body Fat</span>
+               <span className="block text-lg font-extrabold text-danger">{inbody.bf}%</span>
+              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Body Fat</span>
             </div>
             <div>
-               <span className="block text-lg font-bold text-success">{inbody.muscle}</span>
-              <span className="text-[10px] text-gray-500">SMM (kg)</span>
+               <span className="block text-lg font-extrabold text-success">{inbody.muscle}</span>
+              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">SMM (kg)</span>
             </div>
              <div>
-               <span className="block text-lg font-bold text-primary">{inbody.score}</span>
-              <span className="text-[10px] text-gray-500">Score</span>
+               <span className="block text-lg font-extrabold text-primary">{inbody.score}</span>
+              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Score</span>
             </div>
           </div>
         </motion.div>
       </div>
 
       {/* Subtle Separation Divider */}
-      <div className="border-t border-white/10 my-1" />
+      <div className="w-full border-t border-white/10 my-1" />
 
       {/* TODAY'S SCORE Header (Moved to bottom) */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
+      <div className="flex flex-col gap-1.5 w-full animate-fade-in">
+        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
         <BioStatusRing 
           kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
           waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
