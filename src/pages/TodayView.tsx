@@ -154,6 +154,7 @@ const TodayView = () => {
         kcalTarget={targets.kcal}
         waterCurrentL={waterCurrent}
         waterTargetL={waterTarget}
+        inbodyScore={inbody.score}
       />
 
       {/* Today's Plan Card */}

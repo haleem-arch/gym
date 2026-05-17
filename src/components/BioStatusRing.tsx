@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { Flame, Droplets, Target } from 'lucide-react';
 
 interface BioStatusRingProps {
   kcalPct: number;
@@ -9,6 +8,7 @@ interface BioStatusRingProps {
   kcalTarget: number;
   waterCurrentL: number;
   waterTargetL: number;
+  inbodyScore?: number;
 }
 
 export const BioStatusRing = ({
@@ -18,50 +18,42 @@ export const BioStatusRing = ({
   kcalCurrent,
   kcalTarget,
   waterCurrentL,
-  waterTargetL
+  waterTargetL,
+  inbodyScore = 82
 }: BioStatusRingProps) => {
-  // Concurrency & geometry calculations
+  // SVG Geometry Settings
   const size = 160;
   const center = size / 2;
-  const strokeWidth = 8;
+  const strokeWidth = 6;
 
-  // Concentric ring properties
-  const rOuter = 62;
-  const circOuter = 2 * Math.PI * rOuter; // ~389.56
+  // Ring Radii for 10px physical gap between adjacent boundaries:
+  // outer radius = 66, stroke = 6 -> edge boundary [63, 69]
+  // middle radius = 50, stroke = 6 -> edge boundary [47, 53] (gap = 63 - 53 = 10px!)
+  // inner radius = 34, stroke = 6 -> edge boundary [31, 37] (gap = 47 - 37 = 10px!)
+  const rOuter = 66;
+  const circOuter = 2 * Math.PI * rOuter; // ~414.69
   
-  const rMiddle = 48;
-  const circMiddle = 2 * Math.PI * rMiddle; // ~301.59
+  const rMiddle = 50;
+  const circMiddle = 2 * Math.PI * rMiddle; // ~314.16
   
   const rInner = 34;
   const circInner = 2 * Math.PI * rInner; // ~213.63
 
-  // Interpolate HSL colors based on percentage
-  const getCalorieColor = (pct: number) => {
-    if (pct === 0) return 'rgba(31, 41, 55, 0.4)';
-    if (pct > 1.15) return 'hsl(0, 80%, 50%)'; // Crimson (over-target bulk cap)
-    if (pct > 0.9) return 'hsl(142, 70%, 48%)'; // Emerald (on target)
-    const hue = Math.min(pct * 142, 142);
-    return `hsl(${hue}, 70%, 48%)`;
-  };
+  // Colors
+  const colorNutrition = '#F97316';
+  const colorHydration = '#38BDF8';
+  const colorTraining = '#A78BFA';
 
-  const getWaterColor = (pct: number) => {
-    if (pct === 0) return 'rgba(31, 41, 55, 0.4)';
-    const hue = 195 + Math.min(pct * 25, 25); // Ocean Cyan-Blue transitions
-    return `hsl(${hue}, 85%, 50%)`;
-  };
-
-  const getWorkoutColor = (status: number) => {
-    if (status === 1.0) return 'hsl(270, 90%, 65%)'; // Royal Violet (completed)
-    if (status === 0.5) return 'hsl(45, 95%, 52%)'; // Glowing Gold (active in progress)
-    return 'rgba(75, 85, 99, 0.4)'; // Slate Gray (rest/not started)
-  };
+  const trackNutrition = 'rgba(249, 115, 22, 0.15)';
+  const trackHydration = 'rgba(56, 189, 248, 0.15)';
+  const trackTraining = 'rgba(167, 139, 250, 0.15)';
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={{ 
         opacity: 1, 
-        scale: [1, 1.012, 1] 
+        scale: [1, 1.008, 1] 
       }}
       transition={{
         scale: {
@@ -69,29 +61,21 @@ export const BioStatusRing = ({
           repeat: Infinity,
           ease: "easeInOut"
         },
-        opacity: { duration: 0.3 }
+        opacity: { duration: 0.25 }
       }}
-      className="bg-surface rounded-2xl p-5 border border-gray-800 shadow-xl flex items-center justify-between gap-6 relative overflow-hidden"
+      style={{ backgroundColor: '#0D1117' }}
+      className="rounded-[20px] p-5 pl-6 pr-6 border border-gray-800 shadow-2xl flex items-center justify-between gap-6"
     >
-      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
-
-      {/* Pulsing Concentric SVG Organs */}
-      <div className="relative w-[150px] h-[150px] flex items-center justify-center flex-shrink-0">
+      {/* Centered Concentric Ring Widget */}
+      <div className="relative w-[160px] h-[160px] flex items-center justify-center flex-shrink-0">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
-          <defs>
-            <filter id="glowing-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-
-          {/* ─── Outer Circle: Calories ─── */}
+          {/* ─── Outer Ring: Nutrition (Orange) ─── */}
           <circle
             cx={center}
             cy={center}
             r={rOuter}
             fill="transparent"
-            stroke="rgba(31, 41, 55, 0.3)"
+            stroke={trackNutrition}
             strokeWidth={strokeWidth}
           />
           <motion.circle
@@ -99,23 +83,22 @@ export const BioStatusRing = ({
             cy={center}
             r={rOuter}
             fill="transparent"
-            stroke={getCalorieColor(kcalPct)}
+            stroke={colorNutrition}
             strokeWidth={strokeWidth}
             strokeDasharray={circOuter}
             strokeLinecap="round"
             initial={{ strokeDashoffset: circOuter }}
             animate={{ strokeDashoffset: circOuter * (1 - Math.min(kcalPct, 1)) }}
-            transition={{ type: 'spring', damping: 20, stiffness: 90 }}
-            style={{ filter: kcalPct >= 0.95 ? 'url(#glowing-glow)' : 'none' }}
+            transition={{ type: 'spring', damping: 22, stiffness: 95 }}
           />
 
-          {/* ─── Middle Circle: Hydration ─── */}
+          {/* ─── Middle Ring: Hydration (Sky Blue) ─── */}
           <circle
             cx={center}
             cy={center}
             r={rMiddle}
             fill="transparent"
-            stroke="rgba(31, 41, 55, 0.3)"
+            stroke={trackHydration}
             strokeWidth={strokeWidth}
           />
           <motion.circle
@@ -123,23 +106,22 @@ export const BioStatusRing = ({
             cy={center}
             r={rMiddle}
             fill="transparent"
-            stroke={getWaterColor(waterPct)}
+            stroke={colorHydration}
             strokeWidth={strokeWidth}
             strokeDasharray={circMiddle}
             strokeLinecap="round"
             initial={{ strokeDashoffset: circMiddle }}
             animate={{ strokeDashoffset: circMiddle * (1 - Math.min(waterPct, 1)) }}
-            transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 0.15 }}
-            style={{ filter: waterPct >= 0.95 ? 'url(#glowing-glow)' : 'none' }}
+            transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.1 }}
           />
 
-          {/* ─── Inner Circle: Workout ─── */}
+          {/* ─── Inner Ring: Training (Violet) ─── */}
           <circle
             cx={center}
             cy={center}
             r={rInner}
             fill="transparent"
-            stroke="rgba(31, 41, 55, 0.3)"
+            stroke={trackTraining}
             strokeWidth={strokeWidth}
           />
           <motion.circle
@@ -147,64 +129,75 @@ export const BioStatusRing = ({
             cy={center}
             r={rInner}
             fill="transparent"
-            stroke={getWorkoutColor(workoutStatus)}
+            stroke={colorTraining}
             strokeWidth={strokeWidth}
             strokeDasharray={circInner}
             strokeLinecap="round"
             initial={{ strokeDashoffset: circInner }}
             animate={{ strokeDashoffset: circInner * (1 - workoutStatus) }}
-            transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 0.3 }}
-            style={{ filter: workoutStatus === 1.0 ? 'url(#glowing-glow)' : 'none' }}
+            transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.2 }}
           />
         </svg>
 
-        {/* Small Center Bio Score Indicator */}
+        {/* Center Text (Large Percentage & Secondary InBody score label) */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">BIOMETRIC</span>
-          <span className="text-lg font-black text-white leading-none">
-            {Math.round((Math.min(kcalPct, 1) + Math.min(waterPct, 1) + workoutStatus) * 33.3)}%
+          <span className="text-[28px] font-bold text-white tracking-tight leading-none">
+            {inbodyScore}%
+          </span>
+          <span className="text-[11px] text-gray-500 font-medium mt-1 leading-none">
+            InBody Score
           </span>
         </div>
       </div>
 
-      {/* Concentric Legends & Detail Indicators */}
-      <div className="flex-1 flex flex-col gap-3 justify-center">
-        {/* Outer Circle: Calories */}
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: getCalorieColor(kcalPct) }} />
-          <Flame size={14} className="text-gray-400" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nutrition</span>
-            <span className="text-xs font-bold text-white">
-              {Math.round(kcalCurrent)} <span className="text-[10px] text-gray-500 font-normal">/ {kcalTarget} kcal</span>
+      {/* Redesigned Legend: Stacked Stat Rows */}
+      <div className="flex-1 flex flex-col gap-4 justify-center">
+        {/* Row 1: Nutrition */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
+          <div className="flex flex-col leading-none">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nutrition</span>
+            <span className="text-sm font-bold text-white mb-1">
+              {Math.round(kcalCurrent)} kcal
+            </span>
+            <span className="text-[12px] text-gray-500">
+              of {kcalTarget} kcal
             </span>
           </div>
         </div>
 
-        {/* Middle Circle: Hydration */}
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: getWaterColor(waterPct) }} />
-          <Droplets size={14} className="text-gray-400" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Hydration</span>
-            <span className="text-xs font-bold text-white">
-              {waterCurrentL.toFixed(1)} <span className="text-[10px] text-gray-500 font-normal">/ {waterTargetL} L</span>
+        {/* Row 2: Hydration */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorHydration }} />
+          <div className="flex flex-col leading-none">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hydration</span>
+            <span className="text-sm font-bold text-white mb-1">
+              {waterCurrentL.toFixed(1)} L
+            </span>
+            <span className="text-[12px] text-gray-500">
+              of {waterTargetL} L
             </span>
           </div>
         </div>
 
-        {/* Inner Circle: Workout */}
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: getWorkoutColor(workoutStatus) }} />
-          <Target size={14} className="text-gray-400" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Training Plan</span>
-            <span className="text-xs font-bold text-white">
+        {/* Row 3: Training */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
+          <div className="flex flex-col leading-none">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Training</span>
+            <span className="text-sm font-bold text-white mb-1">
               {workoutStatus === 1.0 
-                ? 'Completed ✓' 
+                ? 'Completed' 
                 : workoutStatus === 0.5 
-                ? 'In Progress ⏳' 
-                : 'Not Started'}
+                ? 'Active' 
+                : 'Rest'}
+            </span>
+            <span className="text-[12px] text-gray-500">
+              {workoutStatus === 1.0 
+                ? '1 of 1 session' 
+                : workoutStatus === 0.5 
+                ? '0.5 of 1 session' 
+                : '0 of 1 session'}
             </span>
           </div>
         </div>
