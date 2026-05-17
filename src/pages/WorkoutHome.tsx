@@ -298,76 +298,132 @@ const WorkoutHome = () => {
     }
 
     // Start fresh
-    if (todayPlan.exercises.length === 0) {
-      // Prompt selection for Rest day overrides or slow network loads
-      const userChoice = window.prompt("Today is scheduled for Rest/Run, or exercises are still loading.\n\nWhich program would you like to start? (Type: PUSH, PULL, or LEGS)", "PUSH");
-      if (userChoice) {
-        const selectedType = userChoice.toUpperCase().trim();
-        if (['PUSH', 'PULL', 'LEGS'].includes(selectedType)) {
-          const planMap: Record<string, string[]> = {
-            PUSH: [
-              'Incline DB Bench Press (45°)',
-              'DB Shoulder Press (seated neutral)',
-              'Incline DB Y-Raise (20-30°)',
-              'Cable Chest Fly (low pulley)',
-              'Overhead Cable Extension (rope)',
-              'DB Lateral Raise (elbow-lead)'
-            ],
-            PULL: [
-              'Lat Pulldown (wide grip)',
-              'Chest-Supported DB Row',
-              'Sideways One-Arm Rear Delt Fly',
-              'Face Pull (rope eye height)',
-              'Incline DB Curl - Bayesian',
-              'Zottman Curl'
-            ],
-            LEGS: [
-              'Leg Press (feet high for glutes)',
-              'DB Romanian Deadlift',
-              'DB Bulgarian Split Squat',
-              'Seated Leg Curl',
-              '45° Back Extension (BW/DB)',
-              'Standing Calf Raise'
-            ]
-          };
+    let activePlan = todayPlan;
+    
+    // If today is a weightlifting day but exercises are empty/still loading, load them automatically!
+    if ((dayType === 'PUSH' || dayType === 'PULL' || dayType === 'LEGS') && (!activePlan.exercises || activePlan.exercises.length === 0)) {
+      const planMap: Record<string, string[]> = {
+        PUSH: [
+          'Incline DB Bench Press (45°)',
+          'DB Shoulder Press (seated neutral)',
+          'Incline DB Y-Raise (20-30°)',
+          'Cable Chest Fly (low pulley)',
+          'Overhead Cable Extension (rope)',
+          'DB Lateral Raise (elbow-lead)'
+        ],
+        PULL: [
+          'Lat Pulldown (wide grip)',
+          'Chest-Supported DB Row',
+          'Sideways One-Arm Rear Delt Fly',
+          'Face Pull (rope eye height)',
+          'Incline DB Curl - Bayesian',
+          'Zottman Curl'
+        ],
+        LEGS: [
+          'Leg Press (feet high for glutes)',
+          'DB Romanian Deadlift',
+          'DB Bulgarian Split Squat',
+          'Seated Leg Curl',
+          '45° Back Extension (BW/DB)',
+          'Standing Calf Raise'
+        ]
+      };
 
-          const targetNames = planMap[selectedType];
-          const fallbackExercises = targetNames.map((name: string, i: number) => {
-            const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
-              const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-              return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
-            });
+      const targetNames = planMap[dayType];
+      const fallbackExercises = targetNames.map((name: string, i: number) => {
+        const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
+          const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
+        });
 
-            return {
-              id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
-              name: name,
-              muscle_group: localMatch?.muscle_group || 'All Muscles',
-              tier: localMatch?.tier || 'A',
-              focus: localMatch?.focus || 'Hypertrophy',
-              cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
-              rationale: localMatch?.rationale || 'Key exercise movement.',
-              equipment: localMatch?.equipment || 'Gym Equipment'
-            };
-          });
+        return {
+          id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
+          name: name,
+          muscle_group: localMatch?.muscle_group || 'All Muscles',
+          tier: localMatch?.tier || 'A',
+          focus: localMatch?.focus || 'Hypertrophy',
+          cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
+          rationale: localMatch?.rationale || 'Key exercise movement.',
+          equipment: localMatch?.equipment || 'Gym Equipment',
+          targetSets: 4,
+          targetRest: 90
+        };
+      });
 
-          navigate('/workout/active', { 
-            state: { 
-              startNew: true, 
-              plan: {
-                type: selectedType,
-                title: `${selectedType} Session`,
-                exercises: fallbackExercises
-              } 
-            } 
-          });
-          return;
-        }
+      activePlan = {
+        type: dayType,
+        title: `${dayType} Session`,
+        exercises: fallbackExercises
+      };
+    } else if (!activePlan.exercises || activePlan.exercises.length === 0) {
+      // Only prompt if it's actually a REST/RUN day and they clicked "Start Workout Anyway" or "Lift Weights Instead"
+      const userChoice = window.prompt("Today is scheduled for Rest/Run.\n\nWhich program would you like to start? (Type: PUSH, PULL, or LEGS)", "PUSH");
+      if (!userChoice) return;
+      
+      const selectedType = userChoice.toUpperCase().trim();
+      if (!['PUSH', 'PULL', 'LEGS'].includes(selectedType)) {
+        alert("Invalid selection. Please type PUSH, PULL, or LEGS to start a session.");
+        return;
       }
-      alert("Invalid selection. Please type PUSH, PULL, or LEGS to start a session.");
-      return;
+
+      const planMap: Record<string, string[]> = {
+        PUSH: [
+          'Incline DB Bench Press (45°)',
+          'DB Shoulder Press (seated neutral)',
+          'Incline DB Y-Raise (20-30°)',
+          'Cable Chest Fly (low pulley)',
+          'Overhead Cable Extension (rope)',
+          'DB Lateral Raise (elbow-lead)'
+        ],
+        PULL: [
+          'Lat Pulldown (wide grip)',
+          'Chest-Supported DB Row',
+          'Sideways One-Arm Rear Delt Fly',
+          'Face Pull (rope eye height)',
+          'Incline DB Curl - Bayesian',
+          'Zottman Curl'
+        ],
+        LEGS: [
+          'Leg Press (feet high for glutes)',
+          'DB Romanian Deadlift',
+          'DB Bulgarian Split Squat',
+          'Seated Leg Curl',
+          '45° Back Extension (BW/DB)',
+          'Standing Calf Raise'
+        ]
+      };
+
+      const targetNames = planMap[selectedType];
+      const fallbackExercises = targetNames.map((name: string, i: number) => {
+        const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
+          const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
+        });
+
+        return {
+          id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
+          name: name,
+          muscle_group: localMatch?.muscle_group || 'All Muscles',
+          tier: localMatch?.tier || 'A',
+          focus: localMatch?.focus || 'Hypertrophy',
+          cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
+          rationale: localMatch?.rationale || 'Key exercise movement.',
+          equipment: localMatch?.equipment || 'Gym Equipment',
+          targetSets: 4,
+          targetRest: 90
+        };
+      });
+
+      activePlan = {
+        type: selectedType,
+        title: `${selectedType} Session`,
+        exercises: fallbackExercises
+      };
     }
-    navigate('/workout/active', { state: { startNew: true, plan: todayPlan } });
+
+    navigate('/workout/active', { state: { startNew: true, plan: activePlan } });
   };
 
   const handleDeleteSession = async (id: string) => {

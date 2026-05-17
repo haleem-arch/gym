@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User, LogOut, Plus, Trash2, Search } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User, LogOut, Plus, Trash2, Search, Dumbbell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -14,6 +14,27 @@ import { BioStatusRing } from '../components/BioStatusRing';
 
 import { LOCAL_EXERCISES_DICTIONARY } from '../utils/localExercises';
 
+const getLevenshteinDistance = (a: string, b: string): number => {
+  const tmp = [];
+  let i, j;
+  for (i = 0; i <= a.length; i++) {
+    tmp[i] = [i];
+  }
+  for (j = 0; j <= b.length; j++) {
+    tmp[0][j] = j;
+  }
+  for (i = 1; i <= a.length; i++) {
+    for (j = 1; j <= b.length; j++) {
+      tmp[i][j] = Math.min(
+        tmp[i - 1][j] + 1, // Deletion
+        tmp[i][j - 1] + 1, // Insertion
+        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1) // Substitution
+      );
+    }
+  }
+  return tmp[a.length][b.length];
+};
+
 const fuzzyMatch = (text: string, query: string): boolean => {
   text = text.toLowerCase().trim();
   query = query.toLowerCase().trim();
@@ -21,52 +42,31 @@ const fuzzyMatch = (text: string, query: string): boolean => {
   if (!query) return false;
   if (text.includes(query)) return true;
   
-  // Clean special characters
-  const cleanText = text.replace(/[^a-z0-9\s]/g, '');
-  const cleanQuery = query.replace(/[^a-z0-9\s]/g, '');
+  // Clean and tokenize both text and query
+  const queryTokens = query.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+  const textTokens = text.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
   
-  // 1. Subsequence character matching (character ordering)
-  let qIdx = 0;
-  const noSpaceText = cleanText.replace(/\s+/g, '');
-  const noSpaceQuery = cleanQuery.replace(/\s+/g, '');
+  if (queryTokens.length === 0) return false;
   
-  for (let i = 0; i < noSpaceText.length; i++) {
-    if (noSpaceText[i] === noSpaceQuery[qIdx]) {
-      qIdx++;
+  // High-precision token matching: every query token must match at least one text token
+  return queryTokens.every(qToken => {
+    // 1. For short query tokens (<= 3 chars), require exact match or prefix match (to prevent "lat" matching "flat")
+    if (qToken.length <= 3) {
+      return textTokens.some(tToken => tToken.startsWith(qToken));
     }
-    if (qIdx === noSpaceQuery.length) return true;
-  }
-  
-  // 2. Token overlap and close mistypings (e.g. "dumbl" -> "dumbbell")
-  const queryTokens = cleanQuery.split(/\s+/);
-  const textTokens = cleanText.split(/\s+/);
-  
-  for (const qToken of queryTokens) {
-    if (qToken.length < 3) continue;
-    for (const tToken of textTokens) {
-      if (tToken.length < 3) continue;
-      
-      // Count shared characters regardless of order
-      let shared = 0;
-      const charMap: Record<string, number> = {};
-      for (const char of tToken) {
-        charMap[char] = (charMap[char] || 0) + 1;
-      }
-      for (const char of qToken) {
-        if (charMap[char] && charMap[char] > 0) {
-          shared++;
-          charMap[char]--;
-        }
-      }
-      
-      const lengthDiff = Math.abs(tToken.length - qToken.length);
-      if (shared >= qToken.length - 2 && lengthDiff <= 2) {
-        return true;
-      }
+    
+    // 2. For longer query tokens, check if it is a prefix or substring of any text token
+    if (textTokens.some(tToken => tToken.startsWith(qToken) || tToken.includes(qToken))) {
+      return true;
     }
-  }
-  
-  return false;
+    
+    // 3. Typo tolerance: Levenshtein distance check (max 1 typo for 4-5 chars, max 2 typos for 6+ chars)
+    return textTokens.some(tToken => {
+      if (tToken.length < 3) return false;
+      const allowedDistance = qToken.length > 5 ? 2 : 1;
+      return getLevenshteinDistance(qToken, tToken) <= allowedDistance;
+    });
+  });
 };
 
 interface CustomExerciseConfig {
@@ -1098,11 +1098,26 @@ const TodayView = () => {
                                     setCustomExercises(prev => [...prev, { name: ex.name, sets: 4, rest: 90 }]);
                                     setSearchQuery('');
                                   }}
-                                  className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2.5 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer gap-2"
+                                  className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer gap-2 w-full"
                                 >
-                                  <div className="flex flex-col gap-0.5">
-                                    <span>{ex.name}</span>
-                                    <span className="text-[8px] font-bold text-gray-500 uppercase tracking-wide">{ex.equipment} • {ex.muscle_group}</span>
+                                  <div className="flex items-center gap-3 w-full">
+                                    {ex.image ? (
+                                      <img
+                                        src={ex.image}
+                                        alt={ex.name}
+                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center flex-shrink-0">
+                                        <Dumbbell size={14} className="text-gray-600" />
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="line-clamp-1">{ex.name}</span>
+                                      <span className="text-[8px] font-bold text-gray-500 uppercase tracking-wide">
+                                        {ex.equipment} • {ex.muscle_group}
+                                      </span>
+                                    </div>
                                   </div>
                                   <Plus size={13} className="text-primary flex-shrink-0" />
                                 </button>
