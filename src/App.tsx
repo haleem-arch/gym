@@ -60,7 +60,7 @@ function App() {
   return (
     <Router>
       <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full md:max-w-[430px] mx-auto relative overflow-hidden shadow-2xl md:border-x md:border-gray-800">
-        <div className="flex-1 overflow-y-auto pb-28 no-scrollbar">
+        <div className="flex-1 overflow-y-auto pb-20 no-scrollbar">
           <Routes>
             <Route path="/" element={<TodayView />} />
             <Route path="/workout" element={<WorkoutHome />} />
