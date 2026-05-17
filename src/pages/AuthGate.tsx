@@ -51,12 +51,39 @@ export default function AuthGate() {
         }
       } else {
         // Sign In Flow
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
+
+        // Dynamic Self-Healing: If user was created manually via Supabase Dashboard to bypass rate limits,
+        // initialize their core targets and profiles automatically upon first login!
+        if (data?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', data.user.id)
+            .maybeSingle();
+
+          if (!profile) {
+            const kcalVal = 2400;
+            const proteinVal = Math.round((kcalVal * 0.26) / 4); // ~156g protein
+            const carbsVal = Math.round((kcalVal * 0.44) / 4);   // ~264g carbs
+            const fatVal = Math.round((kcalVal * 0.30) / 9);     // ~80g fat
+
+            const { error: profileError } = await supabase.from('profiles').insert({
+              id: data.user.id,
+              email: email,
+              targets: { kcal: kcalVal, protein: proteinVal, carbs: carbsVal, fat: fatVal }
+            });
+
+            if (profileError) {
+              console.error('Failed to self-heal user profile on first login:', profileError);
+            }
+          }
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during authentication.');
