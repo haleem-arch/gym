@@ -139,13 +139,13 @@ export const BioStatusRing = ({
           />
         </svg>
 
-        {/* Center Text (Large Percentage & Secondary InBody score label) */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[28px] font-bold text-white tracking-tight leading-none">
+        {/* Center Text (Compact, perfectly fitting typography) */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
+          <span className="text-xl font-extrabold text-white tracking-tight leading-none">
             {inbodyScore}%
           </span>
-          <span className="text-[11px] text-gray-500 font-medium mt-1 leading-none">
-            InBody Score
+          <span className="text-[8px] text-gray-500 uppercase tracking-widest font-semibold mt-1 leading-none">
+            InBody
           </span>
         </div>
       </div>
