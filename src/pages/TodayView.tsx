@@ -102,8 +102,12 @@ const TodayView = () => {
           setWorkoutStatus(0.0);
         }
       }
+    };
 
-      // 4. Fetch real latest InBody scan
+    const fetchLatestInbody = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const { data: scans } = await supabase
         .from('inbody_scans')
         .select('*')
@@ -123,6 +127,7 @@ const TodayView = () => {
     };
 
     fetchWorkoutStatus();
+    fetchLatestInbody();
     return () => {
       active = false;
     };
