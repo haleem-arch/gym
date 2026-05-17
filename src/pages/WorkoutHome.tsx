@@ -156,8 +156,8 @@ const WorkoutHome = () => {
 
         if (dayType === 'REST' || dayType === 'RUN') {
           setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
-        } else if (planMap[dayType]) {
-          let targetNames = planMap[dayType];
+        } else {
+          let targetNames: string[] = [];
           let parsedConfigs: { name: string; sets: number; rest: number }[] = [];
           
           try {
@@ -175,10 +175,14 @@ const WorkoutHome = () => {
               });
               targetNames = parsedConfigs.map(e => e.name);
             } else {
+              // Fallback to planMap defaults if the user has an empty DB somehow
+              targetNames = planMap[dayType] || planMap['PUSH'];
               parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
             }
           } catch (err) {
             console.error("Error loading custom plan:", err);
+            targetNames = planMap[dayType] || planMap['PUSH'];
+            parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
           }
 
           let finalExercises = [];
@@ -300,8 +304,8 @@ const WorkoutHome = () => {
     // Start fresh
     let activePlan = todayPlan;
     
-    // If today is a weightlifting day but exercises are empty/still loading, load them automatically!
-    if ((dayType === 'PUSH' || dayType === 'PULL' || dayType === 'LEGS') && (!activePlan.exercises || activePlan.exercises.length === 0)) {
+    // If today is a weightlifting day but exercises are empty/still loading, fetch them instantly!
+    if (dayType !== 'REST' && dayType !== 'RUN' && (!activePlan.exercises || activePlan.exercises.length === 0)) {
       const planMap: Record<string, string[]> = {
         PUSH: [
           'Incline DB Bench Press (45°)',
@@ -329,13 +333,43 @@ const WorkoutHome = () => {
         ]
       };
 
-      const targetNames = planMap[dayType];
+      let targetNames: string[] = [];
+      let parsedConfigs: { name: string; sets: number; rest: number }[] = [];
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: customPlan } = await supabase
+            .from('user_workout_plans')
+            .select('exercises')
+            .eq('user_id', session.user.id)
+            .eq('plan_type', dayType)
+            .maybeSingle();
+
+          if (customPlan?.exercises && customPlan.exercises.length > 0) {
+            parsedConfigs = customPlan.exercises.map((ex: any) => {
+              if (typeof ex === 'string') return { name: ex, sets: 4, rest: 90 };
+              return { name: ex.name || '', sets: ex.sets || 4, rest: ex.rest || 90 };
+            });
+            targetNames = parsedConfigs.map(e => e.name);
+          }
+        }
+      } catch (e) {
+        console.error("Fast fetch error:", e);
+      }
+
+      if (targetNames.length === 0) {
+        targetNames = planMap[dayType] || planMap['PUSH'];
+        parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
+      }
+
       const fallbackExercises = targetNames.map((name: string, i: number) => {
         const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
         const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
           const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
           return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
         });
+        const config = parsedConfigs.find(c => c.name.toLowerCase() === name.toLowerCase());
 
         return {
           id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
@@ -346,8 +380,8 @@ const WorkoutHome = () => {
           cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
           rationale: localMatch?.rationale || 'Key exercise movement.',
           equipment: localMatch?.equipment || 'Gym Equipment',
-          targetSets: 4,
-          targetRest: 90
+          targetSets: config?.sets || 4,
+          targetRest: config?.rest || 90
         };
       });
 
@@ -358,14 +392,10 @@ const WorkoutHome = () => {
       };
     } else if (!activePlan.exercises || activePlan.exercises.length === 0) {
       // Only prompt if it's actually a REST/RUN day and they clicked "Start Workout Anyway" or "Lift Weights Instead"
-      const userChoice = window.prompt("Today is scheduled for Rest/Run.\n\nWhich program would you like to start? (Type: PUSH, PULL, or LEGS)", "PUSH");
+      const userChoice = window.prompt("Today is scheduled for Rest/Run.\n\nWhich program would you like to start? (Type your program name e.g. PUSH, UPPER)", "PUSH");
       if (!userChoice) return;
       
       const selectedType = userChoice.toUpperCase().trim();
-      if (!['PUSH', 'PULL', 'LEGS'].includes(selectedType)) {
-        alert("Invalid selection. Please type PUSH, PULL, or LEGS to start a session.");
-        return;
-      }
 
       const planMap: Record<string, string[]> = {
         PUSH: [
@@ -394,7 +424,7 @@ const WorkoutHome = () => {
         ]
       };
 
-      const targetNames = planMap[selectedType];
+      const targetNames = planMap[selectedType] || planMap['PUSH'];
       const fallbackExercises = targetNames.map((name: string, i: number) => {
         const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
         const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
