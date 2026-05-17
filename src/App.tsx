@@ -6,6 +6,7 @@ import WorkoutHome from './pages/WorkoutHome';
 import WorkoutTracker from './pages/WorkoutTracker';
 import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
+import AuthGate from './pages/AuthGate';
 
 import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
@@ -26,27 +27,23 @@ function App() {
   const [session, setSession] = useState<any>(undefined);
 
   useEffect(() => {
+    // 1. Load initial session state
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Session error:', error);
-        setSession(null);
-        return;
-      }
-      if (!session) {
-        supabase.auth.signInWithPassword({
-          email: 'haleem@example.com',
-          password: 'athletepassword123'
-        }).then(({ data, error }) => {
-           if (error) console.error('Auth error:', error);
-           setSession(data?.session || null);
-        });
-      } else {
-        setSession(session);
-      }
+      if (error) console.error('Session error:', error);
+      setSession(session);
     }).catch(err => {
       console.error('Unhandled auth error:', err);
       setSession(null);
     });
+
+    // 2. Subscribe to reactive login/logout auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (session === undefined) {
@@ -55,6 +52,10 @@ function App() {
         LOADING ATHLETE PROFILE...
       </div>
     );
+  }
+
+  if (!session) {
+    return <AuthGate />;
   }
 
   return (

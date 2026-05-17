@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User, LogOut, Plus, Trash2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -40,6 +40,170 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
+
+  // ─── User Settings Modal states ───
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [kcalInput, setKcalInput] = useState('');
+  const [proteinInput, setProteinInput] = useState('');
+  const [carbsInput, setCarbsInput] = useState('');
+  const [fatInput, setFatInput] = useState('');
+
+  // Gym Program Editor states
+  const [planToEdit, setPlanToEdit] = useState<'PUSH' | 'PULL' | 'LEGS'>('PUSH');
+  const [customExercises, setCustomExercises] = useState<string[]>([]);
+  const [globalExercises, setGlobalExercises] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Load settings when modal is opened
+  useEffect(() => {
+    if (!showSettingsModal) return;
+
+    const loadUserSettings = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      setUserEmail(session.user.email || '');
+
+      // 1. Fetch profile macro targets
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (profile && profile.targets) {
+        setKcalInput(profile.targets.kcal?.toString() || '2400');
+        setProteinInput(profile.targets.protein?.toString() || '160');
+        setCarbsInput(profile.targets.carbs?.toString() || '240');
+        setFatInput(profile.targets.fat?.toString() || '70');
+      } else {
+        setKcalInput('2400');
+        setProteinInput('160');
+        setCarbsInput('240');
+        setFatInput('70');
+      }
+
+      // 2. Fetch global exercise list for the search/add utility
+      const { data: globalExs } = await supabase
+        .from('exercises')
+        .select('*')
+        .order('name');
+      if (globalExs) {
+        setGlobalExercises(globalExs);
+      }
+    };
+
+    loadUserSettings();
+  }, [showSettingsModal]);
+
+  // Load custom plan exercises when the target plan selection changes
+  useEffect(() => {
+    if (!showSettingsModal) return;
+
+    const loadPlanExercises = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const planMap: Record<string, string[]> = {
+        PUSH: [
+          'Incline DB Bench Press',
+          'Flat DB Bench Press',
+          'Barbell Overhead Press',
+          'DB Lateral Raise',
+          'Cable Tricep Pushdown (Straight Bar)',
+          'Overhead Cable Tricep Extension'
+        ],
+        PULL: [
+          'Weighted Pull-up',
+          'Lat Pulldown (Wide Grip)',
+          'Chest-Supported Row',
+          'Reverse Pec Deck Fly',
+          'Incline DB Curl',
+          'Hammer Curl'
+        ],
+        LEGS: [
+          'Barbell Back Squat',
+          'Leg Press (feet high for glutes)',
+          'DB Romanian Deadlift',
+          'DB Bulgarian Split Squat',
+          'Seated Leg Curl',
+          '45° Back Extension (BW/DB)',
+          'Standing Calf Raise'
+        ]
+      };
+
+      const { data: customPlan } = await supabase
+        .from('user_workout_plans')
+        .select('exercises')
+        .eq('user_id', session.user.id)
+        .eq('plan_type', planToEdit)
+        .maybeSingle();
+
+      if (customPlan && customPlan.exercises && customPlan.exercises.length > 0) {
+        setCustomExercises(customPlan.exercises);
+      } else {
+        setCustomExercises(planMap[planToEdit] || []);
+      }
+    };
+
+    loadPlanExercises();
+  }, [planToEdit, showSettingsModal]);
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 1. Update profiles targets
+      const kcalVal = parseInt(kcalInput) || 2400;
+      const proteinVal = parseInt(proteinInput) || 160;
+      const carbsVal = parseInt(carbsInput) || 240;
+      const fatVal = parseInt(fatInput) || 70;
+
+      await supabase
+        .from('profiles')
+        .update({
+          targets: { kcal: kcalVal, protein: proteinVal, carbs: carbsVal, fat: fatVal }
+        })
+        .eq('id', session.user.id);
+
+      // 2. Update user_workout_plans
+      const { data: existingPlan } = await supabase
+        .from('user_workout_plans')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('plan_type', planToEdit)
+        .maybeSingle();
+
+      if (existingPlan) {
+        await supabase
+          .from('user_workout_plans')
+          .update({ exercises: customExercises })
+          .eq('id', existingPlan.id);
+      } else {
+        await supabase
+          .from('user_workout_plans')
+          .insert({
+            user_id: session.user.id,
+            plan_type: planToEdit,
+            exercises: customExercises
+          });
+      }
+
+      // Broadcast update events so other hooks and components update instantly
+      window.dispatchEvent(new CustomEvent('plan_updated'));
+      window.dispatchEvent(new CustomEvent('schedule_updated'));
+      
+      setShowSettingsModal(false);
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -158,13 +322,21 @@ const TodayView = () => {
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-gray-400 mt-1">Haleem's HQ</p>
         </div>
-        <button 
-          onClick={() => setShowExportModal(true)} 
-          className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-        >
-          <FileSpreadsheet size={14} className="text-primary" />
-          Export
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowExportModal(true)} 
+            className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider h-[34px]"
+          >
+            <FileSpreadsheet size={14} className="text-primary" />
+            Export
+          </button>
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="flex items-center justify-center bg-surface hover:bg-gray-800 border border-gray-800 rounded-xl w-[34px] h-[34px] text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer"
+          >
+            <User size={16} />
+          </button>
+        </div>
       </motion.div>
 
       {/* Date Navigation */}
@@ -512,6 +684,239 @@ const TodayView = () => {
               <div className="text-[9px] text-gray-500 text-center leading-normal">
                 ✓ Fully optimized for Microsoft Excel & Google Sheets<br />
                 ✓ Arabic presets and detailed sets are preserved in UTF-8
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* User Settings Overlay Sheet */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <>
+            {/* Dark blur backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettingsModal(false)}
+              className="fixed inset-0 bg-black z-50 backdrop-blur-sm animate-fade-in"
+            />
+            {/* Full height glassmorphic drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-[390px] bg-black border-l border-gray-800 flex flex-col h-full shadow-2xl overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex justify-between items-center px-4 py-4 border-b border-gray-800 bg-surface/50 backdrop-blur-xl">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <User size={16} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm uppercase tracking-wide">User Settings</h3>
+                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{userEmail}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-6 no-scrollbar pb-10">
+                
+                {/* Section 1: Baseline Diet Program */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Diet Program (Macro Targets)
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-3.5 bg-surface/30 p-4 border border-white/5 rounded-2xl">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Calories (kcal)</label>
+                      <input 
+                        type="number" 
+                        value={kcalInput}
+                        onChange={(e) => setKcalInput(e.target.value)}
+                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Protein (g)</label>
+                      <input 
+                        type="number" 
+                        value={proteinInput}
+                        onChange={(e) => setProteinInput(e.target.value)}
+                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Carbs (g)</label>
+                      <input 
+                        type="number" 
+                        value={carbsInput}
+                        onChange={(e) => setCarbsInput(e.target.value)}
+                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Fat (g)</label>
+                      <input 
+                        type="number" 
+                        value={fatInput}
+                        onChange={(e) => setFatInput(e.target.value)}
+                        className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Gym Workout Customizer */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center pl-1">
+                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                      Gym Program Editor
+                    </h4>
+                  </div>
+
+                  <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                    {/* Day Selection Slider Tabs */}
+                    <div className="flex bg-black/40 rounded-xl p-1 border border-white/5">
+                      {(['PUSH', 'PULL', 'LEGS'] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => { setPlanToEdit(t); setSearchQuery(''); }}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer ${
+                            planToEdit === t ? 'bg-surface text-primary shadow' : 'text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Active Exercises List in selected day */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
+                        Active {planToEdit} List ({customExercises.length})
+                      </span>
+                      
+                      <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar pr-1">
+                        {customExercises.map((exName, idx) => (
+                          <div 
+                            key={idx} 
+                            className="flex justify-between items-center bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-xs font-semibold animate-fade-in"
+                          >
+                            <span className="truncate max-w-[200px]">{exName}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomExercises(prev => prev.filter(e => e !== exName));
+                              }}
+                              className="text-danger/60 hover:text-danger p-1 transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Add Exercise autocomplete lookup */}
+                    <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
+                        Add New Exercise
+                      </span>
+                      <div className="relative flex items-center">
+                        <Search size={13} className="absolute left-3 text-gray-500" />
+                        <input
+                          type="text"
+                          placeholder="Search database..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl pl-9 pr-3 py-2 text-xs outline-none placeholder-gray-600 font-medium"
+                        />
+                      </div>
+
+                      {/* Display matched autocomplete results */}
+                      {searchQuery.trim().length > 0 && (
+                        <div className="bg-black/60 border border-white/5 rounded-xl max-h-[140px] overflow-y-auto no-scrollbar flex flex-col p-1.5 gap-1 shadow-lg animate-fade-in">
+                          {globalExercises
+                            .filter(ex => 
+                              ex.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                              !customExercises.includes(ex.name)
+                            )
+                            .slice(0, 5)
+                            .map((ex) => (
+                              <button
+                                key={ex.id}
+                                type="button"
+                                onClick={() => {
+                                  setCustomExercises(prev => [...prev, ex.name]);
+                                  setSearchQuery('');
+                                }}
+                                className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                              >
+                                <span>{ex.name}</span>
+                                <Plus size={13} className="text-primary" />
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Logout Action Row */}
+                <div className="border-t border-white/5 pt-4 flex flex-col gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm("Are you sure you want to sign out?")) {
+                        await supabase.auth.signOut();
+                        setShowSettingsModal(false);
+                      }
+                    }}
+                    className="w-full bg-danger/10 hover:bg-danger/25 border border-danger/25 text-danger font-black text-[10px] uppercase py-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest shadow-inner active:scale-[0.98]"
+                  >
+                    <LogOut size={13} />
+                    Sign Out Account
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom Fixed Action Actions */}
+              <div className="p-4 border-t border-gray-800 bg-surface/50 backdrop-blur-xl flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  className="flex-1 border border-white/5 hover:bg-gray-800 text-gray-300 font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={savingSettings}
+                  onClick={handleSaveSettings}
+                  className="flex-1 bg-primary hover:bg-blue-600 disabled:opacity-50 text-white font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider flex items-center justify-center gap-1.5"
+                >
+                  {savingSettings ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Check size={14} />
+                      Save Changes
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
           </>
