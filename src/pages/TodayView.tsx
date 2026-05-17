@@ -12,6 +12,55 @@ import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
 
 
+const LOCAL_EXERCISES_DICTIONARY = [
+  // Chest
+  { id: 'dict-incline-db', name: 'Incline DB Bench Press', muscle_group: 'Chest' },
+  { id: 'dict-flat-db', name: 'Flat DB Bench Press', muscle_group: 'Chest' },
+  { id: 'dict-flat-bb', name: 'Flat Barbell Bench Press', muscle_group: 'Chest' },
+  { id: 'dict-cable-fly-low', name: 'Cable Chest Fly (Low Pulley)', muscle_group: 'Chest' },
+  { id: 'dict-cable-fly-high', name: 'Cable Chest Fly (High Pulley)', muscle_group: 'Chest' },
+  { id: 'dict-pec-deck', name: 'Pec Deck Fly', muscle_group: 'Chest' },
+  { id: 'dict-dips', name: 'Chest Dips (Bodyweight/Weighted)', muscle_group: 'Chest' },
+  
+  // Back
+  { id: 'dict-weighted-pullup', name: 'Weighted Pull-up', muscle_group: 'Back' },
+  { id: 'dict-chinup', name: 'Pull-up / Chin-up (Bodyweight)', muscle_group: 'Back' },
+  { id: 'dict-lat-pulldown', name: 'Lat Pulldown (Wide Grip)', muscle_group: 'Back' },
+  { id: 'dict-chest-sup-row', name: 'Chest-Supported Row', muscle_group: 'Back' },
+  { id: 'dict-db-row', name: 'Single-Arm DB Row', muscle_group: 'Back' },
+  { id: 'dict-barbell-row', name: 'Barbell Row', muscle_group: 'Back' },
+  { id: 'dict-facepull', name: 'Face Pull (Rope)', muscle_group: 'Back' },
+  { id: 'dict-reverse-pec-deck', name: 'Reverse Pec Deck Fly', muscle_group: 'Back' },
+  
+  // Shoulders
+  { id: 'dict-bb-ohp', name: 'Barbell Overhead Press', muscle_group: 'Shoulders' },
+  { id: 'dict-db-shoulder-press', name: 'DB Shoulder Press (Seated)', muscle_group: 'Shoulders' },
+  { id: 'dict-db-lateral-raise', name: 'DB Lateral Raise', muscle_group: 'Shoulders' },
+  { id: 'dict-cable-lateral-raise', name: 'Cable Lateral Raise', muscle_group: 'Shoulders' },
+  { id: 'dict-incline-y-raise', name: 'Incline DB Y-Raise', muscle_group: 'Shoulders' },
+  
+  // Legs
+  { id: 'dict-back-squat', name: 'Barbell Back Squat', muscle_group: 'Legs' },
+  { id: 'dict-front-squat', name: 'Barbell Front Squat', muscle_group: 'Legs' },
+  { id: 'dict-leg-press', name: 'Leg Press (Feet High)', muscle_group: 'Legs' },
+  { id: 'dict-db-rdl', name: 'DB Romanian Deadlift', muscle_group: 'Legs' },
+  { id: 'dict-bb-rdl', name: 'Barbell Romanian Deadlift', muscle_group: 'Legs' },
+  { id: 'dict-bulgarian-split', name: 'DB Bulgarian Split Squat', muscle_group: 'Legs' },
+  { id: 'dict-seated-leg-curl', name: 'Seated Leg Curl', muscle_group: 'Legs' },
+  { id: 'dict-leg-extension', name: 'Leg Extension', muscle_group: 'Legs' },
+  { id: 'dict-standing-calf-raise', name: 'Standing Calf Raise', muscle_group: 'Legs' },
+  { id: 'dict-back-extension', name: '45° Back Extension', muscle_group: 'Legs' },
+  
+  // Arms
+  { id: 'dict-incline-db-curl', name: 'Incline DB Curl', muscle_group: 'Arms' },
+  { id: 'dict-hammer-curl', name: 'Hammer Curl', muscle_group: 'Arms' },
+  { id: 'dict-zottman-curl', name: 'Zottman Curl', muscle_group: 'Arms' },
+  { id: 'dict-cable-bicep-curl', name: 'Cable Bicep Curl', muscle_group: 'Arms' },
+  { id: 'dict-cable-pushdown', name: 'Cable Tricep Pushdown (Straight Bar)', muscle_group: 'Arms' },
+  { id: 'dict-overhead-cable-ext', name: 'Overhead Cable Tricep Extension', muscle_group: 'Arms' },
+  { id: 'dict-db-skullcrusher', name: 'DB Skullcrusher', muscle_group: 'Arms' }
+];
+
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
 
 const TodayView = () => {
@@ -90,9 +139,16 @@ const TodayView = () => {
         .from('exercises')
         .select('*')
         .order('name');
-      if (globalExs) {
-        setGlobalExercises(globalExs);
-      }
+      
+      const dbExs = globalExs || [];
+      const dbNames = dbExs.map((e: any) => e.name.toLowerCase());
+      
+      // Merge with the local offline library, ensuring no duplicate exercises
+      const filteredLocal = LOCAL_EXERCISES_DICTIONARY.filter(
+        (localEx) => !dbNames.includes(localEx.name.toLowerCase())
+      );
+      
+      setGlobalExercises([...dbExs, ...filteredLocal].sort((a, b) => a.name.localeCompare(b.name)));
     };
 
     loadUserSettings();
@@ -702,13 +758,13 @@ const TodayView = () => {
               onClick={() => setShowSettingsModal(false)}
               className="fixed inset-0 bg-black z-50 backdrop-blur-sm animate-fade-in"
             />
-            {/* Full height glassmorphic drawer */}
+            {/* Full height glassmorphic majestic panel (iOS Slide Up Sheet) */}
             <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-[390px] bg-black border-l border-gray-800 flex flex-col h-full shadow-2xl overflow-hidden"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 240 }}
+              className="fixed inset-0 z-50 w-full max-w-[390px] mx-auto bg-black flex flex-col h-full shadow-2xl overflow-hidden border-x border-gray-800"
             >
               {/* Modal Header */}
               <div className="flex justify-between items-center px-4 py-4 border-b border-gray-800 bg-surface/50 backdrop-blur-xl">

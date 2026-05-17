@@ -55,35 +55,34 @@ export const useDiet = () => {
     fat: 70
   });
 
-  // Effect to update targets when dayType changes
-  useEffect(() => {
-    const fetchAndAdjustTargets = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  const recalculateTotals = async (logId: string, currentMeals: DietMeal[], existingWater?: number, existingCompleted?: boolean) => {
+    let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0, water: existingWater || 0, completed: existingCompleted || false };
+    
+    currentMeals.forEach(meal => {
+      meal.items.forEach(item => {
+        totals.kcal += item.macros.kcal;
+        totals.protein += item.macros.protein;
+        totals.carbs += item.macros.carbs;
+        totals.fat += item.macros.fat;
+      });
+    });
 
-      let baseTargets = { kcal: 2400, protein: 160, carbs: 240, fat: 70 };
-      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
-      
-      if (profile && profile.targets && profile.targets.kcal) {
-        baseTargets = profile.targets;
-      }
-
-      let adjustedTargets = { ...baseTargets };
-      
-      if (dayType === 'REST') {
-        adjustedTargets.kcal = 2100;
-        adjustedTargets.carbs = Math.round(baseTargets.carbs * 0.6); // ~140g
-        adjustedTargets.fat = Math.round(baseTargets.fat * 0.85); // ~60g
-      } else if (dayType === 'RUN') {
-        adjustedTargets.kcal = Math.round(baseTargets.kcal + 400); // 2800
-        adjustedTargets.carbs = Math.round(baseTargets.carbs + 100); // 340
-      }
-
-      setTargets(adjustedTargets);
+    // Round everything to 1 decimal place to prevent floating point weirdness
+    totals = {
+      kcal: Math.round(totals.kcal),
+      protein: Math.round(totals.protein * 10) / 10,
+      carbs: Math.round(totals.carbs * 10) / 10,
+      fat: Math.round(totals.fat * 10) / 10,
+      water: totals.water,
+      completed: totals.completed
     };
 
-    fetchAndAdjustTargets();
-  }, [dayType]);
+    // Update state
+    setLog(prev => prev ? { ...prev, daily_totals: totals } : null);
+
+    // Update Supabase
+    await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', logId);
+  };
 
   const loadDateData = useCallback(async () => {
     setLoading(true);
@@ -139,6 +138,49 @@ export const useDiet = () => {
     setLoading(false);
   }, [activeDateStr]);
 
+  // Effect to update targets when dayType changes or settings update
+  useEffect(() => {
+    const fetchAndAdjustTargets = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      let baseTargets = { kcal: 2400, protein: 160, carbs: 240, fat: 70 };
+      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+      
+      if (profile && profile.targets && profile.targets.kcal) {
+        baseTargets = profile.targets;
+      }
+
+      let adjustedTargets = { ...baseTargets };
+      
+      if (dayType === 'REST') {
+        adjustedTargets.kcal = 2100;
+        adjustedTargets.carbs = Math.round(baseTargets.carbs * 0.6); // ~140g
+        adjustedTargets.fat = Math.round(baseTargets.fat * 0.85); // ~60g
+      } else if (dayType === 'RUN') {
+        adjustedTargets.kcal = Math.round(baseTargets.kcal + 400); // 2800
+        adjustedTargets.carbs = Math.round(baseTargets.carbs + 100); // 340
+      }
+
+      setTargets(adjustedTargets);
+    };
+
+    fetchAndAdjustTargets();
+
+    const handleUpdate = () => {
+      fetchAndAdjustTargets();
+      loadDateData();
+    };
+
+    window.addEventListener('plan_updated', handleUpdate);
+    window.addEventListener('schedule_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('plan_updated', handleUpdate);
+      window.removeEventListener('schedule_updated', handleUpdate);
+    };
+  }, [dayType, loadDateData]);
+
   const startDay = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -170,35 +212,6 @@ export const useDiet = () => {
     
     setLog(prev => prev ? { ...prev, daily_totals: updatedTotals } : null);
     await supabase.from('diet_logs').update({ daily_totals: updatedTotals }).eq('id', log.id);
-  };
-
-  const recalculateTotals = async (logId: string, currentMeals: DietMeal[], existingWater?: number, existingCompleted?: boolean) => {
-    let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0, water: existingWater || 0, completed: existingCompleted || false };
-    
-    currentMeals.forEach(meal => {
-      meal.items.forEach(item => {
-        totals.kcal += item.macros.kcal;
-        totals.protein += item.macros.protein;
-        totals.carbs += item.macros.carbs;
-        totals.fat += item.macros.fat;
-      });
-    });
-
-    // Round everything to 1 decimal place to prevent floating point weirdness
-    totals = {
-      kcal: Math.round(totals.kcal),
-      protein: Math.round(totals.protein * 10) / 10,
-      carbs: Math.round(totals.carbs * 10) / 10,
-      fat: Math.round(totals.fat * 10) / 10,
-      water: totals.water,
-      completed: totals.completed
-    };
-
-    // Update state
-    setLog(prev => prev ? { ...prev, daily_totals: totals } : null);
-
-    // Update Supabase
-    await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', logId);
   };
 
   const createMeal = async (name: string) => {

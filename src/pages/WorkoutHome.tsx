@@ -161,11 +161,32 @@ const WorkoutHome = () => {
           .select('*')
           .in('name', targetNames);
           
+        let finalExercises = [];
         if (exData && exData.length > 0) {
-          // Sort to match the plan's exact order
-          const sorted = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
-          setTodayPlan((prev: any) => ({ ...prev, exercises: sorted }));
+          finalExercises = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
         }
+
+        // Self-Healing Fallback: If some or all exercises are not yet inside the database 'exercises' table (empty project),
+        // dynamically construct temporary mock records so they render flawlessly with their correct custom names!
+        if (finalExercises.length < targetNames.length) {
+          const matchedNames = finalExercises.map((e: any) => e.name);
+          const missingNames = targetNames.filter((name: string) => !matchedNames.includes(name));
+
+          const tempRecords = missingNames.map((name: string, i: number) => ({
+            id: `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
+            name: name,
+            muscle_group: 'All Muscles',
+            tier: 'A',
+            focus: 'Hypertrophy',
+            cue: 'Maintain perfect execution control throughout the set.',
+            rationale: 'Key exercise movement.',
+            equipment: 'Gym Equipment'
+          }));
+
+          finalExercises = [...finalExercises, ...tempRecords].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
+        }
+
+        setTodayPlan((prev: any) => ({ ...prev, exercises: finalExercises }));
       }
       
       setLoading(false);
