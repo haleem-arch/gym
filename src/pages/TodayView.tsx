@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Utensils, Droplets, FileSpreadsheet, Download, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
+import { supabase } from '../lib/supabase';
 
 import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
+import { BioStatusRing } from '../components/BioStatusRing';
 
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
@@ -23,6 +25,7 @@ const TodayView = () => {
   };
   const activeDateStr = getLocalDateString(activeDate);
   const { dayType, setDayType } = useSchedule(activeDateStr);
+  const isToday = activeDate.toDateString() === new Date().toDateString();
 
   const [showExportModal, setShowExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -36,11 +39,56 @@ const TodayView = () => {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   });
 
+  const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
+
+  useEffect(() => {
+    let active = true;
+    const fetchWorkoutStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 1. Check if active workout is currently in memory and matches the active date
+      const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
+      if (activeStr) {
+        try {
+          const parsed = JSON.parse(activeStr);
+          if (parsed && isToday) {
+            if (active) setWorkoutStatus(0.5);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // 2. Check if a workout has been logged in Supabase for the activeDateStr
+      const { data: completedWorkouts } = await supabase
+        .from('workouts')
+        .select('id, status')
+        .eq('user_id', session.user.id)
+        .eq('date', activeDateStr);
+
+      if (!active) return;
+
+      if (completedWorkouts && completedWorkouts.length > 0) {
+        setWorkoutStatus(1.0);
+      } else {
+        if (workout && isToday) {
+          setWorkoutStatus(0.5);
+        } else {
+          setWorkoutStatus(0.0);
+        }
+      }
+    };
+
+    fetchWorkoutStatus();
+    return () => {
+      active = false;
+    };
+  }, [activeDateStr, workout, isToday]);
+
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
   
-  const isToday = activeDate.toDateString() === new Date().toDateString();
   const dateDisplay = isToday ? 'Today' : activeDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   // Phase 1 Mock Plan Generation based on Day Type
@@ -96,6 +144,17 @@ const TodayView = () => {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
       </div>
+
+      {/* Bio-Status Concentric Pulsing Rings */}
+      <BioStatusRing 
+        kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
+        waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
+        workoutStatus={workoutStatus}
+        kcalCurrent={macros.kcal}
+        kcalTarget={targets.kcal}
+        waterCurrentL={waterCurrent}
+        waterTargetL={waterTarget}
+      />
 
       {/* Today's Plan Card */}
       <motion.div 
