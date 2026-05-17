@@ -8,7 +8,6 @@ interface BioStatusRingProps {
   kcalTarget: number;
   waterCurrentL: number;
   waterTargetL: number;
-  inbodyScore?: number;
 }
 
 export const BioStatusRing = ({
@@ -18,8 +17,7 @@ export const BioStatusRing = ({
   kcalCurrent,
   kcalTarget,
   waterCurrentL,
-  waterTargetL,
-  inbodyScore = 82
+  waterTargetL
 }: BioStatusRingProps) => {
   // SVG Geometry Settings
   const size = 160;
@@ -47,6 +45,11 @@ export const BioStatusRing = ({
   const trackNutrition = 'rgba(249, 115, 22, 0.15)';
   const trackHydration = 'rgba(56, 189, 248, 0.15)';
   const trackTraining = 'rgba(167, 139, 250, 0.15)';
+
+  // Calculate today's dynamic average daily biometric completion score
+  const dailyBioScore = Math.round(
+    ((Math.min(kcalPct, 1) + Math.min(waterPct, 1) + workoutStatus) / 3) * 100
+  );
 
   return (
     <motion.div 
@@ -142,10 +145,10 @@ export const BioStatusRing = ({
         {/* Center Text (Compact, perfectly fitting typography) */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
           <span className="text-xl font-extrabold text-white tracking-tight leading-none">
-            {inbodyScore}%
+            {dailyBioScore}%
           </span>
           <span className="text-[8px] text-gray-500 uppercase tracking-widest font-semibold mt-1 leading-none">
-            InBody
+            Bio Score
           </span>
         </div>
       </div>
