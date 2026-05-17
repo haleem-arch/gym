@@ -16,7 +16,7 @@ const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
 
 const TodayView = () => {
   const navigate = useNavigate();
-  const { workout } = useActiveWorkout();
+  const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
   
   // Need to safely get date string respecting timezone
@@ -47,7 +47,29 @@ const TodayView = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // 1. Check if active workout is currently in memory and matches the active date
+      // 1. Check if a workout has been logged in Supabase for the activeDateStr first!
+      const { data: completedWorkouts } = await supabase
+        .from('workouts')
+        .select('id, status')
+        .eq('user_id', session.user.id)
+        .eq('date', activeDateStr);
+
+      if (!active) return;
+
+      if (completedWorkouts && completedWorkouts.length > 0) {
+        const hasCompleted = completedWorkouts.some((w: any) => w.status === 'completed');
+        if (hasCompleted) {
+          // Self-heal: Clear any local active workout state & localStorage if it's already completed today
+          localStorage.removeItem('athlete_dashboard_active_workout');
+          if (workout) {
+            endWorkout();
+          }
+          setWorkoutStatus(1.0);
+          return;
+        }
+      }
+
+      // 2. If not completed in database, check if active workout is currently in memory
       const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
       if (activeStr) {
         try {
@@ -59,21 +81,10 @@ const TodayView = () => {
         } catch (e) {}
       }
 
-      // 2. Check if a workout has been logged in Supabase for the activeDateStr
-      const { data: completedWorkouts } = await supabase
-        .from('workouts')
-        .select('id, status')
-        .eq('user_id', session.user.id)
-        .eq('date', activeDateStr);
-
-      if (!active) return;
-
+      // 3. If not in memory, check if in_progress in database
       if (completedWorkouts && completedWorkouts.length > 0) {
-        const hasCompleted = completedWorkouts.some((w: any) => w.status === 'completed');
         const hasInProgress = completedWorkouts.some((w: any) => w.status === 'in_progress');
-        if (hasCompleted) {
-          setWorkoutStatus(1.0);
-        } else if (hasInProgress) {
+        if (hasInProgress) {
           setWorkoutStatus(0.5);
         } else {
           setWorkoutStatus(0.0);
