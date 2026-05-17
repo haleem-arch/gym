@@ -4,14 +4,12 @@ interface BioStatusRingProps {
   kcalPct: number;
   waterPct: number;
   workoutStatus: number; // 0.0 = not started, 0.5 = in progress, 1.0 = completed
-  isRestDay?: boolean;
 }
 
 export const BioStatusRing = ({
   kcalPct,
   waterPct,
-  workoutStatus,
-  isRestDay = false
+  workoutStatus
 }: BioStatusRingProps) => {
   // SVG Geometry Settings (compact 100x100px)
   const size = 100;
@@ -40,12 +38,9 @@ export const BioStatusRing = ({
   const trackHydration = 'rgba(56, 189, 248, 0.15)';
   const trackTraining = 'rgba(167, 139, 250, 0.15)';
 
-  // On a REST day, training is completed by resting!
-  const effectiveWorkoutStatus = isRestDay ? 1.0 : workoutStatus;
-
   // Calculate today's dynamic average daily biometric completion score
   const dailyBioScore = Math.round(
-    ((Math.min(kcalPct, 1) + Math.min(waterPct, 1) + effectiveWorkoutStatus) / 3) * 100
+    ((Math.min(kcalPct, 1) + Math.min(waterPct, 1) + workoutStatus) / 3) * 100
   );
 
   return (
@@ -134,7 +129,7 @@ export const BioStatusRing = ({
             strokeDasharray={circInner}
             strokeLinecap="round"
             initial={{ strokeDashoffset: circInner }}
-            animate={{ strokeDashoffset: circInner * (1 - effectiveWorkoutStatus) }}
+            animate={{ strokeDashoffset: circInner * (1 - workoutStatus) }}
             transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.2 }}
           />
         </svg>
@@ -177,13 +172,7 @@ export const BioStatusRing = ({
           <div className="flex flex-col leading-none">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Training</span>
             <span className="text-sm font-black" style={{ color: colorTraining }}>
-              {isRestDay 
-                ? 'Rest Day' 
-                : workoutStatus === 1.0 
-                  ? 'Completed' 
-                  : workoutStatus === 0.5 
-                    ? 'Active' 
-                    : 'Behind'}
+              {workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Rest'}
             </span>
           </div>
         </div>

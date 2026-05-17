@@ -32,18 +32,8 @@ export const useSchedule = (activeDateStr: string) => {
     if (data && data.days && data.days[activeDateStr]) {
       setDayType(data.days[activeDateStr]);
     } else {
-      // Default fallback if nothing is scheduled: fetch the user's first available plan from user_workout_plans
-      const { data: plans } = await supabase
-        .from('user_workout_plans')
-        .select('plan_type')
-        .eq('user_id', session.user.id)
-        .limit(1);
-
-      if (plans && plans.length > 0) {
-        setDayType(plans[0].plan_type.toUpperCase());
-      } else {
-        setDayType('PUSH'); 
-      }
+      // Default fallback if nothing is scheduled
+      setDayType('PUSH'); 
     }
     setLoading(false);
   }, [activeDateStr]);
@@ -85,11 +75,7 @@ export const useSchedule = (activeDateStr: string) => {
 
     // Listen for local updates across components
     const handleLocalUpdate = (e: any) => {
-      if (e.detail) {
-        setDayType(e.detail);
-      } else {
-        loadSchedule();
-      }
+      setDayType(e.detail);
     };
     window.addEventListener('schedule_updated', handleLocalUpdate);
 

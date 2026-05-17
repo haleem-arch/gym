@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
 import { BarChart2 } from 'lucide-react';
-import { LOCAL_EXERCISES_DICTIONARY } from '../utils/localExercises';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -82,167 +81,94 @@ const WorkoutHome = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setLoading(false);
-          return;
-        }
-        setCurrentUserId(session.user.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      setCurrentUserId(session.user.id);
 
-        // 1. Fetch Past Workouts (completed only)
-        try {
-          const { data: workoutsData } = await supabase
-            .from('workouts')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .eq('status', 'completed')
-            .order('date', { ascending: false })
-            .order('created_at', { ascending: false });
-            
-          if (workoutsData) {
-            setPastWorkouts(workoutsData);
-          }
-        } catch (err) {
-          console.error("Error loading past workouts:", err);
-        }
-
-        // 2. Fetch In Progress session for today (or recent)
-        try {
-          const { data: inProgressData } = await supabase
-            .from('workouts')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .eq('status', 'in_progress')
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          if (inProgressData && inProgressData.length > 0) {
-            setInProgressWorkout(inProgressData[0]);
-          } else {
-            setInProgressWorkout(null);
-          }
-        } catch (err) {
-          console.error("Error loading in-progress workout:", err);
-        }
-
-        // 3. Fetch real exercises based on day_type
-        const planMap: Record<string, string[]> = {
-          PUSH: [
-            'Incline DB Bench Press (45°)',
-            'DB Shoulder Press (seated neutral)',
-            'Incline DB Y-Raise (20-30°)',
-            'Cable Chest Fly (low pulley)',
-            'Overhead Cable Extension (rope)',
-            'DB Lateral Raise (elbow-lead)'
-          ],
-          PULL: [
-            'Lat Pulldown (wide grip)',
-            'Chest-Supported DB Row',
-            'Sideways One-Arm Rear Delt Fly',
-            'Face Pull (rope eye height)',
-            'Incline DB Curl - Bayesian',
-            'Zottman Curl'
-          ],
-          LEGS: [
-            'Leg Press (feet high for glutes)',
-            'DB Romanian Deadlift',
-            'DB Bulgarian Split Squat',
-            'Seated Leg Curl',
-            '45° Back Extension (BW/DB)',
-            'Standing Calf Raise'
-          ]
-        };
-
-        if (dayType === 'REST' || dayType === 'RUN') {
-          setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
-        } else {
-          let targetNames: string[] = [];
-          let parsedConfigs: { name: string; sets: number; rest: number }[] = [];
-          
-          try {
-            const { data: customPlan } = await supabase
-              .from('user_workout_plans')
-              .select('exercises')
-              .eq('user_id', session.user.id)
-              .eq('plan_type', dayType)
-              .maybeSingle();
-
-            if (customPlan?.exercises && customPlan.exercises.length > 0) {
-              parsedConfigs = customPlan.exercises.map((ex: any) => {
-                if (typeof ex === 'string') return { name: ex, sets: 4, rest: 90 };
-                return { name: ex.name || '', sets: ex.sets || 4, rest: ex.rest || 90 };
-              });
-              targetNames = parsedConfigs.map(e => e.name);
-            } else {
-              // Fallback to planMap defaults if the user has an empty DB somehow
-              targetNames = planMap[dayType] || planMap['PUSH'];
-              parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
-            }
-          } catch (err) {
-            console.error("Error loading custom plan:", err);
-            targetNames = planMap[dayType] || planMap['PUSH'];
-            parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
-          }
-
-          let finalExercises = [];
-          try {
-            const { data: exData } = await supabase
-              .from('exercises')
-              .select('*')
-              .in('name', targetNames);
-              
-            if (exData && exData.length > 0) {
-              finalExercises = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
-            }
-          } catch (err) {
-            console.error("Error fetching exercises:", err);
-          }
-
-          // Self-Healing Fallback: Check local dictionary or templates
-          if (finalExercises.length < targetNames.length) {
-            const matchedNames = finalExercises.map((e: any) => e.name);
-            const missingNames = targetNames.filter((name: string) => !matchedNames.includes(name));
-
-            const tempRecords = missingNames.map((name: string, i: number) => {
-              const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-              const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
-                const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
-              });
-
-              return {
-                id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
-                name: name,
-                muscle_group: localMatch?.muscle_group || 'All Muscles',
-                tier: localMatch?.tier || 'A',
-                focus: localMatch?.focus || 'Hypertrophy',
-                cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
-                rationale: localMatch?.rationale || 'Key exercise movement.',
-                equipment: localMatch?.equipment || 'Gym Equipment'
-              };
-            });
-
-            finalExercises = [...finalExercises, ...tempRecords].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
-          }
-
-          // Inject target sets and rest times
-          finalExercises = finalExercises.map(fe => {
-            const config = parsedConfigs.find(c => c.name.toLowerCase() === fe.name.toLowerCase());
-            return {
-              ...fe,
-              targetSets: config ? config.sets : 4,
-              targetRest: config ? config.rest : 90
-            };
-          });
-
-          setTodayPlan((prev: any) => ({ ...prev, exercises: finalExercises }));
-        }
-      } catch (globalErr) {
-        console.error("Global data loading exception caught:", globalErr);
-      } finally {
-        setLoading(false);
+      // 1. Fetch Past Workouts (completed only)
+      const { data: workoutsData } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'completed')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+        
+      if (workoutsData) {
+        setPastWorkouts(workoutsData);
       }
+
+      // 2. Fetch In Progress session for today (or recent)
+      const { data: inProgressData } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (inProgressData && inProgressData.length > 0) {
+        setInProgressWorkout(inProgressData[0]);
+      } else {
+        setInProgressWorkout(null);
+      }
+
+      // 3. Fetch real exercises based on day_type
+      const planMap: Record<string, string[]> = {
+        PUSH: [
+          'Incline DB Bench Press (45°)',
+          'DB Shoulder Press (seated neutral)',
+          'Incline DB Y-Raise (20-30°)',
+          'Cable Chest Fly (low pulley)',
+          'Overhead Cable Extension (rope)',
+          'DB Lateral Raise (elbow-lead)'
+        ],
+        PULL: [
+          'Lat Pulldown (wide grip)',
+          'Chest-Supported DB Row',
+          'Sideways One-Arm Rear Delt Fly',
+          'Face Pull (rope eye height)',
+          'Incline DB Curl - Bayesian',
+          'Zottman Curl'
+        ],
+        LEGS: [
+          'Leg Press (feet high for glutes)',
+          'DB Romanian Deadlift',
+          'DB Bulgarian Split Squat',
+          'Seated Leg Curl',
+          '45° Back Extension (BW/DB)',
+          'Standing Calf Raise'
+        ]
+      };
+
+      if (dayType === 'REST' || dayType === 'RUN') {
+        setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
+      } else if (planMap[dayType]) {
+        // Fetch custom plan from database if it exists
+        const { data: customPlan } = await supabase
+          .from('user_workout_plans')
+          .select('exercises')
+          .eq('user_id', session.user.id)
+          .eq('plan_type', dayType)
+          .maybeSingle();
+
+        const targetNames = (customPlan?.exercises && customPlan.exercises.length > 0) 
+          ? customPlan.exercises 
+          : planMap[dayType];
+
+        const { data: exData } = await supabase
+          .from('exercises')
+          .select('*')
+          .in('name', targetNames);
+          
+        if (exData && exData.length > 0) {
+          // Sort to match the plan's exact order
+          const sorted = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
+          setTodayPlan((prev: any) => ({ ...prev, exercises: sorted }));
+        }
+      }
+      
+      setLoading(false);
     };
     
     const timeout = setTimeout(() => loadData(), 500);
@@ -265,195 +191,44 @@ const WorkoutHome = () => {
     } 
     
     if (inProgressWorkout) {
-      try {
-        // Resume from Supabase
-        const { data: exercisesData } = await supabase
-          .from('workout_exercises')
-          .select(`*, exercises(*)`)
-          .eq('workout_id', inProgressWorkout.id);
+      // Resume from Supabase
+      const { data: exercisesData } = await supabase
+        .from('workout_exercises')
+        .select(`*, exercises(*)`)
+        .eq('workout_id', inProgressWorkout.id);
 
-        if (exercisesData && exercisesData.length > 0) {
-          const reconstructedExercises = exercisesData.map((we: any) => ({
-            id: we.exercises.id,
-            name: we.exercises.name,
-            muscle_group: we.exercises.muscle_group,
-            tier: we.exercises.tier || 'A',
-            cue: we.exercises.cue || '',
-            rationale: we.exercises.rationale || '',
-            sets: we.sets || [],
-            notes: we.notes || '',
-            restTime: 120
-          }));
+      if (exercisesData) {
+        const reconstructedExercises = exercisesData.map((we: any) => ({
+          id: we.exercises.id,
+          name: we.exercises.name,
+          muscle_group: we.exercises.muscle_group,
+          tier: we.exercises.tier || 'A',
+          cue: we.exercises.cue || '',
+          rationale: we.exercises.rationale || '',
+          sets: we.sets || [],
+          notes: we.notes || '',
+          restTime: 120
+        }));
 
-          loadWorkout({
-            id: inProgressWorkout.id, // Re-use the same ID to update instead of insert
-            dayType: inProgressWorkout.day_type,
-            title: `${inProgressWorkout.day_type} Workout`,
-            startTime: new Date().toISOString(),
-            exercises: reconstructedExercises,
-            notes: inProgressWorkout.notes || ''
-          });
-          navigate('/workout/active');
-          return;
-        }
-      } catch (err) {
-        console.error("Error resuming in-progress session:", err);
+        loadWorkout({
+          id: inProgressWorkout.id, // Re-use the same ID to update instead of insert
+          dayType: inProgressWorkout.day_type,
+          title: `${inProgressWorkout.day_type} Workout`,
+          startTime: new Date().toISOString(),
+          exercises: reconstructedExercises,
+          notes: inProgressWorkout.notes || ''
+        });
+        navigate('/workout/active');
+        return;
       }
     }
 
     // Start fresh
-    let activePlan = todayPlan;
-    
-    // If today is a weightlifting day but exercises are empty/still loading, fetch them instantly!
-    if (dayType !== 'REST' && dayType !== 'RUN' && (!activePlan.exercises || activePlan.exercises.length === 0)) {
-      const planMap: Record<string, string[]> = {
-        PUSH: [
-          'Incline DB Bench Press (45°)',
-          'DB Shoulder Press (seated neutral)',
-          'Incline DB Y-Raise (20-30°)',
-          'Cable Chest Fly (low pulley)',
-          'Overhead Cable Extension (rope)',
-          'DB Lateral Raise (elbow-lead)'
-        ],
-        PULL: [
-          'Lat Pulldown (wide grip)',
-          'Chest-Supported DB Row',
-          'Sideways One-Arm Rear Delt Fly',
-          'Face Pull (rope eye height)',
-          'Incline DB Curl - Bayesian',
-          'Zottman Curl'
-        ],
-        LEGS: [
-          'Leg Press (feet high for glutes)',
-          'DB Romanian Deadlift',
-          'DB Bulgarian Split Squat',
-          'Seated Leg Curl',
-          '45° Back Extension (BW/DB)',
-          'Standing Calf Raise'
-        ]
-      };
-
-      let targetNames: string[] = [];
-      let parsedConfigs: { name: string; sets: number; rest: number }[] = [];
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: customPlan } = await supabase
-            .from('user_workout_plans')
-            .select('exercises')
-            .eq('user_id', session.user.id)
-            .eq('plan_type', dayType)
-            .maybeSingle();
-
-          if (customPlan?.exercises && customPlan.exercises.length > 0) {
-            parsedConfigs = customPlan.exercises.map((ex: any) => {
-              if (typeof ex === 'string') return { name: ex, sets: 4, rest: 90 };
-              return { name: ex.name || '', sets: ex.sets || 4, rest: ex.rest || 90 };
-            });
-            targetNames = parsedConfigs.map(e => e.name);
-          }
-        }
-      } catch (e) {
-        console.error("Fast fetch error:", e);
-      }
-
-      if (targetNames.length === 0) {
-        targetNames = planMap[dayType] || planMap['PUSH'];
-        parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
-      }
-
-      const fallbackExercises = targetNames.map((name: string, i: number) => {
-        const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
-          const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
-        });
-        const config = parsedConfigs.find(c => c.name.toLowerCase() === name.toLowerCase());
-
-        return {
-          id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
-          name: name,
-          muscle_group: localMatch?.muscle_group || 'All Muscles',
-          tier: localMatch?.tier || 'A',
-          focus: localMatch?.focus || 'Hypertrophy',
-          cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
-          rationale: localMatch?.rationale || 'Key exercise movement.',
-          equipment: localMatch?.equipment || 'Gym Equipment',
-          targetSets: config?.sets || 4,
-          targetRest: config?.rest || 90
-        };
-      });
-
-      activePlan = {
-        type: dayType,
-        title: `${dayType} Session`,
-        exercises: fallbackExercises
-      };
-    } else if (!activePlan.exercises || activePlan.exercises.length === 0) {
-      // Only prompt if it's actually a REST/RUN day and they clicked "Start Workout Anyway" or "Lift Weights Instead"
-      const userChoice = window.prompt("Today is scheduled for Rest/Run.\n\nWhich program would you like to start? (Type your program name e.g. PUSH, UPPER)", "PUSH");
-      if (!userChoice) return;
-      
-      const selectedType = userChoice.toUpperCase().trim();
-
-      const planMap: Record<string, string[]> = {
-        PUSH: [
-          'Incline DB Bench Press (45°)',
-          'DB Shoulder Press (seated neutral)',
-          'Incline DB Y-Raise (20-30°)',
-          'Cable Chest Fly (low pulley)',
-          'Overhead Cable Extension (rope)',
-          'DB Lateral Raise (elbow-lead)'
-        ],
-        PULL: [
-          'Lat Pulldown (wide grip)',
-          'Chest-Supported DB Row',
-          'Sideways One-Arm Rear Delt Fly',
-          'Face Pull (rope eye height)',
-          'Incline DB Curl - Bayesian',
-          'Zottman Curl'
-        ],
-        LEGS: [
-          'Leg Press (feet high for glutes)',
-          'DB Romanian Deadlift',
-          'DB Bulgarian Split Squat',
-          'Seated Leg Curl',
-          '45° Back Extension (BW/DB)',
-          'Standing Calf Raise'
-        ]
-      };
-
-      const targetNames = planMap[selectedType] || planMap['PUSH'];
-      const fallbackExercises = targetNames.map((name: string, i: number) => {
-        const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const localMatch = LOCAL_EXERCISES_DICTIONARY.find(le => {
-          const cleanLeName = le.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          return cleanLeName.includes(cleanName) || cleanName.includes(cleanLeName);
-        });
-
-        return {
-          id: localMatch?.id || `temp-id-${name.replace(/\s+/g, '-').toLowerCase()}-${i}`,
-          name: name,
-          muscle_group: localMatch?.muscle_group || 'All Muscles',
-          tier: localMatch?.tier || 'A',
-          focus: localMatch?.focus || 'Hypertrophy',
-          cue: localMatch?.cue || 'Maintain perfect execution control throughout the set.',
-          rationale: localMatch?.rationale || 'Key exercise movement.',
-          equipment: localMatch?.equipment || 'Gym Equipment',
-          targetSets: 4,
-          targetRest: 90
-        };
-      });
-
-      activePlan = {
-        type: selectedType,
-        title: `${selectedType} Session`,
-        exercises: fallbackExercises
-      };
+    if (todayPlan.exercises.length === 0) {
+      alert("Loading exercises, please wait a second...");
+      return;
     }
-
-    navigate('/workout/active', { state: { startNew: true, plan: activePlan } });
+    navigate('/workout/active', { state: { startNew: true, plan: todayPlan } });
   };
 
   const handleDeleteSession = async (id: string) => {
@@ -504,33 +279,19 @@ const WorkoutHome = () => {
           <div className="bg-surface border border-gray-800 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg">
             <span className="text-4xl mb-3">💤</span>
             <h2 className="text-xl font-bold text-white mb-2">Rest Day</h2>
-            <p className="text-sm text-gray-400 mb-4">Recovery is part of training. Sleep well, hydrate, and hit the sauna if possible.</p>
-            <button 
-              onClick={handleStartWorkout}
-              className="bg-primary hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl transition-colors active:scale-95 text-xs uppercase tracking-wider"
-            >
-              Start Workout Anyway
-            </button>
+            <p className="text-sm text-gray-400">Recovery is part of training. Sleep well, hydrate, and hit the sauna if possible.</p>
           </div>
         ) : dayType === 'RUN' ? (
           <div className="bg-surface border border-blue-900/30 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10">
             <span className="text-4xl mb-3">🏃</span>
             <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
             <p className="text-sm text-gray-400 mb-4">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
-            <div className="flex gap-3 w-full justify-center">
-              <button 
-                onClick={() => setShowRunModal(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors active:scale-95 text-xs uppercase tracking-wider"
-              >
-                Log Run
-              </button>
-              <button 
-                onClick={handleStartWorkout}
-                className="bg-gray-850 hover:bg-gray-800 text-gray-300 font-bold py-3 px-6 rounded-xl border border-gray-700 transition-colors active:scale-95 text-xs uppercase tracking-wider"
-              >
-                Lift Weights Instead
-              </button>
-            </div>
+            <button 
+              onClick={() => setShowRunModal(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl transition-colors active:scale-95"
+            >
+              Log Run
+            </button>
           </div>
         ) : (
           <div className="w-full flex flex-col items-center gap-2">
@@ -559,7 +320,7 @@ const WorkoutHome = () => {
                     <Play size={20} fill="currentColor" />
                     RESUME SESSION
                   </div>
-                  <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Active session in progress</span>
+                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
                 </>
               ) : inProgressWorkout ? (
                 <>
@@ -567,7 +328,7 @@ const WorkoutHome = () => {
                     <Play size={20} fill="currentColor" />
                     RESUME WORKOUT
                   </div>
-                  <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
+                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
                 </>
               ) : (
                 <>
@@ -575,7 +336,7 @@ const WorkoutHome = () => {
                     <Play size={20} fill="currentColor" />
                     START TODAY'S WORKOUT
                   </div>
-                  <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
+                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
                 </>
               )}
             </button>
@@ -665,7 +426,7 @@ const WorkoutHome = () => {
 
       {/* Run Log Modal */}
       {showRunModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }}

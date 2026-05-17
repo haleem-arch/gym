@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -12,10 +12,12 @@ import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
 
 
+const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
+
 const TodayView = () => {
   const navigate = useNavigate();
   const { workout, endWorkout } = useActiveWorkout();
-  const { log, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
+  const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
   
   // Need to safely get date string respecting timezone
   const getLocalDateString = (d: Date) => {
@@ -38,88 +40,6 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
-
-  // ─── Dynamic Workout Plans & Macro Targets States ───
-  const [allPlans, setAllPlans] = useState<any[]>([]);
-  const [availablePlans, setAvailablePlans] = useState<string[]>(['PUSH', 'PULL', 'LEGS']);
-  const [activeTargets, setActiveTargets] = useState({ kcal: 2400, protein: 160, carbs: 240, fat: 70, water: 3.5 });
-
-  const loadUserPlans = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    
-    const { data: plans } = await supabase
-      .from('user_workout_plans')
-      .select('*')
-      .eq('user_id', session.user.id);
-      
-    if (plans) {
-      setAllPlans(plans);
-      if (plans.length > 0) {
-        const uniquePlanTypes = Array.from(new Set(plans.map(p => p.plan_type.toUpperCase())));
-        setAvailablePlans(uniquePlanTypes);
-      } else {
-        setAvailablePlans(['PUSH', 'PULL', 'LEGS']);
-      }
-    }
-  }, []);
-
-  const loadActiveTargets = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    // 1. Fetch custom plan details for today's scheduled dayType
-    const { data: planData } = await supabase
-      .from('user_workout_plans')
-      .select('targets')
-      .eq('user_id', session.user.id)
-      .eq('plan_type', dayType)
-      .maybeSingle();
-
-    if (planData && planData.targets) {
-      setActiveTargets({
-        kcal: planData.targets.kcal || 2400,
-        protein: planData.targets.protein || 160,
-        carbs: planData.targets.carbs || 240,
-        fat: planData.targets.fat || 70,
-        water: planData.targets.water || 3.5
-      });
-    } else {
-      // Fallback to baseline profile targets
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('targets')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (profile && profile.targets) {
-        setActiveTargets({
-          kcal: profile.targets.kcal || 2400,
-          protein: profile.targets.protein || 160,
-          carbs: profile.targets.carbs || 240,
-          fat: profile.targets.fat || 70,
-          water: 3.5
-        });
-      }
-    }
-  }, [dayType]);
-
-  useEffect(() => {
-    loadUserPlans();
-    loadActiveTargets();
-    
-    const handleUpdate = () => {
-      loadUserPlans();
-      loadActiveTargets();
-    };
-    window.addEventListener('plan_updated', handleUpdate);
-    window.addEventListener('schedule_updated', handleUpdate);
-    
-    return () => {
-      window.removeEventListener('plan_updated', handleUpdate);
-      window.removeEventListener('schedule_updated', handleUpdate);
-    };
-  }, [loadUserPlans, loadActiveTargets]);
 
   useEffect(() => {
     let active = true;
@@ -190,27 +110,15 @@ const TodayView = () => {
   
   const dateDisplay = isToday ? 'Today' : activeDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Phase 1 Mock Plan Generation based on Day Type (Upgraded to load dynamic custom plans)
+  // Phase 1 Mock Plan Generation based on Day Type
   const generatePlan = (type: string) => {
-    const customPlan = allPlans.find(p => p.plan_type.toUpperCase() === type.toUpperCase());
-    if (customPlan) {
-      const exercisesList = (customPlan.exercises || []).map((ex: any) => {
-        if (typeof ex === 'string') return ex;
-        return `${ex.name} (${ex.sets || 4} sets)`;
-      });
-      return {
-        title: `${type} Session`,
-        exercises: exercisesList
-      };
-    }
-
     switch(type) {
-      case 'PUSH': return { title: 'Push (Chest/Shoulders/Triceps)', exercises: ['Incline DB Press (4 sets)', 'Overhead Cable Extension (4 sets)', 'Lateral Raises (4 sets)', 'Machine Chest Press (4 sets)'] };
-      case 'PULL': return { title: 'Pull (Back/Biceps)', exercises: ['Pull-ups (4 sets)', 'Barbell Row (4 sets)', 'Face Pulls (4 sets)', 'Bicep Curls (4 sets)'] };
-      case 'LEGS': return { title: 'Legs (Quads/Hams/Calves)', exercises: ['Squats (4 sets)', 'Leg Extension (4 sets)', 'Hamstring Curls (4 sets)', 'Calf Raises (4 sets)'] };
+      case 'PUSH': return { title: 'Push (Chest/Shoulders/Triceps)', exercises: ['Incline DB Press', 'Overhead Cable Extension', 'Lateral Raises', 'Machine Chest Press'] };
+      case 'PULL': return { title: 'Pull (Back/Biceps)', exercises: ['Pull-ups', 'Barbell Row', 'Face Pulls', 'Bicep Curls'] };
+      case 'LEGS': return { title: 'Legs (Quads/Hams/Calves)', exercises: ['Squats', 'Leg Extension', 'Hamstring Curls', 'Calf Raises'] };
       case 'RUN': return { title: 'Cardio (Running Session)', exercises: ['Run smart', 'Control your pace', 'Focus on your breathing', 'Keep a steady rhythm'] };
       case 'REST': return { title: 'Active Recovery', exercises: ['Focus on hydration', 'Get 8 hours of sleep', 'Light stretching if needed'] };
-      default: return { title: `${type} Workout`, exercises: [] };
+      default: return { title: 'Workout', exercises: [] };
     }
   };
   const plan = generatePlan(dayType);
@@ -219,7 +127,7 @@ const TodayView = () => {
   
   const waterTotalMl = waterLogs?.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0) || 0;
   const waterCurrent = waterTotalMl / 1000;
-  const waterTarget = activeTargets.water;
+  const waterTarget = 3.5; // 3.5 Liters
 
   // Find the last logged entry from waterLogs
   const lastWaterLog = waterLogs && waterLogs.length > 0 
@@ -250,21 +158,13 @@ const TodayView = () => {
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-gray-400 mt-1">Haleem's HQ</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowExportModal(true)} 
-            className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider h-[34px]"
-          >
-            <FileSpreadsheet size={14} className="text-primary" />
-            Export
-          </button>
-          <button
-            onClick={() => navigate('/workout/plans')}
-            className="flex items-center justify-center bg-surface hover:bg-gray-800 border border-gray-800 rounded-xl w-[34px] h-[34px] text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer"
-          >
-            <User size={16} />
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowExportModal(true)} 
+          className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+        >
+          <FileSpreadsheet size={14} className="text-primary" />
+          Export
+        </button>
       </motion.div>
 
       {/* Date Navigation */}
@@ -295,14 +195,14 @@ const TodayView = () => {
             onChange={(e) => setDayType(e.target.value)}
             className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none"
           >
-            {Array.from(new Set([...availablePlans, 'REST', 'RUN'])).map(type => <option key={type} value={type}>{type}</option>)}
+            {DAY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
           </select>
         </div>
         <h2 className="text-xl font-extrabold text-white mb-4">{plan.title}</h2>
         
         {dayType !== 'REST' && (
           <ul className="space-y-2 mb-6 text-sm text-gray-300">
-            {plan.exercises.map((ex: any, i: number) => (
+            {plan.exercises.map((ex, i) => (
               <li key={i} className="flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-200">{ex}</span>
@@ -380,10 +280,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Calories</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{activeTargets.kcal}</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/activeTargets.kcal)*100, 100)}%` }}></div>
+                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -391,10 +291,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Protein</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{activeTargets.protein}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/activeTargets.protein)*100, 100)}%` }}></div>
+                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -402,10 +302,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Carbs</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{activeTargets.carbs || 250}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(activeTargets.carbs || 250))*100, 100)}%` }}></div>
+                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -413,10 +313,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Fat</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{activeTargets.fat || 75}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(activeTargets.fat || 75))*100, 100)}%` }}></div>
+                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
                 </div>
               </div>
             </div>
@@ -488,10 +388,9 @@ const TodayView = () => {
       <div className="flex flex-col gap-1.5 w-full animate-fade-in">
         <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
         <BioStatusRing 
-          kcalPct={activeTargets.kcal > 0 ? (macros.kcal / activeTargets.kcal) : 0}
+          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
           waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
           workoutStatus={workoutStatus}
-          isRestDay={dayType === 'REST'}
         />
       </div>
       
@@ -530,7 +429,7 @@ const TodayView = () => {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowExportModal(false)}
-              className="absolute inset-0 bg-black z-50 backdrop-blur-sm"
+              className="fixed inset-0 bg-black z-50 backdrop-blur-sm"
             />
             {/* Modal Bottom Sheet */}
             <motion.div 
@@ -538,7 +437,7 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="absolute bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -617,10 +516,6 @@ const TodayView = () => {
           </>
         )}
       </AnimatePresence>
-
-
-
-
     </div>
   );
 };
