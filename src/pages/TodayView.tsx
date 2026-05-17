@@ -218,19 +218,41 @@ const TodayView = () => {
               WORKOUT COMPLETED
             </div>
           ) : (
-            <button 
-              onClick={() => {
-                if (workout) {
-                  navigate('/workout/active');
-                } else {
-                  navigate('/workout'); // Redirect to Workout Home to fetch real DB exercises
-                }
-              }}
-              className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
-            >
-              <Play size={18} fill="currentColor" />
-              {workout ? 'RESUME SESSION' : 'START WORKOUT'}
-            </button>
+            <div className="w-full flex flex-col items-center gap-2">
+              <button 
+                onClick={() => {
+                  if (workout) {
+                    navigate('/workout/active');
+                  } else {
+                    navigate('/workout'); // Redirect to Workout Home to fetch real DB exercises
+                  }
+                }}
+                className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
+              >
+                <Play size={18} fill="currentColor" />
+                {workout ? 'RESUME SESSION' : 'START WORKOUT'}
+              </button>
+              
+              {workout && (
+                <button
+                  onClick={async () => {
+                    if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
+                      localStorage.removeItem('athlete_dashboard_active_workout');
+                      endWorkout();
+                      
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (session) {
+                        await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
+                      }
+                      setWorkoutStatus(0.0);
+                    }
+                  }}
+                  className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 animate-fade-in"
+                >
+                  Restart Session & Start Fresh
+                </button>
+              )}
+            </div>
           )
         )}
       </motion.div>

@@ -11,7 +11,7 @@ import { BarChart2 } from 'lucide-react';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
-  const { workout, loadWorkout } = useActiveWorkout();
+  const { workout, loadWorkout, endWorkout } = useActiveWorkout();
   
   // Use today's schedule
   const getLocalDateString = () => new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -294,51 +294,73 @@ const WorkoutHome = () => {
             </button>
           </div>
         ) : (
-          <button 
-            onClick={isTodayCompleted ? undefined : handleStartWorkout}
-            disabled={isTodayCompleted}
-            className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg ${
-              isTodayCompleted 
-                ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
-                : workout || inProgressWorkout 
-                  ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
-                  : 'bg-primary text-white shadow-primary/20'
-            }`}
-          >
-            {isTodayCompleted ? (
-              <>
-                <div className="flex items-center gap-2 text-xl">
-                  <Check size={20} />
-                  WORKOUT COMPLETED
-                </div>
-                <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Excellent training today!</span>
-              </>
-            ) : workout ? (
-              <>
-                <div className="flex items-center gap-2 text-xl">
-                  <Play size={20} fill="currentColor" />
-                  RESUME SESSION
-                </div>
-                <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
-              </>
-            ) : inProgressWorkout ? (
-              <>
-                <div className="flex items-center gap-2 text-xl">
-                  <Play size={20} fill="currentColor" />
-                  RESUME WORKOUT
-                </div>
-                <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 text-xl">
-                  <Play size={20} fill="currentColor" />
-                  START TODAY'S WORKOUT
-                </div>
-                <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
-              </>
+          <div className="w-full flex flex-col items-center gap-2">
+            <button 
+              onClick={isTodayCompleted ? undefined : handleStartWorkout}
+              disabled={isTodayCompleted}
+              className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg ${
+                isTodayCompleted 
+                  ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
+                  : workout || inProgressWorkout 
+                    ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
+                    : 'bg-primary text-white shadow-primary/20'
+              }`}
+            >
+              {isTodayCompleted ? (
+                <>
+                  <div className="flex items-center gap-2 text-xl">
+                    <Check size={20} />
+                    WORKOUT COMPLETED
+                  </div>
+                  <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Excellent training today!</span>
+                </>
+              ) : workout ? (
+                <>
+                  <div className="flex items-center gap-2 text-xl">
+                    <Play size={20} fill="currentColor" />
+                    RESUME SESSION
+                  </div>
+                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
+                </>
+              ) : inProgressWorkout ? (
+                <>
+                  <div className="flex items-center gap-2 text-xl">
+                    <Play size={20} fill="currentColor" />
+                    RESUME WORKOUT
+                  </div>
+                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-xl">
+                    <Play size={20} fill="currentColor" />
+                    START TODAY'S WORKOUT
+                  </div>
+                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
+                </>
+              )}
+            </button>
+
+            {!isTodayCompleted && (workout || inProgressWorkout) && (
+              <button
+                onClick={async () => {
+                  if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
+                    localStorage.removeItem('athlete_dashboard_active_workout');
+                    endWorkout();
+                    setInProgressWorkout(null);
+                    
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                      await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
+                    }
+                  }
+                }}
+                className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95"
+              >
+                Restart Session & Start Fresh
+              </button>
             )}
-          </button>
+          </div>
         )}
       </motion.div>
 
