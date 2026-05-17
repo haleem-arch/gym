@@ -250,7 +250,7 @@ const WorkoutHome = () => {
   const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString());
 
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full max-w-[390px] mx-auto w-full">
+    <div className="p-5 flex flex-col gap-6 min-h-full">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
         <div className="flex bg-slate-800 p-1 rounded-lg">

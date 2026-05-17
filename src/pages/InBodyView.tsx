@@ -220,7 +220,7 @@ export default function InBodyView() {
   };
 
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full pb-24 max-w-[390px] mx-auto w-full">
+    <div className="p-5 flex flex-col gap-6 min-h-full pb-24">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">

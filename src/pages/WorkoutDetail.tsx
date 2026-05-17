@@ -82,7 +82,7 @@ const WorkoutDetail = () => {
   });
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background relative pb-28 max-w-[390px] mx-auto w-full">
+    <div className="flex flex-col min-h-[100dvh] bg-background relative pb-28">
       {/* Header */}
       <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between">
         <button onClick={() => navigate('/workout')} className="text-gray-400 hover:text-white p-1">
@@ -222,7 +222,7 @@ const WorkoutDetail = () => {
       </div>
 
       {/* Summary Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-gray-800 p-4 flex justify-around z-40 w-full max-w-[430px] mx-auto" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-gray-800 p-4 flex justify-around z-40 max-w-[390px] mx-auto" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         <div className="text-center">
           <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Total Sets</p>
           <p className="text-lg font-bold text-white">{totalSets}</p>

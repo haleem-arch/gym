@@ -14,7 +14,7 @@ const BottomNav = () => {
   return (
     <nav 
       className="absolute bottom-0 left-0 right-0 bg-surface border-t border-gray-800 px-6 pt-3 flex justify-between items-center z-50"
-      style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
+      style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
     >
       {navItems.map((item) => (
         <NavLink

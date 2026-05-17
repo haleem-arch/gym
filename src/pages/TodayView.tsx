@@ -151,7 +151,7 @@ const TodayView = () => {
   };
 
   return (
-    <div className="px-4 py-6 flex flex-col gap-6 w-full max-w-[390px] mx-auto overflow-x-hidden">
+    <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
@@ -437,7 +437,7 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 w-full max-w-[430px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
