@@ -159,18 +159,7 @@ const TodayView = () => {
         </button>
       </div>
 
-      {/* TODAY'S SCORE Header */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
-        <BioStatusRing 
-          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
-          waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
-          workoutStatus={workoutStatus}
-        />
-      </div>
 
-      {/* Subtle Separation Divider */}
-      <div className="border-t border-white/10 my-1" />
 
       {/* Today's Plan Card */}
       <motion.div 
@@ -342,6 +331,19 @@ const TodayView = () => {
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Subtle Separation Divider */}
+      <div className="border-t border-white/10 my-1" />
+
+      {/* TODAY'S SCORE Header (Moved to bottom) */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
+        <BioStatusRing 
+          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
+          waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
+          workoutStatus={workoutStatus}
+        />
       </div>
       
       {/* Dev Reset Button */}

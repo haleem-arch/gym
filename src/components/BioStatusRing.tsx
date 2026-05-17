@@ -11,20 +11,23 @@ export const BioStatusRing = ({
   waterPct,
   workoutStatus
 }: BioStatusRingProps) => {
-  // SVG Geometry Settings
-  const size = 160;
+  // SVG Geometry Settings (compact 100x100px)
+  const size = 100;
   const center = size / 2;
-  const strokeWidth = 6;
+  const strokeWidth = 4;
 
-  // Ring Radii for 10px physical gap between adjacent boundaries
-  const rOuter = 66;
-  const circOuter = 2 * Math.PI * rOuter; // ~414.69
+  // Perfectly concentric radii with 6px physical gap between boundaries:
+  // outer radius = 40, stroke = 4 -> edge boundary [38, 42]
+  // middle radius = 30, stroke = 4 -> edge boundary [28, 32] (gap = 38 - 32 = 6px)
+  // inner radius = 20, stroke = 4 -> edge boundary [18, 22] (gap = 28 - 22 = 6px)
+  const rOuter = 40;
+  const circOuter = 2 * Math.PI * rOuter; // ~251.33
   
-  const rMiddle = 50;
-  const circMiddle = 2 * Math.PI * rMiddle; // ~314.16
+  const rMiddle = 30;
+  const circMiddle = 2 * Math.PI * rMiddle; // ~188.50
   
-  const rInner = 34;
-  const circInner = 2 * Math.PI * rInner; // ~213.63
+  const rInner = 20;
+  const circInner = 2 * Math.PI * rInner; // ~125.66
 
   // Colors
   const colorNutrition = '#F97316';
@@ -34,11 +37,6 @@ export const BioStatusRing = ({
   const trackNutrition = 'rgba(249, 115, 22, 0.15)';
   const trackHydration = 'rgba(56, 189, 248, 0.15)';
   const trackTraining = 'rgba(167, 139, 250, 0.15)';
-
-  // Calculate today's dynamic average daily biometric completion score
-  const dailyBioScore = Math.round(
-    ((Math.min(kcalPct, 1) + Math.min(waterPct, 1) + workoutStatus) / 3) * 100
-  );
 
   return (
     <motion.div 
@@ -56,10 +54,10 @@ export const BioStatusRing = ({
         opacity: { duration: 0.25 }
       }}
       style={{ backgroundColor: '#0D1117' }}
-      className="rounded-[20px] p-5 pl-6 pr-6 border border-gray-800 shadow-2xl flex items-center justify-between gap-6"
+      className="rounded-[20px] p-4 pl-6 pr-6 border border-gray-800 shadow-2xl flex items-center justify-between gap-6"
     >
-      {/* Centered Concentric Ring Widget */}
-      <div className="relative w-[160px] h-[160px] flex items-center justify-center flex-shrink-0">
+      {/* Centered Compact SVG Ring (No Center Text) */}
+      <div className="relative w-[100px] h-[100px] flex items-center justify-center flex-shrink-0">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
           {/* ─── Outer Ring: Nutrition (Orange) ─── */}
           <circle
@@ -130,26 +128,16 @@ export const BioStatusRing = ({
             transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.2 }}
           />
         </svg>
-
-        {/* Center Text (Compact, perfectly fitting typography) */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-1">
-          <span className="text-xl font-extrabold text-white tracking-tight leading-none">
-            {dailyBioScore}%
-          </span>
-          <span className="text-[8px] text-gray-500 uppercase tracking-widest font-semibold mt-1 leading-none">
-            Bio Score
-          </span>
-        </div>
       </div>
 
       {/* Redesigned Legend: Stacked Stat Rows (Status Words Only) */}
-      <div className="flex-1 flex flex-col gap-4 justify-center">
+      <div className="flex-1 flex flex-col gap-3 justify-center">
         {/* Row 1: Nutrition */}
         <div className="flex items-start gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
+          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nutrition</span>
-            <span className="text-sm font-extrabold mb-1" style={{ color: colorNutrition }}>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nutrition</span>
+            <span className="text-xs font-bold" style={{ color: colorNutrition }}>
               {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : 'Behind'}
             </span>
           </div>
@@ -159,8 +147,8 @@ export const BioStatusRing = ({
         <div className="flex items-start gap-2.5">
           <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorHydration }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Hydration</span>
-            <span className="text-sm font-extrabold mb-1" style={{ color: colorHydration }}>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hydration</span>
+            <span className="text-xs font-bold" style={{ color: colorHydration }}>
               {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : 'Behind'}
             </span>
           </div>
@@ -168,10 +156,10 @@ export const BioStatusRing = ({
 
         {/* Row 3: Training */}
         <div className="flex items-start gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
+          <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Training</span>
-            <span className="text-sm font-extrabold mb-1" style={{ color: colorTraining }}>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Training</span>
+            <span className="text-xs font-bold" style={{ color: colorTraining }}>
               {workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Rest'}
             </span>
           </div>
