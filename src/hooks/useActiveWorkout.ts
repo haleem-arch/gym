@@ -25,6 +25,7 @@ export interface ActiveWorkout {
   dayType: string;
   title: string;
   startTime: string;
+  targetDate?: string;
   exercises: WorkoutExercise[];
   notes: string;
 }
@@ -78,12 +79,13 @@ export const useActiveWorkout = () => {
     }
   };
 
-  const startWorkout = (dayType: string, title: string, exercises: WorkoutExercise[]) => {
+  const startWorkout = (dayType: string, title: string, exercises: WorkoutExercise[], targetDate?: string) => {
     setWorkout({
       id: crypto.randomUUID(),
       dayType,
       title,
       startTime: new Date().toISOString(),
+      targetDate,
       exercises,
       notes: ''
     });
