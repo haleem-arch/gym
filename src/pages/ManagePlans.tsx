@@ -111,12 +111,55 @@ const ManagePlans = () => {
       .select('*')
       .eq('user_id', session.user.id);
       
-    if (plans) {
-      const uniquePlanTypes = Array.from(new Set([
-        'PUSH', 'PULL', 'LEGS', 
-        ...plans.map(p => p.plan_type.toUpperCase())
-      ]));
-      setAvailablePlans(uniquePlanTypes);
+    if (plans && plans.length > 0) {
+      const sortedPlans = Array.from(new Set(plans.map(p => p.plan_type.toUpperCase())));
+      setAvailablePlans(sortedPlans);
+    } else if (plans && plans.length === 0) {
+      // Database has no plans. Let's auto-seed the default three plans into the database so they are fully database-driven, deletable, and renameable!
+      const defaultPlans = [
+        {
+          user_id: session.user.id,
+          plan_type: 'PUSH',
+          exercises: parsePlanExercises([
+            'Incline DB Bench Press (45°)',
+            'DB Shoulder Press (seated neutral)',
+            'Incline DB Y-Raise (20-30°)',
+            'Cable Chest Fly (low pulley)',
+            'Overhead Cable Extension (rope)',
+            'DB Lateral Raise (elbow-lead)'
+          ]),
+          targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70, water: 3.5 }
+        },
+        {
+          user_id: session.user.id,
+          plan_type: 'PULL',
+          exercises: parsePlanExercises([
+            'Lat Pulldown (wide grip)',
+            'Chest-Supported DB Row',
+            'Sideways One-Arm Rear Delt Fly',
+            'Face Pull (rope eye height)',
+            'Incline DB Curl - Bayesian',
+            'Zottman Curl'
+          ]),
+          targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70, water: 3.5 }
+        },
+        {
+          user_id: session.user.id,
+          plan_type: 'LEGS',
+          exercises: parsePlanExercises([
+            'Leg Press (feet high for glutes)',
+            'DB Romanian Deadlift',
+            'DB Bulgarian Split Squat',
+            'Seated Leg Curl',
+            '45° Back Extension (BW/DB)',
+            'Standing Calf Raise'
+          ]),
+          targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70, water: 3.5 }
+        }
+      ];
+
+      await supabase.from('user_workout_plans').insert(defaultPlans);
+      setAvailablePlans(['PUSH', 'PULL', 'LEGS']);
     }
   };
 
@@ -266,10 +309,7 @@ const ManagePlans = () => {
   };
 
   const handleDeletePlan = async () => {
-    const isCorePlan = ['PUSH', 'PULL', 'LEGS'].includes(planToEdit);
-    const confirmMsg = isCorePlan 
-      ? `Are you sure you want to reset the core program "${planToEdit}" to default exercises and targets?`
-      : `Are you sure you want to delete the custom program "${planToEdit}"?`;
+    const confirmMsg = `Are you sure you want to delete the program day "${planToEdit}" entirely?`;
       
     if (!window.confirm(confirmMsg)) return;
 
@@ -283,17 +323,113 @@ const ManagePlans = () => {
         .eq('user_id', session.user.id)
         .eq('plan_type', planToEdit);
 
+      // Broadcast events so the dashboard updates
       window.dispatchEvent(new CustomEvent('plan_updated'));
       window.dispatchEvent(new CustomEvent('schedule_updated'));
 
-      alert(`Successfully reset/deleted ${planToEdit}`);
+      alert(`Successfully deleted plan day "${planToEdit}"`);
       
-      // Auto switch back to PUSH
-      setPlanToEdit('PUSH');
+      const remainingPlans = availablePlans.filter(p => p !== planToEdit);
+      if (remainingPlans.length > 0) {
+        setPlanToEdit(remainingPlans[0]);
+      } else {
+        setPlanToEdit('PUSH');
+      }
+      
       await loadUserPlans();
     } catch (err) {
       console.error(err);
       alert('Failed to delete day program');
+    }
+  };
+
+  const handleRenamePlan = async () => {
+    const oldName = planToEdit;
+    const newName = window.prompt(`Rename "${oldName}" day type to:`);
+    if (!newName) return;
+    
+    const formattedName = newName.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, '');
+    if (formattedName.length < 2) {
+      alert("Name is too short!");
+      return;
+    }
+    if (formattedName === oldName) return;
+    if (availablePlans.includes(formattedName)) {
+      alert("This day type already exists!");
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 1. Update the user_workout_plans row
+      const { data: existingPlan } = await supabase
+        .from('user_workout_plans')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('plan_type', oldName)
+        .maybeSingle();
+
+      if (existingPlan) {
+        await supabase
+          .from('user_workout_plans')
+          .update({ plan_type: formattedName })
+          .eq('id', existingPlan.id);
+      } else {
+        const kcalVal = parseInt(kcalInput) || 2400;
+        const proteinVal = parseInt(proteinInput) || 160;
+        const carbsVal = parseInt(carbsInput) || 240;
+        const fatVal = parseInt(fatInput) || 70;
+        const waterVal = parseFloat(waterInput) || 3.5;
+
+        await supabase
+          .from('user_workout_plans')
+          .insert({
+            user_id: session.user.id,
+            plan_type: formattedName,
+            exercises: customExercises,
+            targets: { kcal: kcalVal, protein: proteinVal, carbs: carbsVal, fat: fatVal, water: waterVal }
+          });
+      }
+
+      // 2. Update references in postgres user schedule
+      const { data: schedules } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('user_id', session.user.id);
+
+      if (schedules) {
+        for (const schedule of schedules) {
+          if (schedule.days) {
+            let updated = false;
+            const newDays = { ...schedule.days };
+            for (const [dateStr, val] of Object.entries(newDays)) {
+              if (val === oldName) {
+                newDays[dateStr] = formattedName;
+                updated = true;
+              }
+            }
+            if (updated) {
+              await supabase
+                .from('schedules')
+                .update({ days: newDays })
+                .eq('id', schedule.id);
+            }
+          }
+        }
+      }
+
+      // Broadcast changes
+      window.dispatchEvent(new CustomEvent('plan_updated'));
+      window.dispatchEvent(new CustomEvent('schedule_updated'));
+
+      alert(`Successfully renamed program from "${oldName}" to "${formattedName}"`);
+      setPlanToEdit(formattedName);
+      await loadUserPlans();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to rename program day');
     }
   };
 
@@ -611,11 +747,19 @@ const ManagePlans = () => {
         </button>
 
         <button
+          onClick={handleRenamePlan}
+          className="w-full bg-amber-950/20 border border-amber-500/20 hover:bg-amber-800/30 text-amber-400 font-bold text-[10px] uppercase py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest active:scale-95"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          Rename {planToEdit} Day
+        </button>
+
+        <button
           onClick={handleDeletePlan}
           className="w-full bg-danger/10 hover:bg-danger/25 border border-danger/25 text-danger font-bold text-[10px] uppercase py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest active:scale-95"
         >
           <Trash2 size={13} />
-          Reset/Delete {planToEdit} Day
+          Delete {planToEdit} Day entirely
         </button>
       </div>
 

@@ -55,11 +55,12 @@ const TodayView = () => {
       
     if (plans) {
       setAllPlans(plans);
-      const uniquePlanTypes = Array.from(new Set([
-        'PUSH', 'PULL', 'LEGS', 
-        ...plans.map(p => p.plan_type.toUpperCase())
-      ]));
-      setAvailablePlans(uniquePlanTypes);
+      if (plans.length > 0) {
+        const uniquePlanTypes = Array.from(new Set(plans.map(p => p.plan_type.toUpperCase())));
+        setAvailablePlans(uniquePlanTypes);
+      } else {
+        setAvailablePlans(['PUSH', 'PULL', 'LEGS']);
+      }
     }
   }, []);
 
