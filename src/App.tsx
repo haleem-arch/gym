@@ -16,6 +16,12 @@ import FoodInventory from './pages/FoodInventory';
 import AiCoach from './pages/AiCoach';
 import InBodyView from './pages/InBodyView';
 
+// Coach Pages
+import DashboardPage from './pages/coach/DashboardPage';
+import ClientsListPage from './pages/coach/ClientsListPage';
+import AddClientPage from './pages/coach/AddClientPage';
+import ClientManagementPage from './pages/coach/ClientManagementPage';
+
 function App() {
   const [session, setSession] = useState<any>(undefined);
 
@@ -67,6 +73,13 @@ function App() {
             <Route path="/diet/inventory" element={<FoodInventory />} />
             <Route path="/inbody" element={<InBodyView />} />
             <Route path="/ai" element={<AiCoach />} />
+
+            {/* Coach Routes */}
+            <Route path="/coach/dashboard" element={<DashboardPage />} />
+            <Route path="/coach/clients" element={<ClientsListPage />} />
+            <Route path="/coach/clients/new" element={<AddClientPage />} />
+            <Route path="/coach/clients/:clientId" element={<ClientManagementPage />} />
+
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>

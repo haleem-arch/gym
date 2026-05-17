@@ -6,7 +6,11 @@ create extension if not exists "uuid-ossp";
 -- 1. PROFILES
 create table public.profiles (
   id uuid references auth.users not null primary key,
-  name text,
+  username text unique,
+  email text,
+  display_name text,
+  role text default 'client', -- 'coach' or 'client'
+  coach_id uuid references public.profiles(id),
   age integer,
   height integer, -- cm
   weight numeric, -- kg
@@ -18,6 +22,36 @@ create table public.profiles (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- 1.1 CLIENT PROFILES
+create table public.client_profiles (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references public.profiles(id) on delete cascade not null unique,
+  coach_id uuid references public.profiles(id) not null,
+  age integer,
+  height numeric,
+  experience_level text default 'beginner',
+  workouts_per_week integer default 3,
+  goals text,
+  injuries_notes text,
+  generated_passcode text,
+  has_active_plan boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 1.2 CLIENT WORKOUT DAYS
+create table public.client_workout_days (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  day_number integer not null,
+  day_name text,
+  exercises jsonb default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create index idx_client_workout_days_user_id on public.client_workout_days(user_id);
 
 -- 2. EXERCISES (Global Library)
 create table public.exercises (
@@ -114,7 +148,7 @@ create table public.inbody_scans (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 10. AI CHAT HISTORY
+-- 11. AI CHAT HISTORY
 create table public.ai_chat (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references auth.users(id) not null,
@@ -122,8 +156,21 @@ create table public.ai_chat (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 12. PROGRESS NOTES (Coach to Client)
+create table public.progress_notes (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  coach_id uuid references public.profiles(id) not null,
+  date date default current_date not null,
+  note text not null,
+  category text default 'general',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- ENABLE ROW LEVEL SECURITY (RLS)
 alter table public.profiles enable row level security;
+alter table public.client_profiles enable row level security;
+alter table public.client_workout_days enable row level security;
 alter table public.exercises enable row level security;
 alter table public.food_inventory enable row level security;
 alter table public.schedules enable row level security;
@@ -133,12 +180,21 @@ alter table public.diet_logs enable row level security;
 alter table public.diet_meals enable row level security;
 alter table public.inbody_scans enable row level security;
 alter table public.ai_chat enable row level security;
+alter table public.progress_notes enable row level security;
 
--- CREATE RLS POLICIES (Assuming single user "Haleem" for now)
--- Allow read/write only if the authenticated user matches the row's user_id.
-
+-- CREATE RLS POLICIES
+-- Profiles
 create policy "Users can view own profile." on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile." on public.profiles for update using (auth.uid() = id);
+create policy "Coaches can view their clients profiles." on public.profiles for select using (coach_id = auth.uid());
+
+-- Client Profiles
+create policy "Users can view own client profile." on public.client_profiles for select using (auth.uid() = user_id);
+create policy "Coaches can manage their clients profiles." on public.client_profiles for all using (coach_id = auth.uid());
+
+-- Client Workout Days
+create policy "Users can view own workout days." on public.client_workout_days for select using (auth.uid() = user_id);
+create policy "Coaches can manage their clients workout days." on public.client_workout_days for all using (exists (select 1 from public.profiles p where p.id = client_workout_days.user_id and p.coach_id = auth.uid()));
 
 -- Exercises: anyone authenticated can read/write (global library).
 create policy "Anyone can read exercises." on public.exercises for select using (auth.role() = 'authenticated');
@@ -156,8 +212,9 @@ create policy "Delete own food." on public.food_inventory for delete using (auth
 create policy "All schedules operations." on public.schedules for all using (auth.uid() = user_id);
 create policy "All workouts operations." on public.workouts for all using (auth.uid() = user_id);
 create policy "All diet logs operations." on public.diet_logs for all using (auth.uid() = user_id);
-create policy "All inbody operations." on public.inbody_scans for all using (auth.uid() = user_id);
+create policy "All inbody operations." on public.inbody_scans for all using (auth.uid() = user_id or coach_id = auth.uid());
 create policy "All chat operations." on public.ai_chat for all using (auth.uid() = user_id);
+create policy "All progress notes operations." on public.progress_notes for all using (auth.uid() = user_id or coach_id = auth.uid());
 
 -- Nested Tables (workout_exercises, diet_meals)
 create policy "All workout exercises." on public.workout_exercises for all using (
