@@ -391,6 +391,7 @@ const TodayView = () => {
           kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
           waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
           workoutStatus={workoutStatus}
+          isRestDay={dayType === 'REST'}
         />
       </div>
       
