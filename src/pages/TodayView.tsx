@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -201,19 +201,26 @@ const TodayView = () => {
         )}
 
         {dayType !== 'REST' && (
-          <button 
-            onClick={() => {
-              if (workout) {
-                navigate('/workout/active');
-              } else {
-                navigate('/workout'); // Redirect to Workout Home to fetch real DB exercises
-              }
-            }}
-            className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
-          >
-            <Play size={18} fill="currentColor" />
-            {workout ? 'RESUME SESSION' : 'START WORKOUT'}
-          </button>
+          workoutStatus === 1.0 ? (
+            <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
+              <Check size={18} />
+              WORKOUT COMPLETED
+            </div>
+          ) : (
+            <button 
+              onClick={() => {
+                if (workout) {
+                  navigate('/workout/active');
+                } else {
+                  navigate('/workout'); // Redirect to Workout Home to fetch real DB exercises
+                }
+              }}
+              className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${workout ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
+            >
+              <Play size={18} fill="currentColor" />
+              {workout ? 'RESUME SESSION' : 'START WORKOUT'}
+            </button>
+          )
         )}
       </motion.div>
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useSchedule } from '../hooks/useSchedule';
-import { Play, History, ChevronRight } from 'lucide-react';
+import { Play, History, ChevronRight, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
@@ -247,6 +247,8 @@ const WorkoutHome = () => {
     return `${m}m`;
   };
 
+  const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString());
+
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
@@ -293,12 +295,25 @@ const WorkoutHome = () => {
           </div>
         ) : (
           <button 
-            onClick={handleStartWorkout}
-            className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-colors active:scale-[0.98] shadow-lg ${
-              workout || inProgressWorkout ? 'bg-yellow-500 text-black shadow-yellow-500/20' : 'bg-primary text-white shadow-primary/20'
+            onClick={isTodayCompleted ? undefined : handleStartWorkout}
+            disabled={isTodayCompleted}
+            className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg ${
+              isTodayCompleted 
+                ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
+                : workout || inProgressWorkout 
+                  ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
+                  : 'bg-primary text-white shadow-primary/20'
             }`}
           >
-            {workout ? (
+            {isTodayCompleted ? (
+              <>
+                <div className="flex items-center gap-2 text-xl">
+                  <Check size={20} />
+                  WORKOUT COMPLETED
+                </div>
+                <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Excellent training today!</span>
+              </>
+            ) : workout ? (
               <>
                 <div className="flex items-center gap-2 text-xl">
                   <Play size={20} fill="currentColor" />
