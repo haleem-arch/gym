@@ -212,7 +212,7 @@ create policy "Delete own food." on public.food_inventory for delete using (auth
 create policy "All schedules operations." on public.schedules for all using (auth.uid() = user_id);
 create policy "All workouts operations." on public.workouts for all using (auth.uid() = user_id);
 create policy "All diet logs operations." on public.diet_logs for all using (auth.uid() = user_id);
-create policy "All inbody operations." on public.inbody_scans for all using (auth.uid() = user_id or coach_id = auth.uid());
+create policy "All inbody operations." on public.inbody_scans for all using (auth.uid() = user_id);
 create policy "All chat operations." on public.ai_chat for all using (auth.uid() = user_id);
 create policy "All progress notes operations." on public.progress_notes for all using (auth.uid() = user_id or coach_id = auth.uid());
 

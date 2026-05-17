@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 
 export default function InBodyView() {
   const [scans, setScans] = useState<any[]>([]);
@@ -51,6 +52,11 @@ export default function InBodyView() {
 
     if (data) setScans(data);
     setLoading(false);
+  };
+
+  const handleDeleteScan = async (id: string) => {
+    setScans(prev => prev.filter(s => s.id !== id));
+    await supabase.from('inbody_scans').delete().eq('id', id);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -272,170 +278,175 @@ export default function InBodyView() {
             const prevSeg = prev?.segmental || {};
 
             return (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }} 
-                animate={{ opacity: 1, scale: 1 }} 
-                transition={{ delay: index * 0.05 }}
+              <SwipeToDeleteRow 
                 key={scan.id} 
-                className="bg-surface border border-gray-800 rounded-3xl overflow-hidden shadow-lg"
+                onDelete={() => handleDeleteScan(scan.id)}
+                backgroundRounded="rounded-3xl"
               >
-                {/* Header (Always Visible) */}
-                <div 
-                  className="p-5 cursor-pointer flex justify-between items-center"
-                  onClick={() => setExpandedId(isExpanded ? null : scan.id)}
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }} 
+                  animate={{ opacity: 1, scale: 1 }} 
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-surface border border-gray-800 rounded-3xl overflow-hidden shadow-lg"
                 >
-                  <div>
-                    <h3 className="font-bold text-white text-lg">
-                      {new Date(scan.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </h3>
-                    <div className="flex gap-4 mt-2">
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Weight</p>
-                        <p className="text-white font-semibold">
-                          {scan.weight}kg {prev && calculateDelta(scan.weight, prev.weight, true)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">BF %</p>
-                        <p className="text-white font-semibold">
-                          {scan.bf_percent}% {prev && calculateDelta(scan.bf_percent, prev.bf_percent, true)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Score</p>
-                        <p className="text-blue-400 font-bold">
-                          {scan.score} {prev && calculateDelta(scan.score, prev.score)}
-                        </p>
+                  {/* Header (Always Visible) */}
+                  <div 
+                    className="p-5 cursor-pointer flex justify-between items-center"
+                    onClick={() => setExpandedId(isExpanded ? null : scan.id)}
+                  >
+                    <div>
+                      <h3 className="font-bold text-white text-lg">
+                        {new Date(scan.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </h3>
+                      <div className="flex gap-4 mt-2">
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Weight</p>
+                          <p className="text-white font-semibold">
+                            {scan.weight}kg {prev && calculateDelta(scan.weight, prev.weight, true)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">BF %</p>
+                          <p className="text-white font-semibold">
+                            {scan.bf_percent}% {prev && calculateDelta(scan.bf_percent, prev.bf_percent, true)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Score</p>
+                          <p className="text-blue-400 font-bold">
+                            {scan.score} {prev && calculateDelta(scan.score, prev.score)}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <div className="text-gray-500 bg-gray-800/50 p-2 rounded-full">
+                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </div>
                   </div>
-                  <div className="text-gray-500 bg-gray-800/50 p-2 rounded-full">
-                    {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                  </div>
-                </div>
 
-                {/* Expanded Details */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden border-t border-gray-800/50"
-                    >
-                      <div className="p-5 bg-black/20 space-y-6">
-                        
-                        {/* Muscle-Fat Analysis */}
-                        <div>
-                          <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                            <Activity size={14} /> Muscle-Fat Analysis
-                          </h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 uppercase">Skeletal Muscle Mass</p>
-                              <p className="text-lg text-white font-bold">{scan.smm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.smm, prev.smm)}</p>
-                            </div>
-                            <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 uppercase">Body Fat Mass</p>
-                              <p className="text-lg text-white font-bold">{scan.bfm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.bfm, prev.bfm, true)}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Body Composition Analysis */}
-                        <div>
-                          <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                            <Droplet size={14} /> Body Composition
-                          </h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 mb-1">Total Water</p>
-                              <p className="text-sm text-white font-bold">{seg.tbw || 0}L</p>
-                            </div>
-                            <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 mb-1">Protein</p>
-                              <p className="text-sm text-white font-bold">{seg.protein || 0}kg</p>
-                            </div>
-                            <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 mb-1">Minerals</p>
-                              <p className="text-sm text-white font-bold">{seg.minerals || 0}kg</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Obesity Evaluation */}
-                        <div>
-                          <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                            <Flame size={14} /> Obesity Evaluation
-                          </h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 uppercase">Visceral Fat Level</p>
-                              <p className="text-lg text-white font-bold">{seg.visceralFat || 0} {prev && calculateDelta(seg.visceralFat, prevSeg.visceralFat, true)}</p>
-                            </div>
-                            <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                              <p className="text-[10px] text-gray-400 uppercase">Basal Metabolic Rate</p>
-                              <p className="text-lg text-white font-bold">{scan.bmr} <span className="text-sm text-gray-500">kcal</span></p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Segmental Lean Analysis */}
-                        <div>
-                          <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                            <Brain size={14} /> Segmental Lean Analysis
-                          </h4>
-                          <div className="bg-gray-800/30 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
-                            
-                            {/* Generated Silhouette Image */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                              <img src="/inbody-silhouette.png" alt="Body Silhouette" className="h-[250px] object-contain opacity-20 filter grayscale" />
-                            </div>
-
-                            {/* Arms */}
-                            <div className="flex justify-between w-full z-10">
-                              <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                <p className="text-[10px] text-gray-500 mb-1">Left Arm</p>
-                                <p className="text-sm font-bold text-white">{seg.laLean || 0}kg</p>
-                                <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.laLean, prevSeg.laLean)}</p>
+                  {/* Expanded Details */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden border-t border-gray-800/50"
+                      >
+                        <div className="p-5 bg-black/20 space-y-6">
+                          
+                          {/* Muscle-Fat Analysis */}
+                          <div>
+                            <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                              <Activity size={14} /> Muscle-Fat Analysis
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 uppercase">Skeletal Muscle Mass</p>
+                                <p className="text-lg text-white font-bold">{scan.smm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.smm, prev.smm)}</p>
                               </div>
-                              <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                <p className="text-[10px] text-gray-500 mb-1">Right Arm</p>
-                                <p className="text-sm font-bold text-white">{seg.raLean || 0}kg</p>
-                                <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.raLean, prevSeg.raLean)}</p>
-                              </div>
-                            </div>
-                            
-                            {/* Trunk */}
-                            <div className="flex justify-center w-full z-10">
-                              <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                <p className="text-[10px] text-gray-500 mb-1">Trunk</p>
-                                <p className="text-sm font-bold text-white">{seg.trunkLean || 0}kg</p>
-                                <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.trunkLean, prevSeg.trunkLean)}</p>
-                              </div>
-                            </div>
-
-                            {/* Legs */}
-                            <div className="flex justify-between w-full z-10">
-                              <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                <p className="text-[10px] text-gray-500 mb-1">Left Leg</p>
-                                <p className="text-sm font-bold text-white">{seg.llLean || 0}kg</p>
-                                <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.llLean, prevSeg.llLean)}</p>
-                              </div>
-                              <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                <p className="text-[10px] text-gray-500 mb-1">Right Leg</p>
-                                <p className="text-sm font-bold text-white">{seg.rlLean || 0}kg</p>
-                                <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.rlLean, prevSeg.rlLean)}</p>
+                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 uppercase">Body Fat Mass</p>
+                                <p className="text-lg text-white font-bold">{scan.bfm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.bfm, prev.bfm, true)}</p>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                          {/* Body Composition Analysis */}
+                          <div>
+                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                              <Droplet size={14} /> Body Composition
+                            </h4>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 mb-1">Total Water</p>
+                                <p className="text-sm text-white font-bold">{seg.tbw || 0}L</p>
+                              </div>
+                              <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 mb-1">Protein</p>
+                                <p className="text-sm text-white font-bold">{seg.protein || 0}kg</p>
+                              </div>
+                              <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 mb-1">Minerals</p>
+                                <p className="text-sm text-white font-bold">{seg.minerals || 0}kg</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Obesity Evaluation */}
+                          <div>
+                            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                              <Flame size={14} /> Obesity Evaluation
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 uppercase">Visceral Fat Level</p>
+                                <p className="text-lg text-white font-bold">{seg.visceralFat || 0} {prev && calculateDelta(seg.visceralFat, prevSeg.visceralFat, true)}</p>
+                              </div>
+                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                <p className="text-[10px] text-gray-400 uppercase">Basal Metabolic Rate</p>
+                                <p className="text-lg text-white font-bold">{scan.bmr} <span className="text-sm text-gray-500">kcal</span></p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Segmental Lean Analysis */}
+                          <div>
+                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                              <Brain size={14} /> Segmental Lean Analysis
+                            </h4>
+                            <div className="bg-gray-800/30 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
+                              
+                              {/* Generated Silhouette Image */}
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                                <img src="/inbody-silhouette.png" alt="Body Silhouette" className="h-[250px] object-contain opacity-20 filter grayscale" />
+                              </div>
+
+                              {/* Arms */}
+                              <div className="flex justify-between w-full z-10">
+                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                                  <p className="text-[10px] text-gray-500 mb-1">Left Arm</p>
+                                  <p className="text-sm font-bold text-white">{seg.laLean || 0}kg</p>
+                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.laLean, prevSeg.laLean)}</p>
+                                </div>
+                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                                  <p className="text-[10px] text-gray-500 mb-1">Right Arm</p>
+                                  <p className="text-sm font-bold text-white">{seg.raLean || 0}kg</p>
+                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.raLean, prevSeg.raLean)}</p>
+                                </div>
+                              </div>
+                              
+                              {/* Trunk */}
+                              <div className="flex justify-center w-full z-10">
+                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                                  <p className="text-[10px] text-gray-500 mb-1">Trunk</p>
+                                  <p className="text-sm font-bold text-white">{seg.trunkLean || 0}kg</p>
+                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.trunkLean, prevSeg.trunkLean)}</p>
+                                </div>
+                              </div>
+
+                              {/* Legs */}
+                              <div className="flex justify-between w-full z-10">
+                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                                  <p className="text-[10px] text-gray-500 mb-1">Left Leg</p>
+                                  <p className="text-sm font-bold text-white">{seg.llLean || 0}kg</p>
+                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.llLean, prevSeg.llLean)}</p>
+                                </div>
+                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
+                                  <p className="text-[10px] text-gray-500 mb-1">Right Leg</p>
+                                  <p className="text-sm font-bold text-white">{seg.rlLean || 0}kg</p>
+                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.rlLean, prevSeg.rlLean)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </SwipeToDeleteRow>
             );
           })}
         </div>

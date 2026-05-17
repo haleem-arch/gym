@@ -35,13 +35,13 @@ async function seed() {
     email_confirm: true,
   });
 
-  if (authError && authError.message !== 'User already registered') {
+  if (authError && authError.code !== 'email_exists' && authError.message !== 'User already registered') {
     console.error("Error creating user:", authError);
     return;
   }
 
   let userId;
-  if (authError && authError.message === 'User already registered') {
+  if (authError && (authError.code === 'email_exists' || authError.message === 'User already registered')) {
     const { data: users } = await supabase.auth.admin.listUsers();
     userId = users.users.find(u => u.email === 'haleem@example.com')?.id;
   } else {
