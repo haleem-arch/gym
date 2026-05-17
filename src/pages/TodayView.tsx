@@ -88,10 +88,12 @@ const TodayView = () => {
         } catch (e) {}
       }
 
-      if (memoryWorkout || inProgressList.length > 0) {
-        setWorkoutStatus(0.5); // In progress for this day!
+      if (memoryWorkout) {
+        setWorkoutStatus(0.5); // Currently active in memory!
       } else if (completedList.length > 0) {
         setWorkoutStatus(1.0); // Completed for this day!
+      } else if (inProgressList.length > 0) {
+        setWorkoutStatus(0.5); // In progress in database!
       } else {
         setWorkoutStatus(0.0); // Not started for this day!
       }
