@@ -69,7 +69,15 @@ const TodayView = () => {
       if (!active) return;
 
       if (completedWorkouts && completedWorkouts.length > 0) {
-        setWorkoutStatus(1.0);
+        const hasCompleted = completedWorkouts.some((w: any) => w.status === 'completed');
+        const hasInProgress = completedWorkouts.some((w: any) => w.status === 'in_progress');
+        if (hasCompleted) {
+          setWorkoutStatus(1.0);
+        } else if (hasInProgress) {
+          setWorkoutStatus(0.5);
+        } else {
+          setWorkoutStatus(0.0);
+        }
       } else {
         if (workout && isToday) {
           setWorkoutStatus(0.5);

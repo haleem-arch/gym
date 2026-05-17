@@ -109,6 +109,8 @@ const WorkoutHome = () => {
 
       if (inProgressData && inProgressData.length > 0) {
         setInProgressWorkout(inProgressData[0]);
+      } else {
+        setInProgressWorkout(null);
       }
 
       // 3. Fetch real exercises based on day_type
