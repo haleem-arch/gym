@@ -25,7 +25,7 @@ export interface ActiveWorkout {
   dayType: string;
   title: string;
   startTime: string;
-  targetDate?: string;
+  date?: string;
   exercises: WorkoutExercise[];
   notes: string;
 }
@@ -79,13 +79,13 @@ export const useActiveWorkout = () => {
     }
   };
 
-  const startWorkout = (dayType: string, title: string, exercises: WorkoutExercise[], targetDate?: string) => {
+  const startWorkout = (dayType: string, title: string, exercises: WorkoutExercise[], customDate?: string) => {
     setWorkout({
       id: crypto.randomUUID(),
       dayType,
       title,
       startTime: new Date().toISOString(),
-      targetDate,
+      date: customDate || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
       exercises,
       notes: ''
     });

@@ -34,7 +34,7 @@ const WorkoutTracker = () => {
         ]
       }));
       
-      startWorkout(state.plan.type, state.plan.title, realExercises, state.targetDate);
+      startWorkout(state.plan.type, state.plan.title, realExercises, state.activeDateStr);
       window.history.replaceState({}, document.title);
     }
   }, [state, workout, startWorkout]);
@@ -84,13 +84,12 @@ const WorkoutTracker = () => {
       
       // Fix timezone offset for proper date insertion
       const d = new Date();
-      const localDateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      const workoutDateStr = workout.targetDate || localDateStr;
+      const localDateStr = workout.date || new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
       const { data: workoutData, error: workoutError } = await supabase.from('workouts').upsert({
         id: workout.id, // Primary key match triggers update if resumed
         user_id: session.user.id,
-        date: workoutDateStr,
+        date: localDateStr,
         day_type: workout.dayType,
         duration: duration,
         total_volume: totalVolume,

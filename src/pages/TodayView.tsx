@@ -16,7 +16,7 @@ const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
 
 const TodayView = () => {
   const navigate = useNavigate();
-  const { workout, startWorkout, endWorkout } = useActiveWorkout();
+  const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
   
   // Need to safely get date string respecting timezone
@@ -40,8 +40,6 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
-  const [completedCount, setCompletedCount] = useState<number>(0);
-  const [showAddAnother, setShowAddAnother] = useState<boolean>(false);
   const [latestInbody, setLatestInbody] = useState<{
     weight: number | string;
     bf: number | string;
@@ -55,8 +53,8 @@ const TodayView = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // 1. Check completed workouts for activeDateStr
-      const { data: dateWorkouts } = await supabase
+      // 1. Check if a workout has been logged in Supabase for the activeDateStr first!
+      const { data: completedWorkouts } = await supabase
         .from('workouts')
         .select('id, status')
         .eq('user_id', session.user.id)
@@ -64,38 +62,47 @@ const TodayView = () => {
 
       if (!active) return;
 
-      let completedList: any[] = [];
-      let inProgressList: any[] = [];
-
-      if (dateWorkouts && dateWorkouts.length > 0) {
-        completedList = dateWorkouts.filter((w: any) => w.status === 'completed');
-        inProgressList = dateWorkouts.filter((w: any) => w.status === 'in_progress');
+      if (completedWorkouts && completedWorkouts.length > 0) {
+        const hasCompleted = completedWorkouts.some((w: any) => w.status === 'completed');
+        if (hasCompleted) {
+          // Self-heal: Clear any local active workout state & localStorage if it's already completed today
+          if (isToday) {
+            localStorage.removeItem('athlete_dashboard_active_workout');
+            if (workout) {
+              endWorkout();
+            }
+          }
+          setWorkoutStatus(1.0);
+          return;
+        }
       }
 
-      setCompletedCount(completedList.length);
-
-      // Check if there is an active workout in memory for THIS activeDateStr
-      let memoryWorkout: any = null;
+      // 2. If not completed in database, check if active workout is currently in memory
       const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
       if (activeStr) {
         try {
           const parsed = JSON.parse(activeStr);
-          if (parsed && parsed.targetDate === activeDateStr) {
-            memoryWorkout = parsed;
-          } else if (parsed && !parsed.targetDate && isToday) {
-            memoryWorkout = parsed;
+          if (parsed && isToday) {
+            if (active) setWorkoutStatus(0.5);
+            return;
           }
         } catch (e) {}
       }
 
-      if (memoryWorkout) {
-        setWorkoutStatus(0.5); // Currently active in memory!
-      } else if (completedList.length > 0) {
-        setWorkoutStatus(1.0); // Completed for this day!
-      } else if (inProgressList.length > 0) {
-        setWorkoutStatus(0.5); // In progress in database!
+      // 3. If not in memory, check if in_progress in database
+      if (completedWorkouts && completedWorkouts.length > 0) {
+        const hasInProgress = completedWorkouts.some((w: any) => w.status === 'in_progress');
+        if (hasInProgress) {
+          setWorkoutStatus(0.5);
+        } else {
+          setWorkoutStatus(0.0);
+        }
       } else {
-        setWorkoutStatus(0.0); // Not started for this day!
+        if (workout && isToday) {
+          setWorkoutStatus(0.5);
+        } else {
+          setWorkoutStatus(0.0);
+        }
       }
     };
 
@@ -234,91 +241,27 @@ const TodayView = () => {
 
         {dayType !== 'REST' && (
           workoutStatus === 1.0 ? (
-            <div className="w-full flex flex-col gap-2">
-              <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 shadow-md">
-                <Check size={18} />
-                {completedCount > 1 ? `${completedCount} WORKOUTS COMPLETED TODAY` : 'WORKOUT COMPLETED'}
-              </div>
-              
-              {!showAddAnother ? (
-                <button
-                  onClick={() => setShowAddAnother(true)}
-                  className="w-full py-2 bg-gray-800/80 hover:bg-gray-700/80 text-xs font-bold text-gray-300 rounded-xl border border-gray-700 transition-all active:scale-95"
-                >
-                  + Add Another Workout to This Day
-                </button>
-              ) : (
-                <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-3 flex flex-col gap-2 animate-fade-in">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase text-center block">Select Additional Plan</span>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {['PUSH', 'PULL', 'LEGS', 'RUN'].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          const planMap: Record<string, { title: string; ex: any[] }> = {
-                            PUSH: {
-                              title: 'Push Workout',
-                              ex: [
-                                { id: crypto.randomUUID(), name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', tier: 'A', cue: 'Full range of motion', rationale: 'Upper chest development', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 8, done: false }] },
-                                { id: crypto.randomUUID(), name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', tier: 'A', cue: 'Control descent', rationale: 'Anterior delt focus', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 8, done: false }] }
-                              ]
-                            },
-                            PULL: {
-                              title: 'Pull Workout',
-                              ex: [
-                                { id: crypto.randomUUID(), name: 'Lat Pulldown (wide grip)', muscle_group: 'Back', tier: 'A', cue: 'Drive elbows down', rationale: 'Lat width', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 8, done: false }] },
-                                { id: crypto.randomUUID(), name: 'Chest-Supported DB Row', muscle_group: 'Back', tier: 'A', cue: 'Squeeze shoulder blades', rationale: 'Upper back thickness', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 8, done: false }] }
-                              ]
-                            },
-                            LEGS: {
-                              title: 'Legs Workout',
-                              ex: [
-                                { id: crypto.randomUUID(), name: 'Leg Press (feet high for glutes)', muscle_group: 'Legs', tier: 'A', cue: 'Drive through heels', rationale: 'Glute & quad focus', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 8, done: false }] },
-                                { id: crypto.randomUUID(), name: 'DB Romanian Deadlift', muscle_group: 'Legs', tier: 'A', cue: 'Hinge at hips', rationale: 'Hamstring & glute development', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 8, done: false }] }
-                              ]
-                            },
-                            RUN: {
-                              title: 'Cardio (Running Session)',
-                              ex: [
-                                { id: crypto.randomUUID(), name: '5 min Warmup Walk', muscle_group: 'Cardio', tier: 'A', cue: 'Easy pace', rationale: 'Warm up hips and calves', restTime: 60, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 6, done: false }] },
-                                { id: crypto.randomUUID(), name: 'Outdoor Run / Treadmill (Zone 2)', muscle_group: 'Cardio', tier: 'A', cue: 'Conversational pace', rationale: 'Aerobic base building', restTime: 120, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 7, done: false }] },
-                                { id: crypto.randomUUID(), name: '5 min Cooldown Walk', muscle_group: 'Cardio', tier: 'A', cue: 'Bring heart rate down', rationale: 'Recovery', restTime: 60, notes: '', sets: [{ setNum: 1, weight: 0, reps: 0, rpe: 5, done: false }] }
-                              ]
-                            }
-                          };
-                          const selected = planMap[type];
-                          startWorkout(type, selected.title, selected.ex, activeDateStr);
-                          navigate('/workout/active');
-                        }}
-                        className={`py-2 px-1 text-[11px] font-extrabold rounded-lg border transition-all active:scale-95 ${type === 'RUN' ? 'bg-blue-900/40 border-blue-500/40 text-blue-300 hover:bg-blue-800/50' : 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700'}`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={() => setShowAddAnother(false)} className="text-[10px] text-gray-500 hover:text-gray-400 mt-1 underline text-center">
-                    Cancel
-                  </button>
-                </div>
-              )}
+            <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
+              <Check size={18} />
+              WORKOUT COMPLETED
             </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-2">
               <button 
                 onClick={() => {
-                  if (workout && (workout.targetDate === activeDateStr || (!workout.targetDate && isToday))) {
+                  if (workout && isToday) {
                     navigate('/workout/active');
                   } else {
-                    navigate('/workout', { state: { targetDate: activeDateStr } }); // Redirect to Workout Home to fetch real DB exercises for targetDate
+                    navigate('/workout', { state: { activeDateStr } }); // Pass the selected date!
                   }
                 }}
-                className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${workout && (workout.targetDate === activeDateStr || (!workout.targetDate && isToday)) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
+                className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && isToday) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
               >
                 <Play size={18} fill="currentColor" />
-                {workout && (workout.targetDate === activeDateStr || (!workout.targetDate && isToday)) ? 'RESUME SESSION' : 'START WORKOUT'}
+                {(workout && isToday) ? 'RESUME SESSION' : 'START WORKOUT'}
               </button>
               
-              {workout && (workout.targetDate === activeDateStr || (!workout.targetDate && isToday)) && (
+              {workout && (
                 <button
                   onClick={async () => {
                     if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {

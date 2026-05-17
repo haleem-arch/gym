@@ -13,11 +13,11 @@ const WorkoutHome = () => {
   const navigate = useNavigate();
   const { workout, loadWorkout, endWorkout } = useActiveWorkout();
   
+  // Use today's schedule
   const location = useLocation();
-  // Use today's schedule or target date from navigation
-  const getLocalDateString = () => new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  const targetDateStr = location.state?.targetDate || getLocalDateString();
-  const { dayType } = useSchedule(targetDateStr);
+  const selectedDateStr = location.state?.activeDateStr || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const getLocalDateString = () => selectedDateStr;
+  const { dayType } = useSchedule(getLocalDateString());
 
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
   const [inProgressWorkout, setInProgressWorkout] = useState<any>(null);
@@ -230,7 +230,7 @@ const WorkoutHome = () => {
       alert("Loading exercises, please wait a second...");
       return;
     }
-    navigate('/workout/active', { state: { startNew: true, plan: todayPlan, targetDate: targetDateStr } });
+    navigate('/workout/active', { state: { startNew: true, plan: todayPlan, activeDateStr: selectedDateStr } });
   };
 
   const handleDeleteSession = async (id: string) => {
@@ -249,7 +249,7 @@ const WorkoutHome = () => {
     return `${m}m`;
   };
 
-  const isTodayCompleted = pastWorkouts.some(w => w.date === targetDateStr);
+  const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString());
 
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full">
