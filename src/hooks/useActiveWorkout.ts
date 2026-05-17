@@ -31,26 +31,52 @@ export interface ActiveWorkout {
 
 const STORAGE_KEY = 'athlete_dashboard_active_workout';
 
-export const useActiveWorkout = () => {
-  const [workout, setWorkout] = useState<ActiveWorkout | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
+// ─── Shared Global Workout State Store ───
+// This guarantees all hook instances in all mounted/unmounted components share the exact same state.
+let globalWorkoutState: ActiveWorkout | null = (() => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      return null;
     }
-    return null;
-  });
+  }
+  return null;
+})();
 
+const listeners = new Set<(w: ActiveWorkout | null) => void>();
+
+const updateGlobalWorkoutState = (newWorkout: ActiveWorkout | null) => {
+  globalWorkoutState = newWorkout;
+  if (newWorkout) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newWorkout));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  listeners.forEach(listener => listener(newWorkout));
+};
+
+export const useActiveWorkout = () => {
+  const [workout, setWorkoutState] = useState<ActiveWorkout | null>(globalWorkoutState);
+
+  // Subscribe to changes in the global workout state
   useEffect(() => {
-    if (workout) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(workout));
+    listeners.add(setWorkoutState);
+    return () => {
+      listeners.delete(setWorkoutState);
+    };
+  }, []);
+
+  // Standard React state setter wrapper that updates the global store
+  const setWorkout = (newVal: ActiveWorkout | null | ((prev: ActiveWorkout | null) => ActiveWorkout | null)) => {
+    if (typeof newVal === 'function') {
+      const resolved = newVal(globalWorkoutState);
+      updateGlobalWorkoutState(resolved);
     } else {
-      localStorage.removeItem(STORAGE_KEY);
+      updateGlobalWorkoutState(newVal);
     }
-  }, [workout]);
+  };
 
   const startWorkout = (dayType: string, title: string, exercises: WorkoutExercise[]) => {
     setWorkout({
@@ -116,6 +142,7 @@ export const useActiveWorkout = () => {
      setWorkout(prev => {
       if (!prev) return prev;
       const newExercises = [...prev.exercises];
+      newExercises[exerciseIndex] = { ...newExercises[exerciseIndex] };
       newExercises[exerciseIndex].notes = notes;
       return { ...prev, exercises: newExercises };
     });
@@ -123,7 +150,7 @@ export const useActiveWorkout = () => {
 
   const updateWorkoutNotes = (notes: string) => {
     setWorkout(prev => prev ? { ...prev, notes } : prev);
-  }
+  };
 
   const endWorkout = () => {
     setWorkout(null);
