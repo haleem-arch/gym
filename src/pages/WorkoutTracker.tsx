@@ -140,7 +140,7 @@ const WorkoutTracker = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-background relative pb-28">
+    <div className="flex flex-col min-h-full bg-background relative pb-28 max-w-[390px] mx-auto w-full">
       <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between">
         <button onClick={() => navigate('/workout')} className="text-gray-400 hover:text-white p-1">
           <ArrowLeft size={24} />
