@@ -323,19 +323,42 @@ const ManagePlans = () => {
         .eq('user_id', session.user.id)
         .eq('plan_type', planToEdit);
 
+      const remainingPlans = availablePlans.filter(p => p !== planToEdit);
+      const nextPlan = remainingPlans.length > 0 ? remainingPlans[0] : 'PUSH';
+
+      // Clean up references in postgres user schedule
+      const { data: schedules } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('user_id', session.user.id);
+
+      if (schedules) {
+        for (const schedule of schedules) {
+          if (schedule.days) {
+            let updated = false;
+            const newDays = { ...schedule.days };
+            for (const [dateStr, val] of Object.entries(newDays)) {
+              if (val === planToEdit) {
+                newDays[dateStr] = nextPlan;
+                updated = true;
+              }
+            }
+            if (updated) {
+              await supabase
+                .from('schedules')
+                .update({ days: newDays })
+                .eq('id', schedule.id);
+            }
+          }
+        }
+      }
+
       // Broadcast events so the dashboard updates
       window.dispatchEvent(new CustomEvent('plan_updated'));
       window.dispatchEvent(new CustomEvent('schedule_updated'));
 
       alert(`Successfully deleted plan day "${planToEdit}"`);
-      
-      const remainingPlans = availablePlans.filter(p => p !== planToEdit);
-      if (remainingPlans.length > 0) {
-        setPlanToEdit(remainingPlans[0]);
-      } else {
-        setPlanToEdit('PUSH');
-      }
-      
+      setPlanToEdit(nextPlan);
       await loadUserPlans();
     } catch (err) {
       console.error(err);
