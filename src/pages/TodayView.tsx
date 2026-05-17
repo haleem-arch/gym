@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User, LogOut, Plus, Trash2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -69,7 +69,24 @@ const fuzzyMatch = (text: string, query: string): boolean => {
   return false;
 };
 
-const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
+interface CustomExerciseConfig {
+  name: string;
+  sets: number;
+  rest: number;
+}
+
+const parsePlanExercises = (exs: any[]): CustomExerciseConfig[] => {
+  return (exs || []).map(ex => {
+    if (typeof ex === 'string') {
+      return { name: ex, sets: 4, rest: 90 };
+    }
+    return {
+      name: ex.name || '',
+      sets: parseInt(ex.sets as any) || 4,
+      rest: parseInt(ex.rest as any) || 90
+    };
+  });
+};
 
 const TodayView = () => {
   const navigate = useNavigate();
@@ -106,12 +123,48 @@ const TodayView = () => {
   const [carbsInput, setCarbsInput] = useState('');
   const [fatInput, setFatInput] = useState('');
 
-  // Gym Program Editor states
-  const [planToEdit, setPlanToEdit] = useState<'PUSH' | 'PULL' | 'LEGS'>('PUSH');
-  const [customExercises, setCustomExercises] = useState<string[]>([]);
+  // Dynamic Workout Plans States
+  const [allPlans, setAllPlans] = useState<any[]>([]);
+  const [availablePlans, setAvailablePlans] = useState<string[]>(['PUSH', 'PULL', 'LEGS']);
+  const [planToEdit, setPlanToEdit] = useState<string>('PUSH');
+  const [customExercises, setCustomExercises] = useState<CustomExerciseConfig[]>([]);
   const [globalExercises, setGlobalExercises] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+
+  const loadUserPlans = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    const { data: plans } = await supabase
+      .from('user_workout_plans')
+      .select('*')
+      .eq('user_id', session.user.id);
+      
+    if (plans) {
+      setAllPlans(plans);
+      const uniquePlanTypes = Array.from(new Set([
+        'PUSH', 'PULL', 'LEGS', 
+        ...plans.map(p => p.plan_type.toUpperCase())
+      ]));
+      setAvailablePlans(uniquePlanTypes);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUserPlans();
+    
+    const handleUpdate = () => {
+      loadUserPlans();
+    };
+    window.addEventListener('plan_updated', handleUpdate);
+    window.addEventListener('schedule_updated', handleUpdate);
+    
+    return () => {
+      window.removeEventListener('plan_updated', handleUpdate);
+      window.removeEventListener('schedule_updated', handleUpdate);
+    };
+  }, [loadUserPlans]);
 
   // Load settings when modal is opened
   useEffect(() => {
@@ -206,9 +259,9 @@ const TodayView = () => {
         .maybeSingle();
 
       if (customPlan && customPlan.exercises && customPlan.exercises.length > 0) {
-        setCustomExercises(customPlan.exercises);
+        setCustomExercises(parsePlanExercises(customPlan.exercises));
       } else {
-        setCustomExercises(planMap[planToEdit] || []);
+        setCustomExercises(parsePlanExercises(planMap[planToEdit] || []));
       }
     };
 
@@ -338,15 +391,27 @@ const TodayView = () => {
   
   const dateDisplay = isToday ? 'Today' : activeDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Phase 1 Mock Plan Generation based on Day Type
+  // Phase 1 Mock Plan Generation based on Day Type (Upgraded to load dynamic custom plans)
   const generatePlan = (type: string) => {
+    const customPlan = allPlans.find(p => p.plan_type.toUpperCase() === type.toUpperCase());
+    if (customPlan) {
+      const exercisesList = (customPlan.exercises || []).map((ex: any) => {
+        if (typeof ex === 'string') return ex;
+        return `${ex.name} (${ex.sets || 4} sets)`;
+      });
+      return {
+        title: `${type} Session`,
+        exercises: exercisesList
+      };
+    }
+
     switch(type) {
-      case 'PUSH': return { title: 'Push (Chest/Shoulders/Triceps)', exercises: ['Incline DB Press', 'Overhead Cable Extension', 'Lateral Raises', 'Machine Chest Press'] };
-      case 'PULL': return { title: 'Pull (Back/Biceps)', exercises: ['Pull-ups', 'Barbell Row', 'Face Pulls', 'Bicep Curls'] };
-      case 'LEGS': return { title: 'Legs (Quads/Hams/Calves)', exercises: ['Squats', 'Leg Extension', 'Hamstring Curls', 'Calf Raises'] };
+      case 'PUSH': return { title: 'Push (Chest/Shoulders/Triceps)', exercises: ['Incline DB Press (4 sets)', 'Overhead Cable Extension (4 sets)', 'Lateral Raises (4 sets)', 'Machine Chest Press (4 sets)'] };
+      case 'PULL': return { title: 'Pull (Back/Biceps)', exercises: ['Pull-ups (4 sets)', 'Barbell Row (4 sets)', 'Face Pulls (4 sets)', 'Bicep Curls (4 sets)'] };
+      case 'LEGS': return { title: 'Legs (Quads/Hams/Calves)', exercises: ['Squats (4 sets)', 'Leg Extension (4 sets)', 'Hamstring Curls (4 sets)', 'Calf Raises (4 sets)'] };
       case 'RUN': return { title: 'Cardio (Running Session)', exercises: ['Run smart', 'Control your pace', 'Focus on your breathing', 'Keep a steady rhythm'] };
       case 'REST': return { title: 'Active Recovery', exercises: ['Focus on hydration', 'Get 8 hours of sleep', 'Light stretching if needed'] };
-      default: return { title: 'Workout', exercises: [] };
+      default: return { title: `${type} Workout`, exercises: [] };
     }
   };
   const plan = generatePlan(dayType);
@@ -431,14 +496,14 @@ const TodayView = () => {
             onChange={(e) => setDayType(e.target.value)}
             className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none"
           >
-            {DAY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+            {Array.from(new Set([...availablePlans, 'REST', 'RUN'])).map(type => <option key={type} value={type}>{type}</option>)}
           </select>
         </div>
         <h2 className="text-xl font-extrabold text-white mb-4">{plan.title}</h2>
         
         {dayType !== 'REST' && (
           <ul className="space-y-2 mb-6 text-sm text-gray-300">
-            {plan.exercises.map((ex, i) => (
+            {plan.exercises.map((ex: any, i: number) => (
               <li key={i} className="flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-200">{ex}</span>
@@ -666,7 +731,7 @@ const TodayView = () => {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowExportModal(false)}
-              className="fixed inset-0 bg-black z-50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black z-50 backdrop-blur-sm"
             />
             {/* Modal Bottom Sheet */}
             <motion.div 
@@ -674,7 +739,7 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
+              className="absolute bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -764,7 +829,7 @@ const TodayView = () => {
               animate={{ opacity: 0.6 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSettingsModal(false)}
-              className="fixed inset-0 bg-black z-50 backdrop-blur-sm animate-fade-in"
+              className="absolute inset-0 bg-black z-50 backdrop-blur-sm animate-fade-in"
             />
             {/* Full height glassmorphic majestic panel (iOS Slide Up Sheet) */}
             <motion.div
@@ -772,7 +837,7 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 240 }}
-              className="fixed inset-0 z-50 w-full h-full bg-black flex flex-col shadow-2xl overflow-hidden"
+              className="absolute inset-0 z-50 w-full h-full bg-black flex flex-col shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
               <div className="border-b border-gray-800 bg-surface/50 backdrop-blur-xl">
@@ -855,45 +920,148 @@ const TodayView = () => {
 
                     <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
                       {/* Day Selection Slider Tabs */}
-                      <div className="flex bg-black/40 rounded-xl p-1 border border-white/5">
-                        {(['PUSH', 'PULL', 'LEGS'] as const).map((t) => (
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Select Program to Edit</span>
+                        <div className="flex flex-wrap gap-1.5 bg-black/40 rounded-xl p-1.5 border border-white/5">
+                          {availablePlans.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => { setPlanToEdit(t); setSearchQuery(''); }}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer ${
+                                planToEdit === t ? 'bg-surface text-primary shadow' : 'text-gray-400 hover:text-white'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
                           <button
-                            key={t}
                             type="button"
-                            onClick={() => { setPlanToEdit(t); setSearchQuery(''); }}
-                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer ${
-                              planToEdit === t ? 'bg-surface text-primary shadow' : 'text-gray-400 hover:text-white'
-                            }`}
+                            onClick={() => {
+                              const newName = window.prompt("Enter the name of your custom training day (e.g. Upper Body, Chest & Arms):");
+                              if (!newName) return;
+                              const formattedName = newName.trim().toUpperCase();
+                              if (formattedName.length < 2) {
+                                alert("Name is too short!");
+                                return;
+                              }
+                              if (availablePlans.includes(formattedName)) {
+                                alert("This day type already exists!");
+                                return;
+                              }
+                              setAvailablePlans(prev => [...prev, formattedName]);
+                              setPlanToEdit(formattedName);
+                              setCustomExercises([]);
+                            }}
+                            className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
                           >
-                            {t}
+                            + Add Custom Day
                           </button>
-                        ))}
+                        </div>
                       </div>
 
                       {/* Active Exercises List in selected day */}
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2.5">
                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
                           Active {planToEdit} List ({customExercises.length})
                         </span>
                         
-                        <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar pr-1">
-                          {customExercises.map((exName, idx) => (
-                            <div 
-                              key={idx} 
-                              className="flex justify-between items-center bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-xs font-semibold animate-fade-in"
-                            >
-                              <span className="truncate max-w-[200px]">{exName}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCustomExercises(prev => prev.filter(e => e !== exName));
-                                }}
-                                className="text-danger/60 hover:text-danger p-1 transition-colors cursor-pointer"
+                        <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto no-scrollbar pr-1">
+                          {customExercises.map((ex, idx) => {
+                            const cleanName = ex.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const dbEx = globalExercises.find(ge => ge.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName);
+                            const muscle = dbEx?.muscle_group || 'All Muscles';
+                            const equip = dbEx?.equipment || 'Gym';
+                            
+                            return (
+                              <div 
+                                key={idx} 
+                                className="flex flex-col gap-2.5 bg-black/30 border border-white/5 rounded-2xl p-3 animate-fade-in"
                               >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          ))}
+                                <div className="flex justify-between items-start gap-2">
+                                  <div className="flex flex-col gap-0.5 max-w-[80%]">
+                                    <span className="text-xs font-black text-white truncate">{ex.name}</span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary uppercase tracking-wide">
+                                        {equip}
+                                      </span>
+                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 uppercase tracking-wide">
+                                        {muscle}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCustomExercises(prev => prev.filter((_, i) => i !== idx));
+                                    }}
+                                    className="text-danger/60 hover:text-danger p-1 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+
+                                {/* Steppers: Sets & Rest Duration */}
+                                <div className="grid grid-cols-2 gap-2 border-t border-white/5 pt-2 flex-wrap">
+                                  {/* Sets Stepper */}
+                                  <div className="flex items-center justify-between bg-black/40 rounded-xl px-2 py-1">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Sets</span>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, sets: Math.max(1, e.sets - 1) } : e));
+                                        }}
+                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="text-xs font-black text-white w-4 text-center">{ex.sets}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, sets: Math.min(8, e.sets + 1) } : e));
+                                        }}
+                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Rest Stepper */}
+                                  <div className="flex items-center justify-between bg-black/40 rounded-xl px-2 py-1">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Rest</span>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const currentIdx = [30, 45, 60, 90, 120, 150, 180].indexOf(ex.rest);
+                                          const prevVal = [30, 45, 60, 90, 120, 150, 180][Math.max(0, currentIdx - 1)];
+                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, rest: prevVal } : e));
+                                        }}
+                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="text-[10px] font-black text-white w-8 text-center">{ex.rest}s</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const currentIdx = [30, 45, 60, 90, 120, 150, 180].indexOf(ex.rest);
+                                          const nextVal = [30, 45, 60, 90, 120, 150, 180][Math.min(6, currentIdx + 1)];
+                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, rest: nextVal } : e));
+                                        }}
+                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -919,7 +1087,7 @@ const TodayView = () => {
                             {globalExercises
                               .filter(ex => 
                                 fuzzyMatch(ex.name, searchQuery) &&
-                                !customExercises.includes(ex.name)
+                                !customExercises.some(e => e.name === ex.name)
                               )
                               .slice(0, 10)
                               .map((ex) => (
@@ -927,13 +1095,16 @@ const TodayView = () => {
                                   key={ex.id}
                                   type="button"
                                   onClick={() => {
-                                    setCustomExercises(prev => [...prev, ex.name]);
+                                    setCustomExercises(prev => [...prev, { name: ex.name, sets: 4, rest: 90 }]);
                                     setSearchQuery('');
                                   }}
-                                  className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer"
+                                  className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2.5 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer gap-2"
                                 >
-                                  <span>{ex.name}</span>
-                                  <Plus size={13} className="text-primary" />
+                                  <div className="flex flex-col gap-0.5">
+                                    <span>{ex.name}</span>
+                                    <span className="text-[8px] font-bold text-gray-500 uppercase tracking-wide">{ex.equipment} • {ex.muscle_group}</span>
+                                  </div>
+                                  <Plus size={13} className="text-primary flex-shrink-0" />
                                 </button>
                               ))}
                           </div>

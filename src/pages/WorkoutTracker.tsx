@@ -18,21 +18,29 @@ const WorkoutTracker = () => {
 
   useEffect(() => {
     if (state?.startNew && !workout && state.plan?.exercises?.length > 0) {
-      const realExercises: WorkoutExercise[] = state.plan.exercises.map((dbEx: any) => ({
-        id: dbEx.id,
-        name: dbEx.name,
-        muscle_group: dbEx.muscle_group,
-        tier: dbEx.tier || 'A',
-        cue: dbEx.cue || '',
-        rationale: dbEx.rationale || '',
-        restTime: 120,
-        notes: '',
-        sets: [
-          { setNum: 1, weight: 0, reps: 0, rpe: 8, done: false },
-          { setNum: 2, weight: 0, reps: 0, rpe: 8, done: false },
-          { setNum: 3, weight: 0, reps: 0, rpe: 8, done: false },
-        ]
-      }));
+      const realExercises: WorkoutExercise[] = state.plan.exercises.map((dbEx: any) => {
+        const setsCount = dbEx.targetSets || 4;
+        const restSecs = dbEx.targetRest || 90;
+        const initialSets = Array.from({ length: setsCount }, (_, index) => ({
+          setNum: index + 1,
+          weight: 0,
+          reps: 0,
+          rpe: 8,
+          done: false
+        }));
+
+        return {
+          id: dbEx.id,
+          name: dbEx.name,
+          muscle_group: dbEx.muscle_group,
+          tier: dbEx.tier || 'A',
+          cue: dbEx.cue || 'Maintain perfect execution control throughout the set.',
+          rationale: dbEx.rationale || 'Key exercise movement.',
+          restTime: restSecs,
+          notes: '',
+          sets: initialSets
+        };
+      });
       
       startWorkout(state.plan.type, state.plan.title, realExercises);
       window.history.replaceState({}, document.title);

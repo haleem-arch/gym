@@ -158,6 +158,7 @@ const WorkoutHome = () => {
           setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
         } else if (planMap[dayType]) {
           let targetNames = planMap[dayType];
+          let parsedConfigs: { name: string; sets: number; rest: number }[] = [];
           
           try {
             const { data: customPlan } = await supabase
@@ -168,7 +169,13 @@ const WorkoutHome = () => {
               .maybeSingle();
 
             if (customPlan?.exercises && customPlan.exercises.length > 0) {
-              targetNames = customPlan.exercises;
+              parsedConfigs = customPlan.exercises.map((ex: any) => {
+                if (typeof ex === 'string') return { name: ex, sets: 4, rest: 90 };
+                return { name: ex.name || '', sets: ex.sets || 4, rest: ex.rest || 90 };
+              });
+              targetNames = parsedConfigs.map(e => e.name);
+            } else {
+              parsedConfigs = targetNames.map(name => ({ name, sets: 4, rest: 90 }));
             }
           } catch (err) {
             console.error("Error loading custom plan:", err);
@@ -214,6 +221,16 @@ const WorkoutHome = () => {
 
             finalExercises = [...finalExercises, ...tempRecords].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
           }
+
+          // Inject target sets and rest times
+          finalExercises = finalExercises.map(fe => {
+            const config = parsedConfigs.find(c => c.name.toLowerCase() === fe.name.toLowerCase());
+            return {
+              ...fe,
+              targetSets: config ? config.sets : 4,
+              targetRest: config ? config.rest : 90
+            };
+          });
 
           setTodayPlan((prev: any) => ({ ...prev, exercises: finalExercises }));
         }
@@ -562,7 +579,7 @@ const WorkoutHome = () => {
 
       {/* Run Log Modal */}
       {showRunModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }}
