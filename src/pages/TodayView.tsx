@@ -110,6 +110,20 @@ const TodayView = () => {
   const waterCurrent = waterTotalMl / 1000;
   const waterTarget = 3.5; // 3.5 Liters
 
+  // Find the last logged entry from waterLogs
+  const lastWaterLog = waterLogs && waterLogs.length > 0 
+    ? waterLogs[waterLogs.length - 1] 
+    : null;
+  
+  // Parse and format the last log time (e.g. 8:02 AM)
+  const lastLoggedTime = lastWaterLog && lastWaterLog.created_at
+    ? new Date(lastWaterLog.created_at).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    : null;
+
   const inbody = {
     weight: 79.7,
     bf: 17.2,
@@ -145,16 +159,18 @@ const TodayView = () => {
         </button>
       </div>
 
-      {/* Bio-Status Concentric Pulsing Rings */}
-      <BioStatusRing 
-        kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
-        waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
-        workoutStatus={workoutStatus}
-        kcalCurrent={macros.kcal}
-        kcalTarget={targets.kcal}
-        waterCurrentL={waterCurrent}
-        waterTargetL={waterTarget}
-      />
+      {/* TODAY'S SCORE Header */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
+        <BioStatusRing 
+          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
+          waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
+          workoutStatus={workoutStatus}
+        />
+      </div>
+
+      {/* Subtle Separation Divider */}
+      <div className="border-t border-white/10 my-1" />
 
       {/* Today's Plan Card */}
       <motion.div 
@@ -204,88 +220,129 @@ const TodayView = () => {
         )}
       </motion.div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer"
-          onClick={() => navigate('/diet')}
-        >
-          <div className="flex items-center gap-2 text-gray-400 mb-2">
-            <Utensils size={16} />
-            <span className="text-xs font-medium uppercase tracking-wider">Nutrition</span>
-          </div>
-          <div className="mb-2">
-            <div className="flex justify-between text-xs mb-1">
-              <span>Calories</span>
-              <span className="text-gray-400">{Math.round(macros.kcal)} / {targets.kcal}</span>
-            </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span>Protein</span>
-              <span className="text-gray-400">{Math.round(macros.protein)} / {targets.protein}g</span>
-            </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div className="bg-primary h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
-            </div>
-          </div>
-        </motion.div>
+      {/* Subtle Separation Divider */}
+      <div className="border-t border-white/10 my-1" />
 
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden"
-        >
-           <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
-             <div className="p-4 flex flex-col h-full bg-surface">
-               <div className="flex items-center justify-between text-gray-400 mb-2">
-                 <div className="flex items-center gap-2">
-                   <Droplets size={16} />
-                   <span className="text-xs font-medium uppercase tracking-wider">Hydration</span>
+      {/* DETAILS Header & Bottom Cards */}
+      <div className="flex flex-col gap-4">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">Details</span>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* Nutrition Card (4 progress bars) */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer hover:border-gray-700 transition-colors"
+            onClick={() => navigate('/diet')}
+          >
+            <div className="flex items-center gap-2 text-gray-400 mb-3">
+              <Utensils size={16} />
+              <span className="text-xs font-bold uppercase tracking-wider">Nutrition</span>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {/* Calories */}
+              <div>
+                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                  <span className="font-semibold text-gray-300">Calories</span>
+                  <span className="text-gray-400 font-bold">{Math.round(macros.kcal)}/{targets.kcal} kcal</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-1">
+                  <div className="bg-[#F97316] h-1 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
+                </div>
+              </div>
+
+              {/* Protein */}
+              <div>
+                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                  <span className="font-semibold text-gray-300">Protein</span>
+                  <span className="text-gray-400 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-1">
+                  <div className="bg-success h-1 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
+                </div>
+              </div>
+
+              {/* Carbs */}
+              <div>
+                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                  <span className="font-semibold text-gray-300">Carbs</span>
+                  <span className="text-gray-400 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-1">
+                  <div className="bg-[#38BDF8] h-1 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
+                </div>
+              </div>
+
+              {/* Fat */}
+              <div>
+                <div className="flex justify-between text-[10px] mb-1 leading-none">
+                  <span className="font-semibold text-gray-300">Fat</span>
+                  <span className="text-gray-400 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-1">
+                  <div className="bg-[#A78BFA] h-1 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Hydration Card (Prominent Button & Timestamp) */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden justify-between"
+          >
+             <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
+               <div className="p-4 flex flex-col justify-between h-full bg-surface">
+                 <div className="flex items-center justify-between text-gray-400 mb-2">
+                   <div className="flex items-center gap-2">
+                     <Droplets size={16} />
+                     <span className="text-xs font-bold uppercase tracking-wider">Hydration</span>
+                   </div>
+                 </div>
+                 <div className="my-auto flex items-center justify-center py-2.5">
+                   <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal"> / {waterTarget}L</span></span>
+                 </div>
+                 <div className="w-full flex flex-col items-center">
+                   <button 
+                     onClick={() => logWater(0.25)} 
+                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5"
+                   >
+                     + 250ml WATER
+                   </button>
+                   <span className="text-[10px] text-gray-500 mt-2 block text-center leading-none">
+                     {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
+                   </span>
                  </div>
                </div>
-               <div className="flex-1 flex items-end justify-center pb-2">
-                 <span className="text-2xl font-bold">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal"> / {waterTarget}L</span></span>
-               </div>
-               <button 
-                 onClick={() => logWater(0.25)} 
-                 className="w-full bg-gray-800 hover:bg-gray-700 active:scale-95 text-xs font-semibold py-2 rounded-lg transition-all"
-               >
-                 + 250ml WATER
-               </button>
-             </div>
-           </SwipeToDeleteRow>
+             </SwipeToDeleteRow>
+          </motion.div>
+        </div>
+
+        {/* InBody Snapshot */}
+        <motion.div 
+           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+           className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in"
+        >
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 block">Latest InBody Scan</span>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <span className="block text-lg font-bold text-white">{inbody.weight}</span>
+              <span className="text-[10px] text-gray-500">Weight (kg)</span>
+            </div>
+            <div>
+               <span className="block text-lg font-bold text-danger">{inbody.bf}%</span>
+              <span className="text-[10px] text-gray-500">Body Fat</span>
+            </div>
+            <div>
+               <span className="block text-lg font-bold text-success">{inbody.muscle}</span>
+              <span className="text-[10px] text-gray-500">SMM (kg)</span>
+            </div>
+             <div>
+               <span className="block text-lg font-bold text-primary">{inbody.score}</span>
+              <span className="text-[10px] text-gray-500">Score</span>
+            </div>
+          </div>
         </motion.div>
       </div>
-
-      {/* InBody Snapshot */}
-      <motion.div 
-         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-         className="bg-surface rounded-2xl p-4 border border-gray-800"
-      >
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 block">Latest InBody Scan</span>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div>
-            <span className="block text-lg font-bold text-white">{inbody.weight}</span>
-            <span className="text-[10px] text-gray-500">Weight (kg)</span>
-          </div>
-          <div>
-             <span className="block text-lg font-bold text-danger">{inbody.bf}%</span>
-            <span className="text-[10px] text-gray-500">Body Fat</span>
-          </div>
-          <div>
-             <span className="block text-lg font-bold text-success">{inbody.muscle}</span>
-            <span className="text-[10px] text-gray-500">SMM (kg)</span>
-          </div>
-           <div>
-             <span className="block text-lg font-bold text-primary">{inbody.score}</span>
-            <span className="text-[10px] text-gray-500">Score</span>
-          </div>
-        </div>
-      </motion.div>
       
       {/* Dev Reset Button */}
       <div className="mt-2 text-center">

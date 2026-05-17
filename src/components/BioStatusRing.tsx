@@ -4,30 +4,19 @@ interface BioStatusRingProps {
   kcalPct: number;
   waterPct: number;
   workoutStatus: number; // 0.0 = not started, 0.5 = in progress, 1.0 = completed
-  kcalCurrent: number;
-  kcalTarget: number;
-  waterCurrentL: number;
-  waterTargetL: number;
 }
 
 export const BioStatusRing = ({
   kcalPct,
   waterPct,
-  workoutStatus,
-  kcalCurrent,
-  kcalTarget,
-  waterCurrentL,
-  waterTargetL
+  workoutStatus
 }: BioStatusRingProps) => {
   // SVG Geometry Settings
   const size = 160;
   const center = size / 2;
   const strokeWidth = 6;
 
-  // Ring Radii for 10px physical gap between adjacent boundaries:
-  // outer radius = 66, stroke = 6 -> edge boundary [63, 69]
-  // middle radius = 50, stroke = 6 -> edge boundary [47, 53] (gap = 63 - 53 = 10px!)
-  // inner radius = 34, stroke = 6 -> edge boundary [31, 37] (gap = 47 - 37 = 10px!)
+  // Ring Radii for 10px physical gap between adjacent boundaries
   const rOuter = 66;
   const circOuter = 2 * Math.PI * rOuter; // ~414.69
   
@@ -153,54 +142,37 @@ export const BioStatusRing = ({
         </div>
       </div>
 
-      {/* Redesigned Legend: Stacked Stat Rows */}
+      {/* Redesigned Legend: Stacked Stat Rows (Status Words Only) */}
       <div className="flex-1 flex flex-col gap-4 justify-center">
         {/* Row 1: Nutrition */}
         <div className="flex items-start gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
+          <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Nutrition</span>
-            <span className="text-sm font-bold text-white mb-1">
-              {Math.round(kcalCurrent)} kcal
-            </span>
-            <span className="text-[12px] text-gray-500">
-              of {kcalTarget} kcal
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nutrition</span>
+            <span className="text-sm font-extrabold mb-1" style={{ color: colorNutrition }}>
+              {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : 'Behind'}
             </span>
           </div>
         </div>
 
         {/* Row 2: Hydration */}
         <div className="flex items-start gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorHydration }} />
+          <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorHydration }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hydration</span>
-            <span className="text-sm font-bold text-white mb-1">
-              {waterCurrentL.toFixed(1)} L
-            </span>
-            <span className="text-[12px] text-gray-500">
-              of {waterTargetL} L
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Hydration</span>
+            <span className="text-sm font-extrabold mb-1" style={{ color: colorHydration }}>
+              {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : 'Behind'}
             </span>
           </div>
         </div>
 
         {/* Row 3: Training */}
         <div className="flex items-start gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
+          <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
           <div className="flex flex-col leading-none">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Training</span>
-            <span className="text-sm font-bold text-white mb-1">
-              {workoutStatus === 1.0 
-                ? 'Completed' 
-                : workoutStatus === 0.5 
-                ? 'Active' 
-                : 'Rest'}
-            </span>
-            <span className="text-[12px] text-gray-500">
-              {workoutStatus === 1.0 
-                ? '1 of 1 session' 
-                : workoutStatus === 0.5 
-                ? '0.5 of 1 session' 
-                : '0 of 1 session'}
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Training</span>
+            <span className="text-sm font-extrabold mb-1" style={{ color: colorTraining }}>
+              {workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Rest'}
             </span>
           </div>
         </div>
