@@ -101,6 +101,8 @@ const TodayView = () => {
         } else {
           setWorkoutStatus(0.0);
         }
+      }
+
       // 4. Fetch real latest InBody scan
       const { data: scans } = await supabase
         .from('inbody_scans')
