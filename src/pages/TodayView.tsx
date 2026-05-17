@@ -40,6 +40,12 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
+  const [latestInbody, setLatestInbody] = useState({
+    weight: 79.7,
+    bf: 17.2,
+    muscle: 37.6,
+    score: 82
+  });
 
   useEffect(() => {
     let active = true;
@@ -95,6 +101,22 @@ const TodayView = () => {
         } else {
           setWorkoutStatus(0.0);
         }
+      // 4. Fetch real latest InBody scan
+      const { data: scans } = await supabase
+        .from('inbody_scans')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (scans && scans.length > 0 && active) {
+        setLatestInbody({
+          weight: scans[0].weight || 79.7,
+          bf: scans[0].bf_percent || 17.2,
+          muscle: scans[0].smm || 37.6,
+          score: scans[0].score || 82
+        });
       }
     };
 
@@ -143,12 +165,7 @@ const TodayView = () => {
       })
     : null;
 
-  const inbody = {
-    weight: 79.7,
-    bf: 17.2,
-    muscle: 37.6,
-    score: 82
-  };
+  const inbody = latestInbody;
 
   return (
     <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
