@@ -7,13 +7,15 @@
   touch-action: manipulation;
 }
 
-html, body {
+html,
+body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   user-select: none;
 }
 
-input, textarea {
+input,
+textarea {
   user-select: text;
 }
 
@@ -27,6 +29,7 @@ input, textarea {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

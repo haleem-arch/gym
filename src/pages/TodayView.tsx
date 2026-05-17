@@ -151,7 +151,7 @@ const TodayView = () => {
   };
 
   return (
-    <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[430px] mx-auto overflow-x-hidden">
+    <div className="px-4 py-6 flex flex-col gap-6 w-full max-w-[390px] mx-auto overflow-x-hidden">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
