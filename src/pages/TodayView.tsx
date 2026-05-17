@@ -40,12 +40,12 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
-  const [latestInbody, setLatestInbody] = useState({
-    weight: 79.7,
-    bf: 17.2,
-    muscle: 37.6,
-    score: 82
-  });
+  const [latestInbody, setLatestInbody] = useState<{
+    weight: number | string;
+    bf: number | string;
+    muscle: number | string;
+    score: number | string;
+  } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -118,11 +118,13 @@ const TodayView = () => {
 
       if (scans && scans.length > 0 && active) {
         setLatestInbody({
-          weight: scans[0].weight || 79.7,
-          bf: scans[0].bf_percent || 17.2,
-          muscle: scans[0].smm || 37.6,
-          score: scans[0].score || 82
+          weight: scans[0].weight || 0,
+          bf: scans[0].bf_percent || 0,
+          muscle: scans[0].smm || 0,
+          score: scans[0].score || 0
         });
+      } else if (active) {
+        setLatestInbody(null);
       }
     };
 
@@ -384,24 +386,33 @@ const TodayView = () => {
            className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full"
         >
           <span className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3.5 block">Latest InBody Scan</span>
-          <div className="grid grid-cols-4 gap-2.5 text-center">
-            <div>
-              <span className="block text-lg font-extrabold text-white">{inbody.weight}</span>
-              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Weight (kg)</span>
+          {inbody ? (
+            <div className="grid grid-cols-4 gap-2.5 text-center">
+              <div>
+                <span className="block text-lg font-extrabold text-white">{inbody.weight}</span>
+                <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Weight (kg)</span>
+              </div>
+              <div>
+                 <span className="block text-lg font-extrabold text-danger">{inbody.bf}%</span>
+                <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Body Fat</span>
+              </div>
+              <div>
+                 <span className="block text-lg font-extrabold text-success">{inbody.muscle}</span>
+                <span className="text-xs font-semibold text-gray-500 mt-0.5 block">SMM (kg)</span>
+              </div>
+               <div>
+                 <span className="block text-lg font-extrabold text-primary">{inbody.score}</span>
+                <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Score</span>
+              </div>
             </div>
-            <div>
-               <span className="block text-lg font-extrabold text-danger">{inbody.bf}%</span>
-              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Body Fat</span>
+          ) : (
+            <div className="text-center py-5 bg-gray-900/40 rounded-xl border border-gray-800/80">
+              <p className="text-xs text-gray-400 mb-1.5">No InBody scans logged yet</p>
+              <button onClick={() => navigate('/inbody')} className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1">
+                Log First Scan →
+              </button>
             </div>
-            <div>
-               <span className="block text-lg font-extrabold text-success">{inbody.muscle}</span>
-              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">SMM (kg)</span>
-            </div>
-             <div>
-               <span className="block text-lg font-extrabold text-primary">{inbody.score}</span>
-              <span className="text-xs font-semibold text-gray-500 mt-0.5 block">Score</span>
-            </div>
-          </div>
+          )}
         </motion.div>
       </div>
 
