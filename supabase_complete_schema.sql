@@ -1,6 +1,6 @@
--- Haleem's PWA Athlete Dashboard - Complete Consolidated Schema
+-- Haleem's PWA Athlete Dashboard - Complete Consolidated Schema (V2 - Safe Migration Enabled)
 -- Copy and paste this entire script into your Supabase SQL Editor and click RUN.
--- This will safely create all tables (if they don't exist), establish indexes, and configure full RLS isolation!
+-- This will safely create all tables, add columns if missing, and configure full RLS isolation!
 
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
@@ -24,6 +24,10 @@ create table if not exists public.profiles (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Safe migration alterations if profiles already exists
+alter table public.profiles add column if not exists coach_id uuid references public.profiles(id);
+alter table public.profiles add column if not exists targets jsonb default '{"kcal": 2400, "protein": 160, "carbs": 240, "fat": 70}'::jsonb;
 
 -- ─── 2. CLIENT PROFILES ───
 create table if not exists public.client_profiles (
@@ -273,8 +277,11 @@ create policy "All diet meals." on public.diet_meals for all using (
   exists (select 1 from public.diet_logs where id = diet_meals.diet_log_id and user_id = auth.uid())
 );
 
--- Inbody Scans
-create policy "All inbody operations." on public.inbody_scans for all using (auth.uid() = user_id or coach_id = auth.uid());
+-- Inbody Scans (Relational check inside profiles to protect columns)
+create policy "All inbody operations." on public.inbody_scans for all using (
+  auth.uid() = user_id or 
+  exists (select 1 from public.profiles p where p.id = inbody_scans.user_id and p.coach_id = auth.uid())
+);
 
 -- Progress Notes
 create policy "All progress notes operations." on public.progress_notes for all using (auth.uid() = user_id or coach_id = auth.uid());
