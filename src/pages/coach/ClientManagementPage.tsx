@@ -195,7 +195,7 @@ export default function ClientManagementPage() {
 }
 
 // Workout Day Card Component
-function WorkoutDayCard({ day, clientId, editMode, onUpdate }: any) {
+function WorkoutDayCard({ day, editMode }: any) {
   const [dayName, setDayName] = useState(day.day_name);
   const [exercises, setExercises] = useState(day.exercises || []);
   const [showExerciseSearch, setShowExerciseSearch] = useState(false);

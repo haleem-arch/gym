@@ -1,11 +1,14 @@
-import { motion } from 'framer-motion';
-import { Play, Utensils, Droplets } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
 
 import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+import { exportHistoryToCsv } from '../utils/exportHistory';
+
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
 
@@ -20,6 +23,19 @@ const TodayView = () => {
   };
   const activeDateStr = getLocalDateString(activeDate);
   const { dayType, setDayType } = useSchedule(activeDateStr);
+
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [startDateStr, setStartDateStr] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  });
+  const [endDateStr, setEndDateStr] = useState(() => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  });
+
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
@@ -61,6 +77,13 @@ const TodayView = () => {
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-gray-400 mt-1">Haleem's HQ</p>
         </div>
+        <button 
+          onClick={() => setShowExportModal(true)} 
+          className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+        >
+          <FileSpreadsheet size={14} className="text-primary" />
+          Export
+        </button>
       </motion.div>
 
       {/* Date Navigation */}
@@ -229,6 +252,104 @@ const TodayView = () => {
 
       {/* Spacer for bottom nav */}
       <div className="h-4"></div>
+
+      {/* Date Range Export Modal */}
+      <AnimatePresence>
+        {showExportModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowExportModal(false)}
+              className="fixed inset-0 bg-black z-50 backdrop-blur-sm"
+            />
+            {/* Modal Bottom Sheet */}
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-950 text-primary rounded-lg border border-blue-900">
+                    <FileSpreadsheet size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">Export History</h3>
+                    <p className="text-[10px] text-gray-400">Download Excel compatible CSV</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowExportModal(false)}
+                  className="p-2 hover:bg-gray-800 rounded-xl transition-colors text-gray-400 hover:text-white cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Start Date</span>
+                  <input 
+                    type="date" 
+                    value={startDateStr} 
+                    onChange={(e) => setStartDateStr(e.target.value)}
+                    max={endDateStr}
+                    className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors cursor-pointer"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">End Date</span>
+                  <input 
+                    type="date" 
+                    value={endDateStr} 
+                    onChange={(e) => setEndDateStr(e.target.value)}
+                    min={startDateStr}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <button 
+                disabled={exporting}
+                onClick={async () => {
+                  setExporting(true);
+                  const res = await exportHistoryToCsv(startDateStr, endDateStr);
+                  setExporting(false);
+                  if (res.success) {
+                    setShowExportModal(false);
+                  } else {
+                    alert(`Failed to export: ${res.error}`);
+                  }
+                }}
+                className="w-full bg-primary hover:bg-blue-600 disabled:bg-gray-800 disabled:text-gray-600 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-white text-xs cursor-pointer"
+              >
+                {exporting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    GENERATING SPREADSHEET...
+                  </>
+                ) : (
+                  <>
+                    <Download size={14} />
+                    GENERATE & DOWNLOAD
+                  </>
+                )}
+              </button>
+
+              <div className="text-[9px] text-gray-500 text-center leading-normal">
+                ✓ Fully optimized for Microsoft Excel & Google Sheets<br />
+                ✓ Arabic presets and detailed sets are preserved in UTF-8
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
