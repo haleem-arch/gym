@@ -59,7 +59,7 @@ function App() {
 
   return (
     <Router>
-      <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
+      <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[430px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
         <div className="flex-1 overflow-y-auto pb-20 no-scrollbar">
           <Routes>
             <Route path="/" element={<TodayView />} />

@@ -136,7 +136,7 @@ export const BioStatusRing = ({
 
         {/* Small readable percentage inside the inner ring */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
-          <span className="text-[12px] font-black text-white tracking-tight leading-none">
+          <span className="text-[11px] font-black text-white tracking-tight leading-none">
             {dailyBioScore}%
           </span>
         </div>
