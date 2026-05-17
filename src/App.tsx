@@ -5,6 +5,7 @@ import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
 import WorkoutTracker from './pages/WorkoutTracker';
 import WorkoutDetail from './pages/WorkoutDetail';
+import ManagePlans from './pages/ManagePlans';
 import BottomNav from './components/BottomNav';
 import AuthGate from './pages/AuthGate';
 
@@ -65,6 +66,7 @@ function App() {
           <Routes>
             <Route path="/" element={<TodayView />} />
             <Route path="/workout" element={<WorkoutHome />} />
+            <Route path="/workout/plans" element={<ManagePlans />} />
             <Route path="/workout/active" element={<WorkoutTracker />} />
             <Route path="/workout/:id" element={<WorkoutDetail />} />
             <Route path="/diet" element={<DietHome />} />

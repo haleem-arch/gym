@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User, LogOut, Plus, Trash2, Search, Dumbbell } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -12,86 +12,10 @@ import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
 
 
-import { LOCAL_EXERCISES_DICTIONARY } from '../utils/localExercises';
-
-const getLevenshteinDistance = (a: string, b: string): number => {
-  const tmp = [];
-  let i, j;
-  for (i = 0; i <= a.length; i++) {
-    tmp[i] = [i];
-  }
-  for (j = 0; j <= b.length; j++) {
-    tmp[0][j] = j;
-  }
-  for (i = 1; i <= a.length; i++) {
-    for (j = 1; j <= b.length; j++) {
-      tmp[i][j] = Math.min(
-        tmp[i - 1][j] + 1, // Deletion
-        tmp[i][j - 1] + 1, // Insertion
-        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1) // Substitution
-      );
-    }
-  }
-  return tmp[a.length][b.length];
-};
-
-const fuzzyMatch = (text: string, query: string): boolean => {
-  text = text.toLowerCase().trim();
-  query = query.toLowerCase().trim();
-  
-  if (!query) return false;
-  if (text.includes(query)) return true;
-  
-  // Clean and tokenize both text and query
-  const queryTokens = query.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
-  const textTokens = text.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
-  
-  if (queryTokens.length === 0) return false;
-  
-  // High-precision token matching: every query token must match at least one text token
-  return queryTokens.every(qToken => {
-    // 1. For short query tokens (<= 3 chars), require exact match or prefix match (to prevent "lat" matching "flat")
-    if (qToken.length <= 3) {
-      return textTokens.some(tToken => tToken.startsWith(qToken));
-    }
-    
-    // 2. For longer query tokens, check if it is a prefix or substring of any text token
-    if (textTokens.some(tToken => tToken.startsWith(qToken) || tToken.includes(qToken))) {
-      return true;
-    }
-    
-    // 3. Typo tolerance: Levenshtein distance check (max 1 typo for 4-5 chars, max 2 typos for 6+ chars)
-    return textTokens.some(tToken => {
-      if (tToken.length < 3) return false;
-      const allowedDistance = qToken.length > 5 ? 2 : 1;
-      return getLevenshteinDistance(qToken, tToken) <= allowedDistance;
-    });
-  });
-};
-
-interface CustomExerciseConfig {
-  name: string;
-  sets: number;
-  rest: number;
-}
-
-const parsePlanExercises = (exs: any[]): CustomExerciseConfig[] => {
-  return (exs || []).map(ex => {
-    if (typeof ex === 'string') {
-      return { name: ex, sets: 4, rest: 90 };
-    }
-    return {
-      name: ex.name || '',
-      sets: parseInt(ex.sets as any) || 4,
-      rest: parseInt(ex.rest as any) || 90
-    };
-  });
-};
-
 const TodayView = () => {
   const navigate = useNavigate();
   const { workout, endWorkout } = useActiveWorkout();
-  const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
+  const { log, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
   
   // Need to safely get date string respecting timezone
   const getLocalDateString = (d: Date) => {
@@ -115,22 +39,10 @@ const TodayView = () => {
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
 
-  // ─── User Settings Modal states ───
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [kcalInput, setKcalInput] = useState('');
-  const [proteinInput, setProteinInput] = useState('');
-  const [carbsInput, setCarbsInput] = useState('');
-  const [fatInput, setFatInput] = useState('');
-
-  // Dynamic Workout Plans States
+  // ─── Dynamic Workout Plans & Macro Targets States ───
   const [allPlans, setAllPlans] = useState<any[]>([]);
   const [availablePlans, setAvailablePlans] = useState<string[]>(['PUSH', 'PULL', 'LEGS']);
-  const [planToEdit, setPlanToEdit] = useState<string>('PUSH');
-  const [customExercises, setCustomExercises] = useState<CustomExerciseConfig[]>([]);
-  const [globalExercises, setGlobalExercises] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [savingSettings, setSavingSettings] = useState(false);
+  const [activeTargets, setActiveTargets] = useState({ kcal: 2400, protein: 160, carbs: 240, fat: 70, water: 3.5 });
 
   const loadUserPlans = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -151,11 +63,53 @@ const TodayView = () => {
     }
   }, []);
 
+  const loadActiveTargets = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    // 1. Fetch custom plan details for today's scheduled dayType
+    const { data: planData } = await supabase
+      .from('user_workout_plans')
+      .select('targets')
+      .eq('user_id', session.user.id)
+      .eq('plan_type', dayType)
+      .maybeSingle();
+
+    if (planData && planData.targets) {
+      setActiveTargets({
+        kcal: planData.targets.kcal || 2400,
+        protein: planData.targets.protein || 160,
+        carbs: planData.targets.carbs || 240,
+        fat: planData.targets.fat || 70,
+        water: planData.targets.water || 3.5
+      });
+    } else {
+      // Fallback to baseline profile targets
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (profile && profile.targets) {
+        setActiveTargets({
+          kcal: profile.targets.kcal || 2400,
+          protein: profile.targets.protein || 160,
+          carbs: profile.targets.carbs || 240,
+          fat: profile.targets.fat || 70,
+          water: 3.5
+        });
+      }
+    }
+  }, [dayType]);
+
   useEffect(() => {
     loadUserPlans();
+    loadActiveTargets();
     
     const handleUpdate = () => {
       loadUserPlans();
+      loadActiveTargets();
     };
     window.addEventListener('plan_updated', handleUpdate);
     window.addEventListener('schedule_updated', handleUpdate);
@@ -164,163 +118,7 @@ const TodayView = () => {
       window.removeEventListener('plan_updated', handleUpdate);
       window.removeEventListener('schedule_updated', handleUpdate);
     };
-  }, [loadUserPlans]);
-
-  // Load settings when modal is opened
-  useEffect(() => {
-    if (!showSettingsModal) return;
-
-    const loadUserSettings = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      
-      setUserEmail(session.user.email || '');
-
-      // 1. Fetch profile macro targets
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('targets')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (profile && profile.targets) {
-        setKcalInput(profile.targets.kcal?.toString() || '2400');
-        setProteinInput(profile.targets.protein?.toString() || '160');
-        setCarbsInput(profile.targets.carbs?.toString() || '240');
-        setFatInput(profile.targets.fat?.toString() || '70');
-      } else {
-        setKcalInput('2400');
-        setProteinInput('160');
-        setCarbsInput('240');
-        setFatInput('70');
-      }
-
-      // 2. Fetch global exercise list for the search/add utility
-      const { data: globalExs } = await supabase
-        .from('exercises')
-        .select('*')
-        .order('name');
-      
-      const dbExs = globalExs || [];
-      const dbNames = dbExs.map((e: any) => e.name.toLowerCase());
-      
-      // Merge with the local offline library, ensuring no duplicate exercises
-      const filteredLocal = LOCAL_EXERCISES_DICTIONARY.filter(
-        (localEx) => !dbNames.includes(localEx.name.toLowerCase())
-      );
-      
-      setGlobalExercises([...dbExs, ...filteredLocal].sort((a, b) => a.name.localeCompare(b.name)));
-    };
-
-    loadUserSettings();
-  }, [showSettingsModal]);
-
-  // Load custom plan exercises when the target plan selection changes
-  useEffect(() => {
-    if (!showSettingsModal) return;
-
-    const loadPlanExercises = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const planMap: Record<string, string[]> = {
-        PUSH: [
-          'Incline DB Bench Press',
-          'Flat DB Bench Press',
-          'Barbell Overhead Press',
-          'DB Lateral Raise',
-          'Cable Tricep Pushdown (Straight Bar)',
-          'Overhead Cable Tricep Extension'
-        ],
-        PULL: [
-          'Weighted Pull-up',
-          'Lat Pulldown (Wide Grip)',
-          'Chest-Supported Row',
-          'Reverse Pec Deck Fly',
-          'Incline DB Curl',
-          'Hammer Curl'
-        ],
-        LEGS: [
-          'Barbell Back Squat',
-          'Leg Press (feet high for glutes)',
-          'DB Romanian Deadlift',
-          'DB Bulgarian Split Squat',
-          'Seated Leg Curl',
-          '45° Back Extension (BW/DB)',
-          'Standing Calf Raise'
-        ]
-      };
-
-      const { data: customPlan } = await supabase
-        .from('user_workout_plans')
-        .select('exercises')
-        .eq('user_id', session.user.id)
-        .eq('plan_type', planToEdit)
-        .maybeSingle();
-
-      if (customPlan && customPlan.exercises && customPlan.exercises.length > 0) {
-        setCustomExercises(parsePlanExercises(customPlan.exercises));
-      } else {
-        setCustomExercises(parsePlanExercises(planMap[planToEdit] || []));
-      }
-    };
-
-    loadPlanExercises();
-  }, [planToEdit, showSettingsModal]);
-
-  const handleSaveSettings = async () => {
-    setSavingSettings(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // 1. Update profiles targets
-      const kcalVal = parseInt(kcalInput) || 2400;
-      const proteinVal = parseInt(proteinInput) || 160;
-      const carbsVal = parseInt(carbsInput) || 240;
-      const fatVal = parseInt(fatInput) || 70;
-
-      await supabase
-        .from('profiles')
-        .update({
-          targets: { kcal: kcalVal, protein: proteinVal, carbs: carbsVal, fat: fatVal }
-        })
-        .eq('id', session.user.id);
-
-      // 2. Update user_workout_plans
-      const { data: existingPlan } = await supabase
-        .from('user_workout_plans')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .eq('plan_type', planToEdit)
-        .maybeSingle();
-
-      if (existingPlan) {
-        await supabase
-          .from('user_workout_plans')
-          .update({ exercises: customExercises })
-          .eq('id', existingPlan.id);
-      } else {
-        await supabase
-          .from('user_workout_plans')
-          .insert({
-            user_id: session.user.id,
-            plan_type: planToEdit,
-            exercises: customExercises
-          });
-      }
-
-      // Broadcast update events so other hooks and components update instantly
-      window.dispatchEvent(new CustomEvent('plan_updated'));
-      window.dispatchEvent(new CustomEvent('schedule_updated'));
-      
-      setShowSettingsModal(false);
-    } catch (err) {
-      console.error('Failed to save settings:', err);
-    } finally {
-      setSavingSettings(false);
-    }
-  };
+  }, [loadUserPlans, loadActiveTargets]);
 
   useEffect(() => {
     let active = true;
@@ -420,7 +218,7 @@ const TodayView = () => {
   
   const waterTotalMl = waterLogs?.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0) || 0;
   const waterCurrent = waterTotalMl / 1000;
-  const waterTarget = 3.5; // 3.5 Liters
+  const waterTarget = activeTargets.water;
 
   // Find the last logged entry from waterLogs
   const lastWaterLog = waterLogs && waterLogs.length > 0 
@@ -460,7 +258,7 @@ const TodayView = () => {
             Export
           </button>
           <button
-            onClick={() => setShowSettingsModal(true)}
+            onClick={() => navigate('/workout/plans')}
             className="flex items-center justify-center bg-surface hover:bg-gray-800 border border-gray-800 rounded-xl w-[34px] h-[34px] text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer"
           >
             <User size={16} />
@@ -581,10 +379,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Calories</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{activeTargets.kcal}</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
+                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/activeTargets.kcal)*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -592,10 +390,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Protein</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{activeTargets.protein}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
+                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/activeTargets.protein)*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -603,10 +401,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Carbs</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{activeTargets.carbs || 250}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
+                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(activeTargets.carbs || 250))*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -614,10 +412,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Fat</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
+                  <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{activeTargets.fat || 75}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
+                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(activeTargets.fat || 75))*100, 100)}%` }}></div>
                 </div>
               </div>
             </div>
@@ -689,7 +487,7 @@ const TodayView = () => {
       <div className="flex flex-col gap-1.5 w-full animate-fade-in">
         <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
         <BioStatusRing 
-          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
+          kcalPct={activeTargets.kcal > 0 ? (macros.kcal / activeTargets.kcal) : 0}
           waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
           workoutStatus={workoutStatus}
           isRestDay={dayType === 'REST'}
@@ -819,365 +617,9 @@ const TodayView = () => {
         )}
       </AnimatePresence>
 
-      {/* User Settings Overlay Sheet */}
-      <AnimatePresence>
-        {showSettingsModal && (
-          <>
-            {/* Dark blur backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.6 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSettingsModal(false)}
-              className="absolute inset-0 bg-black z-50 backdrop-blur-sm animate-fade-in"
-            />
-            {/* Full height glassmorphic majestic panel (iOS Slide Up Sheet) */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 240 }}
-              className="absolute inset-0 z-50 w-full h-full bg-black flex flex-col shadow-2xl overflow-hidden"
-            >
-              {/* Modal Header */}
-              <div className="border-b border-gray-800 bg-surface/50 backdrop-blur-xl">
-                <div className="max-w-xl mx-auto w-full flex justify-between items-center px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                      <User size={16} />
-                    </div>
-                    <div>
-                      <h3 className="font-black text-white text-sm uppercase tracking-wide">User Settings</h3>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{userEmail}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowSettingsModal(false)}
-                    className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
 
-              {/* Scrollable Form Body */}
-              <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col no-scrollbar pb-10 bg-gradient-to-b from-black to-slate-950">
-                <div className="max-w-xl mx-auto w-full flex flex-col gap-6">
-                  
-                  {/* Section 1: Baseline Diet Program */}
-                  <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">
-                      Diet Program (Macro Targets)
-                    </h4>
-                    
-                    <div className="grid grid-cols-2 gap-3.5 bg-surface/30 p-4 border border-white/5 rounded-2xl">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Calories (kcal)</label>
-                        <input 
-                          type="number" 
-                          value={kcalInput}
-                          onChange={(e) => setKcalInput(e.target.value)}
-                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Protein (g)</label>
-                        <input 
-                          type="number" 
-                          value={proteinInput}
-                          onChange={(e) => setProteinInput(e.target.value)}
-                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Carbs (g)</label>
-                        <input 
-                          type="number" 
-                          value={carbsInput}
-                          onChange={(e) => setCarbsInput(e.target.value)}
-                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Fat (g)</label>
-                        <input 
-                          type="number" 
-                          value={fatInput}
-                          onChange={(e) => setFatInput(e.target.value)}
-                          className="bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl px-3 py-2.5 text-xs outline-none font-bold"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Section 2: Gym Workout Customizer */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-center pl-1">
-                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                        Gym Program Editor
-                      </h4>
-                    </div>
 
-                    <div className="bg-surface/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                      {/* Day Selection Slider Tabs */}
-                      <div className="flex flex-col gap-2">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">Select Program to Edit</span>
-                        <div className="flex flex-wrap gap-1.5 bg-black/40 rounded-xl p-1.5 border border-white/5">
-                          {availablePlans.map((t) => (
-                            <button
-                              key={t}
-                              type="button"
-                              onClick={() => { setPlanToEdit(t); setSearchQuery(''); }}
-                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer ${
-                                planToEdit === t ? 'bg-surface text-primary shadow' : 'text-gray-400 hover:text-white'
-                              }`}
-                            >
-                              {t}
-                            </button>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newName = window.prompt("Enter the name of your custom training day (e.g. Upper Body, Chest & Arms):");
-                              if (!newName) return;
-                              const formattedName = newName.trim().toUpperCase();
-                              if (formattedName.length < 2) {
-                                alert("Name is too short!");
-                                return;
-                              }
-                              if (availablePlans.includes(formattedName)) {
-                                alert("This day type already exists!");
-                                return;
-                              }
-                              setAvailablePlans(prev => [...prev, formattedName]);
-                              setPlanToEdit(formattedName);
-                              setCustomExercises([]);
-                            }}
-                            className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider cursor-pointer bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
-                          >
-                            + Add Custom Day
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Active Exercises List in selected day */}
-                      <div className="flex flex-col gap-2.5">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
-                          Active {planToEdit} List ({customExercises.length})
-                        </span>
-                        
-                        <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto no-scrollbar pr-1">
-                          {customExercises.map((ex, idx) => {
-                            const cleanName = ex.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            const dbEx = globalExercises.find(ge => ge.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName);
-                            const muscle = dbEx?.muscle_group || 'All Muscles';
-                            const equip = dbEx?.equipment || 'Gym';
-                            
-                            return (
-                              <div 
-                                key={idx} 
-                                className="flex flex-col gap-2.5 bg-black/30 border border-white/5 rounded-2xl p-3 animate-fade-in"
-                              >
-                                <div className="flex justify-between items-start gap-2">
-                                  <div className="flex flex-col gap-0.5 max-w-[80%]">
-                                    <span className="text-xs font-black text-white truncate">{ex.name}</span>
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary uppercase tracking-wide">
-                                        {equip}
-                                      </span>
-                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 uppercase tracking-wide">
-                                        {muscle}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setCustomExercises(prev => prev.filter((_, i) => i !== idx));
-                                    }}
-                                    className="text-danger/60 hover:text-danger p-1 transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-
-                                {/* Steppers: Sets & Rest Duration */}
-                                <div className="grid grid-cols-2 gap-2 border-t border-white/5 pt-2 flex-wrap">
-                                  {/* Sets Stepper */}
-                                  <div className="flex items-center justify-between bg-black/40 rounded-xl px-2 py-1">
-                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Sets</span>
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, sets: Math.max(1, e.sets - 1) } : e));
-                                        }}
-                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
-                                      >
-                                        -
-                                      </button>
-                                      <span className="text-xs font-black text-white w-4 text-center">{ex.sets}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, sets: Math.min(8, e.sets + 1) } : e));
-                                        }}
-                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
-                                      >
-                                        +
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {/* Rest Stepper */}
-                                  <div className="flex items-center justify-between bg-black/40 rounded-xl px-2 py-1">
-                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Rest</span>
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const currentIdx = [30, 45, 60, 90, 120, 150, 180].indexOf(ex.rest);
-                                          const prevVal = [30, 45, 60, 90, 120, 150, 180][Math.max(0, currentIdx - 1)];
-                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, rest: prevVal } : e));
-                                        }}
-                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
-                                      >
-                                        -
-                                      </button>
-                                      <span className="text-[10px] font-black text-white w-8 text-center">{ex.rest}s</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const currentIdx = [30, 45, 60, 90, 120, 150, 180].indexOf(ex.rest);
-                                          const nextVal = [30, 45, 60, 90, 120, 150, 180][Math.min(6, currentIdx + 1)];
-                                          setCustomExercises(prev => prev.map((e, i) => i === idx ? { ...e, rest: nextVal } : e));
-                                        }}
-                                        className="w-4 h-4 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 hover:text-white cursor-pointer active:scale-90"
-                                      >
-                                        +
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Add Exercise autocomplete lookup */}
-                      <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider pl-1">
-                          Add New Exercise
-                        </span>
-                        <div className="relative flex items-center">
-                          <Search size={13} className="absolute left-3 text-gray-500" />
-                          <input
-                            type="text"
-                            placeholder="Search database..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-black/40 border border-white/5 focus:border-primary/50 text-white rounded-xl pl-9 pr-3 py-2 text-xs outline-none placeholder-gray-600 font-medium"
-                          />
-                        </div>
-
-                        {/* Display matched autocomplete results */}
-                        {searchQuery.trim().length > 0 && (
-                          <div className="bg-black/60 border border-white/5 rounded-xl max-h-[240px] overflow-y-auto no-scrollbar flex flex-col p-1.5 gap-1 shadow-lg animate-fade-in">
-                            {globalExercises
-                              .filter(ex => 
-                                fuzzyMatch(ex.name, searchQuery) &&
-                                !customExercises.some(e => e.name === ex.name)
-                              )
-                              .slice(0, 10)
-                              .map((ex) => (
-                                <button
-                                  key={ex.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setCustomExercises(prev => [...prev, { name: ex.name, sets: 4, rest: 90 }]);
-                                    setSearchQuery('');
-                                  }}
-                                  className="flex justify-between items-center text-left text-xs font-semibold px-3 py-2 rounded-lg hover:bg-surface/50 text-gray-300 hover:text-white transition-colors cursor-pointer gap-2 w-full"
-                                >
-                                  <div className="flex items-center gap-3 w-full">
-                                    {ex.image ? (
-                                      <img
-                                        src={ex.image}
-                                        alt={ex.name}
-                                        className="w-10 h-10 object-cover rounded-lg border border-white/10 flex-shrink-0"
-                                      />
-                                    ) : (
-                                      <div className="w-10 h-10 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center flex-shrink-0">
-                                        <Dumbbell size={14} className="text-gray-600" />
-                                      </div>
-                                    )}
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="line-clamp-1">{ex.name}</span>
-                                      <span className="text-[8px] font-bold text-gray-500 uppercase tracking-wide">
-                                        {ex.equipment} • {ex.muscle_group}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <Plus size={13} className="text-primary flex-shrink-0" />
-                                </button>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 3: Logout Action Row */}
-                  <div className="border-t border-white/5 pt-4 flex flex-col gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (window.confirm("Are you sure you want to sign out?")) {
-                          await supabase.auth.signOut();
-                          setShowSettingsModal(false);
-                        }
-                      }}
-                      className="w-full bg-danger/10 hover:bg-danger/25 border border-danger/25 text-danger font-black text-[10px] uppercase py-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 tracking-widest shadow-inner active:scale-[0.98]"
-                    >
-                      <LogOut size={13} />
-                      Sign Out Account
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Fixed Action Actions */}
-              <div className="border-t border-gray-800 bg-surface/50 backdrop-blur-xl">
-                <div className="max-w-xl mx-auto w-full p-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowSettingsModal(false)}
-                    className="flex-1 border border-white/5 hover:bg-gray-800 text-gray-300 font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider text-center"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={savingSettings}
-                    onClick={handleSaveSettings}
-                    className="flex-1 bg-primary hover:bg-blue-600 disabled:opacity-50 text-white font-black text-xs uppercase py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer tracking-wider flex items-center justify-center gap-1.5"
-                  >
-                    {savingSettings ? (
-                      <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Check size={14} />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
