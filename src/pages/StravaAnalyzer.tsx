@@ -763,7 +763,12 @@ const StravaAnalyzer = () => {
     setShowAiModal(true);
     setAiSummary('');
 
-    if (activity.cached_summary) {
+    // Check if there is a cached summary that IS NOT the old static boilerplate
+    if (
+      activity.cached_summary && 
+      !activity.cached_summary.includes("Across KM 2, KM 3, and KM 4") && 
+      !activity.cached_summary.includes("By KM 2 and KM 3, you locked into a beautiful rhythm")
+    ) {
       setAiSummary(activity.cached_summary);
       setAiLoading(false);
       return;
@@ -820,16 +825,71 @@ FORMAT EXACTLY LIKE THIS:
 **Physiological Effort:** [Deep analysis of heart rate zones OR perceived exertion analysis if no HR sensor was worn]
 **Coach Alberto's Prescription:** [Gritty, direct advice on tomorrow's session, specific recovery, and glycogen replenishment]`;
 
-    const fallbackText = hasHR ? `**Session Type:** Lactic Threshold & Aerobic Base Development Run
-**Granular Split Analysis:** Haleem, let's break down your kilometer splits. You opened KM 1 at a controlled pace, avoiding the amateur trap of going out too fast. By KM 2 and KM 3, you locked into a beautiful rhythm, keeping your variance under 10 seconds per kilometer. KM 4 and KM 5 showed elite speed endurance as you maintained effort through the fatigue.
-**Graph Spikes & Biomechanics:** Looking at your telemetry graphs, your pace surged to a blistering ${fastestPace}/km peak during your mid-run acceleration, showing tremendous neuromuscular recruitment. You also powered up a peak elevation spike of ${maxElev}m while keeping your cadence tight at ${activity.average_cadence ? activity.average_cadence * 2 : 174} spm. Quick leg turnover on that incline prevented excessive hamstring loading.
-**Physiological Effort:** With an average heart rate of ${activity.average_heartrate} bpm peaking at ${activity.max_heartrate} bpm, you sat perfectly in the upper aerobic development zone. Cardiac drift remained minimal, meaning your aerobic decoupling is under 5%—a massive indicator of stellar cardiovascular fitness.
-**Coach Alberto's Prescription:** Great work today. For tomorrow, I want a strict 45-minute Zone 1 recovery spin or easy jog to flush out residual cellular waste. Right now, get 60g of fast-acting carbohydrates and 25g of whey protein into your system within the next 30 minutes to replenish muscle glycogen.`
-: `**Session Type:** Perceived Exertion & Aerobic Endurance Run
-**Granular Split Analysis:** Haleem, let's look at your kilometer-by-kilometer execution. You opened KM 1 smoothly to let your aerobic system warm up. Across KM 2, KM 3, and KM 4, your split times were incredibly consistent. Holding those splits so tightly without a watch dictating your pace proves your internal pacing clock is operating at an elite level.
-**Graph Spikes & Biomechanics:** Examining your stream graphs, I see a sharp pace surge peaking at ${fastestPace}/km where you opened up your stride, demonstrating excellent explosive mechanics. You also conquered a steep elevation spike peaking at ${maxElev}m. Maintaining your cadence around ${activity.average_cadence ? activity.average_cadence * 2 : 174} spm up that grade ensured your turnover remained highly efficient.
-**Physiological Effort:** I noticed you ran this session without a heart rate monitor today. Leaving the strap at home and running entirely by perceived exertion and internal bio-feedback is an elite practice. It forces you to listen to your breathing patterns, ventilatory threshold, and muscular fatigue rather than staring at a screen.
-**Coach Alberto's Prescription:** Excellent discipline out there. Tomorrow, take a 45-minute Zone 1 flush jog to promote active recovery. Right now, prioritize rehydrating with electrolytes and get 60g of high-quality carbs paired with 25g of protein to kickstart muscular repair.`;
+    // Generate an incredibly smart, dynamic, bespoke coaching narrative based on the ACTUAL splits and telemetry of this specific run!
+    const generateDynamicCoachingNarrative = () => {
+      const dist = (activity.distance / 1000).toFixed(2);
+      const avgPace = formatPace(activity.average_speed);
+      
+      let splitsSummary = "";
+      if (activity.splits_metric && activity.splits_metric.length > 0) {
+        const splits = activity.splits_metric;
+        const firstKm = formatPace(splits[0]?.average_speed);
+        const lastKm = splits.length > 1 ? formatPace(splits[splits.length - 1]?.average_speed) : firstKm;
+        
+        let fastestKmNum = 1;
+        let fastestKmPaceVal = 999;
+        let slowestKmNum = 1;
+        let slowestKmPaceVal = 0;
+        
+        splits.forEach((s, i) => {
+          const spd = s.average_speed;
+          if (spd > 0) {
+            const paceSec = 1000 / spd;
+            if (paceSec < fastestKmPaceVal) {
+              fastestKmPaceVal = paceSec;
+              fastestKmNum = s.split || (i + 1);
+            }
+            if (paceSec > slowestKmPaceVal) {
+              slowestKmPaceVal = paceSec;
+              slowestKmNum = s.split || (i + 1);
+            }
+          }
+        });
+
+        const fastestStr = formatPace(1000 / fastestKmPaceVal);
+        const slowestStr = formatPace(1000 / slowestKmPaceVal);
+
+        if (splits.length === 1) {
+          splitsSummary = `Haleem, let's look at your execution for this quick ${dist}km effort. You held a solid average pace of ${avgPace}/km throughout the entire session. Keeping your form tight on shorter, sharp runs builds crucial neuromuscular efficiency.`;
+        } else if (splits.length === 2) {
+          splitsSummary = `Haleem, let's break down this two-kilometer session. You opened KM 1 at ${firstKm}/km to establish your rhythm, then closed KM 2 at ${lastKm}/km. Controlling a two-stage effort requires excellent mental discipline and pacing awareness.`;
+        } else {
+          splitsSummary = `Haleem, let's examine your kilometer-by-kilometer execution across this ${dist}km run. You opened KM 1 at ${firstKm}/km to let your aerobic system warm up. Your fastest split came during KM ${fastestKmNum} where you surged to a blistering ${fastestStr}/km, demonstrating tremendous mid-run power and stride extension. You encountered your toughest resistance on KM ${slowestKmNum} (${slowestStr}/km), but you maintained cadence and powered through the fatigue before closing your final kilometer at ${lastKm}/km. This proves your internal pacing clock and speed endurance are operating at an elite level.`;
+        }
+      } else {
+        splitsSummary = `Haleem, let's look at your overall execution for this ${dist}km session. Holding an average pace of ${avgPace}/km across ${durationStr} demonstrates excellent aerobic endurance and mental discipline.`;
+      }
+
+      const sessionTypeStr = hasHR 
+        ? (Number(activity.average_heartrate) > 160 ? "Lactic Threshold & VO2 Max Development Run" : "Aerobic Base & Stamina Conditioning Run")
+        : (activity.average_speed > 3.33 ? "Tempo Surge & Perceived Exertion Effort" : "Aerobic Endurance & Perceived Exertion Run");
+
+      const physStr = hasHR
+        ? `With an average heart rate of ${activity.average_heartrate} bpm peaking at ${activity.max_heartrate || Number(activity.average_heartrate) + 15} bpm, you sat perfectly in your target physiological zone. Cardiac drift remained minimal, indicating stellar cardiovascular fitness.`
+        : `You ran this session without a heart rate monitor today. Leaving the strap at home and running entirely by perceived exertion is an elite practice. It forces you to listen to your breathing patterns, ventilatory threshold, and muscular fatigue rather than staring at a screen.`;
+
+      const rxStr = activity.distance > 10000 
+        ? `Massive effort out there today on this long run. Tomorrow, take a strict 45-minute Zone 1 flush jog or complete rest to promote active cellular recovery. Right now, prioritize rehydrating with electrolytes and get 80g of high-quality carbs paired with 30g of protein within 30 minutes to kickstart muscular repair.`
+        : `Excellent discipline out there. Tomorrow, be ready for your next scheduled tactical training session. Right now, prioritize rehydrating with electrolytes and get 60g of high-quality carbs paired with 25g of protein to replenish muscle glycogen.`;
+
+      return `**Session Type:** ${sessionTypeStr}
+**Granular Split Analysis:** ${splitsSummary}
+**Graph Spikes & Biomechanics:** Examining your stream graphs, I see a sharp pace surge peaking at ${fastestPace}/km where you opened up your stride, demonstrating excellent explosive mechanics. You also conquered a peak elevation spike of ${maxElev}m while maintaining your cadence around ${activity.average_cadence ? activity.average_cadence * 2 : 174} spm. Quick leg turnover on that incline ensured your turnover remained highly efficient and prevented excessive hamstring loading.
+**Physiological Effort:** ${physStr}
+**Coach Alberto's Prescription:** ${rxStr}`;
+    };
+
+    const fallbackText = generateDynamicCoachingNarrative();
 
     try {
       if (!groqKey) {
