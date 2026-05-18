@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -113,6 +113,7 @@ const StravaAnalyzer = () => {
   const [clientId, setClientId] = useState(() => localStorage.getItem('strava_client_id') || DEFAULT_CLIENT_ID);
   const [clientSecret, setClientSecret] = useState(() => localStorage.getItem('strava_client_secret') || DEFAULT_CLIENT_SECRET);
   const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('strava_refresh_token') || DEFAULT_REFRESH_TOKEN);
+  const [redirectUri, setRedirectUri] = useState(() => localStorage.getItem('strava_redirect_uri') || `${window.location.origin}/strava`);
   
   const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
@@ -225,8 +226,6 @@ const StravaAnalyzer = () => {
 
   // Trigger OAuth Login / Connect
   const handleConnectStrava = () => {
-    // Redirect to Strava OAuth page requesting full activity:read_all scope
-    const redirectUri = `${window.location.origin}/strava`;
     const oauthUrl = `https://www.strava.com/oauth/mobile/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all,profile:read_all`;
     window.location.href = oauthUrl;
   };
@@ -331,8 +330,9 @@ const StravaAnalyzer = () => {
     localStorage.setItem('strava_client_id', clientId);
     localStorage.setItem('strava_client_secret', clientSecret);
     localStorage.setItem('strava_refresh_token', refreshToken);
+    localStorage.setItem('strava_redirect_uri', redirectUri);
     setShowSettings(false);
-    setSuccessMsg('OAuth credentials saved successfully!');
+    setSuccessMsg('OAuth credentials & Redirect URI saved successfully!');
   };
 
   // Format helpers
@@ -499,14 +499,28 @@ FORMAT EXACTLY LIKE THIS:
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-surface border-b border-gray-800 px-5 py-4 flex flex-col gap-3 overflow-hidden z-20"
+            className="bg-surface border-b border-gray-800 px-5 py-4 flex flex-col gap-3 overflow-hidden z-20 shadow-2xl"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-gray-800/80 pb-2">
               <h3 className="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
-                <span>Strava API Credentials</span>
-                <span className="text-[10px] text-gray-500 font-normal">(Auto-loaded from your app settings)</span>
+                <span>Strava API Credentials & Redirect</span>
               </h3>
               <button onClick={() => setShowSettings(false)} className="text-xs text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            {/* Explanation box for redirect_uri invalid */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex flex-col gap-1.5 text-blue-300 text-xs font-medium">
+              <div className="flex items-center gap-1.5 font-bold text-blue-200">
+                <HelpCircle size={14} className="flex-shrink-0" />
+                <span>Fixing "redirect_uri invalid" Error:</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Strava requires the <strong className="text-white">Redirect URI</strong> below to match the <strong className="text-white">"Authorization Callback Domain"</strong> in your Strava App Settings (<a href="https://www.strava.com/settings/api" target="_blank" rel="noreferrer" className="underline hover:text-white">strava.com/settings/api</a>).
+              </p>
+              <p className="text-[11px] leading-relaxed mt-0.5">
+                • If testing locally, set your Strava Callback Domain to: <code className="bg-background px-1.5 py-0.5 rounded text-white font-mono">localhost</code>
+                <br />• If deploying to Vercel, set it to your Vercel domain (e.g. <code className="bg-background px-1.5 py-0.5 rounded text-white font-mono">my-app.vercel.app</code>)
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -551,6 +565,17 @@ FORMAT EXACTLY LIKE THIS:
               </div>
             </div>
 
+            <div>
+              <label className="text-[10px] text-gray-400 font-semibold block mb-1">Redirect URI (OAuth Callback URL)</label>
+              <input
+                type="text"
+                value={redirectUri}
+                onChange={e => setRedirectUri(e.target.value)}
+                className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-[#FC5200] focus:outline-none font-mono text-[11px]"
+                placeholder="http://localhost:5173/strava"
+              />
+            </div>
+
             <div className="flex justify-end gap-2 mt-1">
               <button
                 onClick={() => {
@@ -558,6 +583,7 @@ FORMAT EXACTLY LIKE THIS:
                   setClientId(DEFAULT_CLIENT_ID);
                   setClientSecret(DEFAULT_CLIENT_SECRET);
                   setRefreshToken(DEFAULT_REFRESH_TOKEN);
+                  setRedirectUri(`${window.location.origin}/strava`);
                 }}
                 className="px-3 py-1 rounded-xl text-xs font-bold bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors"
               >
@@ -624,10 +650,13 @@ FORMAT EXACTLY LIKE THIS:
               )}
             </button>
 
-            <div className="text-[10px] text-gray-500 flex items-center gap-1.5 justify-center mt-1">
-              <span>🔒 Secure OAuth 2.0 Connection</span>
-              <span>•</span>
-              <button onClick={() => setShowSettings(true)} className="underline hover:text-gray-300">View API Tokens</button>
+            <div className="text-[10px] text-gray-500 flex flex-col items-center gap-1 justify-center mt-1">
+              <div className="flex items-center gap-1.5">
+                <span>🔒 Secure OAuth 2.0 Connection</span>
+                <span>•</span>
+                <button onClick={() => setShowSettings(true)} className="underline hover:text-gray-300 font-bold text-[#FC5200]">Configure Redirect URI</button>
+              </div>
+              <span className="text-[9px] text-gray-500 mt-0.5">Tip: If you get "redirect_uri invalid", click Configure above!</span>
             </div>
           </div>
         )}
