@@ -39,6 +39,8 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
+  const [liveHR, setLiveHR] = useState<number | null>(null);
+  const [hrHistory, setHrHistory] = useState<number[]>([]);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
   const [hybridLiftingType, setHybridLiftingType] = useState('PUSH');
   const [latestInbody, setLatestInbody] = useState<{
@@ -151,7 +153,24 @@ const TodayView = () => {
 
     fetchWorkoutStatus();
     fetchLatestInbody();
-    return () => { active = false; };
+    
+    // 📡 Subscribe to Live HR Stream from Sandbox/Bluefy
+    const hrChannel = supabase.channel('live_hr_stream')
+      .on('broadcast', { event: 'new_heartrate' }, (payload) => {
+        if (payload.payload && payload.payload.hr) {
+          setLiveHR(payload.payload.hr);
+          setHrHistory(prev => {
+            const updated = [...prev, payload.payload.hr];
+            return updated.slice(-60); // Keep last 60 seconds of history for the mini graph
+          });
+        }
+      })
+      .subscribe();
+
+    return () => { 
+      active = false; 
+      supabase.removeChannel(hrChannel);
+    };
   }, [activeDateStr, workout, isToday, dayType]);
 
 
@@ -439,6 +458,58 @@ const TodayView = () => {
              </SwipeToDeleteRow>
           </motion.div>
         </div>
+
+        {/* Live Heart Rate Bridge */}
+        {isToday && (
+          <motion.div 
+             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+             className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full"
+          >
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Live HR Broadcast</span>
+              {liveHR ? (
+                <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Live
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-gray-600">Waiting for stream...</span>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-rose-950/30 rounded-xl border border-rose-900/50">
+                  <Activity size={20} className={`text-rose-500 ${liveHR ? 'animate-pulse' : ''}`} />
+                </div>
+                <div>
+                  <span className="text-2xl font-black text-white">{liveHR || '--'}</span>
+                  <span className="text-xs text-gray-500 font-bold ml-1">BPM</span>
+                </div>
+              </div>
+              
+              {/* Mini Graph */}
+              <div className="w-[120px] h-[30px] bg-gray-900/40 rounded-lg overflow-hidden border border-gray-800/50">
+                <svg width="100%" height="100%" viewBox="0 0 120 30" preserveAspectRatio="none">
+                  {hrHistory.length > 1 && (
+                    <polyline
+                      fill="none"
+                      stroke="#F43F5E"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={hrHistory.map((hr, index) => {
+                        const x = (index / (hrHistory.length - 1)) * 120;
+                        const clampedHR = Math.min(Math.max(hr, 40), 160);
+                        const y = 30 - ((clampedHR - 40) / 120) * 30;
+                        return `${x},${y}`;
+                      }).join(' ')}
+                    />
+                  )}
+                </svg>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* InBody Snapshot */}
         <motion.div 
