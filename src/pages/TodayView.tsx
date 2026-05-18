@@ -515,7 +515,7 @@ const TodayView = () => {
                 <div className="flex items-center gap-1.5">
                   <Activity size={14} className="text-rose-500" />
                   <div>
-                    <span className="text-lg font-black text-white">{restingHR || '--'}</span>
+                    <span className="text-lg font-black text-white">{restingHR}</span>
                     <span className="text-[10px] text-gray-500 font-bold ml-0.5">RHR</span>
                   </div>
                 </div>
@@ -523,7 +523,7 @@ const TodayView = () => {
                 <div className="flex items-center gap-1.5">
                   <Moon size={14} className="text-indigo-400" />
                   <div>
-                    <span className="text-lg font-black text-white">{sleepHours || '--'}</span>
+                    <span className="text-lg font-black text-white">{sleepHours}</span>
                     <span className="text-[10px] text-gray-500 font-bold ml-0.5">Hrs</span>
                   </div>
                 </div>
