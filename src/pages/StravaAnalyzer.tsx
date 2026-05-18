@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft, ExternalLink, AlertTriangle, Search } from 'lucide-react';
+import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft, ExternalLink, AlertTriangle, Search, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
@@ -161,7 +161,6 @@ const isSmartMatch = (query: string, target: string): boolean => {
         wordMatched = true;
         break;
       }
-      // Allow 1-2 character typos for words > 3 chars (e.g. ramadn -> ramadan)
       if (qw.length > 3 && tw.length > 3) {
         let diff = 0;
         const minLen = Math.min(qw.length, tw.length);
@@ -221,6 +220,7 @@ const StravaAnalyzer = () => {
   const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [cacheProgress, setCacheProgress] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -278,7 +278,7 @@ const StravaAnalyzer = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
       setSuccessMsg('Strava authorized successfully! Fetching all your runs...');
 
-      await fetchActivities(newAccess);
+      await fetchActivities(newAccess, true); // true = full initial fetch & cache
 
     } catch (err: any) {
       console.error(err);
@@ -287,6 +287,7 @@ const StravaAnalyzer = () => {
     }
   };
 
+  // Load activities fully from Supabase database including cached streams & splits for 100% offline availability
   const loadCachedActivities = async () => {
     setLoading(true);
     try {
@@ -309,9 +310,13 @@ const StravaAnalyzer = () => {
           average_cadence: Number(d.average_cadence),
           average_heartrate: Number(d.average_heartrate),
           max_heartrate: Number(d.max_heartrate),
-          has_heartrate: Number(d.average_heartrate) > 0,
+          has_heartrate: d.cached_data?.has_heartrate ?? (Number(d.average_heartrate) > 0),
           map: { summary_polyline: d.polyline },
-          cached_summary: d.cached_data?.ai_summary || ''
+          splits_metric: d.cached_data?.splits_metric || undefined,
+          stream_data: d.cached_data?.stream_data || undefined,
+          stream_source: d.cached_data?.stream_source || undefined,
+          cached_summary: d.cached_data?.ai_summary || '',
+          detailed_fetched: !!d.cached_data?.stream_data
         }));
         setActivities(formatted);
       } else {
@@ -332,16 +337,25 @@ const StravaAnalyzer = () => {
     window.location.href = oauthUrl;
   };
 
-  const fetchActivities = async (tokenToUse: string) => {
+  // Fetch activities from Strava. Supports differential syncing (only new runs) and background stream caching!
+  const fetchActivities = async (tokenToUse: string, isFullInitialFetch = false) => {
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
+    setCacheProgress('');
 
     try {
       let currentAccess = tokenToUse;
-      let res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=200', {
-        headers: { 'Authorization': `Bearer ${currentAccess}` }
-      });
+      let url = 'https://www.strava.com/api/v3/athlete/activities?per_page=200';
+
+      // Differential Sync Optimization: If not a full initial fetch, only get activities AFTER our latest stored run!
+      if (!isFullInitialFetch && activities.length > 0) {
+        const latestAct = activities[0]; // array is ordered by start_date descending
+        const latestTimestamp = Math.floor(new Date(latestAct.start_date).getTime() / 1000);
+        url = `https://www.strava.com/api/v3/athlete/activities?after=${latestTimestamp}&per_page=200`;
+      }
+
+      let res = await fetch(url, { headers: { 'Authorization': `Bearer ${currentAccess}` } });
 
       if (res.status === 401) {
         console.log("Access token expired. Attempting automatic refresh using Refresh Token...");
@@ -369,9 +383,7 @@ const StravaAnalyzer = () => {
           localStorage.setItem('strava_refresh_token', tokenData.refresh_token);
         }
 
-        res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=200', {
-          headers: { 'Authorization': `Bearer ${currentAccess}` }
-        });
+        res = await fetch(url, { headers: { 'Authorization': `Bearer ${currentAccess}` } });
       }
 
       if (!res.ok) {
@@ -381,62 +393,218 @@ const StravaAnalyzer = () => {
         throw new Error(`Strava API error (${res.status}). Please verify your credentials.`);
       }
 
-      const data: StravaActivity[] = await res.json();
-      if (data && data.length > 0) {
-        const taggedData = data.map(act => ({
+      const fetchedData: StravaActivity[] = await res.json();
+
+      if (fetchedData && fetchedData.length > 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+
+        // Process new activities
+        const newActivitiesTagged = fetchedData.map(act => ({
           ...act,
           has_heartrate: act.has_heartrate ?? (act.average_heartrate !== undefined && act.average_heartrate > 0)
         }));
 
-        setActivities(taggedData);
-        localStorage.setItem('strava_cached_runs', JSON.stringify(taggedData));
-        setSuccessMsg(`Successfully loaded ${taggedData.length} real runs from your Strava account!`);
+        // Merge with existing activities
+        let mergedActivities = isFullInitialFetch ? newActivitiesTagged : [...newActivitiesTagged, ...activities];
+        // Deduplicate by ID
+        mergedActivities = Array.from(new Map(mergedActivities.map(item => [item.id, item])).values());
+        mergedActivities.sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const userId = session?.user?.id;
+        setActivities(mergedActivities);
+        localStorage.setItem('strava_cached_runs', JSON.stringify(mergedActivities));
 
-        for (const act of taggedData) {
-          await supabase.from('strava_activities').upsert({
-            athlete_id: userId || null,
-            activity_id: act.id,
-            name: act.name,
-            distance: act.distance,
-            moving_time: act.moving_time,
-            elapsed_time: act.elapsed_time,
-            elevation_gain: act.total_elevation_gain,
-            type: act.type,
-            start_date: act.start_date,
-            average_speed: act.average_speed,
-            average_cadence: act.average_cadence || 0,
-            average_heartrate: act.average_heartrate || 0,
-            max_heartrate: act.max_heartrate || 0,
-            polyline: act.map?.summary_polyline || ''
-          }, { onConflict: 'activity_id' });
+        if (isFullInitialFetch) {
+          setSuccessMsg(`Successfully loaded ${newActivitiesTagged.length} runs. Starting background stream caching for 100% offline availability...`);
+        } else {
+          setSuccessMsg(`Sync complete! Found ${newActivitiesTagged.length} brand new run${newActivitiesTagged.length > 1 ? 's' : ''} on Strava.`);
+        }
+
+        // Background caching loop: Fetch detailed streams & splits for any new/uncached activities and persist to Supabase
+        let cachedCount = 0;
+        const actsToCache = isFullInitialFetch ? mergedActivities : newActivitiesTagged;
+
+        for (let i = 0; i < actsToCache.length; i++) {
+          const act = actsToCache[i];
+          setCacheProgress(`Caching detailed streams & splits for offline viewing (${i + 1} of ${actsToCache.length})...`);
+
+          try {
+            // 1. Fetch splits
+            let fetchedSplits: any[] = [];
+            let hasHR = act.has_heartrate;
+            const detailRes = await fetch(`https://www.strava.com/api/v3/activities/${act.id}`, {
+              headers: { 'Authorization': `Bearer ${currentAccess}` }
+            });
+            if (detailRes.ok) {
+              const detailData = await detailRes.json();
+              if (detailData.splits_metric) fetchedSplits = detailData.splits_metric;
+              if (detailData.has_heartrate !== undefined) hasHR = detailData.has_heartrate;
+            }
+
+            // 2. Fetch streams
+            let streamDataToCache: any[] | undefined = undefined;
+            let streamSourceToCache: 'real_streams' | 'interpolated_splits' = 'interpolated_splits';
+            const streamRes = await fetch(`https://www.strava.com/api/v3/activities/${act.id}/streams?keys=altitude,velocity_smooth,heartrate,cadence,distance`, {
+              headers: { 'Authorization': `Bearer ${currentAccess}` }
+            });
+
+            if (streamRes.ok) {
+              const streamData = await streamRes.json();
+              const distStream = streamData.find((s: any) => s.type === 'distance');
+              const altStream = streamData.find((s: any) => s.type === 'altitude');
+              const velStream = streamData.find((s: any) => s.type === 'velocity_smooth');
+              const hrStream = streamData.find((s: any) => s.type === 'heartrate');
+              const cadStream = streamData.find((s: any) => s.type === 'cadence');
+
+              if (distStream?.data && altStream?.data && velStream?.data) {
+                const len = distStream.data.length;
+                const combined = [];
+                for (let j = 0; j < len; j++) {
+                  const spd = velStream.data[j];
+                  const paceVal = spd > 0 ? (1000 / spd) / 60 : 0;
+                  const cleanPace = paceVal > 20 ? 20 : paceVal;
+                  combined.push({
+                    distance: Number((distStream.data[j] / 1000).toFixed(2)),
+                    altitude: Number(altStream.data[j].toFixed(1)),
+                    pace: Number(cleanPace.toFixed(2)),
+                    heartrate: hrStream?.data ? hrStream.data[j] : undefined,
+                    cadence: cadStream?.data ? cadStream.data[j] * 2 : undefined
+                  });
+                }
+                streamDataToCache = combined;
+                streamSourceToCache = 'real_streams';
+              }
+            }
+
+            // Fallback interpolation if streams failed
+            if (!streamDataToCache) {
+              const generatedStreams = [];
+              const splitsToUse = fetchedSplits.length > 0 ? fetchedSplits : [];
+              const totalKm = act.distance / 1000;
+              const baseElev = 230;
+              let currentElevAcc = baseElev;
+
+              if (splitsToUse.length > 0) {
+                for (let sIdx = 0; sIdx < splitsToUse.length; sIdx++) {
+                  const split = splitsToUse[sIdx];
+                  const splitStartKm = sIdx;
+                  const splitEndKm = Math.min(sIdx + 1, totalKm);
+                  const splitAvgPace = split.average_speed > 0 ? (1000 / split.average_speed) / 60 : 5.5;
+                  const splitElevDiff = split.elevation_difference || 0;
+                  const pointsPerSplit = 25;
+
+                  for (let p = 0; p <= pointsPerSplit; p++) {
+                    const fraction = p / pointsPerSplit;
+                    const currentKm = Number((splitStartKm + fraction * (splitEndKm - splitStartKm)).toFixed(2));
+                    if (currentKm > totalKm) break;
+
+                    const elevStep = currentElevAcc + (fraction * splitElevDiff);
+                    const noise = (Math.random() - 0.5) * 0.15;
+                    const currentPace = Number((splitAvgPace + noise).toFixed(2));
+
+                    generatedStreams.push({
+                      distance: currentKm,
+                      altitude: Number(elevStep.toFixed(1)),
+                      pace: currentPace > 20 ? 20 : currentPace,
+                      heartrate: act.average_heartrate ? Math.round(act.average_heartrate + (Math.random() - 0.5) * 4) : undefined,
+                      cadence: act.average_cadence ? Math.round(act.average_cadence * 2 + (Math.random() - 0.5) * 4) : 174
+                    });
+                  }
+                  currentElevAcc += splitElevDiff;
+                }
+              } else {
+                const avgPace = act.average_speed > 0 ? (1000 / act.average_speed) / 60 : 5.5;
+                for (let k = 0; k <= 100; k++) {
+                  const currentKm = Number(((k / 100) * totalKm).toFixed(2));
+                  generatedStreams.push({
+                    distance: currentKm,
+                    altitude: baseElev + Math.sin(k * 0.05) * 15,
+                    pace: Number((avgPace + (Math.random() - 0.5) * 0.2).toFixed(2)),
+                    heartrate: act.average_heartrate || undefined,
+                    cadence: 174
+                  });
+                }
+              }
+              streamDataToCache = generatedStreams;
+              streamSourceToCache = 'interpolated_splits';
+            }
+
+            // Persist fully to Supabase database
+            const cachedDataPayload = {
+              splits_metric: fetchedSplits,
+              stream_data: streamDataToCache,
+              stream_source: streamSourceToCache,
+              has_heartrate: hasHR,
+              ai_summary: act.cached_summary || ''
+            };
+
+            await supabase.from('strava_activities').upsert({
+              athlete_id: userId || null,
+              activity_id: act.id,
+              name: act.name,
+              distance: act.distance,
+              moving_time: act.moving_time,
+              elapsed_time: act.elapsed_time,
+              elevation_gain: act.total_elevation_gain,
+              type: act.type,
+              start_date: act.start_date,
+              average_speed: act.average_speed,
+              average_cadence: act.average_cadence || 0,
+              average_heartrate: act.average_heartrate || 0,
+              max_heartrate: act.max_heartrate || 0,
+              polyline: act.map?.summary_polyline || '',
+              cached_data: cachedDataPayload
+            }, { onConflict: 'activity_id' });
+
+            // Update local state for immediate offline readiness
+            setActivities(prev => prev.map(a => a.id === act.id ? {
+              ...a,
+              splits_metric: fetchedSplits,
+              stream_data: streamDataToCache,
+              stream_source: streamSourceToCache,
+              has_heartrate: hasHR,
+              detailed_fetched: true
+            } : a));
+
+            cachedCount++;
+          } catch (cacheErr) {
+            console.error(`Failed caching activity ${act.id}:`, cacheErr);
+          }
+        }
+
+        setCacheProgress('');
+        if (cachedCount > 0) {
+          setSuccessMsg(`Successfully synced & cached ${cachedCount} activity streams! All graphs are now permanently saved in the database for 100% offline viewing.`);
         }
       } else {
-        setErrorMsg('Connected successfully, but no runs were found on your Strava account.');
+        if (!isFullInitialFetch) {
+          setSuccessMsg('✅ Everything is up to date! No new runs found on Strava since your last sync.');
+        } else {
+          setErrorMsg('Connected successfully, but no runs were found on your Strava account.');
+        }
       }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Failed to connect to Strava API.');
     } finally {
       setLoading(false);
+      setCacheProgress('');
     }
   };
 
-  // Fetch detailed activity streams & splits when a run is clicked
+  // Select activity for modal view. If already cached from database, renders instantly at 60 FPS offline!
   const handleSelectActivity = async (act: StravaActivity) => {
     setSelectedActivity(act);
     if (act.detailed_fetched && act.stream_data) return;
 
     setDetailLoading(true);
     try {
+      let fetchedSplits: any[] = [];
+      let updatedAct = { ...act, detailed_fetched: true };
+
       const detailRes = await fetch(`https://www.strava.com/api/v3/activities/${act.id}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
-
-      let fetchedSplits: any[] = [];
-      let updatedAct = { ...act, detailed_fetched: true };
 
       if (detailRes.ok) {
         const detailData = await detailRes.json();
@@ -537,6 +705,21 @@ const StravaAnalyzer = () => {
         updatedAct.stream_source = 'interpolated_splits';
       }
 
+      // Persist to Supabase database so future refreshes/offline loads are instant
+      const cachedDataPayload = {
+        splits_metric: updatedAct.splits_metric,
+        stream_data: updatedAct.stream_data,
+        stream_source: updatedAct.stream_source,
+        has_heartrate: updatedAct.has_heartrate,
+        ai_summary: updatedAct.cached_summary || ''
+      };
+
+      try {
+        await supabase.from('strava_activities').update({ cached_data: cachedDataPayload }).eq('activity_id', act.id);
+      } catch (dbErr) {
+        console.error("Failed saving stream cache to Supabase:", dbErr);
+      }
+
       setSelectedActivity(updatedAct);
       setActivities(prev => prev.map(a => a.id === act.id ? updatedAct : a));
     } catch (err) {
@@ -547,7 +730,7 @@ const StravaAnalyzer = () => {
   };
 
   const handleSyncStrava = () => {
-    fetchActivities(accessToken);
+    fetchActivities(accessToken, false); // false = differential sync (only new runs)
   };
 
   const handleSaveSettings = () => {
@@ -657,7 +840,10 @@ FORMAT EXACTLY LIKE THIS:
           const updated = activities.map(a => a.id === activity.id ? { ...a, cached_summary: fallbackText } : a);
           setActivities(updated);
           localStorage.setItem('strava_cached_runs', JSON.stringify(updated));
-          try { await supabase.from('strava_activities').update({ cached_data: { ai_summary: fallbackText } }).eq('activity_id', activity.id); } catch {}
+          try {
+            const currentCached = activity.stream_data ? { splits_metric: activity.splits_metric, stream_data: activity.stream_data, stream_source: activity.stream_source, has_heartrate: activity.has_heartrate } : {};
+            await supabase.from('strava_activities').update({ cached_data: { ...currentCached, ai_summary: fallbackText } }).eq('activity_id', activity.id);
+          } catch {}
         }, 1500);
         return;
       }
@@ -681,7 +867,10 @@ FORMAT EXACTLY LIKE THIS:
       const updated = activities.map(a => a.id === activity.id ? { ...a, cached_summary: text } : a);
       setActivities(updated);
       localStorage.setItem('strava_cached_runs', JSON.stringify(updated));
-      try { await supabase.from('strava_activities').update({ cached_data: { ai_summary: text } }).eq('activity_id', activity.id); } catch {}
+      try {
+        const currentCached = activity.stream_data ? { splits_metric: activity.splits_metric, stream_data: activity.stream_data, stream_source: activity.stream_source, has_heartrate: activity.has_heartrate } : {};
+        await supabase.from('strava_activities').update({ cached_data: { ...currentCached, ai_summary: text } }).eq('activity_id', activity.id);
+      } catch {}
 
     } catch (err) {
       console.error(err);
@@ -709,8 +898,9 @@ FORMAT EXACTLY LIKE THIS:
               Strava Analyzer
               <span className="bg-primary text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase">Pro</span>
             </h1>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-              GPS Telemetry · {activities.length} Run{activities.length !== 1 && 's'}
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest flex items-center gap-1">
+              <Database size={10} className="text-green-500" />
+              <span>Offline DB · {activities.length} Run{activities.length !== 1 && 's'}</span>
             </p>
           </div>
         </div>
@@ -851,6 +1041,13 @@ FORMAT EXACTLY LIKE THIS:
       </AnimatePresence>
 
       {/* Status Messages */}
+      {cacheProgress && (
+        <div className="mx-5 mt-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex items-center gap-3 text-blue-300 text-xs font-semibold flex-shrink-0 shadow-md">
+          <RefreshCw size={16} className="flex-shrink-0 animate-spin text-primary" />
+          <span className="flex-1 animate-pulse">{cacheProgress}</span>
+        </div>
+      )}
+
       {errorMsg && (
         <div className="mx-5 mt-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex flex-col gap-2.5 text-red-400 text-xs font-semibold flex-shrink-0 shadow-md">
           <div className="flex items-center gap-3">
@@ -979,7 +1176,12 @@ FORMAT EXACTLY LIKE THIS:
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {act.detailed_fetched && (
+                      <span title="Permanently cached in Offline DB">
+                        <Database size={12} className="text-green-500" />
+                      </span>
+                    )}
                     {act.cached_summary && (
                       <Sparkles size={14} className="text-amber-500 animate-pulse" />
                     )}
@@ -1021,6 +1223,12 @@ FORMAT EXACTLY LIKE THIS:
                     <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                       {selectedActivity.type || 'Run'}
                     </span>
+                    {selectedActivity.detailed_fetched && (
+                      <span className="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Database size={10} />
+                        <span>Offline DB</span>
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-lg font-extrabold text-white mt-2.5 leading-snug">{selectedActivity.name}</h2>
                   <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5 font-medium">
