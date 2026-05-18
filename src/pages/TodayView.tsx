@@ -553,21 +553,21 @@ const TodayView = () => {
                             <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
                             <span className="text-gray-500 font-semibold">Deep</span>
                           </div>
-                          <span className="text-white font-black text-[10px]">{formatStage(deepSleepHours)}</span>
+                          <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
                         </div>
                         <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
                           <div className="flex items-center gap-1 mb-0.5">
                             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
                             <span className="text-gray-500 font-semibold">REM</span>
                           </div>
-                          <span className="text-white font-black text-[10px]">{formatStage(remSleepHours)}</span>
+                          <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
                         </div>
                         <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
                           <div className="flex items-center gap-1 mb-0.5">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
                             <span className="text-gray-500 font-semibold">Light</span>
                           </div>
-                          <span className="text-white font-black text-[10px]">{formatStage(lightSleepHours)}</span>
+                          <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(lightSleepHours)}</span>
                         </div>
                       </div>
                     </>
