@@ -531,11 +531,16 @@ const TodayView = () => {
               
               {/* Sleep Stages Breakdown */}
               <div className="mt-2 border-t border-gray-800 pt-2">
-                <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                  <div className="bg-purple-600" style={{ width: `${(deepSleepHours / (sleepHours || 1)) * 100}%` }} title="Deep Sleep"></div>
-                  <div className="bg-blue-500" style={{ width: `${(remSleepHours / (sleepHours || 1)) * 100}%` }} title="REM Sleep"></div>
-                  <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / (sleepHours || 1)) * 100}%` }} title="Light Sleep"></div>
-                </div>
+                {(() => {
+                  const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
+                  return (
+                    <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
+                      <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
+                      <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
+                      <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
+                    </div>
+                  );
+                })()}
                 <div className="flex justify-between text-[9px] mt-1.5 text-gray-400 font-bold">
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
