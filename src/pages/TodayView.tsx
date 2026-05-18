@@ -507,12 +507,35 @@ const TodayView = () => {
                 <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
               </div>
               
-              <div className="flex justify-center items-center mt-auto">
+              <div className="flex justify-center items-center mt-auto mb-2">
                 <div className="flex items-center gap-1.5">
                   <Moon size={14} className="text-indigo-400" />
                   <div>
                     <span className="text-lg font-black text-white">{sleepHours}</span>
                     <span className="text-[10px] text-gray-500 font-bold ml-0.5">Hrs</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sleep Stages Breakdown (Dummy Data) */}
+              <div className="mt-2 border-t border-gray-800 pt-2">
+                <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
+                  <div className="bg-purple-600" style={{ width: '25%' }} title="Deep Sleep"></div>
+                  <div className="bg-blue-500" style={{ width: '35%' }} title="REM Sleep"></div>
+                  <div className="bg-emerald-500" style={{ width: '40%' }} title="Light Sleep"></div>
+                </div>
+                <div className="flex justify-between text-[9px] mt-1.5 text-gray-400 font-bold">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
+                    <span>Deep: 1.5h</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                    <span>REM: 2.0h</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                    <span>Light: 2.4h</span>
                   </div>
                 </div>
               </div>
