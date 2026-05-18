@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-// Model fallback chain — if one hits rate limit, auto-switch to next
 const MODELS = [
   'gemma2-9b-it',          // primary: JSON mode support, good limits
   'llama-3.1-8b-instant',  // fallback 1: 131k TPM
@@ -36,13 +35,11 @@ interface AiResponse {
   actions?: DbAction[];
 }
 
-// ─── In-memory cache (5-min TTL) ─────────────────────────────────────────────
 const cache: Record<string, { data: any; ts: number }> = {};
 const TTL = 5 * 60 * 1000;
 const fromCache = (k: string) => { const e = cache[k]; return e && Date.now() - e.ts < TTL ? e.data : null; };
 const toCache = (k: string, d: any) => { cache[k] = { data: d, ts: Date.now() }; };
 
-// ─── Local date helpers (match useDiet timezone logic) ───────────────────────
 const getLocalDate = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -52,14 +49,13 @@ const getLocalTime = () => {
   return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:00`;
 };
 
-// ─── System prompt — explicit examples with correct schema ───────────────────
 const SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
   const today = getLocalDate();
   const time = getLocalTime();
   const dietLogMatch = ctx.match(/TODAY_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
   const dietLogId = dietLogMatch ? dietLogMatch[1] : "INSERT_DIET_LOG_ID_HERE";
 
-  return `You are Haleem's fitness AI. Output ONLY valid JSON. Never plain text.
+  return `You are Haleem's elite fitness and Strava AI coach (Coach Alberto). Output ONLY valid JSON. Never plain text.
 Haleem: 18yo, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal.
 User ID: ${uid} | Today: ${today}
 
@@ -76,11 +72,11 @@ WATER LOG EXAMPLE:
 
 RULES:
 - Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
-- You DO NOT track or analyze running data. If the user asks about a run, their running stats, or running feedback, you MUST reply: "I don't track running data! I only analyze your weightlifting sessions and nutrition."
+- You DO track and analyze running data! If the user asks about a run, their running stats, or running feedback, you MUST analyze their Strava runs provided in 'RECENT_STRAVA_RUNS' and give them elite, coach-level tactical feedback on their pace, elevation spikes, heart rate, and kilometer splits!
 - When giving feedback on weightlifting workouts, ONLY mention the EXACT metrics provided in the text (weight, reps). Do NOT invent stats.
-- STRICT RULE: 'CURRENT_WORKOUT_PLANS' is just their *planned* schedule. 'RECENT_COMPLETED_WORKOUTS' contains what they *actually* did in reality. Base all performance feedback EXCLUSIVELY on 'RECENT_COMPLETED_WORKOUTS'.
+- STRICT RULE: 'CURRENT_WORKOUT_PLANS' is just their *planned* schedule. 'RECENT_COMPLETED_WORKOUTS' contains what they *actually* did in reality. Base all performance feedback EXCLUSIVELY on 'RECENT_COMPLETED_WORKOUTS' and 'RECENT_STRAVA_RUNS'.
 - If the user explicitly asks you to LOG a workout or CHANGE their schedule/plan, refuse and say: "I cannot log workouts or change your plans directly. Please use the app interface for that."
-- HOWEVER, if the user asks for FEEDBACK on past weightlifting workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
+- HOWEVER, if the user asks for FEEDBACK on past weightlifting workouts or Strava runs, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS and RECENT_STRAVA_RUNS data.
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
@@ -90,7 +86,6 @@ RULES:
 - actions:[] if no change.`;
 };
 
-// ─── Intent detection removed to guarantee context injection ─────────────────
 
 export const useAiAgent = () => {
   const [messages, setMessages] = useState<AiMessage[]>(() => {
@@ -113,7 +108,6 @@ export const useAiAgent = () => {
   const userIdRef = useRef<string | null>(null);
   const initialized = useRef(false);
 
-  // ─── Execute DB actions returned by AI ────────────────────────────────────
   const executeActions = async (actions: DbAction[]): Promise<{success: boolean, errorMsg?: string}> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session || !actions?.length) return { success: false, errorMsg: "No session or actions" };
@@ -153,10 +147,9 @@ export const useAiAgent = () => {
             const { error: updError } = await supabase.from('schedules').update({ days: updatedDays }).eq('id', schedData.id);
             error = updError;
           } else {
-            // Calculate week_start for the new row
             const d = new Date(dateStr);
             const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
             const weekStart = new Date(d.setDate(diff)).toISOString().split('T')[0];
             
             const { error: insError } = await supabase.from('schedules').insert({
@@ -171,7 +164,6 @@ export const useAiAgent = () => {
              allSuccess = false;
              lastError = error.message || "Failed to update schedule";
           } else {
-             // Broadcast event to instantly update UI
              window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
           }
         } else if (action.type === 'update_workout_plan') {
@@ -191,7 +183,6 @@ export const useAiAgent = () => {
              allSuccess = false;
              lastError = error.message || error.details || "Failed to update plan";
           } else {
-            // Force reload of WorkoutHome by broadcasting an event (or user can refresh)
             window.dispatchEvent(new CustomEvent('plan_updated', { detail: action.planType }));
           }
         } else if (action.type === 'replace_active_exercise') {
@@ -252,7 +243,6 @@ export const useAiAgent = () => {
              lastError = error.message || error.details || "Delete failed";
           }
         }
-        // Bust cache for affected table
         Object.keys(cache).forEach(k => { if (k.includes(action.table!)) delete cache[k]; });
       } catch (e: any) {
         console.error('Action failed:', e);
@@ -263,13 +253,11 @@ export const useAiAgent = () => {
     return { success: allSuccess, errorMsg: lastError };
   };
 
-  // ─── Load only relevant context ────────────────────────────────────────────
   const loadContext = async (): Promise<string> => {
     const uid = userIdRef.current;
     if (!uid) return '';
     const parts: string[] = [];
 
-    // Always load schedule (cached)
     let sched = fromCache('sched');
     if (!sched) {
       const { data } = await supabase.from('schedules').select('id,week_start,days').eq('user_id', uid).order('week_start', { ascending: false }).limit(1).maybeSingle();
@@ -278,8 +266,7 @@ export const useAiAgent = () => {
     }
     if (sched) parts.push(`SCHEDULE: ${JSON.stringify(sched)}`);
 
-    // Always load diet (cached)
-    const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
+    const ckey = `diet_${getLocalDate()}`;
     let log = fromCache(ckey);
 
     if (!log) {
@@ -314,7 +301,6 @@ export const useAiAgent = () => {
       parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
     }
 
-    // Load custom workout plans
     const { data: customPlans } = await supabase.from('user_workout_plans').select('plan_type, exercises').eq('user_id', uid);
     
     const defaultPlans = {
@@ -340,7 +326,7 @@ export const useAiAgent = () => {
        } catch (e) {}
     }
 
-    // Load recent past workouts for performance tracking context
+    // Load recent past gym workouts
     const { data: recentWorkouts } = await supabase.from('workouts')
       .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
@@ -350,7 +336,7 @@ export const useAiAgent = () => {
     
     if (recentWorkouts && recentWorkouts.length > 0) {
       const summary = recentWorkouts
-        .filter(w => w.day_type !== 'RUN') // Hide runs from AI completely
+        .filter(w => w.day_type !== 'RUN')
         .map(w => {
          const exSummary = w.workout_exercises?.map((we: any) => {
            const name = we.exercises?.name;
@@ -361,7 +347,6 @@ export const useAiAgent = () => {
       });
       parts.push(`RECENT_COMPLETED_WORKOUTS (with weights and sets): \n${summary.join('\n')}`);
 
-      // Calculate recent volume trend
       const recentLifts = recentWorkouts.filter(w => w.day_type !== 'RUN' && w.total_volume > 0);
       if (recentLifts.length >= 2) {
         const latestVol = recentLifts[0].total_volume;
@@ -373,10 +358,41 @@ export const useAiAgent = () => {
       }
     }
 
+    // Load recent Strava activities & telemetry streams
+    const { data: stravaActs } = await supabase
+      .from('strava_activities')
+      .select('*')
+      .eq('user_id', uid)
+      .order('start_date', { ascending: false })
+      .limit(10);
+
+    if (stravaActs && stravaActs.length > 0) {
+      const stravaSummary = stravaActs.map((act: any) => {
+        let streamStr = '';
+        let splitsStr = '';
+        if (act.cached_data) {
+          try {
+            const cached = typeof act.cached_data === 'string' ? JSON.parse(act.cached_data) : act.cached_data;
+            if (cached.splits && cached.splits.length > 0) {
+              splitsStr = `KM Splits: [${cached.splits.map((s: any, i: number) => `KM ${i+1}: ${s.pace}`).join(', ')}]`;
+            }
+            if (cached.streams) {
+              const maxElev = Math.max(...(cached.streams.altitude || [0]));
+              const minElev = Math.min(...(cached.streams.altitude || [0]));
+              streamStr = `Elevation min/max: ${minElev}m to ${maxElev}m.`;
+            }
+          } catch (e) {}
+        }
+        const distKm = act.distance ? (Number(act.distance) / 1000).toFixed(2) : '0';
+        const durationMins = act.moving_time ? (Number(act.moving_time) / 60).toFixed(1) : '0';
+        return `Run "${act.name}" on ${new Date(act.start_date).toLocaleDateString()}: ${distKm}km in ${durationMins} mins. Avg Heartrate: ${act.average_heartrate || 'N/A'} bpm. Total Elevation Gain: ${act.total_elevation_gain || 0}m. ${splitsStr} ${streamStr}`;
+      });
+      parts.push(`RECENT_STRAVA_RUNS (with kilometer splits and telemetry): \n${stravaSummary.join('\n')}`);
+    }
+
     return parts.join('\n');
   };
 
-  // ─── Groq call with model fallback chain ──────────────────────────────────
   const callGroq = async (userText: string, context: string): Promise<AiResponse> => {
     const key = getApiKey();
     if (!key) throw new Error('VITE_GROQ_API_KEY not set');
@@ -389,10 +405,8 @@ export const useAiAgent = () => {
     console.log("AI CONTEXT DUMP:", context);
     console.log("AI MESSAGES:", msgs);
 
-    // Try each model in order — switch automatically on rate limit
     for (let i = 0; i < MODELS.length; i++) {
       const model = MODELS[i];
-      // mixtral doesn't support json_object mode
       const supportsJson = model !== 'mixtral-8x7b-32768';
 
       try {
@@ -413,7 +427,6 @@ export const useAiAgent = () => {
           const msg = JSON.stringify(e);
           const isRateLimit = msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP');
           if (isRateLimit && i < MODELS.length - 1) {
-            // Rate limited — silently try next model
             continue;
           }
           throw new Error(isRateLimit ? 'RATE_LIMIT_ALL' : msg.slice(0, 100));
@@ -428,7 +441,6 @@ export const useAiAgent = () => {
         try {
           return JSON.parse(cleanedRaw) as AiResponse;
         } catch {
-          // fallback regex extraction
           const jsonMatch = raw.match(/\{[\s\S]*"reply"[\s\S]*\}/);
           if (jsonMatch) {
             try { return JSON.parse(jsonMatch[0]) as AiResponse; } catch {}
@@ -444,7 +456,6 @@ export const useAiAgent = () => {
     throw new Error('RATE_LIMIT_ALL');
   };
 
-  // ─── Init ──────────────────────────────────────────────────────────────────
   const initChat = async () => {
     if (initialized.current) return;
     initialized.current = true;
@@ -456,10 +467,9 @@ export const useAiAgent = () => {
       return;
     }
 
-    // Since we initialize from localStorage, we just ensure there's at least one message
     setMessages(prev => {
       if (prev.length === 0) {
-        return [{ id: '1', role: 'model', text: "Coach connected. What do you need?" }];
+        return [{ id: '1', role: 'model', text: "Coach Alberto connected. What do you need?" }];
       }
       return prev;
     });
@@ -472,7 +482,6 @@ export const useAiAgent = () => {
     setMessages([{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
   };
 
-  // ─── Send ──────────────────────────────────────────────────────────────────
   const sendMessage = async (text: string) => {
     if (!initialized.current) await initChat();
     if (!getApiKey()) return;
@@ -486,7 +495,6 @@ export const useAiAgent = () => {
       const aiRes = await callGroq(text, context);
       let aiText = aiRes.reply;
 
-      // Handle DB Actions
       if (aiRes.actions && aiRes.actions.length > 0) {
         const { success, errorMsg } = await executeActions(aiRes.actions);
         if (success) {
