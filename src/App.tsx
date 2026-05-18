@@ -15,6 +15,7 @@ import FoodInventory from './pages/FoodInventory';
 
 import AiCoach from './pages/AiCoach';
 import InBodyView from './pages/InBodyView';
+import StravaAnalyzer from './pages/StravaAnalyzer';
 
 // Coach Pages
 import DashboardPage from './pages/coach/DashboardPage';
@@ -72,6 +73,7 @@ function App() {
             <Route path="/diet/food/new" element={<FoodCreator />} />
             <Route path="/diet/inventory" element={<FoodInventory />} />
             <Route path="/inbody" element={<InBodyView />} />
+            <Route path="/strava" element={<StravaAnalyzer />} />
             <Route path="/ai" element={<AiCoach />} />
 
             {/* Coach Routes */}
