@@ -41,6 +41,9 @@ const TodayView = () => {
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
   const [sleepHours, setSleepHours] = useState<number>(0);
   const [todaySteps, setTodaySteps] = useState<number>(0);
+  const [deepSleepHours, setDeepSleepHours] = useState<number>(0);
+  const [remSleepHours, setRemSleepHours] = useState<number>(0);
+  const [lightSleepHours, setLightSleepHours] = useState<number>(0);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
   const [hybridLiftingType, setHybridLiftingType] = useState('PUSH');
   const [latestInbody, setLatestInbody] = useState<{
@@ -130,16 +133,22 @@ const TodayView = () => {
     const fetchTodayBiometrics = async () => {
       const { data } = await supabase
         .from('athlete_biometrics')
-        .select('steps, resting_hr, sleep_hours')
+        .select('steps, resting_hr, sleep_hours, deep_sleep_hours, rem_sleep_hours, light_sleep_hours')
         .eq('date', activeDateStr)
         .single();
       
       if (data) {
         setTodaySteps(data.steps || 0);
         setSleepHours(data.sleep_hours || 0);
+        setDeepSleepHours(data.deep_sleep_hours || 0);
+        setRemSleepHours(data.rem_sleep_hours || 0);
+        setLightSleepHours(data.light_sleep_hours || 0);
       } else {
         setTodaySteps(0);
         setSleepHours(0);
+        setDeepSleepHours(0);
+        setRemSleepHours(0);
+        setLightSleepHours(0);
       }
     };
 
@@ -177,6 +186,9 @@ const TodayView = () => {
         if (payload.new && payload.new.date === activeDateStr) {
           setTodaySteps(payload.new.steps || 0);
           setSleepHours(payload.new.sleep_hours || 0);
+          setDeepSleepHours(payload.new.deep_sleep_hours || 0);
+          setRemSleepHours(payload.new.rem_sleep_hours || 0);
+          setLightSleepHours(payload.new.light_sleep_hours || 0);
         }
       })
       .subscribe();
@@ -517,25 +529,25 @@ const TodayView = () => {
                 </div>
               </div>
               
-              {/* Sleep Stages Breakdown (Dummy Data) */}
+              {/* Sleep Stages Breakdown */}
               <div className="mt-2 border-t border-gray-800 pt-2">
                 <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                  <div className="bg-purple-600" style={{ width: '25%' }} title="Deep Sleep"></div>
-                  <div className="bg-blue-500" style={{ width: '35%' }} title="REM Sleep"></div>
-                  <div className="bg-emerald-500" style={{ width: '40%' }} title="Light Sleep"></div>
+                  <div className="bg-purple-600" style={{ width: `${(deepSleepHours / (sleepHours || 1)) * 100}%` }} title="Deep Sleep"></div>
+                  <div className="bg-blue-500" style={{ width: `${(remSleepHours / (sleepHours || 1)) * 100}%` }} title="REM Sleep"></div>
+                  <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / (sleepHours || 1)) * 100}%` }} title="Light Sleep"></div>
                 </div>
                 <div className="flex justify-between text-[9px] mt-1.5 text-gray-400 font-bold">
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
-                    <span>Deep: 1.5h</span>
+                    <span>Deep: {deepSleepHours}h</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                    <span>REM: 2.0h</span>
+                    <span>REM: {remSleepHours}h</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    <span>Light: 2.4h</span>
+                    <span>Light: {lightSleepHours}h</span>
                   </div>
                 </div>
               </div>
