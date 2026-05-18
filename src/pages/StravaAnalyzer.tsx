@@ -4,9 +4,9 @@ import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, Refre
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Default credentials from user screenshot
+// Exact credentials from user's latest screenshot
 const DEFAULT_CLIENT_ID = '203804';
-const DEFAULT_CLIENT_SECRET = 'b06ce5719d9b2451006c585496bbe707c693f0ac';
+const DEFAULT_CLIENT_SECRET = '7f6fcdc003899cbb5f15a776edf1aaf10ca548a1';
 const DEFAULT_ACCESS_TOKEN = '87684dfa24b420b56af7503fa2a3c618944f16e3';
 const DEFAULT_REFRESH_TOKEN = '8465e14d7a451ce3c2c42caaa956777faab0cda9';
 
@@ -126,15 +126,67 @@ const StravaAnalyzer = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
 
-  // Load cached activities on mount
+  // Check for OAuth authorization code in URL on mount
   useEffect(() => {
-    loadCachedActivities();
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (code) {
+      handleOAuthCallback(code);
+    } else {
+      loadCachedActivities();
+    }
   }, []);
+
+  // Handle OAuth Callback exchange
+  const handleOAuthCallback = async (authCode: string) => {
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('Authorizing Strava connection...');
+
+    try {
+      const res = await fetch('https://www.strava.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code: authCode,
+          grant_type: 'authorization_code'
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Failed to exchange authorization code. Please try connecting again.');
+      }
+
+      const data = await res.json();
+      const newAccess = data.access_token;
+      const newRefresh = data.refresh_token;
+
+      setAccessToken(newAccess);
+      setRefreshToken(newRefresh);
+      localStorage.setItem('strava_access_token', newAccess);
+      localStorage.setItem('strava_refresh_token', newRefresh);
+
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setSuccessMsg('Strava authorized successfully! Fetching your runs...');
+
+      // Instantly fetch runs with new token
+      await fetchActivities(newAccess);
+
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'OAuth authorization failed.');
+      setLoading(false);
+    }
+  };
 
   const loadCachedActivities = async () => {
     setLoading(true);
     try {
-      // First check Supabase cache
       const { data, error } = await supabase
         .from('strava_activities')
         .select('*')
@@ -159,13 +211,8 @@ const StravaAnalyzer = () => {
         }));
         setActivities(formatted);
       } else {
-        // Fallback to localStorage cache if Supabase table is empty or missing
         const localSaved = localStorage.getItem('strava_cached_runs');
-        if (localSaved) {
-          setActivities(JSON.parse(localSaved));
-        } else {
-          setActivities([]); // Strictly NO MOCK RUNS!
-        }
+        if (localSaved) setActivities(JSON.parse(localSaved));
       }
     } catch (err) {
       console.error(err);
@@ -176,19 +223,27 @@ const StravaAnalyzer = () => {
     }
   };
 
-  // Fetch real activities from Strava API
-  const handleConnectStrava = async () => {
+  // Trigger OAuth Login / Connect
+  const handleConnectStrava = () => {
+    // Redirect to Strava OAuth page requesting full activity:read_all scope
+    const redirectUri = `${window.location.origin}/strava`;
+    const oauthUrl = `https://www.strava.com/oauth/mobile/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all,profile:read_all`;
+    window.location.href = oauthUrl;
+  };
+
+  // Direct fetch activities helper
+  const fetchActivities = async (tokenToUse: string) => {
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
 
     try {
-      let currentAccess = accessToken;
+      let currentAccess = tokenToUse;
       let res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
         headers: { 'Authorization': `Bearer ${currentAccess}` }
       });
 
-      // If 401 Unauthorized, automatically attempt to refresh the token!
+      // If 401 Unauthorized, automatically attempt to refresh the token
       if (res.status === 401) {
         console.log("Access token expired. Attempting automatic refresh using Refresh Token...");
         const refreshRes = await fetch('https://www.strava.com/oauth/token', {
@@ -203,7 +258,7 @@ const StravaAnalyzer = () => {
         });
 
         if (!refreshRes.ok) {
-          throw new Error('Strava Access Token expired and Refresh Token failed. Please verify your Client ID, Secret, and Refresh Token in OAuth Settings.');
+          throw new Error('Strava Access Token expired and Refresh Token failed. Please click "Login / Connect with Strava" to re-authorize.');
         }
 
         const tokenData = await refreshRes.json();
@@ -215,13 +270,15 @@ const StravaAnalyzer = () => {
           localStorage.setItem('strava_refresh_token', tokenData.refresh_token);
         }
 
-        // Re-fetch activities with the brand new access token!
         res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
           headers: { 'Authorization': `Bearer ${currentAccess}` }
         });
       }
 
       if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error('Missing activity permissions. Please click "Login / Connect with Strava" to authorize full access.');
+        }
         throw new Error(`Strava API error (${res.status}). Please verify your credentials.`);
       }
 
@@ -229,9 +286,8 @@ const StravaAnalyzer = () => {
       if (data && data.length > 0) {
         setActivities(data);
         localStorage.setItem('strava_cached_runs', JSON.stringify(data));
-        setSuccessMsg(`Successfully connected & loaded ${data.length} real runs from your Strava account!`);
+        setSuccessMsg(`Successfully loaded ${data.length} real runs from your Strava account!`);
 
-        // Attempt to cache into Supabase gracefully
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
 
@@ -262,6 +318,11 @@ const StravaAnalyzer = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Sync button handler
+  const handleSyncStrava = () => {
+    fetchActivities(accessToken);
   };
 
   // Save OAuth Settings
@@ -350,7 +411,6 @@ FORMAT EXACTLY LIKE THIS:
           setAiSummary(mockRes);
           setAiLoading(false);
 
-          // Cache summary
           const updated = activities.map(a => a.id === activity.id ? { ...a, cached_summary: mockRes } : a);
           setActivities(updated);
           localStorage.setItem('strava_cached_runs', JSON.stringify(updated));
@@ -375,7 +435,6 @@ FORMAT EXACTLY LIKE THIS:
       const text = data.choices[0].message.content;
       setAiSummary(text);
 
-      // Cache summary
       const updated = activities.map(a => a.id === activity.id ? { ...a, cached_summary: text } : a);
       setActivities(updated);
       localStorage.setItem('strava_cached_runs', JSON.stringify(updated));
@@ -416,7 +475,7 @@ FORMAT EXACTLY LIKE THIS:
         <div className="flex items-center gap-2">
           {activities.length > 0 && (
             <button
-              onClick={handleConnectStrava}
+              onClick={handleSyncStrava}
               disabled={loading}
               className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#FC5200] text-white hover:bg-[#e04700] transition-all flex items-center gap-1 shadow-md disabled:opacity-50"
             >
