@@ -293,6 +293,13 @@ const StravaAnalyzer = () => {
   // Load activities fully from Supabase database including cached streams & splits for 100% offline availability
   const loadCachedActivities = async () => {
     const localSaved = localStorage.getItem('strava_cached_runs');
+
+    // Check if we ALREADY loaded from Supabase during this active session! E.g. when switching tabs back and forth.
+    if (sessionStorage.getItem('strava_db_loaded') === 'true' && localSaved) {
+      // Do absolutely nothing! We are already fully loaded and rendered from localStorage! Zero latency, zero network calls!
+      return;
+    }
+
     if (!localSaved) {
       setLoading(true);
     }
@@ -326,6 +333,7 @@ const StravaAnalyzer = () => {
         }));
         setActivities(formatted);
         localStorage.setItem('strava_cached_runs', JSON.stringify(formatted));
+        sessionStorage.setItem('strava_db_loaded', 'true');
       } else {
         if (localSaved) setActivities(JSON.parse(localSaved));
       }
