@@ -216,7 +216,10 @@ const StravaAnalyzer = () => {
   const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('strava_refresh_token') || DEFAULT_REFRESH_TOKEN);
   const [redirectUri, setRedirectUri] = useState(() => localStorage.getItem('strava_redirect_uri') || `${window.location.origin}/strava`);
   
-  const [activities, setActivities] = useState<StravaActivity[]>([]);
+  const [activities, setActivities] = useState<StravaActivity[]>(() => {
+    const local = localStorage.getItem('strava_cached_runs');
+    return local ? JSON.parse(local) : [];
+  });
   const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -289,7 +292,10 @@ const StravaAnalyzer = () => {
 
   // Load activities fully from Supabase database including cached streams & splits for 100% offline availability
   const loadCachedActivities = async () => {
-    setLoading(true);
+    const localSaved = localStorage.getItem('strava_cached_runs');
+    if (!localSaved) {
+      setLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from('strava_activities')
@@ -319,13 +325,12 @@ const StravaAnalyzer = () => {
           detailed_fetched: !!d.cached_data?.stream_data
         }));
         setActivities(formatted);
+        localStorage.setItem('strava_cached_runs', JSON.stringify(formatted));
       } else {
-        const localSaved = localStorage.getItem('strava_cached_runs');
         if (localSaved) setActivities(JSON.parse(localSaved));
       }
     } catch (err) {
       console.error(err);
-      const localSaved = localStorage.getItem('strava_cached_runs');
       if (localSaved) setActivities(JSON.parse(localSaved));
     } finally {
       setLoading(false);
