@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft, ExternalLink, AlertTriangle, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
@@ -83,14 +83,13 @@ const FitMapBounds = ({ points }: { points: [number, number][] }) => {
   return null;
 };
 
-// High-Fidelity Google Dark Mode SVG Thumbnail Preview
-// Simulates a beautiful dark map image with street grids, contour lines, and glowing neon route
+// High-Fidelity Google Dark Mode SVG Thumbnail Preview (No obstructing text badge!)
 const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
   const points = decodePolyline(polyline || '');
   if (!points.length) {
     return (
       <div className="w-full h-full bg-[#121212] flex items-center justify-center text-gray-600 text-[10px] font-bold rounded-2xl border border-gray-800/80">
-        No GPS Route
+        No GPS
       </div>
     );
   }
@@ -122,7 +121,6 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#darkGrid)" />
-          {/* Simulated subtle map roads */}
           <line x1="0" y1="20" x2="100" y2="80" stroke="#4B5563" strokeWidth="1.5" strokeDasharray="4 2" opacity="0.4" />
           <line x1="20" y1="100" x2="80" y2="0" stroke="#4B5563" strokeWidth="1.5" strokeDasharray="4 2" opacity="0.4" />
         </svg>
@@ -138,9 +136,6 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
           points={svgPoints}
         />
       </svg>
-      <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-extrabold text-blue-400 border border-blue-500/30 z-20 shadow">
-        GPS Route
-      </div>
     </div>
   );
 };
@@ -148,6 +143,42 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
 function lng(range: number) {
   return range === 0 ? 0.01 : range;
 }
+
+// Smart Fuzzy Matcher with Typo Tolerance (Levenshtein / character distance)
+const isSmartMatch = (query: string, target: string): boolean => {
+  if (!query) return true;
+  const cleanQ = query.toLowerCase().trim();
+  const cleanT = target.toLowerCase();
+  if (cleanT.includes(cleanQ)) return true;
+
+  const qWords = cleanQ.split(/\s+/);
+  const tWords = cleanT.split(/\s+/);
+
+  for (const qw of qWords) {
+    let wordMatched = false;
+    for (const tw of tWords) {
+      if (tw.includes(qw)) {
+        wordMatched = true;
+        break;
+      }
+      // Allow 1-2 character typos for words > 3 chars (e.g. ramadn -> ramadan)
+      if (qw.length > 3 && tw.length > 3) {
+        let diff = 0;
+        const minLen = Math.min(qw.length, tw.length);
+        for (let i = 0; i < minLen; i++) {
+          if (qw[i] !== tw[i]) diff++;
+        }
+        diff += Math.abs(qw.length - tw.length);
+        if (diff <= 2) {
+          wordMatched = true;
+          break;
+        }
+      }
+    }
+    if (!wordMatched) return false;
+  }
+  return true;
+};
 
 // Custom Tooltip for Recharts matching Strava's premium mobile app floating pills
 const StravaCustomTooltip = ({ active, payload, label, unit = '', valueLabel = '' }: any) => {
@@ -193,6 +224,9 @@ const StravaAnalyzer = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   // AI Summary state
   const [aiSummary, setAiSummary] = useState('');
@@ -562,12 +596,11 @@ const StravaAnalyzer = () => {
       ? activity.splits_metric.map(s => ({ km: s.split, pace: formatPace(s.average_speed), elev: s.elevation_difference }))
       : [];
 
-    // Calculate max elevation spike and pace surge from stream data
     let maxElev = activity.total_elevation_gain || 50;
     let fastestPace = avgPaceStr;
     if (activity.stream_data && activity.stream_data.length > 0) {
       const elevs = activity.stream_data.map(s => s.altitude);
-      const paces = activity.stream_data.map(s => s.pace).filter(p => p > 2.0); // filter out unrealistic 0s
+      const paces = activity.stream_data.map(s => s.pace).filter(p => p > 2.0);
       if (elevs.length) maxElev = Math.max(...elevs);
       if (paces.length) {
         const minPaceFloat = Math.min(...paces);
@@ -659,6 +692,9 @@ FORMAT EXACTLY LIKE THIS:
   };
 
   const hasHR = selectedActivity ? (selectedActivity.has_heartrate || (selectedActivity.average_heartrate !== undefined && selectedActivity.average_heartrate > 0)) : false;
+
+  // Filter activities using smart fuzzy matching
+  const filteredActivities = activities.filter(act => isSmartMatch(searchQuery, act.name));
 
   return (
     <div className="flex flex-col h-full bg-background relative" style={{ minHeight: '100dvh' }}>
@@ -887,45 +923,73 @@ FORMAT EXACTLY LIKE THIS:
 
         {activities.length > 0 && (
           <div className="flex flex-col gap-3 flex-shrink-0">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center justify-between">
-              <span>Recent Activities ({activities.length})</span>
+            {/* Smart Fuzzy Search Bar */}
+            <div className="bg-surface border border-gray-800 rounded-2xl p-2.5 flex items-center gap-2.5 shadow-sm">
+              <Search size={16} className="text-gray-400 ml-1 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Smart Search runs (e.g. 'ramadan', '5k', typo-tolerant)..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="bg-transparent border-none text-xs text-white placeholder-gray-500 focus:outline-none flex-1 font-medium"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="w-5 h-5 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center justify-between mt-1">
+              <span>Filtered Runs ({filteredActivities.length})</span>
               <span className="text-[10px] font-normal text-gray-500">Click to analyze</span>
             </h3>
 
-            {activities.map(act => (
-              <motion.div
-                key={act.id}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => handleSelectActivity(act)}
-                className="bg-surface border border-gray-800 hover:border-gray-700 rounded-3xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all shadow-md flex-shrink-0"
-              >
-                <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                  <div className="w-14 h-14 rounded-2xl bg-[#121212] border border-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden relative p-1 shadow-inner">
-                    <SvgPolylineMap polyline={act.map?.summary_polyline} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-white truncate">{act.name}</h4>
-                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 font-medium">
-                      <span className="text-primary font-extrabold">{(act.distance / 1000).toFixed(2)} km</span>
-                      <span>•</span>
-                      <span>{formatDuration(act.moving_time)}</span>
-                      <span>•</span>
-                      <span>{formatPace(act.average_speed)}/km</span>
+            {filteredActivities.length === 0 ? (
+              <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-gray-500">
+                <Search size={28} className="text-gray-600 animate-pulse" />
+                <p className="text-xs font-semibold">No runs matched "{searchQuery}"</p>
+                <p className="text-[10px]">Try searching a different name or keyword.</p>
+              </div>
+            ) : (
+              filteredActivities.map(act => (
+                <motion.div
+                  key={act.id}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => handleSelectActivity(act)}
+                  className="bg-surface border border-gray-800 hover:border-gray-700 rounded-3xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all shadow-md flex-shrink-0"
+                >
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                    <div className="w-14 h-14 rounded-2xl bg-[#121212] border border-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden relative p-1 shadow-inner">
+                      <SvgPolylineMap polyline={act.map?.summary_polyline} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-white truncate">{act.name}</h4>
+                      <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 font-medium">
+                        <span className="text-primary font-extrabold">{(act.distance / 1000).toFixed(2)} km</span>
+                        <span>•</span>
+                        <span>{formatDuration(act.moving_time)}</span>
+                        <span>•</span>
+                        <span>{formatPace(act.average_speed)}/km</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {act.cached_summary && (
-                    <Sparkles size={14} className="text-amber-500 animate-pulse" />
-                  )}
-                  <div className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-gray-400 hover:text-white border border-gray-800">
-                    →
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {act.cached_summary && (
+                      <Sparkles size={14} className="text-amber-500 animate-pulse" />
+                    )}
+                    <div className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-gray-400 hover:text-white border border-gray-800">
+                      →
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -1001,19 +1065,17 @@ FORMAT EXACTLY LIKE THIS:
                     </div>
                   )}
 
-                  {/* Interactive Leaflet Map with Google Maps Dark Mode Tiles (CartoDB Dark Matter) */}
+                  {/* Interactive Leaflet Map with zoomControl={false} and attributionControl={false} */}
                   <div className="w-full h-64 rounded-2xl overflow-hidden bg-[#121212] border border-gray-800 relative shadow-inner flex-shrink-0">
                     <MapContainer
                       style={{ height: '100%', width: '100%' }}
                       zoom={13}
                       scrollWheelZoom={true}
+                      zoomControl={false}
+                      attributionControl={false}
                       className="z-10"
                     >
-                      {/* CartoDB Dark Matter Base Map matching Google Maps Dark Mode */}
-                      <TileLayer
-                        attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                      />
+                      <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
                       {selectedActivity.map?.summary_polyline && (
                         <>
                           <LeafletPolyline
@@ -1024,9 +1086,6 @@ FORMAT EXACTLY LIKE THIS:
                         </>
                       )}
                     </MapContainer>
-                    <div className="absolute bottom-2 right-2 bg-black/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-extrabold text-blue-400 border border-blue-500/30 z-20 shadow">
-                      Google Dark Mode Map
-                    </div>
                   </div>
 
                   {/* Stats Grid */}
