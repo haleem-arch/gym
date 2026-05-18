@@ -329,6 +329,13 @@ const WorkoutHome = () => {
   const hasCompletedRunToday = pastWorkouts.some(w => w.date === getLocalDateString() && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
   const hasCompletedGymToday = pastWorkouts.some(w => w.date === getLocalDateString() && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
 
+  useEffect(() => {
+    const completedGym = pastWorkouts.find(w => w.date === getLocalDateString() && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+    if (completedGym) {
+      setHybridLiftingType(completedGym.day_type);
+    }
+  }, [pastWorkouts, selectedDateStr]);
+
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full max-w-lg mx-auto w-full overflow-x-hidden">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
@@ -385,10 +392,11 @@ const WorkoutHome = () => {
               {['PUSH', 'PULL', 'LEGS'].map(t => (
                 <button
                   key={t}
+                  disabled={hasCompletedGymToday}
                   onClick={() => setHybridLiftingType(t)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'} ${hasCompletedGymToday ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
                 >
-                  {t}
+                  {t} {hasCompletedGymToday && hybridLiftingType === t ? '✓' : ''}
                 </button>
               ))}
             </div>

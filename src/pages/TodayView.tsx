@@ -65,6 +65,11 @@ const TodayView = () => {
       if (completedWorkouts) {
         setCompletedWorkoutsList(completedWorkouts);
 
+        const completedGym = completedWorkouts.find((w: any) => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+        if (completedGym) {
+          setHybridLiftingType(completedGym.day_type);
+        }
+
         if (dayType === 'RUN + GYM') {
           const hasRun = completedWorkouts.some((w: any) => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
           const hasGym = completedWorkouts.some((w: any) => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
@@ -237,10 +242,11 @@ const TodayView = () => {
             {['PUSH', 'PULL', 'LEGS'].map(t => (
               <button
                 key={t}
+                disabled={hasCompletedGym}
                 onClick={() => setHybridLiftingType(t)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${hybridLiftingType === t ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-extrabold transition-all ${hybridLiftingType === t ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-white'} ${hasCompletedGym ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
               >
-                {t}
+                {t} {hasCompletedGym && hybridLiftingType === t ? '✓' : ''}
               </button>
             ))}
           </div>
