@@ -118,49 +118,38 @@ export const BioStatusRing = ({
       </div>
 
       {/* Redesigned Legend: Stacked Stat Rows */}
-      <div className="flex-1 flex flex-col gap-2 justify-center">
-        {/* Row 1: Nutrition */}
-        <div className="flex items-start gap-2.5">
-          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Nutrition</span>
-            <span className="text-xs font-black" style={{ color: colorNutrition }}>
-              {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Fueling' : 'Fuel Up'}
-            </span>
-          </div>
+      {/* Redesigned Legend: 2x2 Grid for a cleaner look */}
+      <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2 justify-center items-center">
+        {/* Nutrition */}
+        <div className="flex flex-col leading-none">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Nutrition</span>
+          <span className="text-xs font-black" style={{ color: colorNutrition }}>
+            {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Fueling' : 'Fuel Up'}
+          </span>
         </div>
 
-        {/* Row 2: Hydration */}
-        <div className="flex items-start gap-2.5">
-          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorHydration }} />
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Hydration</span>
-            <span className="text-xs font-black" style={{ color: colorHydration }}>
-              {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Hydrating' : 'Hydrate'}
-            </span>
-          </div>
+        {/* Hydration */}
+        <div className="flex flex-col leading-none">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Hydration</span>
+          <span className="text-xs font-black" style={{ color: colorHydration }}>
+            {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Hydrating' : 'Hydrate'}
+          </span>
         </div>
 
-        {/* Row 3: Training */}
-        <div className="flex items-start gap-2.5">
-          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorTraining }} />
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Training</span>
-            <span className="text-xs font-black" style={{ color: colorTraining }}>
-              {isRestDay ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
-            </span>
-          </div>
+        {/* Training */}
+        <div className="flex flex-col leading-none">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Training</span>
+          <span className="text-xs font-black" style={{ color: colorTraining }}>
+            {isRestDay ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
+          </span>
         </div>
 
-        {/* Row 4: Sleep */}
-        <div className="flex items-start gap-2.5">
-          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: colorSleep }} />
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Sleep</span>
-            <span className="text-xs font-black" style={{ color: colorSleep }}>
-              {sleepPct >= 0.95 ? 'Fully Rested' : sleepPct >= 0.75 ? 'Rested' : sleepPct > 0 ? 'Charging' : 'Needs Sleep'}
-            </span>
-          </div>
+        {/* Sleep */}
+        <div className="flex flex-col leading-none">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Sleep</span>
+          <span className="text-xs font-black" style={{ color: colorSleep }}>
+            {sleepPct >= 0.95 ? 'Fully Rested' : sleepPct >= 0.75 ? 'Rested' : sleepPct > 0 ? 'Charging' : 'Needs Sleep'}
+          </span>
         </div>
       </div>
     </motion.div>
