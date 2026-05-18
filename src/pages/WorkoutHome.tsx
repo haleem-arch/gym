@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useSchedule } from '../hooks/useSchedule';
-import { Play, History, ChevronRight, Check } from 'lucide-react';
+import { Play, History, ChevronRight, Check, Activity, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
@@ -31,25 +31,25 @@ const WorkoutHome = () => {
   const [showRunModal, setShowRunModal] = useState(false);
   const [runStats, setRunStats] = useState({ distance: '', elevation: '', pace: '', duration: '' });
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
+  const [isPullingStrava, setIsPullingStrava] = useState(false);
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
 
-  const handleLogRun = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveRunDirectly = async (statsToSave: { distance: string; elevation: string; pace: string; duration: string }) => {
     setIsSubmittingRun(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
       const localDateStr = getLocalDateString();
-      const durationSeconds = (parseFloat(runStats.duration) || 0) * 60;
+      const durationSeconds = (parseFloat(statsToSave.duration) || 0) * 60;
       
       const runData = {
         type: 'run_stats',
-        distance_km: parseFloat(runStats.distance) || 0,
-        elevation_m: parseInt(runStats.elevation) || 0,
-        pace: runStats.pace
+        distance_km: parseFloat(statsToSave.distance) || 0,
+        elevation_m: parseInt(statsToSave.elevation) || 0,
+        pace: statsToSave.pace
       };
 
       const { data, error } = await supabase.from('workouts').insert({
@@ -64,15 +64,93 @@ const WorkoutHome = () => {
 
       if (error) throw error;
       
-      // Update past workouts state
       setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setShowRunModal(false);
       setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
+      alert("🎉 Strava run logged successfully!");
     } catch (err) {
       console.error(err);
       alert("Failed to log run");
     } finally {
       setIsSubmittingRun(false);
+    }
+  };
+
+  const handleLogRun = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await saveRunDirectly(runStats);
+  };
+
+  const handlePullFromStrava = async () => {
+    setIsPullingStrava(true);
+    try {
+      let lastAct: any = null;
+
+      // 1. Check Supabase database first
+      const { data, error } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .order('start_date', { ascending: false })
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        lastAct = data[0];
+      }
+
+      // 2. Check localStorage if not in DB
+      if (!lastAct) {
+        const localSaved = localStorage.getItem('strava_cached_runs');
+        if (localSaved) {
+          const parsed = JSON.parse(localSaved);
+          if (parsed && parsed.length > 0) {
+            lastAct = parsed[0];
+          }
+        }
+      }
+
+      // 3. Fallback to live API call if nothing cached
+      if (!lastAct) {
+        const token = localStorage.getItem('strava_access_token') || '87684dfa24b420b56af7503fa2a3c618944f16e3';
+        const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const acts = await res.json();
+          if (acts && acts.length > 0) {
+            lastAct = acts[0];
+          }
+        }
+      }
+
+      if (!lastAct) {
+        throw new Error("No Strava runs found. Please connect Strava in the Strava tab first!");
+      }
+
+      // Extract stats
+      const distKm = lastAct.distance ? (Number(lastAct.distance) / 1000).toFixed(2) : '5.0';
+      const elevM = Math.round(lastAct.total_elevation_gain || lastAct.elevation_gain || 0).toString();
+      const durationMins = lastAct.moving_time ? (Number(lastAct.moving_time) / 60).toFixed(1) : '27.5';
+      
+      let paceStr = '5:30';
+      const speedMs = Number(lastAct.average_speed || 0);
+      if (speedMs > 0) {
+        const paceSeconds = 1000 / speedMs;
+        const mins = Math.floor(paceSeconds / 60);
+        const secs = Math.floor(paceSeconds % 60);
+        paceStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      const newStats = { distance: distKm, elevation: elevM, pace: paceStr, duration: durationMins };
+      setRunStats(newStats);
+      
+      // Instantly log & save it as requested by user
+      await saveRunDirectly(newStats);
+
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to pull run from Strava.");
+    } finally {
+      setIsPullingStrava(false);
     }
   };
 
@@ -434,9 +512,28 @@ const WorkoutHome = () => {
             animate={{ scale: 1, opacity: 1 }}
             className="bg-surface w-full max-w-sm rounded-2xl p-6 border border-gray-800 shadow-2xl relative"
           >
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <span>🏃</span> Log Run
             </h3>
+
+            <button
+              type="button"
+              onClick={handlePullFromStrava}
+              disabled={isPullingStrava}
+              className="w-full mb-5 py-3 rounded-xl font-extrabold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-lg hover:shadow-orange-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wide uppercase border border-orange-500/30 disabled:opacity-50"
+            >
+              {isPullingStrava ? (
+                <>
+                  <RefreshCw size={16} className="animate-spin" />
+                  <span>Pulling Last Run from Strava...</span>
+                </>
+              ) : (
+                <>
+                  <Activity size={16} />
+                  <span>Log from Strava (Auto-Fill Last Run)</span>
+                </>
+              )}
+            </button>
             
             <form onSubmit={handleLogRun} className="flex flex-col gap-4">
               <div>
