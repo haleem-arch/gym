@@ -50,19 +50,9 @@ export const BioStatusRing = ({
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ 
-        opacity: 1, 
-        scale: [1, 1.008, 1] 
-      }}
-      transition={{
-        scale: {
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut"
-        },
-        opacity: { duration: 0.25 }
-      }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       style={{ backgroundColor: '#0D1117' }}
       className="rounded-[20px] p-4 border border-gray-800 shadow-2xl flex items-center justify-between gap-6 w-full"
     >
