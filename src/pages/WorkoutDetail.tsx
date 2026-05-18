@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Clock, CalendarDays, Zap, TrendingUp, Heart, Award, Sparkles, Activity } from 'lucide-react';
+import { ArrowLeft, Clock, CalendarDays, Zap, TrendingUp, Heart, Award, Sparkles, Activity, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
@@ -109,12 +109,12 @@ const WorkoutDetail = () => {
 
           let match: any = null;
           if (sData && sData.length > 0) {
-            match = sData.find((a: any) => a.start_date.startsWith(wData.date)) || sData[0];
+            match = sData.find(a => wData.notes && wData.notes.includes(a.name)) || sData[0];
           } else {
-            const localSaved = localStorage.getItem('strava_cached_runs');
-            if (localSaved) {
-              const parsed = JSON.parse(localSaved);
-              if (parsed && parsed.length > 0) match = parsed[0];
+            const local = localStorage.getItem('strava_cached_runs');
+            if (local) {
+              const parsed = JSON.parse(local);
+              match = parsed.find((a:any) => wData.notes && wData.notes.includes(a.name)) || parsed[0];
             }
           }
           if (match) setStravaActivity(match);
@@ -143,6 +143,14 @@ const WorkoutDetail = () => {
     const d = new Date(dateString);
     const localDate = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
     return localDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatPace = (speedMs: number) => {
+    if (!speedMs) return '0:00';
+    const paceSeconds = 1000 / speedMs;
+    const mins = Math.floor(paceSeconds / 60);
+    const secs = Math.floor(paceSeconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const formatDuration = (seconds: number) => {
@@ -189,6 +197,33 @@ const WorkoutDetail = () => {
   const aiSummary = stravaActivity?.cached_data?.ai_summary || stravaActivity?.cached_summary;
   const hasHR = stravaActivity?.cached_data?.has_heartrate ?? stravaActivity?.has_heartrate ?? (Number(stravaActivity?.average_heartrate) > 0);
 
+  const getSmoothedStreamData = (rawStreams: any[]) => {
+    if (!rawStreams || !rawStreams.length) return [];
+    const len = rawStreams.length;
+    const windowSize = 5; 
+    
+    return rawStreams.map((point, idx) => {
+      let sumPace = 0;
+      let count = 0;
+      for (let w = Math.max(0, idx - windowSize); w <= Math.min(len - 1, idx + windowSize); w++) {
+        const p = rawStreams[w].pace;
+        if (p > 0 && p < 12.0) {
+          sumPace += p;
+          count++;
+        }
+      }
+      const smoothPace = count > 0 ? sumPace / count : point.pace;
+      const cleanPace = smoothPace > 9.0 ? 9.0 : smoothPace < 2.5 ? 2.5 : smoothPace;
+      
+      return {
+        ...point,
+        pace: Number(cleanPace.toFixed(2))
+      };
+    });
+  };
+
+  const smoothedStreamData = getSmoothedStreamData(streamData || []);
+
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background relative pb-28 overflow-x-hidden">
       {/* Header */}
@@ -218,55 +253,51 @@ const WorkoutDetail = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">
-                {isRun ? 'Distance' : 'Volume'}
-              </p>
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-4xl font-black tracking-tight ${isRun ? 'text-blue-400' : 'text-white'}`}>
-                  {isRun ? runStats?.distance_km || 0 : workout.total_volume}
-                </span>
-                <span className="text-sm font-bold text-gray-500">
-                  {isRun ? 'km' : 'kg'}
-                </span>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-gray-500 uppercase font-extrabold tracking-wider">Duration</span>
+              <div className="flex items-center gap-2 text-white font-black text-xl">
+                <Clock size={18} className="text-primary" />
+                <span>{formatDuration(workout.duration)}</span>
               </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Duration</p>
-              <div className="flex items-center gap-1.5 text-2xl font-black text-white tracking-tight mt-1">
-                <Clock size={20} className="text-gray-400" />
-                {formatDuration(workout.duration)}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-gray-500 uppercase font-extrabold tracking-wider">Volume / Sets</span>
+              <div className="flex items-center gap-2 text-white font-black text-xl">
+                <Zap size={18} className="text-yellow-500" />
+                <span>{totalSets} Sets</span>
               </div>
             </div>
           </div>
-
-          {isRun && runStats && (
-            <div className="grid grid-cols-2 gap-6 mt-6 pt-6 border-t border-gray-800/80">
-              <div>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Avg Pace</p>
-                <div className="text-2xl font-black text-white">{runStats.pace}<span className="text-xs text-gray-500 font-bold ml-1">/km</span></div>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Elevation</p>
-                <div className="text-2xl font-black text-white">{runStats.elevation_m}<span className="text-xs text-gray-500 font-bold ml-1">m</span></div>
-              </div>
-            </div>
-          )}
-          
-          {!isRun && workout.notes && (
-            <div className="mt-6 pt-6 border-t border-gray-800/80">
-              <p className="text-sm text-gray-300 italic">"{workout.notes}"</p>
-            </div>
-          )}
         </motion.div>
 
-        {/* If it's a Strava Run, render Full Telemetry Streams, Map & AI Summary! */}
-        {isRun ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="flex flex-col gap-6 flex-shrink-0">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-1.5">
-              <Activity size={14} className="text-blue-400" />
-              <span>Strava GPS & Telemetry Details</span>
-            </h3>
+        {/* Run Telemetry Cards (If Run Day or Strava stats exist) */}
+        {(isRun || runStats || stravaActivity) ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col gap-6">
+            
+            {/* Quick Stats Banner */}
+            <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+              <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg">
+                <MapPin size={16} className="text-primary mb-1" />
+                <span className="text-base font-extrabold text-white">
+                  {stravaActivity ? (stravaActivity.distance / 1000).toFixed(2) : runStats?.distance || '0.00'}
+                </span>
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Distance (km)</span>
+              </div>
+              <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg">
+                <Zap size={16} className="text-yellow-500 mb-1" />
+                <span className="text-base font-extrabold text-white">
+                  {stravaActivity ? formatPace(stravaActivity.average_speed) : runStats?.pace || '0:00'}
+                </span>
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Pace (/km)</span>
+              </div>
+              <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg">
+                <TrendingUp size={16} className="text-green-500 mb-1" />
+                <span className="text-base font-extrabold text-white">
+                  {stravaActivity ? stravaActivity.total_elevation_gain : runStats?.elevation || '0'}m
+                </span>
+                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Elevation</span>
+              </div>
+            </div>
 
             {/* Interactive Leaflet Map */}
             {polyline && (
@@ -318,7 +349,7 @@ const WorkoutDetail = () => {
             )}
 
             {/* Pace Stream Area Chart */}
-            {streamData && streamData.length > 0 && (
+            {smoothedStreamData && smoothedStreamData.length > 0 && (
               <div className="bg-surface border border-gray-800 rounded-3xl p-5 flex flex-col gap-2 shadow-xl flex-shrink-0">
                 <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
                   <Zap size={14} className="text-blue-500" />
@@ -326,7 +357,7 @@ const WorkoutDetail = () => {
                 </h4>
                 <div className="w-full h-44">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={streamData}>
+                    <AreaChart data={smoothedStreamData}>
                       <defs>
                         <linearGradient id="paceDetailGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.6} />

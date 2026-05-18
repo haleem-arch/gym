@@ -1335,35 +1335,60 @@ FORMAT EXACTLY LIKE THIS:
                   </div>
 
                   {/* Strava Premium Style Pace Area Chart - REVERSED Y-AXIS SO FASTER IS HIGHER */}
-                  {selectedActivity.stream_data && selectedActivity.stream_data.length > 0 && (
-                    <div className="bg-background/90 border border-gray-800 rounded-2xl p-4 flex flex-col gap-2 flex-shrink-0 shadow-lg">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <Zap size={14} className="text-blue-500" />
-                          <span>Pace Stream (/KM)</span>
-                        </h3>
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                          {selectedActivity.stream_source === 'real_streams' ? 'Strava Telemetry' : 'Interpolated Splits'}
-                        </span>
+                  {(() => {
+                    const getSmoothedStreamData = (rawStreams: any[]) => {
+                      if (!rawStreams || !rawStreams.length) return [];
+                      const len = rawStreams.length;
+                      const windowSize = 5; // +/- 5 points smoothing window
+                      
+                      return rawStreams.map((point, idx) => {
+                        let sumPace = 0;
+                        let count = 0;
+                        for (let w = Math.max(0, idx - windowSize); w <= Math.min(len - 1, idx + windowSize); w++) {
+                          const p = rawStreams[w].pace;
+                          if (p > 0 && p < 12.0) {
+                            sumPace += p;
+                            count++;
+                          }
+                        }
+                        const smoothPace = count > 0 ? sumPace / count : point.pace;
+                        const cleanPace = smoothPace > 9.0 ? 9.0 : smoothPace < 2.5 ? 2.5 : smoothPace;
+                        
+                        return { ...point, pace: Number(cleanPace.toFixed(2)) };
+                      });
+                    };
+                    const smoothedModalStreamData = getSmoothedStreamData(selectedActivity.stream_data || []);
+
+                    return smoothedModalStreamData && smoothedModalStreamData.length > 0 && (
+                      <div className="bg-background/90 border border-gray-800 rounded-2xl p-4 flex flex-col gap-2 flex-shrink-0 shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <Zap size={14} className="text-blue-500" />
+                            <span>Pace Stream (/KM)</span>
+                          </h3>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                            {selectedActivity.stream_source === 'real_streams' ? 'Strava Telemetry' : 'Interpolated Splits'}
+                          </span>
+                        </div>
+                        <div className="w-full h-40 mt-2">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={smoothedModalStreamData}>
+                              <defs>
+                                <linearGradient id="paceStravaGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.6} />
+                                  <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
+                                </linearGradient>
+                              </defs>
+                              <XAxis dataKey="distance" stroke="#4B5563" fontSize={10} tickLine={false} tickFormatter={val => `${val}km`} />
+                              <YAxis reversed={true} stroke="#4B5563" fontSize={10} tickLine={false} width={38} domain={['auto', 'auto']} tickFormatter={val => `${Math.floor(val)}:${Math.floor((val - Math.floor(val)) * 60).toString().padStart(2, '0')}`} />
+                              <Tooltip content={<StravaPaceTooltip />} cursor={{ stroke: '#38bdf8', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
+                              <Area type="monotone" dataKey="pace" stroke="#38bdf8" strokeWidth={3} fillOpacity={1} fill="url(#paceStravaGrad)" activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2, fill: '#38bdf8' }} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
-                      <div className="w-full h-40 mt-2">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={selectedActivity.stream_data}>
-                            <defs>
-                              <linearGradient id="paceStravaGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.6} />
-                                <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
-                              </linearGradient>
-                            </defs>
-                            <XAxis dataKey="distance" stroke="#4B5563" fontSize={10} tickLine={false} tickFormatter={val => `${val}km`} />
-                            <YAxis reversed={true} stroke="#4B5563" fontSize={10} tickLine={false} width={38} domain={['auto', 'auto']} tickFormatter={val => `${Math.floor(val)}:${Math.floor((val - Math.floor(val)) * 60).toString().padStart(2, '0')}`} />
-                            <Tooltip content={<StravaPaceTooltip />} cursor={{ stroke: '#38bdf8', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
-                            <Area type="monotone" dataKey="pace" stroke="#38bdf8" strokeWidth={3} fillOpacity={1} fill="url(#paceStravaGrad)" activeDot={{ r: 6, stroke: '#FFFFFF', strokeWidth: 2, fill: '#38bdf8' }} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Strava Premium Style Elevation Area Chart */}
                   {selectedActivity.stream_data && selectedActivity.stream_data.length > 0 && (
