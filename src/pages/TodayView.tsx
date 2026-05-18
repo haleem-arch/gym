@@ -498,13 +498,26 @@ const TodayView = () => {
                 <span className="text-[10px] font-bold text-primary bg-blue-950/50 px-1.5 py-0.5 rounded-full">Today</span>
               </div>
               
-              <div className="flex items-center gap-2 mt-auto">
-                <div className="p-1 bg-blue-950/30 rounded-lg border border-blue-900/50">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><path d="M12 10V4"/><circle cx="12" cy="4" r="1"/></svg>
+              <div className="flex justify-center items-center my-auto py-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-950/40 rounded-xl border border-blue-900/50 text-sky-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><path d="M12 10V4"/><circle cx="12" cy="4" r="1"/></svg>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-white tracking-tight">{(todaySteps || 0).toLocaleString()}</span>
+                    <span className="text-xs text-gray-500 font-bold">Steps</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xl font-black text-white">{todaySteps || 0}</span>
-                  <span className="text-[10px] text-gray-500 font-bold ml-1">Steps</span>
+              </div>
+
+              {/* Daily Goal Progress */}
+              <div className="mt-2 border-t border-gray-800 pt-2">
+                <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
+                  <div className="bg-sky-500 rounded-full" style={{ width: `${Math.min(100, ((todaySteps || 0) / 10000) * 100)}%` }}></div>
+                </div>
+                <div className="flex justify-between items-center text-[9px] mt-1.5 text-gray-400 font-bold">
+                  <span>Goal: 10,000</span>
+                  <span className="text-sky-400">{Math.round(((todaySteps || 0) / 10000) * 100)}%</span>
                 </div>
               </div>
             </motion.div>
