@@ -155,7 +155,7 @@ export const BioStatusRing = ({
           <div className="flex flex-col leading-none">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nutrition</span>
             <span className="text-sm font-black" style={{ color: colorNutrition }}>
-              {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : 'Behind'}
+              {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Fueling' : 'Fuel Up'}
             </span>
           </div>
         </div>
@@ -166,7 +166,7 @@ export const BioStatusRing = ({
           <div className="flex flex-col leading-none">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Hydration</span>
             <span className="text-sm font-black" style={{ color: colorHydration }}>
-              {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : 'Behind'}
+              {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Hydrating' : 'Hydrate Now'}
             </span>
           </div>
         </div>
@@ -183,7 +183,7 @@ export const BioStatusRing = ({
                   ? 'Completed' 
                   : workoutStatus === 0.5 
                     ? 'Active' 
-                    : 'Behind'}
+                    : 'Mission Pending'}
             </span>
           </div>
         </div>
