@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft } from 'lucide-react';
+import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -513,12 +513,21 @@ FORMAT EXACTLY LIKE THIS:
               <button onClick={() => setShowSettings(false)} className="text-xs text-gray-400 hover:text-white">✕</button>
             </div>
 
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex flex-col gap-1.5 text-blue-300 text-xs font-medium">
-              <div className="flex items-center gap-1.5 font-bold text-blue-200">
-                <HelpCircle size={14} className="flex-shrink-0" />
-                <span>Fixing "redirect_uri invalid" Error:</span>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex flex-col gap-2 text-blue-300 text-xs font-medium">
+              <div className="flex items-center justify-between font-bold text-blue-200 border-b border-blue-500/20 pb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <HelpCircle size={14} className="flex-shrink-0" />
+                  <span>OAuth Authorization Setup:</span>
+                </div>
+                <button
+                  onClick={handleConnectStrava}
+                  className="px-2.5 py-1 bg-primary hover:bg-blue-600 text-white rounded-lg text-[10px] font-extrabold flex items-center gap-1 shadow transition-colors uppercase tracking-wider"
+                >
+                  <ExternalLink size={12} />
+                  <span>Authorize OAuth</span>
+                </button>
               </div>
-              <p className="text-[11px] leading-relaxed">
+              <p className="text-[11px] leading-relaxed mt-0.5">
                 Strava requires the <strong className="text-white">Redirect URI</strong> below to match the <strong className="text-white">"Authorization Callback Domain"</strong> in your Strava App Settings (<a href="https://www.strava.com/settings/api" target="_blank" rel="noreferrer" className="underline hover:text-white">strava.com/settings/api</a>).
               </p>
               <p className="text-[11px] leading-relaxed mt-0.5">
@@ -603,17 +612,28 @@ FORMAT EXACTLY LIKE THIS:
         )}
       </AnimatePresence>
 
-      {/* Status Messages */}
+      {/* Status Messages with prominent Reconnect/Authorize button */}
       {errorMsg && (
-        <div className="mx-5 mt-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex items-center gap-3 text-red-400 text-xs font-semibold flex-shrink-0">
-          <AlertCircle size={16} className="flex-shrink-0" />
-          <span className="flex-1">{errorMsg}</span>
-          <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-white">✕</button>
+        <div className="mx-5 mt-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex flex-col gap-2.5 text-red-400 text-xs font-semibold flex-shrink-0 shadow-md">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={16} className="flex-shrink-0" />
+            <span className="flex-1">{errorMsg}</span>
+            <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-white">✕</button>
+          </div>
+          {errorMsg.includes('permissions') || errorMsg.includes('expired') || errorMsg.includes('authorize') || errorMsg.includes('verify') ? (
+            <button
+              onClick={handleConnectStrava}
+              className="w-full py-2.5 rounded-xl font-extrabold bg-red-500 hover:bg-red-600 text-white text-xs transition-colors flex items-center justify-center gap-2 shadow-lg tracking-wide uppercase"
+            >
+              <Activity size={16} />
+              <span>Click Here to Authorize Strava (Full Access)</span>
+            </button>
+          ) : null}
         </div>
       )}
 
       {successMsg && (
-        <div className="mx-5 mt-4 bg-green-500/10 border border-green-500/30 rounded-2xl p-3 flex items-center gap-3 text-green-400 text-xs font-semibold flex-shrink-0">
+        <div className="mx-5 mt-4 bg-green-500/10 border border-green-500/30 rounded-2xl p-3 flex items-center gap-3 text-green-400 text-xs font-semibold flex-shrink-0 shadow-md">
           <CheckCircle2 size={16} className="flex-shrink-0" />
           <span className="flex-1">{successMsg}</span>
           <button onClick={() => setSuccessMsg('')} className="text-green-400 hover:text-white">✕</button>
@@ -710,7 +730,7 @@ FORMAT EXACTLY LIKE THIS:
         )}
       </div>
 
-      {/* Full Activity Detail Modal Overlay (Completely immune to flexbox squishing) */}
+      {/* Full Activity Detail Modal Overlay */}
       <AnimatePresence>
         {selectedActivity && (
           <motion.div
