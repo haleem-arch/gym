@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Activity, MapPin, TrendingUp, Zap, Clock, Heart, Award, Sparkles, RefreshCw, AlertCircle, CheckCircle2, HelpCircle, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -61,7 +61,7 @@ const decodePolyline = (encoded: string) => {
   return poly;
 };
 
-// Fallback SVG polyline map renderer
+// Fallback SVG polyline map renderer using site primary color (#3b82f6)
 const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
   const points = decodePolyline(polyline || '');
   if (!points.length) {
@@ -84,17 +84,17 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
 
   // Scale points to 100x100 SVG viewbox
   const svgPoints = points.map(p => {
-    const x = ((p[1] - minLng) / lngRange) * 80 + 10;
+    const x = ((p[1] - minLng) / lng(lngRange)) * 80 + 10;
     const y = ((maxLat - p[0]) / latRange) * 80 + 10; // Invert Y for SVG
     return `${x},${y}`;
   }).join(' ');
 
   return (
     <div className="w-full h-full bg-surface/40 flex items-center justify-center relative overflow-hidden p-2 rounded-2xl border border-gray-800/80">
-      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(252,82,0,0.6)]">
+      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]">
         <polyline
           fill="none"
-          stroke="#FC5200"
+          stroke="#3b82f6"
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -107,6 +107,11 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
     </div>
   );
 };
+
+// Helper for lng range division
+function lng(range: number) {
+  return range === 0 ? 0.01 : range;
+}
 
 const StravaAnalyzer = () => {
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem('strava_access_token') || DEFAULT_ACCESS_TOKEN);
@@ -173,9 +178,9 @@ const StravaAnalyzer = () => {
 
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      setSuccessMsg('Strava authorized successfully! Fetching your runs...');
+      setSuccessMsg('Strava authorized successfully! Fetching all your runs...');
 
-      // Instantly fetch runs with new token
+      // Instantly fetch runs with new token (per_page=200)
       await fetchActivities(newAccess);
 
     } catch (err: any) {
@@ -230,7 +235,7 @@ const StravaAnalyzer = () => {
     window.location.href = oauthUrl;
   };
 
-  // Direct fetch activities helper
+  // Direct fetch activities helper (per_page=200 for 100+ runs)
   const fetchActivities = async (tokenToUse: string) => {
     setLoading(true);
     setErrorMsg('');
@@ -238,7 +243,7 @@ const StravaAnalyzer = () => {
 
     try {
       let currentAccess = tokenToUse;
-      let res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
+      let res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=200', {
         headers: { 'Authorization': `Bearer ${currentAccess}` }
       });
 
@@ -269,7 +274,7 @@ const StravaAnalyzer = () => {
           localStorage.setItem('strava_refresh_token', tokenData.refresh_token);
         }
 
-        res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
+        res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=200', {
           headers: { 'Authorization': `Bearer ${currentAccess}` }
         });
       }
@@ -455,16 +460,16 @@ FORMAT EXACTLY LIKE THIS:
 
   return (
     <div className="flex flex-col h-full bg-background relative" style={{ minHeight: '100dvh' }}>
-      {/* Header */}
+      {/* Header matching site primary color */}
       <div className="bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-lg flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#FC5200]/20 flex items-center justify-center border border-[#FC5200]/40">
-            <Activity size={16} className="text-[#FC5200]" />
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
+            <Activity size={16} className="text-primary" />
           </div>
           <div>
             <h1 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
               Strava Analyzer
-              <span className="bg-[#FC5200] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase">Pro</span>
+              <span className="bg-primary text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase">Pro</span>
             </h1>
             <p className="text-[10px] text-gray-400 uppercase tracking-widest">
               GPS Telemetry · {activities.length} Run{activities.length !== 1 && 's'}
@@ -477,7 +482,7 @@ FORMAT EXACTLY LIKE THIS:
             <button
               onClick={handleSyncStrava}
               disabled={loading}
-              className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#FC5200] text-white hover:bg-[#e04700] transition-all flex items-center gap-1 shadow-md disabled:opacity-50"
+              className="px-3 py-1.5 rounded-full text-xs font-bold bg-primary text-white hover:bg-blue-600 transition-all flex items-center gap-1 shadow-md disabled:opacity-50"
             >
               <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
               <span>Sync</span>
@@ -508,7 +513,6 @@ FORMAT EXACTLY LIKE THIS:
               <button onClick={() => setShowSettings(false)} className="text-xs text-gray-400 hover:text-white">✕</button>
             </div>
 
-            {/* Explanation box for redirect_uri invalid */}
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 flex flex-col gap-1.5 text-blue-300 text-xs font-medium">
               <div className="flex items-center gap-1.5 font-bold text-blue-200">
                 <HelpCircle size={14} className="flex-shrink-0" />
@@ -530,7 +534,7 @@ FORMAT EXACTLY LIKE THIS:
                   type="text"
                   value={clientId}
                   onChange={e => setClientId(e.target.value)}
-                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-[#FC5200] focus:outline-none"
+                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-primary focus:outline-none"
                 />
               </div>
               <div>
@@ -539,7 +543,7 @@ FORMAT EXACTLY LIKE THIS:
                   type="password"
                   value={clientSecret}
                   onChange={e => setClientSecret(e.target.value)}
-                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-[#FC5200] focus:outline-none"
+                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-primary focus:outline-none"
                 />
               </div>
             </div>
@@ -551,7 +555,7 @@ FORMAT EXACTLY LIKE THIS:
                   type="text"
                   value={accessToken}
                   onChange={e => setAccessToken(e.target.value)}
-                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-[#FC5200] focus:outline-none font-mono text-[10px]"
+                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-primary focus:outline-none font-mono text-[10px]"
                 />
               </div>
               <div>
@@ -560,7 +564,7 @@ FORMAT EXACTLY LIKE THIS:
                   type="text"
                   value={refreshToken}
                   onChange={e => setRefreshToken(e.target.value)}
-                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-[#FC5200] focus:outline-none font-mono text-[10px]"
+                  className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-primary focus:outline-none font-mono text-[10px]"
                 />
               </div>
             </div>
@@ -571,8 +575,7 @@ FORMAT EXACTLY LIKE THIS:
                 type="text"
                 value={redirectUri}
                 onChange={e => setRedirectUri(e.target.value)}
-                className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-[#FC5200] focus:outline-none font-mono text-[11px]"
-                placeholder="http://localhost:5173/strava"
+                className="w-full bg-background border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:border-primary focus:outline-none font-mono text-[11px]"
               />
             </div>
 
@@ -591,7 +594,7 @@ FORMAT EXACTLY LIKE THIS:
               </button>
               <button
                 onClick={handleSaveSettings}
-                className="px-4 py-1 rounded-xl text-xs font-bold bg-[#FC5200] text-white hover:bg-[#e04700] transition-colors"
+                className="px-4 py-1 rounded-xl text-xs font-bold bg-primary text-white hover:bg-blue-600 transition-colors"
               >
                 Save & Close
               </button>
@@ -602,7 +605,7 @@ FORMAT EXACTLY LIKE THIS:
 
       {/* Status Messages */}
       {errorMsg && (
-        <div className="mx-5 mt-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex items-center gap-3 text-red-400 text-xs font-semibold">
+        <div className="mx-5 mt-4 bg-red-500/10 border border-red-500/30 rounded-2xl p-3 flex items-center gap-3 text-red-400 text-xs font-semibold flex-shrink-0">
           <AlertCircle size={16} className="flex-shrink-0" />
           <span className="flex-1">{errorMsg}</span>
           <button onClick={() => setErrorMsg('')} className="text-red-400 hover:text-white">✕</button>
@@ -610,7 +613,7 @@ FORMAT EXACTLY LIKE THIS:
       )}
 
       {successMsg && (
-        <div className="mx-5 mt-4 bg-green-500/10 border border-green-500/30 rounded-2xl p-3 flex items-center gap-3 text-green-400 text-xs font-semibold">
+        <div className="mx-5 mt-4 bg-green-500/10 border border-green-500/30 rounded-2xl p-3 flex items-center gap-3 text-green-400 text-xs font-semibold flex-shrink-0">
           <CheckCircle2 size={16} className="flex-shrink-0" />
           <span className="flex-1">{successMsg}</span>
           <button onClick={() => setSuccessMsg('')} className="text-green-400 hover:text-white">✕</button>
@@ -621,9 +624,9 @@ FORMAT EXACTLY LIKE THIS:
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 no-scrollbar">
         {/* Prominent Login / Connect Button when no activities exist */}
         {activities.length === 0 && (
-          <div className="bg-surface border border-gray-800 rounded-3xl p-8 my-auto text-center flex flex-col items-center justify-center gap-5 shadow-2xl">
-            <div className="w-16 h-16 rounded-3xl bg-[#FC5200]/10 border border-[#FC5200]/30 flex items-center justify-center shadow-inner">
-              <Activity size={36} className="text-[#FC5200] animate-pulse" />
+          <div className="bg-surface border border-gray-800 rounded-3xl p-8 my-auto text-center flex flex-col items-center justify-center gap-5 shadow-2xl flex-shrink-0">
+            <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center shadow-inner">
+              <Activity size={36} className="text-primary animate-pulse" />
             </div>
             <div>
               <h2 className="text-lg font-extrabold text-white tracking-tight">Connect Your Strava</h2>
@@ -635,7 +638,7 @@ FORMAT EXACTLY LIKE THIS:
             <button
               onClick={handleConnectStrava}
               disabled={loading}
-              className="w-full py-4 rounded-2xl font-extrabold bg-[#FC5200] hover:bg-[#e04700] text-white shadow-lg hover:shadow-[#FC5200]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-sm uppercase tracking-wider disabled:opacity-50"
+              className="w-full py-4 rounded-2xl font-extrabold bg-primary hover:bg-blue-600 text-white shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-sm uppercase tracking-wider disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -654,142 +657,18 @@ FORMAT EXACTLY LIKE THIS:
               <div className="flex items-center gap-1.5">
                 <span>🔒 Secure OAuth 2.0 Connection</span>
                 <span>•</span>
-                <button onClick={() => setShowSettings(true)} className="underline hover:text-gray-300 font-bold text-[#FC5200]">Configure Redirect URI</button>
+                <button onClick={() => setShowSettings(true)} className="underline hover:text-gray-300 font-bold text-primary">Configure Redirect URI</button>
               </div>
               <span className="text-[9px] text-gray-500 mt-0.5">Tip: If you get "redirect_uri invalid", click Configure above!</span>
             </div>
           </div>
         )}
 
-        {/* Full Activity Detail View (if selected) */}
-        <AnimatePresence>
-          {selectedActivity && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="bg-surface border border-gray-800 rounded-3xl p-5 flex flex-col gap-5 shadow-xl relative overflow-hidden"
-            >
-              <div className="flex items-start justify-between border-b border-gray-800/80 pb-4">
-                <div>
-                  <span className="text-[10px] bg-[#FC5200]/20 text-[#FC5200] border border-[#FC5200]/30 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    {selectedActivity.type || 'Run'}
-                  </span>
-                  <h2 className="text-base font-extrabold text-white mt-1.5 leading-snug">{selectedActivity.name}</h2>
-                  <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
-                    <Clock size={12} />
-                    <span>{new Date(selectedActivity.start_date).toLocaleString()}</span>
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedActivity(null)}
-                  className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Map Preview */}
-              <div className="w-full h-48 rounded-2xl overflow-hidden bg-background border border-gray-800/80 relative shadow-inner">
-                <SvgPolylineMap polyline={selectedActivity.map?.summary_polyline} />
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <MapPin size={16} className="text-[#FC5200] mb-1" />
-                  <span className="text-base font-extrabold text-white">{(selectedActivity.distance / 1000).toFixed(2)}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Distance (km)</span>
-                </div>
-                <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <Zap size={16} className="text-yellow-500 mb-1" />
-                  <span className="text-base font-extrabold text-white">{formatPace(selectedActivity.average_speed)}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Pace (/km)</span>
-                </div>
-                <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <Clock size={16} className="text-blue-500 mb-1" />
-                  <span className="text-base font-extrabold text-white">{formatDuration(selectedActivity.moving_time)}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Moving Time</span>
-                </div>
-                <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <TrendingUp size={16} className="text-green-500 mb-1" />
-                  <span className="text-base font-extrabold text-white">{selectedActivity.total_elevation_gain}m</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Elevation</span>
-                </div>
-                <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <Heart size={16} className="text-red-500 mb-1" />
-                  <span className="text-base font-extrabold text-white">{selectedActivity.average_heartrate || 155}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Avg HR (bpm)</span>
-                </div>
-                <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
-                  <Award size={16} className="text-purple-500 mb-1" />
-                  <span className="text-base font-extrabold text-white">{selectedActivity.average_cadence ? selectedActivity.average_cadence * 2 : 174}</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Cadence (spm)</span>
-                </div>
-              </div>
-
-              {/* Elevation Graph */}
-              <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-2">
-                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <span>Elevation Profile</span>
-                </h3>
-                <div className="w-full h-28 mt-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={selectedActivity.elevations?.map((e, idx) => ({ km: idx + 1, elevation: e })) || [{ km: 1, elevation: 20 }, { km: 5, elevation: 45 }, { km: 10, elevation: 30 }]}>
-                      <defs>
-                        <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="km" stroke="#4B5563" fontSize={10} tickLine={false} />
-                      <YAxis stroke="#4B5563" fontSize={10} tickLine={false} width={25} />
-                      <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '10px' }} />
-                      <Area type="monotone" dataKey="elevation" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#elevGradient)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Pace Graph (Splits by km) */}
-              <div className="bg-background/60 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-2">
-                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Zap size={14} className="text-yellow-500" />
-                  <span>Pace Splits (/km)</span>
-                </h3>
-                <div className="w-full h-28 mt-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={selectedActivity.splits_metric?.map(s => ({ km: s.split, pace: s.moving_time })) || [{ km: 1, pace: 292 }, { km: 2, pace: 288 }, { km: 3, pace: 285 }, { km: 4, pace: 290 }]}>
-                      <XAxis dataKey="km" stroke="#4B5563" fontSize={10} tickLine={false} />
-                      <YAxis stroke="#4B5563" fontSize={10} tickLine={false} width={35} tickFormatter={val => formatDuration(val)} />
-                      <Tooltip
-                        contentStyle={{ background: '#1F2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '10px' }}
-                        formatter={(val: any) => [formatDuration(val), 'Pace']}
-                      />
-                      <Bar dataKey="pace" fill="#FC5200" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Summarize Button */}
-              <button
-                onClick={() => handleAISummary(selectedActivity)}
-                className="w-full py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-[#FC5200] to-amber-600 text-white shadow-lg hover:shadow-[#FC5200]/20 hover:scale-[1.01] transition-all flex items-center justify-center gap-2 text-sm tracking-wide mt-2"
-              >
-                <Sparkles size={18} className="animate-pulse" />
-                <span>Summarize Activity with AI Coach</span>
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Activity List */}
         {activities.length > 0 && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 flex-shrink-0">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center justify-between">
-              <span>Recent Activities</span>
+              <span>Recent Activities ({activities.length})</span>
               <span className="text-[10px] font-normal text-gray-500">Click to analyze</span>
             </h3>
 
@@ -799,9 +678,7 @@ FORMAT EXACTLY LIKE THIS:
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => setSelectedActivity(act)}
-                className={`bg-surface border rounded-3xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all shadow-md ${
-                  selectedActivity?.id === act.id ? 'border-[#FC5200] bg-surface/90 shadow-[#FC5200]/10' : 'border-gray-800 hover:border-gray-700'
-                }`}
+                className="bg-surface border border-gray-800 hover:border-gray-700 rounded-3xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all shadow-md flex-shrink-0"
               >
                 <div className="flex items-center gap-3.5 flex-1 min-w-0">
                   <div className="w-12 h-12 rounded-2xl bg-background border border-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden relative p-1">
@@ -810,7 +687,7 @@ FORMAT EXACTLY LIKE THIS:
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-bold text-white truncate">{act.name}</h4>
                     <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 font-medium">
-                      <span className="text-[#FC5200] font-extrabold">{(act.distance / 1000).toFixed(2)} km</span>
+                      <span className="text-primary font-extrabold">{(act.distance / 1000).toFixed(2)} km</span>
                       <span>•</span>
                       <span>{formatDuration(act.moving_time)}</span>
                       <span>•</span>
@@ -833,6 +710,145 @@ FORMAT EXACTLY LIKE THIS:
         )}
       </div>
 
+      {/* Full Activity Detail Modal Overlay (Completely immune to flexbox squishing) */}
+      <AnimatePresence>
+        {selectedActivity && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col p-4 overflow-y-auto no-scrollbar"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 30 }}
+              className="w-full max-w-lg mx-auto my-auto bg-surface border border-gray-700 rounded-3xl p-6 flex flex-col gap-6 shadow-2xl relative flex-shrink-0"
+            >
+              <div className="flex items-start justify-between border-b border-gray-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedActivity(null)}
+                      className="w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                    >
+                      <ArrowLeft size={14} />
+                    </button>
+                    <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      {selectedActivity.type || 'Run'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-extrabold text-white mt-2.5 leading-snug">{selectedActivity.name}</h2>
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5 font-medium">
+                    <Clock size={12} className="text-primary" />
+                    <span>{new Date(selectedActivity.start_date).toLocaleString()}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedActivity(null)}
+                  className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors font-bold text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Map Preview */}
+              <div className="w-full h-56 rounded-2xl overflow-hidden bg-background border border-gray-800 relative shadow-inner flex-shrink-0 p-1">
+                <SvgPolylineMap polyline={selectedActivity.map?.summary_polyline} />
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+                <div className="bg-background/80 border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <MapPin size={18} className="text-primary mb-1" />
+                  <span className="text-lg font-extrabold text-white">{(selectedActivity.distance / 1000).toFixed(2)}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Distance (km)</span>
+                </div>
+                <div className="bg-background/80 border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <Zap size={18} className="text-yellow-500 mb-1" />
+                  <span className="text-lg font-extrabold text-white">{formatPace(selectedActivity.average_speed)}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Pace (/km)</span>
+                </div>
+                <div className="bg-background/80 border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <Clock size={18} className="text-blue-500 mb-1" />
+                  <span className="text-lg font-extrabold text-white">{formatDuration(selectedActivity.moving_time)}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Moving Time</span>
+                </div>
+                <div className="bg-background/80 border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <TrendingUp size={18} className="text-green-500 mb-1" />
+                  <span className="text-lg font-extrabold text-white">{selectedActivity.total_elevation_gain}m</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Elevation</span>
+                </div>
+                <div className="bg-background/80 border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <Heart size={18} className="text-red-500 mb-1" />
+                  <span className="text-lg font-extrabold text-white">{selectedActivity.average_heartrate || 155}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Avg HR (bpm)</span>
+                </div>
+                <div className="bg-background/80 border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-sm">
+                  <Award size={18} className="text-purple-500 mb-1" />
+                  <span className="text-lg font-extrabold text-white">{selectedActivity.average_cadence ? selectedActivity.average_cadence * 2 : 174}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Cadence (spm)</span>
+                </div>
+              </div>
+
+              {/* Elevation Graph */}
+              <div className="bg-background/80 border border-gray-800 rounded-2xl p-4 flex flex-col gap-2 flex-shrink-0 shadow-sm">
+                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp size={14} className="text-green-500" />
+                  <span>Elevation Profile</span>
+                </h3>
+                <div className="w-full h-32 mt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={selectedActivity.elevations?.map((e, idx) => ({ km: idx + 1, elevation: e })) || [{ km: 1, elevation: 20 }, { km: 5, elevation: 45 }, { km: 10, elevation: 30 }]}>
+                      <defs>
+                        <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="km" stroke="#4B5563" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#4B5563" fontSize={10} tickLine={false} width={25} />
+                      <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '10px' }} />
+                      <Area type="monotone" dataKey="elevation" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#elevGradient)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Pace Graph (Splits by km) */}
+              <div className="bg-background/80 border border-gray-800 rounded-2xl p-4 flex flex-col gap-2 flex-shrink-0 shadow-sm">
+                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap size={14} className="text-yellow-500" />
+                  <span>Pace Splits (/km)</span>
+                </h3>
+                <div className="w-full h-32 mt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={selectedActivity.splits_metric?.map(s => ({ km: s.split, pace: s.moving_time })) || [{ km: 1, pace: 292 }, { km: 2, pace: 288 }, { km: 3, pace: 285 }, { km: 4, pace: 290 }]}>
+                      <XAxis dataKey="km" stroke="#4B5563" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#4B5563" fontSize={10} tickLine={false} width={35} tickFormatter={val => formatDuration(val)} />
+                      <Tooltip
+                        contentStyle={{ background: '#1F2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '10px' }}
+                        formatter={(val: any) => [formatDuration(val), 'Pace']}
+                      />
+                      <Bar dataKey="pace" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Summarize Button */}
+              <button
+                onClick={() => handleAISummary(selectedActivity)}
+                className="w-full py-4 rounded-2xl font-extrabold bg-gradient-to-r from-primary to-blue-700 text-white shadow-lg hover:shadow-primary/20 hover:scale-[1.01] transition-all flex items-center justify-center gap-2 text-sm tracking-wide flex-shrink-0"
+              >
+                <Sparkles size={18} className="animate-pulse" />
+                <span>Summarize Activity with AI Coach</span>
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* AI Summary Modal */}
       <AnimatePresence>
         {showAiModal && (
@@ -840,18 +856,18 @@ FORMAT EXACTLY LIKE THIS:
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-5"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-5"
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="w-full max-w-sm bg-surface border border-gray-700 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl relative max-h-[85vh] overflow-y-auto no-scrollbar"
+              className="w-full max-w-sm bg-surface border border-gray-700 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl relative max-h-[85vh] overflow-y-auto no-scrollbar flex-shrink-0"
             >
               <div className="flex items-center justify-between border-b border-gray-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-[#FC5200]/20 flex items-center justify-center border border-[#FC5200]/40">
-                    <Sparkles size={14} className="text-[#FC5200]" />
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
+                    <Sparkles size={14} className="text-primary" />
                   </div>
                   <h3 className="text-sm font-extrabold text-white tracking-wide">AI Running Coach</h3>
                 </div>
@@ -865,7 +881,7 @@ FORMAT EXACTLY LIKE THIS:
 
               {aiLoading ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3 text-gray-400">
-                  <RefreshCw size={28} className="animate-spin text-[#FC5200]" />
+                  <RefreshCw size={28} className="animate-spin text-primary" />
                   <p className="text-xs font-semibold animate-pulse">Analyzing pace splits & telemetry...</p>
                 </div>
               ) : (
@@ -877,7 +893,7 @@ FORMAT EXACTLY LIKE THIS:
                       const parts = line.split('**');
                       return (
                         <div key={idx} className="bg-background/50 border border-gray-800/80 rounded-xl p-3 flex flex-col gap-0.5 shadow-sm">
-                          <span className="text-[10px] uppercase font-extrabold text-[#FC5200] tracking-wider">{parts[1]}</span>
+                          <span className="text-[10px] uppercase font-extrabold text-primary tracking-wider">{parts[1]}</span>
                           <span className="text-gray-200 text-xs mt-0.5 font-medium">{parts[2]}</span>
                         </div>
                       );
