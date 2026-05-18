@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -39,8 +39,8 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
-  const [liveHR, setLiveHR] = useState<number | null>(null);
-  const [hrHistory, setHrHistory] = useState<number[]>([]);
+  const [restingHR, setRestingHR] = useState<number>(0);
+  const [sleepHours, setSleepHours] = useState<number>(0);
   const [todaySteps, setTodaySteps] = useState<number>(0);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
   const [hybridLiftingType, setHybridLiftingType] = useState('PUSH');
@@ -128,14 +128,22 @@ const TodayView = () => {
       }
     };
 
-    const fetchTodaySteps = async () => {
+    const fetchTodayBiometrics = async () => {
       const { data } = await supabase
         .from('athlete_biometrics')
-        .select('steps')
+        .select('steps, resting_hr, sleep_hours')
         .eq('date', activeDateStr)
         .single();
       
-      if (data) setTodaySteps(data.steps || 0);
+      if (data) {
+        setTodaySteps(data.steps || 0);
+        setRestingHR(data.resting_hr || 0);
+        setSleepHours(data.sleep_hours || 0);
+      } else {
+        setTodaySteps(0);
+        setRestingHR(0);
+        setSleepHours(0);
+      }
     };
 
     const fetchLatestInbody = async () => {
@@ -164,33 +172,21 @@ const TodayView = () => {
 
     fetchWorkoutStatus();
     fetchLatestInbody();
-    fetchTodaySteps();
+    fetchTodayBiometrics();
     
-    // 📡 Subscribe to Live HR Stream from Sandbox/Bluefy
-    const hrChannel = supabase.channel('live_hr_stream')
-      .on('broadcast', { event: 'new_heartrate' }, (payload) => {
-        if (payload.payload && payload.payload.hr) {
-          setLiveHR(payload.payload.hr);
-          setHrHistory(prev => {
-            const updated = [...prev, payload.payload.hr];
-            return updated.slice(-60); // Keep last 60 seconds of history for the mini graph
-          });
-        }
-      })
-      .subscribe();
-
-    // 🔄 Listen for Steps updates in Database
+    // 🔄 Listen for Biometrics updates in Database
     const dbBiometricsChannel = supabase.channel('db_biometrics')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'athlete_biometrics' }, (payload: any) => {
         if (payload.new && payload.new.date === activeDateStr) {
           setTodaySteps(payload.new.steps || 0);
+          setRestingHR(payload.new.resting_hr || 0);
+          setSleepHours(payload.new.sleep_hours || 0);
         }
       })
       .subscribe();
 
     return () => { 
       active = false; 
-      supabase.removeChannel(hrChannel);
       supabase.removeChannel(dbBiometricsChannel);
     };
   }, [activeDateStr, workout, isToday, dayType]);
@@ -481,57 +477,9 @@ const TodayView = () => {
           </motion.div>
         </div>
 
-        {/* Live Metrics Grid */}
+        {/* Daily Biometrics Grid */}
         {isToday && (
           <div className="grid grid-cols-2 gap-4 w-full">
-            {/* Live HR Card */}
-            <motion.div 
-               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-               className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in flex flex-col justify-between"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Live HR</span>
-                {liveHR ? (
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">
-                    Live
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold text-gray-600">Waiting...</span>
-                )}
-              </div>
-              
-              <div className="flex items-center justify-between mt-auto">
-                <div className="flex items-center gap-2">
-                  <Activity size={16} className={`text-rose-500 ${liveHR ? 'animate-pulse' : ''}`} />
-                  <div>
-                    <span className="text-xl font-black text-white">{liveHR || '--'}</span>
-                    <span className="text-[10px] text-gray-500 font-bold ml-1">BPM</span>
-                  </div>
-                </div>
-                
-                {/* Mini Graph */}
-                <div className="w-[60px] h-[20px] bg-gray-900/40 rounded overflow-hidden border border-gray-800/50">
-                  <svg width="100%" height="100%" viewBox="0 0 60 20" preserveAspectRatio="none">
-                    {hrHistory.length > 1 && (
-                      <polyline
-                        fill="none"
-                        stroke="#F43F5E"
-                        strokeWidth="1"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        points={hrHistory.map((hr, index) => {
-                          const x = (index / (hrHistory.length - 1)) * 60;
-                          const clampedHR = Math.min(Math.max(hr, 40), 160);
-                          const y = 20 - ((clampedHR - 40) / 120) * 20;
-                          return `${x},${y}`;
-                        }).join(' ')}
-                      />
-                    )}
-                  </svg>
-                </div>
-              </div>
-            </motion.div>
-
             {/* Steps Card */}
             <motion.div 
                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
@@ -549,6 +497,35 @@ const TodayView = () => {
                 <div>
                   <span className="text-xl font-black text-white">{todaySteps || 0}</span>
                   <span className="text-[10px] text-gray-500 font-bold ml-1">Steps</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Resting HR & Sleep Card */}
+            <motion.div 
+               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+               className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in flex flex-col justify-between"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health</span>
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
+              </div>
+              
+              <div className="flex justify-between items-center mt-auto">
+                <div className="flex items-center gap-1.5">
+                  <Activity size={14} className="text-rose-500" />
+                  <div>
+                    <span className="text-lg font-black text-white">{restingHR || '--'}</span>
+                    <span className="text-[10px] text-gray-500 font-bold ml-0.5">RHR</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1.5">
+                  <Moon size={14} className="text-indigo-400" />
+                  <div>
+                    <span className="text-lg font-black text-white">{sleepHours || '--'}</span>
+                    <span className="text-[10px] text-gray-500 font-bold ml-0.5">Hrs</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
