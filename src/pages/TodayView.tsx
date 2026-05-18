@@ -533,28 +533,37 @@ const TodayView = () => {
               <div className="mt-2 border-t border-gray-800 pt-2">
                 {(() => {
                   const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
+                  const formatStage = (hrs: number) => {
+                    const totalMins = Math.round(hrs * 60);
+                    if (totalMins < 60) return `${totalMins}m`;
+                    const h = Math.floor(totalMins / 60);
+                    const m = totalMins % 60;
+                    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                  };
                   return (
-                    <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                      <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
-                      <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
-                      <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
-                    </div>
+                    <>
+                      <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
+                        <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
+                        <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
+                        <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
+                      </div>
+                      <div className="flex justify-between text-[9px] mt-1.5 text-gray-400 font-bold">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
+                          <span>Deep: {formatStage(deepSleepHours)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                          <span>REM: {formatStage(remSleepHours)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                          <span>Light: {formatStage(lightSleepHours)}</span>
+                        </div>
+                      </div>
+                    </>
                   );
                 })()}
-                <div className="flex justify-between text-[9px] mt-1.5 text-gray-400 font-bold">
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
-                    <span>Deep: {deepSleepHours}h</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                    <span>REM: {remSleepHours}h</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    <span>Light: {lightSleepHours}h</span>
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
