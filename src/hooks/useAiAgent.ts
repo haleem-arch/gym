@@ -362,7 +362,7 @@ export const useAiAgent = () => {
     const { data: stravaActs } = await supabase
       .from('strava_activities')
       .select('*')
-      .eq('user_id', uid)
+      .eq('athlete_id', uid)
       .order('start_date', { ascending: false })
       .limit(10);
 
@@ -373,19 +373,27 @@ export const useAiAgent = () => {
         if (act.cached_data) {
           try {
             const cached = typeof act.cached_data === 'string' ? JSON.parse(act.cached_data) : act.cached_data;
-            if (cached.splits && cached.splits.length > 0) {
-              splitsStr = `KM Splits: [${cached.splits.map((s: any, i: number) => `KM ${i+1}: ${s.pace}`).join(', ')}]`;
+            if (cached.splits_metric && cached.splits_metric.length > 0) {
+              splitsStr = `KM Splits: [${cached.splits_metric.map((s: any) => {
+                const spd = s.average_speed;
+                if (!spd) return `KM ${s.split}: 0:00`;
+                const paceSecs = 1000 / spd;
+                const m = Math.floor(paceSecs / 60);
+                const sec = Math.floor(paceSecs % 60);
+                return `KM ${s.split}: ${m}:${sec.toString().padStart(2, '0')}/km`;
+              }).join(', ')}]`;
             }
-            if (cached.streams) {
-              const maxElev = Math.max(...(cached.streams.altitude || [0]));
-              const minElev = Math.min(...(cached.streams.altitude || [0]));
-              streamStr = `Elevation min/max: ${minElev}m to ${maxElev}m.`;
+            if (cached.stream_data && cached.stream_data.length > 0) {
+              const maxElev = Math.max(...cached.stream_data.map((s: any) => s.altitude || 0));
+              const minElev = Math.min(...cached.stream_data.map((s: any) => s.altitude || 0));
+              const maxHR = Math.max(...cached.stream_data.map((s: any) => s.heartrate || 0));
+              streamStr = `Elevation min/max: ${minElev}m to ${maxElev}m. Max Heartrate: ${maxHR > 0 ? maxHR : act.max_heartrate || 'N/A'} bpm.`;
             }
           } catch (e) {}
         }
         const distKm = act.distance ? (Number(act.distance) / 1000).toFixed(2) : '0';
         const durationMins = act.moving_time ? (Number(act.moving_time) / 60).toFixed(1) : '0';
-        return `Run "${act.name}" on ${new Date(act.start_date).toLocaleDateString()}: ${distKm}km in ${durationMins} mins. Avg Heartrate: ${act.average_heartrate || 'N/A'} bpm. Total Elevation Gain: ${act.total_elevation_gain || 0}m. ${splitsStr} ${streamStr}`;
+        return `Run "${act.name}" on ${new Date(act.start_date).toLocaleDateString()}: ${distKm}km in ${durationMins} mins. Avg Heartrate: ${act.average_heartrate || 'N/A'} bpm. Total Elevation Gain: ${act.elevation_gain || act.total_elevation_gain || 0}m. ${splitsStr} ${streamStr}`;
       });
       parts.push(`RECENT_STRAVA_RUNS (with kilometer splits and telemetry): \n${stravaSummary.join('\n')}`);
     }
