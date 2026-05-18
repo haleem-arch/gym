@@ -547,18 +547,27 @@ const TodayView = () => {
                         <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
                         <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
                       </div>
-                      <div className="flex justify-between text-[9px] mt-1.5 text-gray-400 font-bold">
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
-                          <span>Deep: {formatStage(deepSleepHours)}</span>
+                      <div className="grid grid-cols-3 gap-1 text-[9px] mt-2 text-gray-400 font-bold">
+                        <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
+                            <span className="text-gray-500 font-semibold">Deep</span>
+                          </div>
+                          <span className="text-white font-black text-[10px]">{formatStage(deepSleepHours)}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                          <span>REM: {formatStage(remSleepHours)}</span>
+                        <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
+                            <span className="text-gray-500 font-semibold">REM</span>
+                          </div>
+                          <span className="text-white font-black text-[10px]">{formatStage(remSleepHours)}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                          <span>Light: {formatStage(lightSleepHours)}</span>
+                        <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
+                            <span className="text-gray-500 font-semibold">Light</span>
+                          </div>
+                          <span className="text-white font-black text-[10px]">{formatStage(lightSleepHours)}</span>
                         </div>
                       </div>
                     </>
