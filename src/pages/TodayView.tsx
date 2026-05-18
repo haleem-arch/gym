@@ -39,7 +39,6 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
-  const [restingHR, setRestingHR] = useState<number>(0);
   const [sleepHours, setSleepHours] = useState<number>(0);
   const [todaySteps, setTodaySteps] = useState<number>(0);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
@@ -137,11 +136,9 @@ const TodayView = () => {
       
       if (data) {
         setTodaySteps(data.steps || 0);
-        setRestingHR(data.resting_hr || 0);
         setSleepHours(data.sleep_hours || 0);
       } else {
         setTodaySteps(0);
-        setRestingHR(0);
         setSleepHours(0);
       }
     };
@@ -179,7 +176,6 @@ const TodayView = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'athlete_biometrics' }, (payload: any) => {
         if (payload.new && payload.new.date === activeDateStr) {
           setTodaySteps(payload.new.steps || 0);
-          setRestingHR(payload.new.resting_hr || 0);
           setSleepHours(payload.new.sleep_hours || 0);
         }
       })
