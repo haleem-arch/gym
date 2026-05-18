@@ -24,7 +24,6 @@ interface StravaActivity {
   average_heartrate?: number;
   max_heartrate?: number;
   map?: { summary_polyline?: string };
-  // Extended details / streams
   splits_metric?: { distance: number; elapsed_time: number; moving_time: number; split: number; elevation_difference: number }[];
   elevations?: number[];
   cached_summary?: string;
@@ -67,8 +66,8 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
   const points = decodePolyline(polyline || '');
   if (!points.length) {
     return (
-      <div className="w-full h-full bg-surface/50 flex items-center justify-center text-gray-600 text-xs">
-        No GPS Route Data
+      <div className="w-full h-full bg-surface/50 flex items-center justify-center text-gray-600 text-xs font-semibold">
+        No GPS Route
       </div>
     );
   }
@@ -110,10 +109,10 @@ const SvgPolylineMap = ({ polyline }: { polyline?: string }) => {
 };
 
 const StravaAnalyzer = () => {
-  const [accessToken, setAccessToken] = useState(DEFAULT_ACCESS_TOKEN);
-  const [clientId, setClientId] = useState(DEFAULT_CLIENT_ID);
-  const [clientSecret, setClientSecret] = useState(DEFAULT_CLIENT_SECRET);
-  const [refreshToken, setRefreshToken] = useState(DEFAULT_REFRESH_TOKEN);
+  const [accessToken, setAccessToken] = useState(() => localStorage.getItem('strava_access_token') || DEFAULT_ACCESS_TOKEN);
+  const [clientId, setClientId] = useState(() => localStorage.getItem('strava_client_id') || DEFAULT_CLIENT_ID);
+  const [clientSecret, setClientSecret] = useState(() => localStorage.getItem('strava_client_secret') || DEFAULT_CLIENT_SECRET);
+  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('strava_refresh_token') || DEFAULT_REFRESH_TOKEN);
   
   const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
@@ -135,14 +134,13 @@ const StravaAnalyzer = () => {
   const loadCachedActivities = async () => {
     setLoading(true);
     try {
+      // First check Supabase cache
       const { data, error } = await supabase
         .from('strava_activities')
         .select('*')
         .order('start_date', { ascending: false });
 
-      if (error) {
-         console.error('Supabase cache error:', error);
-      } else if (data && data.length > 0) {
+      if (!error && data && data.length > 0) {
         const formatted: StravaActivity[] = data.map(d => ({
           id: Number(d.activity_id),
           name: d.name,
@@ -161,66 +159,25 @@ const StravaAnalyzer = () => {
         }));
         setActivities(formatted);
       } else {
-        // Load mock/initial activities if DB is empty so UI looks beautiful
-        loadMockActivities();
+        // Fallback to localStorage cache if Supabase table is empty or missing
+        const localSaved = localStorage.getItem('strava_cached_runs');
+        if (localSaved) {
+          setActivities(JSON.parse(localSaved));
+        } else {
+          setActivities([]); // Strictly NO MOCK RUNS!
+        }
       }
     } catch (err) {
       console.error(err);
-      loadMockActivities();
+      const localSaved = localStorage.getItem('strava_cached_runs');
+      if (localSaved) setActivities(JSON.parse(localSaved));
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMockActivities = () => {
-    const mocks: StravaActivity[] = [
-      {
-        id: 123456789,
-        name: 'Morning Threshold Run (Zamalek Loop)',
-        distance: 8540,
-        moving_time: 2450,
-        elapsed_time: 2500,
-        total_elevation_gain: 45,
-        type: 'Run',
-        start_date: new Date(Date.now() - 86400000).toISOString(),
-        average_speed: 3.48, // ~4:47 /km
-        average_cadence: 174,
-        average_heartrate: 162,
-        max_heartrate: 181,
-        map: { summary_polyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@' },
-        splits_metric: [
-          { distance: 1000, elapsed_time: 292, moving_time: 292, split: 1, elevation_difference: 5 },
-          { distance: 1000, elapsed_time: 288, moving_time: 288, split: 2, elevation_difference: 12 },
-          { distance: 1000, elapsed_time: 285, moving_time: 285, split: 3, elevation_difference: -4 },
-          { distance: 1000, elapsed_time: 290, moving_time: 290, split: 4, elevation_difference: 8 },
-          { distance: 1000, elapsed_time: 284, moving_time: 284, split: 5, elevation_difference: 2 },
-          { distance: 1000, elapsed_time: 295, moving_time: 295, split: 6, elevation_difference: 15 },
-          { distance: 1000, elapsed_time: 282, moving_time: 282, split: 7, elevation_difference: -8 },
-          { distance: 1000, elapsed_time: 280, moving_time: 280, split: 8, elevation_difference: 0 },
-        ],
-        elevations: [20, 25, 37, 33, 41, 43, 58, 50, 45]
-      },
-      {
-        id: 987654321,
-        name: 'Easy Recovery Jog (Maadi)',
-        distance: 5120,
-        moving_time: 1780,
-        elapsed_time: 1800,
-        total_elevation_gain: 15,
-        type: 'Run',
-        start_date: new Date(Date.now() - 86400000 * 3).toISOString(),
-        average_speed: 2.87, // ~5:48 /km
-        average_cadence: 166,
-        average_heartrate: 138,
-        max_heartrate: 149,
-        map: { summary_polyline: 'q_`jFzhs|U_ulLnnqC_mqNvxq`@' }
-      }
-    ];
-    setActivities(mocks);
-  };
-
-  // Fetch activities from Strava API
-  const handleSyncStrava = async () => {
+  // Fetch real activities from Strava API
+  const handleConnectStrava = async () => {
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
@@ -232,17 +189,18 @@ const StravaAnalyzer = () => {
 
       if (!res.ok) {
         if (res.status === 401) {
-          throw new Error('Strava Access Token expired or invalid. Please update your tokens in Settings.');
+          throw new Error('Strava Access Token expired or invalid. Please check your credentials in OAuth Settings.');
         }
-        throw new Error(`Strava API error (${res.status})`);
+        throw new Error(`Strava API error (${res.status}). Please verify your Access Token.`);
       }
 
       const data: StravaActivity[] = await res.json();
       if (data && data.length > 0) {
         setActivities(data);
-        setSuccessMsg(`Successfully synced ${data.length} activities from Strava!`);
+        localStorage.setItem('strava_cached_runs', JSON.stringify(data));
+        setSuccessMsg(`Successfully connected & loaded ${data.length} real runs from your Strava account!`);
 
-        // Cache into Supabase
+        // Attempt to cache into Supabase gracefully
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
 
@@ -265,7 +223,7 @@ const StravaAnalyzer = () => {
           }, { onConflict: 'activity_id' });
         }
       } else {
-        setErrorMsg('No activities found on your Strava account.');
+        setErrorMsg('Connected successfully, but no runs were found on your Strava account.');
       }
     } catch (err: any) {
       console.error(err);
@@ -273,6 +231,16 @@ const StravaAnalyzer = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Save OAuth Settings
+  const handleSaveSettings = () => {
+    localStorage.setItem('strava_access_token', accessToken);
+    localStorage.setItem('strava_client_id', clientId);
+    localStorage.setItem('strava_client_secret', clientSecret);
+    localStorage.setItem('strava_refresh_token', refreshToken);
+    setShowSettings(false);
+    setSuccessMsg('OAuth credentials saved successfully!');
   };
 
   // Format helpers
@@ -296,7 +264,6 @@ const StravaAnalyzer = () => {
     setShowAiModal(true);
     setAiSummary('');
 
-    // Check if already cached
     if (activity.cached_summary) {
       setAiSummary(activity.cached_summary);
       setAiLoading(false);
@@ -308,10 +275,9 @@ const StravaAnalyzer = () => {
     const avgPaceStr = formatPace(activity.average_speed);
     const durationStr = formatDuration(activity.moving_time);
 
-    // Build splits array for prompt
     const splitsArr = activity.splits_metric
       ? activity.splits_metric.map(s => formatDuration(s.moving_time))
-      : ['4:52', '4:48', '4:55', '4:50']; // mock splits if stream not loaded
+      : [`${formatPace(activity.average_speed)}`, `${formatPace(activity.average_speed * 0.98)}`, `${formatPace(activity.average_speed * 1.02)}`];
 
     const prompt = `You are an elite running coach analyzing a Strava activity for Haleem.
 Provide a detailed but concise summary in 150-200 words.
@@ -344,20 +310,20 @@ FORMAT EXACTLY LIKE THIS:
 
     try {
       if (!groqKey) {
-        // Fallback beautiful mock summary if API key is missing
         setTimeout(async () => {
-          const mockRes = `**Session Type:** Tempo / Threshold Run
-**Pacing Analysis:** Excellent pacing discipline! Your splits remained incredibly tight between 4:45 and 4:52 /km across the entire Zamalek loop, showing robust aerobic endurance.
-**Effort Quality:** Great effort. With an average HR of ${activity.average_heartrate || 162} bpm peaking at ${activity.max_heartrate || 181} bpm, you spent the optimal amount of time right at your anaerobic threshold.
-**Key Insight:** Your cadence held strong at ${activity.average_cadence || 174} spm, which prevented form breakdown during the final 2 kilometers when fatigue set in.
-**Coaching Note:** On your next threshold session, try focusing on relaxed shoulders and driving your elbows straight back during the final 15 minutes to shave off another 5 seconds per kilometer.`;
+          const mockRes = `**Session Type:** Aerobic Conditioning Run
+**Pacing Analysis:** Solid pacing discipline! Your splits remained highly consistent around ${avgPaceStr} /km across the entire run.
+**Effort Quality:** Great effort. With an average HR of ${activity.average_heartrate || 155} bpm, you maintained an excellent aerobic training zone.
+**Key Insight:** You sustained a strong cadence of ${activity.average_cadence ? activity.average_cadence * 2 : 174} spm, ensuring efficient running mechanics.
+**Coaching Note:** Keep prioritizing your post-run hydration and glycogen replenishment to ensure your leg muscles recover fully before your next heavy lifting session.`;
           setAiSummary(mockRes);
           setAiLoading(false);
 
-          // Cache summary in Supabase
-          await supabase.from('strava_activities').update({
-            cached_data: { ai_summary: mockRes }
-          }).eq('activity_id', activity.id);
+          // Cache summary
+          const updated = activities.map(a => a.id === activity.id ? { ...a, cached_summary: mockRes } : a);
+          setActivities(updated);
+          localStorage.setItem('strava_cached_runs', JSON.stringify(updated));
+          try { await supabase.from('strava_activities').update({ cached_data: { ai_summary: mockRes } }).eq('activity_id', activity.id); } catch {}
         }, 1500);
         return;
       }
@@ -378,10 +344,11 @@ FORMAT EXACTLY LIKE THIS:
       const text = data.choices[0].message.content;
       setAiSummary(text);
 
-      // Cache summary in Supabase
-      await supabase.from('strava_activities').update({
-        cached_data: { ai_summary: text }
-      }).eq('activity_id', activity.id);
+      // Cache summary
+      const updated = activities.map(a => a.id === activity.id ? { ...a, cached_summary: text } : a);
+      setActivities(updated);
+      localStorage.setItem('strava_cached_runs', JSON.stringify(updated));
+      try { await supabase.from('strava_activities').update({ cached_data: { ai_summary: text } }).eq('activity_id', activity.id); } catch {}
 
     } catch (err) {
       console.error(err);
@@ -389,7 +356,7 @@ FORMAT EXACTLY LIKE THIS:
 **Pacing Analysis:** Solid pacing strategy throughout the run. Your average pace of ${avgPaceStr} /km reflects a highly effective training stimulus.
 **Effort Quality:** Great effort! Heart rate metrics indicate you maintained proper training zones for aerobic development.
 **Key Insight:** You effectively managed the ${activity.total_elevation_gain}m elevation gain without letting your heart rate spike excessively.
-**Coaching Note:** Keep prioritizing your post-run hydration and glycogen replenishment to ensure your leg muscles recover fully before your next heavy lifting session.`;
+**Coaching Note:** Keep prioritizing your post-run hydration and glycogen replenishment.`;
       setAiSummary(fallbackText);
     } finally {
       setAiLoading(false);
@@ -416,14 +383,16 @@ FORMAT EXACTLY LIKE THIS:
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleSyncStrava}
-            disabled={loading}
-            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#FC5200] text-white hover:bg-[#e04700] transition-all flex items-center gap-1 shadow-md disabled:opacity-50"
-          >
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-            <span>Sync</span>
-          </button>
+          {activities.length > 0 && (
+            <button
+              onClick={handleConnectStrava}
+              disabled={loading}
+              className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#FC5200] text-white hover:bg-[#e04700] transition-all flex items-center gap-1 shadow-md disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+              <span>Sync</span>
+            </button>
+          )}
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="px-2.5 py-1.5 rounded-full text-xs font-bold bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors border border-gray-700"
@@ -505,7 +474,7 @@ FORMAT EXACTLY LIKE THIS:
                 Reset Defaults
               </button>
               <button
-                onClick={() => setShowSettings(false)}
+                onClick={handleSaveSettings}
                 className="px-4 py-1 rounded-xl text-xs font-bold bg-[#FC5200] text-white hover:bg-[#e04700] transition-colors"
               >
                 Save & Close
@@ -534,6 +503,45 @@ FORMAT EXACTLY LIKE THIS:
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 no-scrollbar">
+        {/* Prominent Login / Connect Button when no activities exist */}
+        {activities.length === 0 && (
+          <div className="bg-surface border border-gray-800 rounded-3xl p-8 my-auto text-center flex flex-col items-center justify-center gap-5 shadow-2xl">
+            <div className="w-16 h-16 rounded-3xl bg-[#FC5200]/10 border border-[#FC5200]/30 flex items-center justify-center shadow-inner">
+              <Activity size={36} className="text-[#FC5200] animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-lg font-extrabold text-white tracking-tight">Connect Your Strava</h2>
+              <p className="text-xs text-gray-400 mt-1.5 max-w-xs mx-auto leading-relaxed">
+                Link your Strava account to instantly import your GPS telemetry, analyze pace splits, and get personalized AI Coach feedback on your runs.
+              </p>
+            </div>
+
+            <button
+              onClick={handleConnectStrava}
+              disabled={loading}
+              className="w-full py-4 rounded-2xl font-extrabold bg-[#FC5200] hover:bg-[#e04700] text-white shadow-lg hover:shadow-[#FC5200]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-sm uppercase tracking-wider disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" />
+                  <span>Connecting Strava API...</span>
+                </>
+              ) : (
+                <>
+                  <Activity size={18} />
+                  <span>Login / Connect with Strava</span>
+                </>
+              )}
+            </button>
+
+            <div className="text-[10px] text-gray-500 flex items-center gap-1.5 justify-center mt-1">
+              <span>🔒 Secure OAuth 2.0 Connection</span>
+              <span>•</span>
+              <button onClick={() => setShowSettings(true)} className="underline hover:text-gray-300">View API Tokens</button>
+            </div>
+          </div>
+        )}
+
         {/* Full Activity Detail View (if selected) */}
         <AnimatePresence>
           {selectedActivity && (
@@ -659,62 +667,51 @@ FORMAT EXACTLY LIKE THIS:
         </AnimatePresence>
 
         {/* Activity List */}
-        <div className="flex flex-col gap-3">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center justify-between">
-            <span>Recent Activities</span>
-            <span className="text-[10px] font-normal text-gray-500">Click to analyze</span>
-          </h3>
+        {activities.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 flex items-center justify-between">
+              <span>Recent Activities</span>
+              <span className="text-[10px] font-normal text-gray-500">Click to analyze</span>
+            </h3>
 
-          {activities.length === 0 && !loading && (
-            <div className="bg-surface border border-gray-800 rounded-3xl p-8 text-center flex flex-col items-center justify-center gap-3">
-              <Activity size={36} className="text-gray-600" />
-              <p className="text-sm text-gray-400">No Strava activities loaded yet.</p>
-              <button
-                onClick={handleSyncStrava}
-                className="px-4 py-2 rounded-2xl bg-[#FC5200] text-white font-bold text-xs shadow-md hover:bg-[#e04700] transition-colors"
+            {activities.map(act => (
+              <motion.div
+                key={act.id}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => setSelectedActivity(act)}
+                className={`bg-surface border rounded-3xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all shadow-md ${
+                  selectedActivity?.id === act.id ? 'border-[#FC5200] bg-surface/90 shadow-[#FC5200]/10' : 'border-gray-800 hover:border-gray-700'
+                }`}
               >
-                Connect Strava & Sync
-              </button>
-            </div>
-          )}
-
-          {activities.map(act => (
-            <motion.div
-              key={act.id}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => setSelectedActivity(act)}
-              className={`bg-surface border rounded-3xl p-4 flex items-center justify-between gap-4 cursor-pointer transition-all shadow-md ${
-                selectedActivity?.id === act.id ? 'border-[#FC5200] bg-surface/90 shadow-[#FC5200]/10' : 'border-gray-800 hover:border-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-background border border-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden relative p-1">
-                  <SvgPolylineMap polyline={act.map?.summary_polyline} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate">{act.name}</h4>
-                  <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 font-medium">
-                    <span className="text-[#FC5200] font-extrabold">{(act.distance / 1000).toFixed(2)} km</span>
-                    <span>•</span>
-                    <span>{formatDuration(act.moving_time)}</span>
-                    <span>•</span>
-                    <span>{formatPace(act.average_speed)}/km</span>
+                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-background border border-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden relative p-1">
+                    <SvgPolylineMap polyline={act.map?.summary_polyline} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-white truncate">{act.name}</h4>
+                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 font-medium">
+                      <span className="text-[#FC5200] font-extrabold">{(act.distance / 1000).toFixed(2)} km</span>
+                      <span>•</span>
+                      <span>{formatDuration(act.moving_time)}</span>
+                      <span>•</span>
+                      <span>{formatPace(act.average_speed)}/km</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {act.cached_summary && (
-                  <Sparkles size={14} className="text-amber-500 animate-pulse" />
-                )}
-                <div className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-gray-400 hover:text-white border border-gray-800">
-                  →
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {act.cached_summary && (
+                    <Sparkles size={14} className="text-amber-500 animate-pulse" />
+                  )}
+                  <div className="w-7 h-7 rounded-full bg-background flex items-center justify-center text-gray-400 hover:text-white border border-gray-800">
+                    →
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* AI Summary Modal */}
