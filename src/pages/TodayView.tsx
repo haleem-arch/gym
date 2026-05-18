@@ -511,15 +511,7 @@ const TodayView = () => {
                 <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
               </div>
               
-              <div className="flex justify-between items-center mt-auto">
-                <div className="flex items-center gap-1.5">
-                  <Activity size={14} className="text-rose-500" />
-                  <div>
-                    <span className="text-lg font-black text-white">{restingHR}</span>
-                    <span className="text-[10px] text-gray-500 font-bold ml-0.5">RHR</span>
-                  </div>
-                </div>
-                
+              <div className="flex justify-center items-center mt-auto">
                 <div className="flex items-center gap-1.5">
                   <Moon size={14} className="text-indigo-400" />
                   <div>
