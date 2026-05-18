@@ -41,6 +41,7 @@ const TodayView = () => {
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
   const [liveHR, setLiveHR] = useState<number | null>(null);
   const [hrHistory, setHrHistory] = useState<number[]>([]);
+  const [todaySteps, setTodaySteps] = useState<number>(0);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
   const [hybridLiftingType, setHybridLiftingType] = useState('PUSH');
   const [latestInbody, setLatestInbody] = useState<{
@@ -127,6 +128,16 @@ const TodayView = () => {
       }
     };
 
+    const fetchTodaySteps = async () => {
+      const { data } = await supabase
+        .from('athlete_biometrics')
+        .select('steps')
+        .eq('date', activeDateStr)
+        .single();
+      
+      if (data) setTodaySteps(data.steps || 0);
+    };
+
     const fetchLatestInbody = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -153,6 +164,7 @@ const TodayView = () => {
 
     fetchWorkoutStatus();
     fetchLatestInbody();
+    fetchTodaySteps();
     
     // 📡 Subscribe to Live HR Stream from Sandbox/Bluefy
     const hrChannel = supabase.channel('live_hr_stream')
@@ -167,9 +179,19 @@ const TodayView = () => {
       })
       .subscribe();
 
+    // 🔄 Listen for Steps updates in Database
+    const dbBiometricsChannel = supabase.channel('db_biometrics')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'athlete_biometrics' }, (payload: any) => {
+        if (payload.new && payload.new.date === activeDateStr) {
+          setTodaySteps(payload.new.steps || 0);
+        }
+      })
+      .subscribe();
+
     return () => { 
       active = false; 
       supabase.removeChannel(hrChannel);
+      supabase.removeChannel(dbBiometricsChannel);
     };
   }, [activeDateStr, workout, isToday, dayType]);
 
@@ -459,56 +481,78 @@ const TodayView = () => {
           </motion.div>
         </div>
 
-        {/* Live Heart Rate Bridge */}
+        {/* Live Metrics Grid */}
         {isToday && (
-          <motion.div 
-             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-             className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full"
-          >
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Live HR Broadcast</span>
-              {liveHR ? (
-                <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> Live
-                </span>
-              ) : (
-                <span className="text-xs font-bold text-gray-600">Waiting for stream...</span>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-rose-950/30 rounded-xl border border-rose-900/50">
-                  <Activity size={20} className={`text-rose-500 ${liveHR ? 'animate-pulse' : ''}`} />
-                </div>
-                <div>
-                  <span className="text-2xl font-black text-white">{liveHR || '--'}</span>
-                  <span className="text-xs text-gray-500 font-bold ml-1">BPM</span>
-                </div>
+          <div className="grid grid-cols-2 gap-4 w-full">
+            {/* Live HR Card */}
+            <motion.div 
+               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+               className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in flex flex-col justify-between"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Live HR</span>
+                {liveHR ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">
+                    Live
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-gray-600">Waiting...</span>
+                )}
               </div>
               
-              {/* Mini Graph */}
-              <div className="w-[120px] h-[30px] bg-gray-900/40 rounded-lg overflow-hidden border border-gray-800/50">
-                <svg width="100%" height="100%" viewBox="0 0 120 30" preserveAspectRatio="none">
-                  {hrHistory.length > 1 && (
-                    <polyline
-                      fill="none"
-                      stroke="#F43F5E"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={hrHistory.map((hr, index) => {
-                        const x = (index / (hrHistory.length - 1)) * 120;
-                        const clampedHR = Math.min(Math.max(hr, 40), 160);
-                        const y = 30 - ((clampedHR - 40) / 120) * 30;
-                        return `${x},${y}`;
-                      }).join(' ')}
-                    />
-                  )}
-                </svg>
+              <div className="flex items-center justify-between mt-auto">
+                <div className="flex items-center gap-2">
+                  <Activity size={16} className={`text-rose-500 ${liveHR ? 'animate-pulse' : ''}`} />
+                  <div>
+                    <span className="text-xl font-black text-white">{liveHR || '--'}</span>
+                    <span className="text-[10px] text-gray-500 font-bold ml-1">BPM</span>
+                  </div>
+                </div>
+                
+                {/* Mini Graph */}
+                <div className="w-[60px] h-[20px] bg-gray-900/40 rounded overflow-hidden border border-gray-800/50">
+                  <svg width="100%" height="100%" viewBox="0 0 60 20" preserveAspectRatio="none">
+                    {hrHistory.length > 1 && (
+                      <polyline
+                        fill="none"
+                        stroke="#F43F5E"
+                        strokeWidth="1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={hrHistory.map((hr, index) => {
+                          const x = (index / (hrHistory.length - 1)) * 60;
+                          const clampedHR = Math.min(Math.max(hr, 40), 160);
+                          const y = 20 - ((clampedHR - 40) / 120) * 20;
+                          return `${x},${y}`;
+                        }).join(' ')}
+                      />
+                    )}
+                  </svg>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+
+            {/* Steps Card */}
+            <motion.div 
+               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+               className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in flex flex-col justify-between"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Steps</span>
+                <span className="text-[10px] font-bold text-primary bg-blue-950/50 px-1.5 py-0.5 rounded-full">Today</span>
+              </div>
+              
+              <div className="flex items-center gap-2 mt-auto">
+                <div className="p-1 bg-blue-950/30 rounded-lg border border-blue-900/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><path d="M12 10V4"/><circle cx="12" cy="4" r="1"/></svg>
+                </div>
+                <div>
+                  <span className="text-xl font-black text-white">{todaySteps || 0}</span>
+                  <span className="text-[10px] text-gray-500 font-bold ml-1">Steps</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
 
         {/* InBody Snapshot */}
