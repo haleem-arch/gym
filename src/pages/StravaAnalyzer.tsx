@@ -183,15 +183,46 @@ const StravaAnalyzer = () => {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
+      let currentAccess = accessToken;
+      let res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
+        headers: { 'Authorization': `Bearer ${currentAccess}` }
       });
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error('Strava Access Token expired or invalid. Please check your credentials in OAuth Settings.');
+      // If 401 Unauthorized, automatically attempt to refresh the token!
+      if (res.status === 401) {
+        console.log("Access token expired. Attempting automatic refresh using Refresh Token...");
+        const refreshRes = await fetch('https://www.strava.com/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+          })
+        });
+
+        if (!refreshRes.ok) {
+          throw new Error('Strava Access Token expired and Refresh Token failed. Please verify your Client ID, Secret, and Refresh Token in OAuth Settings.');
         }
-        throw new Error(`Strava API error (${res.status}). Please verify your Access Token.`);
+
+        const tokenData = await refreshRes.json();
+        currentAccess = tokenData.access_token;
+        setAccessToken(currentAccess);
+        localStorage.setItem('strava_access_token', currentAccess);
+        if (tokenData.refresh_token) {
+          setRefreshToken(tokenData.refresh_token);
+          localStorage.setItem('strava_refresh_token', tokenData.refresh_token);
+        }
+
+        // Re-fetch activities with the brand new access token!
+        res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15', {
+          headers: { 'Authorization': `Bearer ${currentAccess}` }
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Strava API error (${res.status}). Please verify your credentials.`);
       }
 
       const data: StravaActivity[] = await res.json();
