@@ -13,12 +13,12 @@ const WorkoutHome = () => {
   const navigate = useNavigate();
   const { workout, loadWorkout, endWorkout } = useActiveWorkout();
   
-  // Use today's schedule
   const location = useLocation();
   const selectedDateStr = location.state?.activeDateStr || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const getLocalDateString = () => selectedDateStr;
   const { dayType } = useSchedule(getLocalDateString());
 
+  const [hybridLiftingType, setHybridLiftingType] = useState(location.state?.forceLiftingType || 'PUSH');
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
   const [inProgressWorkout, setInProgressWorkout] = useState<any>(null);
   const [todayPlan, setTodayPlan] = useState<any>({
@@ -35,6 +35,16 @@ const WorkoutHome = () => {
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Auto-open Run modal if navigated from TodayView with openRunModal flag
+  useEffect(() => {
+    if (location.state?.openRunModal) {
+      setShowRunModal(true);
+    }
+    if (location.state?.forceLiftingType) {
+      setHybridLiftingType(location.state.forceLiftingType);
+    }
+  }, [location.state]);
 
   const saveRunDirectly = async (statsToSave: { distance: string; elevation: string; pace: string; duration: string }) => {
     setIsSubmittingRun(true);
@@ -86,7 +96,6 @@ const WorkoutHome = () => {
     try {
       let lastAct: any = null;
 
-      // 1. Check Supabase database first
       const { data, error } = await supabase
         .from('strava_activities')
         .select('*')
@@ -97,18 +106,14 @@ const WorkoutHome = () => {
         lastAct = data[0];
       }
 
-      // 2. Check localStorage if not in DB
       if (!lastAct) {
         const localSaved = localStorage.getItem('strava_cached_runs');
         if (localSaved) {
           const parsed = JSON.parse(localSaved);
-          if (parsed && parsed.length > 0) {
-            lastAct = parsed[0];
-          }
+          if (parsed && parsed.length > 0) lastAct = parsed[0];
         }
       }
 
-      // 3. Fallback to live API call if nothing cached
       if (!lastAct) {
         const token = localStorage.getItem('strava_access_token') || '87684dfa24b420b56af7503fa2a3c618944f16e3';
         const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', {
@@ -116,9 +121,7 @@ const WorkoutHome = () => {
         });
         if (res.ok) {
           const acts = await res.json();
-          if (acts && acts.length > 0) {
-            lastAct = acts[0];
-          }
+          if (acts && acts.length > 0) lastAct = acts[0];
         }
       }
 
@@ -126,7 +129,6 @@ const WorkoutHome = () => {
         throw new Error("No Strava runs found. Please connect Strava in the Strava tab first!");
       }
 
-      // Extract stats
       const distKm = lastAct.distance ? (Number(lastAct.distance) / 1000).toFixed(2) : '5.0';
       const elevM = Math.round(lastAct.total_elevation_gain || lastAct.elevation_gain || 0).toString();
       const durationMins = lastAct.moving_time ? (Number(lastAct.moving_time) / 60).toFixed(1) : '27.5';
@@ -143,7 +145,6 @@ const WorkoutHome = () => {
       const newStats = { distance: distKm, elevation: elevM, pace: paceStr, duration: durationMins };
       setRunStats(newStats);
       
-      // Instantly log & save it as requested by user
       await saveRunDirectly(newStats);
 
     } catch (err: any) {
@@ -154,10 +155,11 @@ const WorkoutHome = () => {
     }
   };
 
-  // Sync todayPlan type with dayType from schedule
+  // Sync todayPlan type with dayType from schedule (handling RUN + GYM hybrid split)
   useEffect(() => {
-    setTodayPlan((prev: any) => ({ ...prev, type: dayType, title: `${dayType} Session` }));
-  }, [dayType]);
+    const targetType = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
+    setTodayPlan((prev: any) => ({ ...prev, type: targetType, title: `${targetType} Session` }));
+  }, [dayType, hybridLiftingType]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -223,28 +225,29 @@ const WorkoutHome = () => {
 
       if (dayType === 'REST' || dayType === 'RUN') {
         setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
-      } else if (planMap[dayType]) {
-        // Fetch custom plan from database if it exists
-        const { data: customPlan } = await supabase
-          .from('user_workout_plans')
-          .select('exercises')
-          .eq('user_id', session.user.id)
-          .eq('plan_type', dayType)
-          .maybeSingle();
+      } else {
+        const targetSplit = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
+        if (planMap[targetSplit]) {
+          const { data: customPlan } = await supabase
+            .from('user_workout_plans')
+            .select('exercises')
+            .eq('user_id', session.user.id)
+            .eq('plan_type', targetSplit)
+            .maybeSingle();
 
-        const targetNames = (customPlan?.exercises && customPlan.exercises.length > 0) 
-          ? customPlan.exercises 
-          : planMap[dayType];
+          const targetNames = (customPlan?.exercises && customPlan.exercises.length > 0) 
+            ? customPlan.exercises 
+            : planMap[targetSplit];
 
-        const { data: exData } = await supabase
-          .from('exercises')
-          .select('*')
-          .in('name', targetNames);
-          
-        if (exData && exData.length > 0) {
-          // Sort to match the plan's exact order
-          const sorted = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
-          setTodayPlan((prev: any) => ({ ...prev, exercises: sorted }));
+          const { data: exData } = await supabase
+            .from('exercises')
+            .select('*')
+            .in('name', targetNames);
+            
+          if (exData && exData.length > 0) {
+            const sorted = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
+            setTodayPlan((prev: any) => ({ ...prev, exercises: sorted, type: targetSplit }));
+          }
         }
       }
       
@@ -252,17 +255,14 @@ const WorkoutHome = () => {
     };
     
     const timeout = setTimeout(() => loadData(), 500);
-    
-    const handlePlanUpdated = () => {
-      loadData();
-    };
+    const handlePlanUpdated = () => loadData();
     window.addEventListener('plan_updated', handlePlanUpdated);
     
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('plan_updated', handlePlanUpdated);
     };
-  }, [dayType]);
+  }, [dayType, hybridLiftingType]);
 
   const handleStartWorkout = async () => {
     if (workout) {
@@ -271,7 +271,6 @@ const WorkoutHome = () => {
     } 
     
     if (inProgressWorkout) {
-      // Resume from Supabase
       const { data: exercisesData } = await supabase
         .from('workout_exercises')
         .select(`*, exercises(*)`)
@@ -291,7 +290,7 @@ const WorkoutHome = () => {
         }));
 
         loadWorkout({
-          id: inProgressWorkout.id, // Re-use the same ID to update instead of insert
+          id: inProgressWorkout.id,
           dayType: inProgressWorkout.day_type,
           title: `${inProgressWorkout.day_type} Workout`,
           startTime: new Date().toISOString(),
@@ -303,7 +302,6 @@ const WorkoutHome = () => {
       }
     }
 
-    // Start fresh
     if (todayPlan.exercises.length === 0) {
       alert("Loading exercises, please wait a second...");
       return;
@@ -327,22 +325,24 @@ const WorkoutHome = () => {
     return `${m}m`;
   };
 
-  const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString());
+  const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString() && w.day_type === dayType);
+  const hasCompletedRunToday = pastWorkouts.some(w => w.date === getLocalDateString() && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
+  const hasCompletedGymToday = pastWorkouts.some(w => w.date === getLocalDateString() && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
 
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full">
+    <div className="p-5 flex flex-col gap-6 min-h-full max-w-lg mx-auto w-full overflow-x-hidden">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
         <div className="flex bg-slate-800 p-1 rounded-lg">
           <button 
             onClick={() => setShowAnalytics(false)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${!showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${!showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
           >
             History
           </button>
           <button 
             onClick={() => setShowAnalytics(true)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 ${showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 cursor-pointer ${showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
           >
             <BarChart2 size={16} className={showAnalytics ? 'text-black' : ''} />
             <span>Insights</span>
@@ -356,34 +356,84 @@ const WorkoutHome = () => {
         <>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
         {dayType === 'REST' ? (
-          <div className="bg-surface border border-gray-800 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg">
+          <div className="bg-surface border border-gray-800 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg">
             <span className="text-4xl mb-3">💤</span>
             <h2 className="text-xl font-bold text-white mb-2">Rest Day</h2>
             <p className="text-sm text-gray-400">Recovery is part of training. Sleep well, hydrate, and hit the sauna if possible.</p>
           </div>
         ) : dayType === 'RUN' ? (
-          <div className="bg-surface border border-blue-900/30 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10">
+          <div className="bg-surface border border-blue-900/30 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10">
             <span className="text-4xl mb-3">🏃</span>
             <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
-            <p className="text-sm text-gray-400 mb-4">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
+            <p className="text-sm text-gray-400 mb-5">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
             <button 
               onClick={() => setShowRunModal(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl transition-colors active:scale-95"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-8 rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer text-xs uppercase tracking-wider"
             >
-              Log Run
+              Log Run (Manual / Strava)
             </button>
+          </div>
+        ) : dayType === 'RUN + GYM' ? (
+          <div className="bg-surface border border-purple-900/40 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-2xl shadow-purple-900/10 w-full gap-5">
+            <div className="flex items-center gap-2 text-3xl mb-1">🏃 + 🏋️‍♂️</div>
+            <h2 className="text-xl font-black text-white tracking-tight">Hybrid Day: Run + Gym</h2>
+            <p className="text-xs text-gray-400 mb-1 leading-relaxed">Complete both your cardio mileage and your lifting volume to fulfill today's rings.</p>
+            
+            {/* Gym split sub-selector */}
+            <div className="flex items-center gap-2 bg-gray-900/80 p-1.5 rounded-2xl border border-gray-800 w-full max-w-xs shadow-inner">
+              <span className="text-xs font-bold text-gray-400 px-3">Gym Split:</span>
+              {['PUSH', 'PULL', 'LEGS'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setHybridLiftingType(t)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3 w-full mt-2">
+              {/* Run Button */}
+              {hasCompletedRunToday ? (
+                <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                  <Check size={18} /> RUN COMPLETED
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowRunModal(true)}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
+                >
+                  <Activity size={18} /> LOG RUN (MANUAL / STRAVA)
+                </button>
+              )}
+
+              {/* Gym Button */}
+              {hasCompletedGymToday ? (
+                <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                  <Check size={18} /> {hybridLiftingType} COMPLETED
+                </div>
+              ) : (
+                <button
+                  onClick={handleStartWorkout}
+                  className="w-full py-4 bg-primary hover:bg-blue-600 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
+                >
+                  <Play size={18} fill="currentColor" /> START {hybridLiftingType} WORKOUT
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="w-full flex flex-col items-center gap-2">
             <button 
               onClick={isTodayCompleted ? undefined : handleStartWorkout}
               disabled={isTodayCompleted}
-              className={`w-full font-bold py-5 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg ${
+              className={`w-full font-bold py-5 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xl cursor-pointer ${
                 isTodayCompleted 
                   ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
                   : workout || inProgressWorkout 
                     ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
-                    : 'bg-primary text-white shadow-primary/20'
+                    : 'bg-primary hover:bg-blue-600 text-white shadow-primary/20'
               }`}
             >
               {isTodayCompleted ? (
@@ -435,7 +485,7 @@ const WorkoutHome = () => {
                     }
                   }
                 }}
-                className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95"
+                className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 cursor-pointer"
               >
                 Restart Session & Start Fresh
               </button>
@@ -460,16 +510,16 @@ const WorkoutHome = () => {
               <SwipeToDeleteRow 
                 key={session.id} 
                 onDelete={() => handleDeleteSession(session.id)}
-                backgroundRounded="rounded-xl"
+                backgroundRounded="rounded-2xl"
               >
                 <div 
                   onClick={() => navigate(`/workout/${session.id}`)}
-                  className="bg-surface rounded-xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform w-full"
+                  className="bg-surface rounded-2xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer hover:border-gray-700 active:scale-[0.98] transition-all w-full shadow-md"
                 >
                   <div>
-                    <span className="text-xs text-gray-500 mb-1 block">{formatDate(session.date)}</span>
+                    <span className="text-xs text-gray-500 mb-1 block font-medium">{formatDate(session.date)}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-gray-800 text-gray-300 border-gray-700">
+                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${session.day_type === 'RUN' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-gray-800 text-primary border-gray-700'}`}>
                         {session.day_type}
                       </span>
                       {(() => {
@@ -478,23 +528,23 @@ const WorkoutHome = () => {
                             const stats = JSON.parse(session.notes);
                             return (
                               <>
-                                <span className="text-sm font-bold text-blue-400">{stats.distance_km} km</span>
-                                <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{stats.pace}/km</span>
-                                <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                                <span className="text-sm font-black text-blue-400">{stats.distance_km} km</span>
+                                <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{stats.pace}/km</span>
+                                <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
                               </>
                             );
                           } catch (e) {}
                         }
                         return (
                           <>
-                            <span className="text-sm font-bold text-white">{session.total_volume} kg</span>
-                            <span className="text-sm text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                            <span className="text-sm font-black text-white">{session.total_volume} kg</span>
+                            <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
                           </>
                         );
                       })()}
                     </div>
                   </div>
-                  <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full">
+                  <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full border border-gray-800">
                     <ChevronRight size={18} />
                   </button>
                 </div>
@@ -510,7 +560,7 @@ const WorkoutHome = () => {
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-surface w-full max-w-sm rounded-2xl p-6 border border-gray-800 shadow-2xl relative"
+            className="bg-surface w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl relative"
           >
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <span>🏃</span> Log Run
@@ -520,7 +570,7 @@ const WorkoutHome = () => {
               type="button"
               onClick={handlePullFromStrava}
               disabled={isPullingStrava}
-              className="w-full mb-5 py-3 rounded-xl font-extrabold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-lg hover:shadow-orange-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wide uppercase border border-orange-500/30 disabled:opacity-50"
+              className="w-full mb-5 py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-xl hover:shadow-orange-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wider uppercase border border-orange-500/30 disabled:opacity-50 cursor-pointer"
             >
               {isPullingStrava ? (
                 <>
@@ -537,51 +587,51 @@ const WorkoutHome = () => {
             
             <form onSubmit={handleLogRun} className="flex flex-col gap-4">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Distance (km)</label>
+                <label className="text-xs font-bold text-gray-400 mb-1 block">Distance (km)</label>
                 <input 
                   type="number" 
                   step="0.01"
                   required
                   value={runStats.distance}
                   onChange={e => setRunStats({...runStats, distance: e.target.value})}
-                  className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                  className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
                   placeholder="5.0"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Elevation (m)</label>
+                  <label className="text-xs font-bold text-gray-400 mb-1 block">Elevation (m)</label>
                   <input 
                     type="number" 
                     value={runStats.elevation}
                     onChange={e => setRunStats({...runStats, elevation: e.target.value})}
-                    className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
                     placeholder="120"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Avg Pace</label>
+                  <label className="text-xs font-bold text-gray-400 mb-1 block">Avg Pace</label>
                   <input 
                     type="text" 
                     required
                     value={runStats.pace}
                     onChange={e => setRunStats({...runStats, pace: e.target.value})}
-                    className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
                     placeholder="5:30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Duration (mins)</label>
+                <label className="text-xs font-bold text-gray-400 mb-1 block">Duration (mins)</label>
                 <input 
                   type="number" 
                   step="any"
                   required
                   value={runStats.duration}
                   onChange={e => setRunStats({...runStats, duration: e.target.value})}
-                  className="w-full bg-black/50 border border-gray-700 rounded-xl p-3 text-white focus:border-primary outline-none"
+                  className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
                   placeholder="27.5"
                 />
               </div>
@@ -590,14 +640,14 @@ const WorkoutHome = () => {
                 <button 
                   type="button" 
                   onClick={() => setShowRunModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:bg-gray-800 transition-colors"
+                  className="flex-1 py-3.5 rounded-2xl border border-gray-700 text-gray-300 font-bold hover:bg-gray-800 transition-colors cursor-pointer text-xs uppercase tracking-wider"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={isSubmittingRun}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors disabled:opacity-50"
+                  className="flex-1 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold transition-colors disabled:opacity-50 cursor-pointer text-xs uppercase tracking-wider shadow-lg"
                 >
                   {isSubmittingRun ? 'Saving...' : 'Save Run'}
                 </button>

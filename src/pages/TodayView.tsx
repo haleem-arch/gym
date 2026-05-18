@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -12,14 +12,13 @@ import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
 
 
-const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN'];
+const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
 
 const TodayView = () => {
   const navigate = useNavigate();
   const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
   
-  // Need to safely get date string respecting timezone
   const getLocalDateString = (d: Date) => {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   };
@@ -40,6 +39,8 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
+  const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
+  const [hybridLiftingType, setHybridLiftingType] = useState('PUSH');
   const [latestInbody, setLatestInbody] = useState<{
     weight: number | string;
     bf: number | string;
@@ -53,31 +54,54 @@ const TodayView = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // 1. Check if a workout has been logged in Supabase for the activeDateStr first!
       const { data: completedWorkouts } = await supabase
         .from('workouts')
-        .select('id, status')
+        .select('id, status, day_type, notes')
         .eq('user_id', session.user.id)
         .eq('date', activeDateStr);
 
       if (!active) return;
 
-      if (completedWorkouts && completedWorkouts.length > 0) {
-        const hasCompleted = completedWorkouts.some((w: any) => w.status === 'completed');
-        if (hasCompleted) {
-          // Self-heal: Clear any local active workout state & localStorage if it's already completed today
-          if (isToday) {
-            localStorage.removeItem('athlete_dashboard_active_workout');
-            if (workout) {
-              endWorkout();
+      if (completedWorkouts) {
+        setCompletedWorkoutsList(completedWorkouts);
+
+        if (dayType === 'RUN + GYM') {
+          const hasRun = completedWorkouts.some((w: any) => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
+          const hasGym = completedWorkouts.some((w: any) => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+          
+          if (hasRun && hasGym) {
+            if (isToday) {
+              localStorage.removeItem('athlete_dashboard_active_workout');
+              if (workout) endWorkout();
             }
+            setWorkoutStatus(1.0);
+          } else if (hasRun || hasGym) {
+            setWorkoutStatus(0.5);
+          } else {
+            setWorkoutStatus(0.0);
           }
-          setWorkoutStatus(1.0);
+          return;
+        }
+
+        if (completedWorkouts.length > 0) {
+          const hasCompleted = completedWorkouts.some((w: any) => w.status === 'completed');
+          if (hasCompleted) {
+            if (isToday) {
+              localStorage.removeItem('athlete_dashboard_active_workout');
+              if (workout) endWorkout();
+            }
+            setWorkoutStatus(1.0);
+            return;
+          }
+        }
+
+        const hasInProgress = completedWorkouts.some((w: any) => w.status === 'in_progress');
+        if (hasInProgress) {
+          setWorkoutStatus(0.5);
           return;
         }
       }
 
-      // 2. If not completed in database, check if active workout is currently in memory
       const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
       if (activeStr) {
         try {
@@ -89,20 +113,10 @@ const TodayView = () => {
         } catch (e) {}
       }
 
-      // 3. If not in memory, check if in_progress in database
-      if (completedWorkouts && completedWorkouts.length > 0) {
-        const hasInProgress = completedWorkouts.some((w: any) => w.status === 'in_progress');
-        if (hasInProgress) {
-          setWorkoutStatus(0.5);
-        } else {
-          setWorkoutStatus(0.0);
-        }
+      if (workout && isToday) {
+        setWorkoutStatus(0.5);
       } else {
-        if (workout && isToday) {
-          setWorkoutStatus(0.5);
-        } else {
-          setWorkoutStatus(0.0);
-        }
+        setWorkoutStatus(0.0);
       }
     };
 
@@ -132,10 +146,8 @@ const TodayView = () => {
 
     fetchWorkoutStatus();
     fetchLatestInbody();
-    return () => {
-      active = false;
-    };
-  }, [activeDateStr, workout, isToday]);
+    return () => { active = false; };
+  }, [activeDateStr, workout, isToday, dayType]);
 
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
@@ -143,13 +155,13 @@ const TodayView = () => {
   
   const dateDisplay = isToday ? 'Today' : activeDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Phase 1 Mock Plan Generation based on Day Type
   const generatePlan = (type: string) => {
     switch(type) {
       case 'PUSH': return { title: 'Push (Chest/Shoulders/Triceps)', exercises: ['Incline DB Press', 'Overhead Cable Extension', 'Lateral Raises', 'Machine Chest Press'] };
       case 'PULL': return { title: 'Pull (Back/Biceps)', exercises: ['Pull-ups', 'Barbell Row', 'Face Pulls', 'Bicep Curls'] };
       case 'LEGS': return { title: 'Legs (Quads/Hams/Calves)', exercises: ['Squats', 'Leg Extension', 'Hamstring Curls', 'Calf Raises'] };
       case 'RUN': return { title: 'Cardio (Running Session)', exercises: ['Run smart', 'Control your pace', 'Focus on your breathing', 'Keep a steady rhythm'] };
+      case 'RUN + GYM': return { title: `Run + Gym (${hybridLiftingType})`, exercises: ['🏃‍♂️ Strava / Manual Run Session', `🏋️‍♂️ ${hybridLiftingType} Lifting Session`] };
       case 'REST': return { title: 'Active Recovery', exercises: ['Focus on hydration', 'Get 8 hours of sleep', 'Light stretching if needed'] };
       default: return { title: 'Workout', exercises: [] };
     }
@@ -157,26 +169,19 @@ const TodayView = () => {
   const plan = generatePlan(dayType);
 
   const macros = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0 };
-  
   const waterTotalMl = waterLogs?.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0) || 0;
   const waterCurrent = waterTotalMl / 1000;
-  const waterTarget = 3.5; // 3.5 Liters
+  const waterTarget = 3.5;
 
-  // Find the last logged entry from waterLogs
-  const lastWaterLog = waterLogs && waterLogs.length > 0 
-    ? waterLogs[waterLogs.length - 1] 
-    : null;
-  
-  // Parse and format the last log time (e.g. 8:02 AM)
+  const lastWaterLog = waterLogs && waterLogs.length > 0 ? waterLogs[waterLogs.length - 1] : null;
   const lastLoggedTime = lastWaterLog && lastWaterLog.created_at
-    ? new Date(lastWaterLog.created_at).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
+    ? new Date(lastWaterLog.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     : null;
 
   const inbody = latestInbody;
+
+  const hasCompletedRun = completedWorkoutsList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
+  const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
 
   return (
     <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
@@ -206,8 +211,6 @@ const TodayView = () => {
         </button>
       </div>
 
-
-
       {/* Today's Plan Card */}
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }} 
@@ -221,14 +224,29 @@ const TodayView = () => {
           <select 
             value={dayType} 
             onChange={(e) => setDayType(e.target.value)}
-            className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none"
+            className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
           >
             {DAY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
           </select>
         </div>
         <h2 className="text-xl font-extrabold text-white mb-4">{plan.title}</h2>
         
-        {dayType !== 'REST' && (
+        {dayType === 'RUN + GYM' && (
+          <div className="flex items-center gap-2 mb-5 bg-gray-900/80 p-1.5 rounded-xl border border-gray-800">
+            <span className="text-xs font-bold text-gray-400 px-2">Select Gym Split:</span>
+            {['PUSH', 'PULL', 'LEGS'].map(t => (
+              <button
+                key={t}
+                onClick={() => setHybridLiftingType(t)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${hybridLiftingType === t ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {dayType !== 'REST' && dayType !== 'RUN + GYM' && (
           <ul className="space-y-2 mb-6 text-sm text-gray-300">
             {plan.exercises.map((ex, i) => (
               <li key={i} className="flex items-center gap-2.5">
@@ -239,7 +257,41 @@ const TodayView = () => {
           </ul>
         )}
 
-        {dayType !== 'REST' && (
+        {dayType === 'RUN + GYM' ? (
+          <div className="flex flex-col gap-3 mt-1">
+            {/* Run Action Button */}
+            {hasCompletedRun ? (
+              <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 text-xs">
+                <Check size={16} />
+                RUN COMPLETED
+              </div>
+            ) : (
+              <button 
+                onClick={() => navigate('/workout', { state: { activeDateStr, openRunModal: true, forceLiftingType: hybridLiftingType } })}
+                className="w-full h-[48px] bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <Activity size={16} />
+                LOG RUN (MANUAL / STRAVA)
+              </button>
+            )}
+
+            {/* Gym Action Button */}
+            {hasCompletedGym ? (
+              <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 text-xs">
+                <Check size={16} />
+                {hybridLiftingType} COMPLETED
+              </div>
+            ) : (
+              <button 
+                onClick={() => navigate('/workout', { state: { activeDateStr, forceLiftingType: hybridLiftingType } })}
+                className="w-full h-[48px] bg-primary hover:bg-blue-600 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <Play size={16} fill="currentColor" />
+                START {hybridLiftingType} WORKOUT
+              </button>
+            )}
+          </div>
+        ) : dayType !== 'REST' && (
           workoutStatus === 1.0 ? (
             <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
               <Check size={18} />
@@ -252,7 +304,7 @@ const TodayView = () => {
                   if (workout && isToday) {
                     navigate('/workout/active');
                   } else {
-                    navigate('/workout', { state: { activeDateStr } }); // Pass the selected date!
+                    navigate('/workout', { state: { activeDateStr } });
                   }
                 }}
                 className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && isToday) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
@@ -369,7 +421,7 @@ const TodayView = () => {
                  <div className="w-full flex flex-col items-center">
                    <button 
                      onClick={() => logWater(0.25)} 
-                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5"
+                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5 cursor-pointer"
                    >
                      + 250ml WATER
                    </button>
@@ -410,7 +462,7 @@ const TodayView = () => {
           ) : (
             <div className="text-center py-5 bg-gray-900/40 rounded-xl border border-gray-800/80">
               <p className="text-xs text-gray-400 mb-1.5">No InBody scans logged yet</p>
-              <button onClick={() => navigate('/inbody')} className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1">
+              <button onClick={() => navigate('/inbody')} className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1 cursor-pointer">
                 Log First Scan →
               </button>
             </div>
@@ -421,7 +473,7 @@ const TodayView = () => {
       {/* Subtle Separation Divider */}
       <div className="w-full border-t border-white/10 my-1" />
 
-      {/* TODAY'S SCORE Header (Moved to bottom) */}
+      {/* TODAY'S SCORE Header */}
       <div className="flex flex-col gap-1.5 w-full animate-fade-in">
         <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
         <BioStatusRing 
@@ -448,7 +500,7 @@ const TodayView = () => {
               window.location.reload();
             }
           }}
-          className="text-[10px] text-gray-600 uppercase font-bold tracking-widest hover:text-danger transition-colors p-2"
+          className="text-[10px] text-gray-600 uppercase font-bold tracking-widest hover:text-danger transition-colors p-2 cursor-pointer"
         >
           Force Reset App Cache
         </button>
