@@ -749,87 +749,97 @@ const TodayView = () => {
         </div>
 
         {/* Daily Biometrics - Sleep Recovery Card */}
-        {isToday && (
-          <div className="w-full animate-fade-in">
-            {/* Resting HR & Sleep Card */}
-            <motion.div 
-               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-               className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health & Sleep</span>
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
-              </div>
-              
-              <div className="flex items-center gap-2 mt-2 mb-3">
-                <Moon size={18} className="text-indigo-400" />
-                {(() => {
-                  const totalMins = Math.floor(sleepHours * 60);
-                  const h = Math.floor(totalMins / 60);
-                  const m = totalMins % 60;
-                  return (
-                    <span className="text-2xl font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
-                  );
-                })()}
-              </div>
-              
-              {/* Sleep Stages Breakdown */}
-              <div className="mt-2 border-t border-gray-800 pt-2">
-                {(() => {
-                  const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
-                  const formatStage = (hrs: number) => {
-                    const totalMins = Math.round(hrs * 60);
-                    if (totalMins < 60) return `${totalMins}m`;
+        <div className="w-full animate-fade-in">
+          {/* Resting HR & Sleep Card */}
+          <motion.div 
+             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+             className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health & Sleep</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
+            </div>
+            
+            {sleepHours > 0 ? (
+              <>
+                <div className="flex items-center gap-2 mt-2 mb-3">
+                  <Moon size={18} className="text-indigo-400" />
+                  {(() => {
+                    const totalMins = Math.floor(sleepHours * 60);
                     const h = Math.floor(totalMins / 60);
                     const m = totalMins % 60;
-                    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-                  };
-                  return (
-                    <>
-                      <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                        <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
-                        <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
-                        <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2.5 text-gray-400 font-bold">
-                        <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
-                            <span className="text-gray-500 font-semibold">Deep</span>
-                          </div>
-                          <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
+                    return (
+                      <span className="text-2xl font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
+                    );
+                  })()}
+                </div>
+                
+                {/* Sleep Stages Breakdown */}
+                <div className="mt-2 border-t border-gray-800 pt-2">
+                  {(() => {
+                    const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
+                    const formatStage = (hrs: number) => {
+                      const totalMins = Math.round(hrs * 60);
+                      if (totalMins < 60) return `${totalMins}m`;
+                      const h = Math.floor(totalMins / 60);
+                      const m = totalMins % 60;
+                      return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                    };
+                    return (
+                      <>
+                        <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
+                          <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
+                          <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
+                          <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
                         </div>
-                        <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
-                            <span className="text-gray-500 font-semibold">REM</span>
+                        <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2.5 text-gray-400 font-bold">
+                          <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
+                              <span className="text-gray-500 font-semibold">Deep</span>
+                            </div>
+                            <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
                           </div>
-                          <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
-                        </div>
-                        <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
-                            <span className="text-gray-500 font-semibold">Light</span>
+                          <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
+                              <span className="text-gray-500 font-semibold">REM</span>
+                            </div>
+                            <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
                           </div>
-                          <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(lightSleepHours)}</span>
+                          <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
+                              <span className="text-gray-500 font-semibold">Light</span>
+                            </div>
+                            <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(lightSleepHours)}</span>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  );
-                })()}
+                      </>
+                    );
+                  })()}
+                </div>
+                <div className="flex justify-center mt-3.5">
+                  <button
+                    onClick={analyzeSleepWithAi}
+                    className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all flex items-center gap-1.5 border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
+                  >
+                    <Sparkles size={11} className="text-indigo-400 animate-pulse" />
+                    <span>Analyze Sleep</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <Moon size={28} className="text-gray-650 mb-2 animate-pulse" />
+                <span className="text-xs font-black text-gray-400 uppercase tracking-wider">No Sleep Telemetry</span>
+                <p className="text-[9px] text-gray-500 max-w-[200px] mt-1 font-semibold leading-normal">
+                  No sleep stages or recovery metrics synced for this date.
+                </p>
               </div>
-              <div className="flex justify-center mt-3.5">
-                <button
-                  onClick={analyzeSleepWithAi}
-                  className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all flex items-center gap-1.5 border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
-                >
-                  <Sparkles size={11} className="text-indigo-400 animate-pulse" />
-                  <span>Analyze Sleep</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+            )}
+          </motion.div>
+        </div>
 
         {/* InBody Snapshot */}
         <motion.div 
