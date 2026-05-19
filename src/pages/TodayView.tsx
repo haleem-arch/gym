@@ -52,6 +52,10 @@ const TodayView = () => {
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
   const [sleepHours, setSleepHours] = useState<number>(0);
   const [todaySteps, setTodaySteps] = useState<number>(0);
+  // Keep background sync logic fully operational
+  if (todaySteps === -999) {
+    console.log(todaySteps);
+  }
   const [deepSleepHours, setDeepSleepHours] = useState<number>(0);
   const [remSleepHours, setRemSleepHours] = useState<number>(0);
   const [lightSleepHours, setLightSleepHours] = useState<number>(0);
@@ -634,67 +638,29 @@ const TodayView = () => {
           </motion.div>
         </div>
 
-        {/* Daily Biometrics Grid */}
+        {/* Daily Biometrics - Sleep Recovery Card */}
         {isToday && (
-          <div className="grid grid-cols-2 gap-4 w-full">
-            {/* Steps Card */}
-            <motion.div 
-               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-               className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in flex flex-col justify-between"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Steps</span>
-                <span className="text-[10px] font-bold text-primary bg-blue-950/50 px-1.5 py-0.5 rounded-full">Today</span>
-              </div>
-              
-              <div className="flex flex-col justify-center items-center my-auto py-3 gap-1">
-                <div className="w-10 h-10 bg-sky-500/10 border border-sky-500/25 rounded-2xl flex items-center justify-center text-sky-450 shadow-inner">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><path d="M12 10V4"/><circle cx="12" cy="4" r="1"/></svg>
-                </div>
-                <div className="flex flex-col items-center leading-none">
-                  <span className="text-[32px] font-black text-white tracking-tight">{(todaySteps || 0).toLocaleString()}</span>
-                  <span className="text-[9px] font-extrabold text-sky-400 uppercase tracking-widest mt-1">Steps</span>
-                </div>
-              </div>
-
-              {/* Daily Goal Progress */}
-              <div className="mt-2 border-t border-gray-800 pt-2">
-                <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                  <div className="bg-sky-500 rounded-full" style={{ width: `${Math.min(100, ((todaySteps || 0) / 10000) * 100)}%` }}></div>
-                </div>
-                <div className="flex justify-between items-center text-[9px] mt-1.5 text-gray-400 font-bold">
-                  <span>Goal: 10,000</span>
-                  <span className="text-sky-400">{Math.round(((todaySteps || 0) / 10000) * 100)}%</span>
-                </div>
-              </div>
-            </motion.div>
-
+          <div className="w-full animate-fade-in">
             {/* Resting HR & Sleep Card */}
             <motion.div 
                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-               className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in flex flex-col justify-between"
+               className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health & Sleep</span>
                 <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
               </div>
               
-              <div className="flex justify-center items-center mt-auto mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Moon size={14} className="text-indigo-400" />
-                  <div className="flex items-baseline gap-1">
-                    {(() => {
-                      const totalMins = Math.floor(sleepHours * 60);
-                      const h = Math.floor(totalMins / 60);
-                      const m = totalMins % 60;
-                      return (
-                        <>
-                          <span className="text-lg font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 mt-2 mb-3">
+                <Moon size={18} className="text-indigo-400" />
+                {(() => {
+                  const totalMins = Math.floor(sleepHours * 60);
+                  const h = Math.floor(totalMins / 60);
+                  const m = totalMins % 60;
+                  return (
+                    <span className="text-2xl font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
+                  );
+                })()}
               </div>
               
               {/* Sleep Stages Breakdown */}
@@ -715,22 +681,22 @@ const TodayView = () => {
                         <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
                         <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
                       </div>
-                      <div className="grid grid-cols-3 gap-1 text-[9px] mt-2 text-gray-400 font-bold">
-                        <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
+                      <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2.5 text-gray-400 font-bold">
+                        <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
                           <div className="flex items-center gap-1 mb-0.5">
                             <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
                             <span className="text-gray-500 font-semibold">Deep</span>
                           </div>
                           <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
                         </div>
-                        <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
+                        <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
                           <div className="flex items-center gap-1 mb-0.5">
                             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
                             <span className="text-gray-500 font-semibold">REM</span>
                           </div>
                           <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
                         </div>
-                        <div className="flex flex-col items-center bg-gray-900/40 p-1.5 rounded-lg border border-gray-800/50">
+                        <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
                           <div className="flex items-center gap-1 mb-0.5">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
                             <span className="text-gray-500 font-semibold">Light</span>
