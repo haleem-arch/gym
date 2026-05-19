@@ -97,13 +97,15 @@ export const TypewriterText = ({
           
           const isBullet = /^[-•*]\s/.test(line);
           return (
-            <div key={i} className={`flex ${isBullet ? 'gap-2' : ''}`}>
+            <div key={i} className={isBullet ? 'flex gap-2' : ''}>
               {isBullet && <span className="text-primary mt-0.5 flex-shrink-0">•</span>}
-              <span>{isBullet ? parts.map((p) => typeof p === 'string' ? p.replace(/^[-•*]\s/, '') : p) : parts}</span>
-              {/* Show cursor on the last line being typed */}
-              {i === lines.length - 1 && isTyping && (
-                <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse translate-y-0.5" />
-              )}
+              <span className={isBullet ? '' : 'inline'}>
+                {isBullet ? parts.map((p) => typeof p === 'string' ? p.replace(/^[-•*]\s/, '') : p) : parts}
+                {/* Show cursor directly after text to ensure proper wrapping */}
+                {i === lines.length - 1 && isTyping && (
+                  <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse translate-y-0.5" />
+                )}
+              </span>
             </div>
           );
         })}

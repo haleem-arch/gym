@@ -19,15 +19,15 @@ export const NumberRoller = ({ value, duration = 800, decimals = 0 }: NumberRoll
     let startTimestamp: number | null = null;
     let animationFrameId: number;
 
-    const easeOutQuart = (x: number): number => {
-      return 1 - Math.pow(1 - x, 4);
+    const easeOutSine = (x: number): number => {
+      return Math.sin((x * Math.PI) / 2);
     };
 
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
       
-      const easedProgress = easeOutQuart(progress);
+      const easedProgress = easeOutSine(progress);
       const currentVal = startValue + (endValue - startValue) * easedProgress;
       
       setDisplayValue(currentVal);
