@@ -859,76 +859,69 @@ const TodayView = () => {
       {/* Subtle Separation Divider */}
       <div className="w-full border-t border-white/10 my-1" />
 
-      {/* DAILY PHYSIOLOGICAL READINESS INDEX */}
-      <div className="flex flex-col gap-3 w-full animate-fade-in">
-        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Readiness Index</span>
+      {/* SIDE-BY-SIDE METRICS GRID */}
+      <div className="grid grid-cols-2 gap-4 w-full animate-fade-in">
+        {/* READINESS INDEX CARD */}
         <motion.div
           onClick={() => setShowReadinessModal(true)}
           whileTap={{ scale: 0.98 }}
-          className="bg-surface rounded-3xl p-4 border border-gray-800 flex items-center justify-between gap-5 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group"
+          className="bg-surface rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group min-h-[140px]"
         >
-          {/* Subtle background glow depending on readiness */}
-          <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 transition-all group-hover:scale-110 duration-700 pointer-events-none`} />
+          {/* Glow */}
+          <div className={`absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 pointer-events-none`} />
 
-          {/* Left: SVG Ring (smaller size: 80x80px) */}
-          <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0 z-10">
-            <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+          {/* Title */}
+          <div className="flex items-center gap-1 w-full justify-center">
+            <Sparkles size={11} style={{ color: readiness.color }} />
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Readiness</span>
+          </div>
+
+          {/* SVG Ring (compact 64x64px) */}
+          <div className="relative w-16 h-16 flex items-center justify-center flex-shrink-0 z-10">
+            <svg width="64" height="64" viewBox="0 0 64 64" className="transform -rotate-90">
               <circle
-                cx="40"
-                cy="40"
-                r="34"
+                cx="32"
+                cy="32"
+                r="27"
                 stroke="#1e293b"
-                strokeWidth="6"
+                strokeWidth="5"
                 fill="transparent"
               />
               <motion.circle
-                cx="40"
-                cy="40"
-                r="34"
+                cx="32"
+                cy="32"
+                r="27"
                 stroke={readiness.color}
-                strokeWidth="6"
+                strokeWidth="5"
                 fill="transparent"
-                strokeDasharray={213.6}
-                strokeDashoffset={213.6 - (213.6 * readiness.readinessScore) / 100}
+                strokeDasharray={169.6}
+                strokeDashoffset={169.6 - (169.6 * readiness.readinessScore) / 100}
                 strokeLinecap="round"
-                initial={{ strokeDashoffset: 213.6 }}
-                animate={{ strokeDashoffset: 213.6 - (213.6 * readiness.readinessScore) / 100 }}
+                initial={{ strokeDashoffset: 169.6 }}
+                animate={{ strokeDashoffset: 169.6 - (169.6 * readiness.readinessScore) / 100 }}
                 transition={{ type: 'spring', damping: 20, stiffness: 80 }}
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-xl font-black text-white tracking-tight leading-none">{readiness.readinessScore}</span>
-              <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider mt-0.5 leading-none">Score</span>
+              <span className="text-sm font-extrabold text-white tracking-tight leading-none">{readiness.readinessScore}</span>
+              <span className="text-[6px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 leading-none">Score</span>
             </div>
           </div>
 
-          {/* Right: State Information */}
-          <div className="flex-1 flex flex-col justify-center z-10 leading-normal">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Sparkles size={13} style={{ color: readiness.color }} className="animate-pulse" />
-              <span className="text-xs font-black tracking-wider uppercase" style={{ color: readiness.color }}>
-                {readiness.verdict}
-              </span>
-            </div>
-            <p className="text-[11px] font-semibold text-gray-450 leading-relaxed mb-1.5">
-              {readiness.recommendation.split('.')[0]}.
-            </p>
-            <span className="text-[9px] font-black text-primary group-hover:text-blue-400 transition-colors uppercase tracking-widest flex items-center gap-0.5">
-              Breakdown & Coach Tips →
-            </span>
-          </div>
+          {/* Verdict label */}
+          <span className="text-[10px] font-black uppercase tracking-wider z-10 leading-none" style={{ color: readiness.color }}>
+            {readiness.verdict.split(' ')[0]}
+          </span>
         </motion.div>
-      </div>
 
-      {/* TODAY'S TARGET RINGS */}
-      <div className="flex flex-col gap-1.5 w-full animate-fade-in">
-        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Targets</span>
+        {/* COMPACT CONCENTRIC TARGETS CARD */}
         <BioStatusRing 
           kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
           waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
           workoutStatus={workoutStatus}
           sleepPct={sleepHours / 8}
           isRestDay={dayType === 'REST'}
+          compact={true}
         />
       </div>
       
