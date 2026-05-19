@@ -20,20 +20,20 @@ export const BioStatusRing = ({
   onClick
 }: BioStatusRingProps) => {
   // SVG Geometry Settings dynamically scaled
-  const size = compact ? 80 : 100;
+  const size = compact ? 90 : 100;
   const center = size / 2;
-  const strokeWidth = compact ? 3 : 3.5;
+  const strokeWidth = compact ? 3.2 : 3.5;
 
-  const rOuter = compact ? 34 : 42;
+  const rOuter = compact ? 39 : 42;
   const circOuter = 2 * Math.PI * rOuter;
   
-  const rMiddle = compact ? 27 : 32;
+  const rMiddle = compact ? 31 : 32;
   const circMiddle = 2 * Math.PI * rMiddle;
   
-  const rInner = compact ? 20 : 22;
+  const rInner = compact ? 23 : 22;
   const circInner = 2 * Math.PI * rInner;
 
-  const rInnerInner = compact ? 13 : 12;
+  const rInnerInner = compact ? 15 : 12;
   const circInnerInner = 2 * Math.PI * rInnerInner;
 
   // Colors
@@ -64,12 +64,12 @@ export const BioStatusRing = ({
       transition={{ duration: 0.3, ease: "easeOut" }}
       style={{ backgroundColor: compact ? 'transparent' : '#0D1117' }}
       className={compact 
-        ? `rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 w-full min-h-[140px] bg-surface ${onClick ? 'cursor-pointer hover:border-gray-700 transition-colors' : ''}` 
+        ? `rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 w-full min-h-[165px] bg-surface ${onClick ? 'cursor-pointer hover:border-gray-700 transition-colors' : ''}` 
         : "rounded-[20px] p-4 border border-gray-800 shadow-2xl flex items-center justify-between gap-6 w-full"
       }
     >
       {compact && (
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center w-full">
+        <div className="text-[10px] font-bold text-gray-550 uppercase tracking-widest text-center w-full">
           Targets
         </div>
       )}
@@ -120,7 +120,7 @@ export const BioStatusRing = ({
 
         {/* Small readable percentage inside the inner ring */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
-          <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} font-extrabold text-white tracking-tight leading-none`}>
+          <span className={`${compact ? 'text-[9.5px]' : 'text-[10px]'} font-extrabold text-white tracking-tight leading-none`}>
             {dailyBioScore}%
           </span>
         </div>

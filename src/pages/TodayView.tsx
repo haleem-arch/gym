@@ -866,7 +866,7 @@ const TodayView = () => {
         <motion.div
           onClick={() => setShowReadinessModal(true)}
           whileTap={{ scale: 0.98 }}
-          className="bg-surface rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group min-h-[140px]"
+          className="bg-surface rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group min-h-[165px]"
         >
           {/* Glow */}
           <div className={`absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 pointer-events-none`} />
@@ -874,37 +874,37 @@ const TodayView = () => {
           {/* Title */}
           <div className="flex items-center gap-1 w-full justify-center">
             <Sparkles size={11} style={{ color: readiness.color }} />
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Readiness</span>
+            <span className="text-[10px] font-bold text-gray-550 uppercase tracking-widest">Readiness</span>
           </div>
 
-          {/* SVG Ring (compact 64x64px) */}
-          <div className="relative w-16 h-16 flex items-center justify-center flex-shrink-0 z-10">
-            <svg width="64" height="64" viewBox="0 0 64 64" className="transform -rotate-90">
+          {/* SVG Ring (compact 90x90px) */}
+          <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0 z-10">
+            <svg width="90" height="90" viewBox="0 0 90 90" className="transform -rotate-90">
               <circle
-                cx="32"
-                cy="32"
-                r="27"
+                cx="45"
+                cy="45"
+                r="39"
                 stroke="#1e293b"
-                strokeWidth="5"
+                strokeWidth="6"
                 fill="transparent"
               />
               <motion.circle
-                cx="32"
-                cy="32"
-                r="27"
+                cx="45"
+                cy="45"
+                r="39"
                 stroke={readiness.color}
-                strokeWidth="5"
+                strokeWidth="6"
                 fill="transparent"
-                strokeDasharray={169.6}
-                strokeDashoffset={169.6 - (169.6 * readiness.readinessScore) / 100}
+                strokeDasharray={245.0}
+                strokeDashoffset={245.0 - (245.0 * readiness.readinessScore) / 100}
                 strokeLinecap="round"
-                initial={{ strokeDashoffset: 169.6 }}
-                animate={{ strokeDashoffset: 169.6 - (169.6 * readiness.readinessScore) / 100 }}
+                initial={{ strokeDashoffset: 245.0 }}
+                animate={{ strokeDashoffset: 245.0 - (245.0 * readiness.readinessScore) / 100 }}
                 transition={{ type: 'spring', damping: 20, stiffness: 80 }}
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-sm font-extrabold text-white tracking-tight leading-none">{readiness.readinessScore}</span>
+              <span className="text-base font-extrabold text-white tracking-tight leading-none">{readiness.readinessScore}</span>
               <span className="text-[6px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 leading-none">Score</span>
             </div>
           </div>
@@ -962,7 +962,7 @@ const TodayView = () => {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowExportModal(false)}
-              className="fixed inset-0 bg-black z-50 backdrop-blur-sm"
+              className="fixed inset-0 bg-black z-[100] backdrop-blur-sm"
             />
             {/* Modal Bottom Sheet */}
             <motion.div 
@@ -970,7 +970,7 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-50 flex flex-col gap-5 shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-[101] flex flex-col gap-5 shadow-2xl"
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -1060,14 +1060,14 @@ const TodayView = () => {
           return (
             <>
               {/* Overlay */}
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowSleepModal(false)} />
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm" onClick={() => setShowSleepModal(false)} />
             
             {/* Modal Content */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-y-auto md:top-[15%] md:left-1/2 md:-translate-x-1/2 md:max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-[51] flex flex-col justify-between overflow-y-auto no-scrollbar"
+              className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-y-auto md:top-[15%] md:left-1/2 md:-translate-x-1/2 md:max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-[101] flex flex-col justify-between overflow-y-auto no-scrollbar"
             >
               {/* Close Button */}
               <button 
@@ -1298,10 +1298,10 @@ const TodayView = () => {
         {showReadinessModal && (
           <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowReadinessModal(false)} />
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm" onClick={() => setShowReadinessModal(false)} />
             
             {/* Modal Container */}
-            <div className="fixed inset-0 z-[51] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
+            <div className="fixed inset-0 z-[101] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1427,10 +1427,10 @@ const TodayView = () => {
         {showTargetsModal && (
           <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowTargetsModal(false)} />
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm" onClick={() => setShowTargetsModal(false)} />
             
             {/* Modal Container */}
-            <div className="fixed inset-0 z-[51] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
+            <div className="fixed inset-0 z-[101] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
