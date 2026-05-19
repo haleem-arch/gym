@@ -537,7 +537,7 @@ const TodayView = () => {
                   <Moon size={14} className="text-indigo-400" />
                   <div className="flex items-baseline gap-1">
                     {(() => {
-                      const totalMins = Math.round(sleepHours * 60);
+                      const totalMins = Math.floor(sleepHours * 60);
                       const h = Math.floor(totalMins / 60);
                       const m = totalMins % 60;
                       return (
