@@ -1,3 +1,4 @@
+
 import { useNavigate } from 'react-router-dom';
 import { useDiet } from '../hooks/useDiet';
 import { MacroProgressBar } from '../components/MacroProgressBar';

@@ -3,7 +3,31 @@ import { useAiAgent } from '../hooks/useAiAgent';
 import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { TypewriterText } from '../components/TypewriterText';
+// Renders model text with line breaks and basic markdown (bold, bullets)
+const MessageText = ({ text }: { text: string }) => {
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-2" />;
+        // Bold: **text**
+        const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+          p.startsWith('**') && p.endsWith('**')
+            ? <strong key={j} className="font-semibold text-white">{p.slice(2, -2)}</strong>
+            : p
+        );
+        // Bullet detection
+        const isBullet = /^[-•*]\s/.test(line);
+        return (
+          <div key={i} className={`flex ${isBullet ? 'gap-2' : ''}`}>
+            {isBullet && <span className="text-primary mt-0.5 flex-shrink-0">•</span>}
+            <span>{isBullet ? parts.map((p, _j) => typeof p === 'string' ? p.replace(/^[-•*]\s/, '') : p) : parts}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const AiCoach = () => {
   const { messages, isTyping, sendMessage, initChat, startNewChat } = useAiAgent();
@@ -78,7 +102,7 @@ const AiCoach = () => {
                 `}
                 style={msg.role === 'model' ? { maxHeight: '420px', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
               >
-                {msg.role === 'model' ? <TypewriterText text={msg.text} speed={10} glitchProbability={0.08} /> : msg.text}
+                {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
               </div>
             </motion.div>
           ))}

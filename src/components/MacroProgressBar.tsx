@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { NumberRoller } from './NumberRoller';
 
 interface MacroProgressBarProps {
   label: string;
@@ -18,16 +17,15 @@ export const MacroProgressBar = ({ label, current, target, colorClass, unit = 'g
       <div className="flex justify-between items-end">
         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</span>
         <span className="text-sm font-bold text-white">
-          <NumberRoller value={current} duration={1200} />
-          <span className="text-gray-500 text-xs"> / {target}{unit}</span>
+          {Math.round(current)}<span className="text-gray-500 text-xs"> / {target}{unit}</span>
         </span>
       </div>
       <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
         <motion.div 
-          className={`h-full rounded-full ${isOver ? 'bg-danger' : colorClass} ${percentage > 5 && percentage < 100 ? 'liquid-edge' : ''}`}
+          className={`h-full rounded-full ${isOver ? 'bg-danger' : colorClass}`}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ type: 'spring', stiffness: 50, damping: 15 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
     </div>
