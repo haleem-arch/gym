@@ -535,9 +535,17 @@ const TodayView = () => {
               <div className="flex justify-center items-center mt-auto mb-2">
                 <div className="flex items-center gap-1.5">
                   <Moon size={14} className="text-indigo-400" />
-                  <div>
-                    <span className="text-lg font-black text-white">{sleepHours}</span>
-                    <span className="text-[10px] text-gray-500 font-bold ml-0.5">Hrs</span>
+                  <div className="flex items-baseline gap-1">
+                    {(() => {
+                      const totalMins = Math.round(sleepHours * 60);
+                      const h = Math.floor(totalMins / 60);
+                      const m = totalMins % 60;
+                      return (
+                        <>
+                          <span className="text-lg font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
