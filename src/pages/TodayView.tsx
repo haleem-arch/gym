@@ -33,6 +33,7 @@ const TodayView = () => {
     deepStatus: 'optimal' | 'moderate' | 'low';
     remStatus: 'optimal' | 'moderate' | 'low';
     totalStatus: 'optimal' | 'moderate' | 'low';
+    tips: string[];
   } | null>(null);
   const isToday = activeDate.toDateString() === new Date().toDateString();
 
@@ -223,7 +224,8 @@ const TodayView = () => {
         remStatus: 'low',
         verdict: "No Sleep Data Recorded",
         advice: "Please sync or enter sleep data for today to get a detailed physiological recovery analysis.",
-        action: "Rest & Log Sleep"
+        action: "Rest & Log Sleep",
+        tips: []
       });
       setShowSleepModal(true);
       return;
@@ -264,43 +266,60 @@ const TodayView = () => {
     let verdict = "";
     let advice = "";
     let action = "";
+    const tips: string[] = [];
 
     const formatHours = (hrs: number) => {
       const totalMins = Math.round(hrs * 60);
       if (totalMins < 60) return `${totalMins} min`;
       const h = Math.floor(totalMins / 60);
       const m = totalMins % 60;
-      return m > 0 ? `${h} hours and ${m} min` : `${h} hours`;
+      return m > 0 ? `${h}h ${m}m` : `${h}h`;
     };
 
     const totalStr = formatHours(total);
     const deepStr = formatHours(deep);
     const remStr = formatHours(rem);
 
-    let totalFeedback = "";
-    if (total >= 7.5 && total <= 9.5) {
-      totalFeedback = `You slept a total of ${totalStr}, which is well in the good spot.`;
-    } else if (total > 9.5) {
-      totalFeedback = `You slept a total of ${totalStr}, which is an abundant duration and excellent for recovery.`;
+    let durationAnalysis = "";
+    if (total >= 7.5 && total <= 9.2) {
+      durationAnalysis = `Your sleep duration of ${totalStr} falls squarely within the healthy athletic window.`;
+    } else if (total > 9.2) {
+      durationAnalysis = `With ${totalStr} of sleep, you have accumulated ample horizontal time to aid heavy systemic repair.`;
     } else {
-      totalFeedback = `You slept a total of ${totalStr}, which is below the recommended baseline.`;
+      durationAnalysis = `At ${totalStr}, your total sleep volume is sub-optimal for maintaining intense physical training.`;
     }
 
-    let remFeedback = "";
-    if (remRatio < 0.15) {
-      remFeedback = `However, as you can see, your REM sleep is less than average (${remStr}), which can affect cognitive recovery and mental focus.`;
+    let deepAnalysis = "";
+    if (deepRatio >= 0.18 || deep >= 1.5) {
+      deepAnalysis = `The deep sleep phase was highly solid at ${deepStr}, providing robust muscle tissue repair, protein synthesis, and vital growth hormone secretion.`;
     } else {
-      remFeedback = `Your REM sleep was sufficient at ${remStr}, helping to restore your mental clarity and memory consolidation.`;
+      deepAnalysis = `However, deep sleep was restricted at ${deepStr}, which may compromise physical tissue repair, cellular restoration, and muscular adaptations.`;
     }
 
-    let deepFeedback = "";
-    if (deepRatio >= 0.15) {
-      deepFeedback = `For the rest, you slept ${deepStr} in deep sleep, which is good for muscle recovery and growth hormone release.`;
+    let remAnalysis = "";
+    if (remRatio >= 0.18 || rem >= 1.5) {
+      remAnalysis = `Additionally, a healthy ${remStr} of REM sleep ensures your central nervous system (CNS), reaction times, and focus are fully restored.`;
     } else {
-      deepFeedback = `Additionally, deep sleep was low at ${deepStr}, meaning physical recovery might feel slightly delayed.`;
+      remAnalysis = `Additionally, your REM sleep was cut short at ${remStr}. Since REM is the primary window for neurological recovery, you may notice a decrease in cognitive focus, reaction speed, and mental drive.`;
     }
 
-    advice = `${totalFeedback} ${remFeedback} ${deepFeedback}`;
+    advice = `${durationAnalysis} ${deepAnalysis} ${remAnalysis}`;
+
+    // Add tailored tips for next time
+    if (remRatio < 0.18 || rem < 1.4) {
+      tips.push("Block blue light: Wear blue-light blocking glasses or avoid all screens for 60 minutes before bed to allow your natural melatonin to rise, stabilizing REM sleep.");
+      tips.push("Darken room completely: Cover any LED lights on appliances and use blackout curtains. REM sleep is highly sensitive to ambient light changes.");
+    }
+    if (deepRatio < 0.15 || deep < 1.3) {
+      tips.push("Lower bedroom temperature: Keep the room cool, around 18-20°C (64-68°F). Core body temperature must drop to trigger deep sleep entry.");
+      tips.push("Avoid late stimulation: Avoid heavy meals, caffeine, or high-intensity training within 3-4 hours of bed to prevent heart rate elevations during deep sleep cycles.");
+    }
+    if (total < 7.5) {
+      tips.push("Consistent bedtime: Go to bed and wake up at the exact same times. Circadian alignment is the single most powerful tool for sleep efficiency.");
+    }
+    if (tips.length === 0) {
+      tips.push("Keep current protocol: Your sleep architecture is fully optimized. Maintain your current sleep environment and pre-bed habits for peak performance.");
+    }
 
     if (score >= 85) {
       verdict = "CNS & Muscular Primed";
@@ -323,7 +342,8 @@ const TodayView = () => {
       action,
       totalStatus,
       deepStatus,
-      remStatus
+      remStatus,
+      tips
     });
     setShowSleepModal(true);
   };
@@ -722,13 +742,15 @@ const TodayView = () => {
                   );
                 })()}
               </div>
-              <button
-                onClick={analyzeSleepWithAi}
-                className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/15 hover:to-purple-500/15 text-indigo-300 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all flex items-center justify-center gap-2 border border-indigo-500/25 active:scale-[0.97] transform-gpu backface-hidden cursor-pointer"
-              >
-                <Sparkles size={12} className="text-indigo-400" />
-                <span>AI Sleep Recovery Coach</span>
-              </button>
+              <div className="flex justify-center mt-3.5">
+                <button
+                  onClick={analyzeSleepWithAi}
+                  className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all flex items-center gap-1.5 border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
+                >
+                  <Sparkles size={11} className="text-indigo-400 animate-pulse" />
+                  <span>Analyze Sleep</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -906,9 +928,17 @@ const TodayView = () => {
           </>
         )}
 
-        {showSleepModal && sleepAnalysis && (
-          <>
-            {/* Overlay */}
+        {showSleepModal && sleepAnalysis && (() => {
+          const formatStageMins = (hrs: number) => {
+            const totalMins = Math.round(hrs * 60);
+            if (totalMins < 60) return `${totalMins} min`;
+            const h = Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+            return m > 0 ? `${h}h ${m}m` : `${h}h`;
+          };
+          return (
+            <>
+              {/* Overlay */}
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowSleepModal(false)} />
             
             {/* Modal Content */}
@@ -945,13 +975,7 @@ const TodayView = () => {
                 const remRatio = remSleepHours / totalStaged;
                 const lightRatio = lightSleepHours / totalStaged;
                 
-                const formatStageMins = (hrs: number) => {
-                  const totalMins = Math.round(hrs * 60);
-                  if (totalMins < 60) return `${totalMins} min`;
-                  const h = Math.floor(totalMins / 60);
-                  const m = totalMins % 60;
-                  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-                };
+
 
                 return (
                   <div className="flex flex-col gap-4 py-4 px-4 bg-slate-950/40 rounded-2xl border border-slate-800/40 mb-6">
@@ -1062,10 +1086,93 @@ const TodayView = () => {
                     {sleepAnalysis.action}
                   </p>
                 </div>
+
+                {/* Sleep Architecture vs. Targets */}
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                  <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <span>📊</span> Sleep Architecture vs. Reference Targets
+                  </h5>
+                  
+                  <div className="space-y-3.5 text-xs">
+                    {/* Total Sleep */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-gray-300">Total Duration</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{formatStageMins(sleepHours)}</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 7.5h - 9.0h)</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${Math.min((sleepHours / 9.0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+
+                    {/* Deep Sleep */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-[#a855f7]">Deep Sleep</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{formatStageMins(deepSleepHours)}</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 1.5h - 2.0h)</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#a855f7] h-2 rounded-full" style={{ width: `${Math.min((deepSleepHours / 2.0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+
+                    {/* REM Sleep */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-[#3b82f6]">REM Sleep</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{formatStageMins(remSleepHours)}</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 1.5h - 2.0h)</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((remSleepHours / 2.0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+
+                    {/* Light Sleep */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-[#10b981]">Light Sleep</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{formatStageMins(lightSleepHours)}</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 3.5h - 5.0h)</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#10b981] h-2 rounded-full" style={{ width: `${Math.min((lightSleepHours / 5.0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Sleep Coach Tips */}
+                {sleepAnalysis.tips.length > 0 && (
+                  <div className="bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/25">
+                    <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <span>💡</span> AI Coach: How to Improve Next Time
+                    </h5>
+                    <ul className="space-y-2 text-xs text-indigo-200/90 font-semibold list-disc list-inside">
+                      {sleepAnalysis.tips.map((tip, idx) => (
+                        <li key={idx} className="leading-relaxed">
+                          <span className="text-indigo-300 font-bold">{tip.split(':')[0]}:</span>
+                          {tip.split(':').slice(1).join(':')}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
-        )}
+        );
+      })()}
       </AnimatePresence>
     </div>
   );
