@@ -478,16 +478,30 @@ const WorkoutHome = () => {
             <p className="text-sm text-gray-400">Recovery is part of training. Sleep well, hydrate, and hit the sauna if possible.</p>
           </div>
         ) : dayType === 'RUN' ? (
-          <div className="bg-surface border border-blue-900/30 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10">
+          <div className="bg-surface border border-blue-900/30 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10 w-full">
             <span className="text-4xl mb-3">🏃</span>
             <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
             <p className="text-sm text-gray-400 mb-5">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
-            <button 
-              onClick={() => setShowRunModal(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-8 rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer text-xs uppercase tracking-wider"
-            >
-              Log Run (Manual / Strava)
-            </button>
+            {hasCompletedRunToday ? (
+              <div className="flex flex-col gap-3 w-full">
+                <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                  <Check size={18} /> RUN COMPLETED
+                </div>
+                <button 
+                  onClick={() => setShowRunModal(true)}
+                  className="bg-surface border border-gray-700 hover:border-gray-500 text-gray-300 font-extrabold py-3 px-8 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer text-[10px] uppercase tracking-wider"
+                >
+                  + Add Another Run
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowRunModal(true)}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-8 rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer text-xs uppercase tracking-wider w-full"
+              >
+                Log Run (Manual / Strava)
+              </button>
+            )}
           </div>
         ) : dayType === 'RUN + GYM' ? (
           <div className="bg-surface border border-purple-900/40 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-2xl shadow-purple-900/10 w-full gap-5">
@@ -513,8 +527,16 @@ const WorkoutHome = () => {
             <div className="flex flex-col gap-3 w-full mt-2">
               {/* Run Button */}
               {hasCompletedRunToday ? (
-                <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
-                  <Check size={18} /> RUN COMPLETED
+                <div className="flex flex-col gap-2 w-full">
+                  <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                    <Check size={18} /> RUN COMPLETED
+                  </div>
+                  <button 
+                    onClick={() => setShowRunModal(true)}
+                    className="w-full bg-surface border border-gray-700 hover:border-gray-500 text-gray-300 font-extrabold py-3 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer text-[10px] uppercase tracking-wider"
+                  >
+                    + Add Another Run
+                  </button>
                 </div>
               ) : (
                 <button
