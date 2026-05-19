@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
@@ -24,12 +24,38 @@ import ClientsListPage from './pages/coach/ClientsListPage';
 import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
 
-const PageTransition = ({ children }: { children: React.ReactNode }) => {
+const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody', '/ai'];
+
+const getTabIndex = (pathname: string) => {
+  if (pathname === '/') return 0;
+  const base = '/' + pathname.split('/')[1];
+  const idx = TAB_ORDER.indexOf(base);
+  return idx === -1 ? 99 : idx; // sub-pages or unknown routes push forward
+};
+
+const PageTransition = ({ children, direction }: { children: React.ReactNode, direction: number }) => {
+  const variants = {
+    initial: (dir: number) => ({
+      x: dir > 0 ? 100 : -100,
+      opacity: 0
+    }),
+    animate: {
+      x: 0,
+      opacity: 1
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? -100 : 100,
+      opacity: 0
+    })
+  };
+
   return (
     <motion.div
-      initial={{ x: 100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -100, opacity: 0 }}
+      custom={direction}
+      variants={variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
       transition={{ duration: 0.25, ease: "easeInOut" }}
       className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-28 no-scrollbar bg-background"
     >
@@ -40,30 +66,41 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent = () => {
   const location = useLocation();
+  const prevIndex = useRef(getTabIndex(location.pathname));
+  const currentIndex = getTabIndex(location.pathname);
   
+  let direction = 1;
+  if (currentIndex > prevIndex.current) direction = 1;
+  else if (currentIndex < prevIndex.current) direction = -1;
+  else direction = 1;
+
+  useEffect(() => {
+    prevIndex.current = currentIndex;
+  }, [location.pathname]);
+
   return (
     <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
       <div className="flex-1 relative">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><TodayView /></PageTransition>} />
-            <Route path="/workout" element={<PageTransition><WorkoutHome /></PageTransition>} />
-            <Route path="/workout/active" element={<PageTransition><WorkoutTracker /></PageTransition>} />
-            <Route path="/workout/:id" element={<PageTransition><WorkoutDetail /></PageTransition>} />
-            <Route path="/diet" element={<PageTransition><DietHome /></PageTransition>} />
-            <Route path="/diet/meal/:id" element={<PageTransition><DietMealBuilder /></PageTransition>} />
-            <Route path="/diet/search" element={<PageTransition><DietSearch /></PageTransition>} />
-            <Route path="/diet/food/new" element={<PageTransition><FoodCreator /></PageTransition>} />
-            <Route path="/diet/inventory" element={<PageTransition><FoodInventory /></PageTransition>} />
-            <Route path="/inbody" element={<PageTransition><InBodyView /></PageTransition>} />
-            <Route path="/strava" element={<PageTransition><StravaAnalyzer /></PageTransition>} />
-            <Route path="/ai" element={<PageTransition><AiCoach /></PageTransition>} />
+            <Route path="/" element={<PageTransition direction={direction}><TodayView /></PageTransition>} />
+            <Route path="/workout" element={<PageTransition direction={direction}><WorkoutHome /></PageTransition>} />
+            <Route path="/workout/active" element={<PageTransition direction={direction}><WorkoutTracker /></PageTransition>} />
+            <Route path="/workout/:id" element={<PageTransition direction={direction}><WorkoutDetail /></PageTransition>} />
+            <Route path="/diet" element={<PageTransition direction={direction}><DietHome /></PageTransition>} />
+            <Route path="/diet/meal/:id" element={<PageTransition direction={direction}><DietMealBuilder /></PageTransition>} />
+            <Route path="/diet/search" element={<PageTransition direction={direction}><DietSearch /></PageTransition>} />
+            <Route path="/diet/food/new" element={<PageTransition direction={direction}><FoodCreator /></PageTransition>} />
+            <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
+            <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
+            <Route path="/strava" element={<PageTransition direction={direction}><StravaAnalyzer /></PageTransition>} />
+            <Route path="/ai" element={<PageTransition direction={direction}><AiCoach /></PageTransition>} />
 
             {/* Coach Routes */}
-            <Route path="/coach/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
-            <Route path="/coach/clients" element={<PageTransition><ClientsListPage /></PageTransition>} />
-            <Route path="/coach/clients/new" element={<PageTransition><AddClientPage /></PageTransition>} />
-            <Route path="/coach/clients/:clientId" element={<PageTransition><ClientManagementPage /></PageTransition>} />
+            <Route path="/coach/dashboard" element={<PageTransition direction={direction}><DashboardPage /></PageTransition>} />
+            <Route path="/coach/clients" element={<PageTransition direction={direction}><ClientsListPage /></PageTransition>} />
+            <Route path="/coach/clients/new" element={<PageTransition direction={direction}><AddClientPage /></PageTransition>} />
+            <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
