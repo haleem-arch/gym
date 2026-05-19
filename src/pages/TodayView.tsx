@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
+import { BioStatusRing } from '../components/BioStatusRing';
 
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
@@ -917,6 +918,18 @@ const TodayView = () => {
             </span>
           </div>
         </motion.div>
+      </div>
+
+      {/* TODAY'S TARGET RINGS */}
+      <div className="flex flex-col gap-1.5 w-full animate-fade-in">
+        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Targets</span>
+        <BioStatusRing 
+          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
+          waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
+          workoutStatus={workoutStatus}
+          sleepPct={sleepHours / 8}
+          isRestDay={dayType === 'REST'}
+        />
       </div>
       
       {/* Dev Reset Button */}
