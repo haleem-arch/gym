@@ -15,8 +15,6 @@ export interface AiMessage {
   id: string;
   role: 'user' | 'model';
   text: string;
-  actions?: DbAction[];
-  actionStatus?: 'pending' | 'accepted' | 'rejected' | 'editing';
 }
 
 export interface DbAction {
@@ -58,48 +56,38 @@ const getLocalTime = () => {
 const SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
   const today = getLocalDate();
   const time = getLocalTime();
-  const dietLogMatch = ctx.match(/(?:TODAY|SELECTED_DATE)_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
+  const dietLogMatch = ctx.match(/TODAY_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
   const dietLogId = dietLogMatch ? dietLogMatch[1] : "INSERT_DIET_LOG_ID_HERE";
 
-  return `You are Haleem's elite personal fitness AI coach. Output ONLY valid JSON. Never plain text.
-
-=== ATHLETE PROFILE ===
-Name: Haleem | Age: 18 | Height: 182cm | Weight: 79.7kg | Body Fat: 17%
-Daily Targets: Protein 160g | Carbs 240g | Fat 70g | Calories 2400kcal
-
-User ID: ${uid} | Real today: ${today} | Current time: ${time}
+  return `You are Haleem's fitness AI. Output ONLY valid JSON. Never plain text.
+Haleem: 18yo, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal.
+User ID: ${uid} | Today: ${today}
 
 ${ctx}
 
-=== OUTPUT FORMAT (ALWAYS return exactly this structure) ===
-{"reply":"Your warm, engaging coach response here with emojis","actions":[]}
+ALWAYS return ONLY this JSON format:
+{"reply":"Your enthusiastic, engaging, and helpful response here","actions":[]}
 
-=== MEAL INSERT EXAMPLE (use for ANY meal suggestion or food log) ===
-{"reply":"Here's your optimized meal! 🔥 It's perfectly calibrated to hit your remaining macros for the day.","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Pre-Workout Meal","time":"${time}","items":[{"id":"GENERATE-UNIQUE-UUID-HERE","food_id":"","name":"Chicken breast","grams":200,"macros":{"kcal":220,"protein":41,"carbs":0,"fat":4.8}},{"id":"GENERATE-UNIQUE-UUID-2","food_id":"","name":"White rice","grams":150,"macros":{"kcal":195,"protein":4,"carbs":43,"fat":0.5}},{"id":"GENERATE-UNIQUE-UUID-3","food_id":"","name":"Olive oil","grams":10,"macros":{"kcal":88,"protein":0,"carbs":0,"fat":10}}]}}]}
+MEAL LOG EXAMPLE:
+{"reply":"Got it! I've logged your rice. That's a solid 28g of carbs to fuel your next session! 🍚🔥","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
-=== WATER LOG EXAMPLE ===
-{"reply":"Hydration logged! 💧","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
+WATER LOG EXAMPLE:
+{"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
-=== RULES ===
-INTELLIGENCE:
-- You have FULL access to the athlete's diet log, sleep, workouts, biometrics and schedule in the CONTEXT above. USE IT.
-- When suggesting meals: First look at SELECTED_DATE_DIET_SUMMARY to see what macros remain. Suggest meals that fill the GAP.
-- Always name real, specific foods (e.g. "Chicken breast", "Brown rice", "Eggs", "Cottage cheese", "Banana"). Never vague names.
-- Each meal should have 3-6 specific food items with ACCURATE grams and macros from your food knowledge.
-- When meal suggestions are given, ALWAYS include the actions insert — the user will confirm or dismiss via a UI card.
-- Never say "I've saved your meal" — the user must tap "Save to Diet" on the card first.
-
-BEHAVIOR:
-- Be enthusiastic, warm, human! Use emojis. Celebrate PRs and good days. Be empathetic on bad days.
-- You do NOT analyze running. If asked about runs: "I don't track running data — I focus on your lifting and nutrition! 💪"
-- Base all workout feedback ONLY on RECENT_COMPLETED_WORKOUTS data. Never invent numbers.
-- If user asks to LOG a workout or CHANGE their plan/schedule, refuse: "Use the app interface for that — I can't modify your workout logs!"
-- Use the EXACT SELECTED_DATE_DIET_LOG_ID from context for all meal inserts.
-- Generate a UNIQUE random UUID (format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx) for every item "id" field.
-- NEVER return 0 for macros unless genuinely 0. Use your food knowledge.
-- For diet_meals "time": MUST be "HH:MM:00" format (e.g. "14:30:00"). NOT ISO format.
-- For water/hydration: use water_logs table.
-- actions:[] when no database change needed.`;
+RULES:
+- Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
+- You DO NOT track or analyze running data. If the user asks about a run, their running stats, or running feedback, you MUST reply: "I don't track running data! I only analyze your weightlifting sessions and nutrition."
+- When giving feedback on weightlifting workouts, ONLY mention the EXACT metrics provided in the text (weight, reps). Do NOT invent stats.
+- STRICT RULE: 'CURRENT_WORKOUT_PLANS' is just their *planned* schedule. 'RECENT_COMPLETED_WORKOUTS' contains what they *actually* did in reality. Base all performance feedback EXCLUSIVELY on 'RECENT_COMPLETED_WORKOUTS'.
+- If the user explicitly asks you to LOG a workout or CHANGE their schedule/plan, refuse and say: "I cannot log workouts or change your plans directly. Please use the app interface for that."
+- HOWEVER, if the user asks for FEEDBACK on past weightlifting workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
+- Use EXACT TODAY_DIET_LOG_ID from context for meals.
+- Generate a unique UUID for item id.
+- Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
+- Use diet_meals for caloric foods/drinks.
+- For diet_meals, the "time" MUST be exactly formatted as "HH:MM:00" (e.g. "14:30:00"). Do NOT use ISO format.
+- For water/hydration, convert to ml and use water_logs (NOT diet_meals).
+- actions:[] if no change.`;
 };
 
 // ─── Intent detection removed to guarantee context injection ─────────────────
@@ -281,73 +269,23 @@ export const useAiAgent = () => {
     if (!uid) return '';
     const parts: string[] = [];
 
-    const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
-    parts.push(`SELECTED_DASHBOARD_DATE: ${selectedDate}`);
-    parts.push(`REAL_TODAY_DATE: ${getLocalDate()}`);
-
-    // ── Schedule ─────────────────────────────────────────────────────────────
+    // Always load schedule (cached)
     let sched = fromCache('sched');
     if (!sched) {
       const { data } = await supabase.from('schedules').select('id,week_start,days').eq('user_id', uid).order('week_start', { ascending: false }).limit(1).maybeSingle();
       sched = data;
       if (sched) toCache('sched', sched);
     }
-    if (sched) parts.push(`WEEKLY_SCHEDULE: ${JSON.stringify(sched.days)}`);
+    if (sched) parts.push(`SCHEDULE: ${JSON.stringify(sched)}`);
 
-    // ── InBody / Body Composition ─────────────────────────────────────────────
-    const { data: inbodyScans } = await supabase
-      .from('inbody_scans')
-      .select('*')
-      .eq('user_id', uid)
-      .order('scan_date', { ascending: false })
-      .limit(3);
-    if (inbodyScans && inbodyScans.length > 0) {
-      const latest = inbodyScans[0];
-      parts.push(`LATEST_INBODY_SCAN (${latest.scan_date}): Weight=${latest.weight}kg | Muscle=${latest.skeletal_muscle_mass}kg | BF=${latest.body_fat_percentage}% | BFMass=${latest.body_fat_mass}kg | BMI=${latest.bmi} | SMM%=${latest.smm_percentage} | VisceralFat=${latest.visceral_fat_level}`);
-      if (inbodyScans.length > 1) {
-        const prev = inbodyScans[1];
-        const wDiff = (latest.weight - prev.weight).toFixed(1);
-        const mDiff = ((latest.skeletal_muscle_mass || 0) - (prev.skeletal_muscle_mass || 0)).toFixed(2);
-        const fDiff = ((latest.body_fat_percentage || 0) - (prev.body_fat_percentage || 0)).toFixed(1);
-        parts.push(`BODY_COMPOSITION_TREND: Weight ${wDiff > '0' ? '+' : ''}${wDiff}kg | Muscle ${mDiff > '0' ? '+' : ''}${mDiff}kg | BF% ${fDiff > '0' ? '+' : ''}${fDiff}% (since ${prev.scan_date})`);
-      }
-    }
+    const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+    parts.push(`SELECTED_DASHBOARD_DATE: ${selectedDate}`);
+    parts.push(`REAL_TODAY_DATE: ${getLocalDate()}`);
 
-    // ── Sleep logs ────────────────────────────────────────────────────────────
-    const { data: sleepLogs } = await supabase
-      .from('sleep_logs')
-      .select('*')
-      .eq('user_id', uid)
-      .order('date', { ascending: false })
-      .limit(7);
-    if (sleepLogs && sleepLogs.length > 0) {
-      const sleepSummary = sleepLogs.map(s =>
-        `${s.date}: ${s.hours_slept}hrs | Quality: ${s.quality || 'N/A'} | Bedtime: ${s.bedtime || 'N/A'} | Wake: ${s.wake_time || 'N/A'} | Deep: ${s.deep_sleep_pct || 0}% | REM: ${s.rem_sleep_pct || 0}% | Light: ${s.light_sleep_pct || 0}%`
-      );
-      parts.push(`SLEEP_HISTORY (last 7 days):\n${sleepSummary.join('\n')}`);
-      const avgSleep = sleepLogs.reduce((s, l) => s + (l.hours_slept || 0), 0) / sleepLogs.length;
-      parts.push(`AVG_SLEEP_LAST_7_DAYS: ${avgSleep.toFixed(1)} hours`);
-    }
-
-    // ── Biometric logs (HRV, RHR, readiness) ─────────────────────────────────
-    const { data: bioLogs } = await supabase
-      .from('biometric_logs')
-      .select('*')
-      .eq('user_id', uid)
-      .order('date', { ascending: false })
-      .limit(7);
-    if (bioLogs && bioLogs.length > 0) {
-      const bioSummary = bioLogs.map(b =>
-        `${b.date}: HRV=${b.hrv ?? 'N/A'}ms | RHR=${b.resting_heart_rate ?? 'N/A'}bpm | Readiness=${b.readiness_score ?? 'N/A'}/100`
-      );
-      parts.push(`BIOMETRICS_HISTORY (last 7 days):\n${bioSummary.join('\n')}`);
-      const latest = bioLogs[0];
-      if (latest.readiness_score) parts.push(`TODAY_READINESS_SCORE: ${latest.readiness_score}/100 — HRV: ${latest.hrv}ms | RHR: ${latest.resting_heart_rate}bpm`);
-    }
-
-    // ── Diet log for selected date (ID + totals + full meals) ─────────────────
+    // Always load diet (cached)
     const ckey = `diet_${selectedDate}`;
     let log = fromCache(ckey);
+
     if (!log) {
       const { data: existing } = await supabase
         .from('diet_logs')
@@ -355,12 +293,17 @@ export const useAiAgent = () => {
         .eq('user_id', uid)
         .eq('date', selectedDate)
         .maybeSingle();
+
       if (existing) {
         log = existing;
       } else if (selectedDate === getLocalDate()) {
         const { data: created } = await supabase
           .from('diet_logs')
-          .insert({ user_id: uid, date: selectedDate, daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false } })
+          .insert({
+            user_id: uid,
+            date: selectedDate,
+            daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+          })
           .select('id,daily_totals')
           .single();
         log = created;
@@ -370,96 +313,97 @@ export const useAiAgent = () => {
 
     if (log) {
       parts.push(`SELECTED_DATE_DIET_LOG_ID: ${log.id}`);
-      const t = log.daily_totals || {};
-      const remainP = Math.max(0, 160 - (t.protein || 0));
-      const remainC = Math.max(0, 240 - (t.carbs || 0));
-      const remainF = Math.max(0, 70 - (t.fat || 0));
-      const remainKcal = Math.max(0, 2400 - (t.kcal || 0));
-      parts.push(`SELECTED_DATE_DIET_TOTALS: ${t.kcal || 0}kcal / ${t.protein || 0}g P / ${t.carbs || 0}g C / ${t.fat || 0}g F | Water: ${(t.water || 0) / 1000}L`);
-      parts.push(`REMAINING_MACROS_TODAY: ${remainKcal}kcal | Protein: ${remainP}g | Carbs: ${remainC}g | Fat: ${remainF}g`);
+      parts.push(`SELECTED_DATE_TOTALS: ${JSON.stringify(log.daily_totals)}`);
       parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
-
-      // Load full meals with all food items
-      const { data: meals } = await supabase
-        .from('diet_meals')
-        .select('name, time, items')
-        .eq('diet_log_id', log.id)
-        .order('time', { ascending: true });
-      if (meals && meals.length > 0) {
-        const mealStr = meals.map(m => {
-          const items = (m.items || []).map((it: any) =>
-            `  - ${it.name} (${it.grams}g): ${it.macros?.kcal || 0}kcal P:${it.macros?.protein || 0}g C:${it.macros?.carbs || 0}g F:${it.macros?.fat || 0}g`
-          ).join('\n');
-          return `${m.time} — ${m.name}:\n${items}`;
-        });
-        parts.push(`MEALS_LOGGED_TODAY:\n${mealStr.join('\n\n')}`);
-      } else {
-        parts.push(`MEALS_LOGGED_TODAY: No meals logged yet for ${selectedDate}`);
-      }
     } else {
-      parts.push(`SELECTED_DATE_DIET_LOG_ID: none`);
-      parts.push(`REMAINING_MACROS_TODAY: Full day remaining — 2400kcal | 160g P | 240g C | 70g F`);
+      parts.push(`SELECTED_DATE_TOTALS: No meals or calories logged for selected date ${selectedDate}`);
     }
 
-    // ── Workouts on selected date ─────────────────────────────────────────────
+    // Load completed workouts on the selected date
     const { data: selectedDayWorkouts } = await supabase.from('workouts')
       .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('date', selectedDate)
       .eq('status', 'completed');
+
     if (selectedDayWorkouts && selectedDayWorkouts.length > 0) {
-      const daySummary = selectedDayWorkouts.map(w => {
-        if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) return null;
-        const exSummary = w.workout_exercises?.map((we: any) => {
-          const name = we.exercises?.name;
-          const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
-          return `  - ${name}: [${setInfo}]`;
-        }).join('\n') || '';
-        return `${w.day_type} (${Math.round((w.duration || 0) / 60)} min, ${w.total_volume}kg volume):\n${exSummary}`;
-      }).filter(Boolean);
-      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}):\n${daySummary.join('\n\n')}`);
+      const daySummary = selectedDayWorkouts
+        .map(w => {
+          if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) {
+            try {
+              const runStats = JSON.parse(w.notes);
+              return `RUN: ${runStats.distance_km}km run in ${Math.round((w.duration || 0) / 60)} mins (Pace: ${runStats.pace}, Elev: ${runStats.elevation_m}m)`;
+            } catch (e) {
+              return `RUN: completed (${Math.round((w.duration || 0) / 60)} mins)`;
+            }
+          }
+          const exSummary = w.workout_exercises?.map((we: any) => {
+            const name = we.exercises?.name;
+            const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
+            return `${name}: [${setInfo}]`;
+          }).join(' | ') || '';
+          return `${w.day_type}: ${exSummary} (Volume: ${w.total_volume}kg)`;
+        });
+      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): \n${daySummary.join('\n')}`);
     } else {
-      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): No gym session completed.`);
+      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): No workouts completed on this date.`);
     }
 
-    // ── Current workout plans ─────────────────────────────────────────────────
+    // Load custom workout plans
     const { data: customPlans } = await supabase.from('user_workout_plans').select('plan_type, exercises').eq('user_id', uid);
-    const defaultPlans: Record<string, string[]> = {
+    
+    const defaultPlans = {
       PUSH: ['Incline DB Press', 'Machine Chest Press', 'Lateral Raises', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
       PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
       LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
     };
+
     const currentPlans = { ...defaultPlans };
     if (customPlans) {
-      customPlans.forEach(p => { if (p.exercises?.length > 0) currentPlans[p.plan_type] = p.exercises; });
+      customPlans.forEach(p => {
+        if (p.exercises && p.exercises.length > 0) currentPlans[p.plan_type as keyof typeof currentPlans] = p.exercises;
+      });
     }
     parts.push(`CURRENT_WORKOUT_PLANS: ${JSON.stringify(currentPlans)}`);
 
-    // ── Recent 10 past gym sessions (full sets + weights) ─────────────────────
+    const activeWorkoutStr = localStorage.getItem('athlete_dashboard_active_workout');
+    if (activeWorkoutStr) {
+       try {
+         const aw = JSON.parse(activeWorkoutStr);
+         const activeEx = aw.exercises.map((e: any) => e.name);
+         parts.push(`ACTIVE_WORKOUT_IN_PROGRESS: ${JSON.stringify(activeEx)}`);
+       } catch (e) {}
+    }
+
+    // Load recent past workouts for performance tracking context
     const { data: recentWorkouts } = await supabase.from('workouts')
-      .select('day_type, created_at, date, duration, total_volume, workout_exercises(sets, exercises(name))')
+      .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(5);
+    
     if (recentWorkouts && recentWorkouts.length > 0) {
-      const gymSessions = recentWorkouts.filter(w => w.day_type !== 'RUN');
-      if (gymSessions.length > 0) {
-        const summary = gymSessions.map(w => {
-          const exSummary = w.workout_exercises?.map((we: any) => {
-            const name = we.exercises?.name;
-            const setInfo = we.sets?.map((s: any) => `${s.weight}kg×${s.reps}`).join(', ') || 'no sets';
-            return `  - ${name}: [${setInfo}]`;
-          }).join('\n') || '';
-          return `${w.day_type} on ${w.date || new Date(w.created_at).toLocaleDateString()} (${w.total_volume}kg total):\n${exSummary}`;
-        });
-        parts.push(`RECENT_GYM_SESSIONS (last ${gymSessions.length}, with all sets/weights):\n${summary.join('\n\n')}`);
+      const summary = recentWorkouts
+        .filter(w => w.day_type !== 'RUN') // Hide runs from AI completely
+        .map(w => {
+         const exSummary = w.workout_exercises?.map((we: any) => {
+           const name = we.exercises?.name;
+           const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
+           return `${name}: [${setInfo}]`;
+         }).join(' | ') || '';
+         return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: ${exSummary}`;
+      });
+      parts.push(`RECENT_COMPLETED_WORKOUTS (with weights and sets): \n${summary.join('\n')}`);
 
-        // Volume trend
-        const vols = gymSessions.filter(w => w.total_volume > 0);
-        if (vols.length >= 2) {
-          const diff = vols[0].total_volume - vols[1].total_volume;
-          if (diff !== 0) parts.push(`VOLUME_TREND: ${diff > 0 ? `+${diff}kg MORE` : `${diff}kg LESS`} in last session vs previous (${vols[0].total_volume}kg vs ${vols[1].total_volume}kg)`);
+      // Calculate recent volume trend
+      const recentLifts = recentWorkouts.filter(w => w.day_type !== 'RUN' && w.total_volume > 0);
+      if (recentLifts.length >= 2) {
+        const latestVol = recentLifts[0].total_volume;
+        const prevVol = recentLifts[1].total_volume;
+        const diff = latestVol - prevVol;
+        if (diff > 0) {
+          parts.push(`VOLUME TREND: The user lifted ${diff}kg MORE in their last session (${latestVol}kg) compared to the previous session (${prevVol}kg). Congratulate them on the progressive overload!`);
         }
       }
     }
@@ -494,7 +438,7 @@ export const useAiAgent = () => {
             model,
             messages: msgs,
             temperature: 0.6,
-            max_tokens: 1024,
+            max_tokens: 512,
             ...(supportsJson ? { response_format: { type: 'json_object' } } : {})
           })
         });
@@ -563,23 +507,6 @@ export const useAiAgent = () => {
     setMessages([{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
   };
 
-  const updateMessageStatus = (
-    msgId: string, 
-    status: 'accepted' | 'rejected' | 'editing', 
-    updatedActions?: DbAction[]
-  ) => {
-    setMessages(prev => prev.map(m => {
-      if (m.id === msgId) {
-        return { 
-          ...m, 
-          actionStatus: status, 
-          actions: updatedActions !== undefined ? updatedActions : m.actions 
-        };
-      }
-      return m;
-    }));
-  };
-
   // ─── Send ──────────────────────────────────────────────────────────────────
   const sendMessage = async (text: string) => {
     if (!initialized.current) await initChat();
@@ -594,23 +521,18 @@ export const useAiAgent = () => {
       const aiRes = await callGroq(text, context);
       let aiText = aiRes.reply;
 
-      // Filter actions
-      const instantActions = aiRes.actions?.filter(a => a.type === 'navigate') || [];
-      const pendingDbActions = aiRes.actions?.filter(a => a.type !== 'navigate') || [];
-
-      // Run navigation action instantly if returned
-      if (instantActions.length > 0) {
-        await executeActions(instantActions);
+      // Handle DB Actions
+      if (aiRes.actions && aiRes.actions.length > 0) {
+        const { success, errorMsg } = await executeActions(aiRes.actions);
+        if (success) {
+          aiText += "\n\n*(✓ Successfully saved to database)*";
+        } else {
+          aiText += `\n\n*(⚠ Failed to save to database. Error: ${errorMsg || 'Please try again'})*`;
+        }
       }
 
       const modelMsgId = crypto.randomUUID();
-      const modelMsg: AiMessage = { 
-        id: modelMsgId, 
-        role: 'model', 
-        text: aiText,
-        actions: pendingDbActions.length > 0 ? pendingDbActions : undefined,
-        actionStatus: pendingDbActions.length > 0 ? 'pending' : undefined
-      };
+      const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiText };
       setMessages(prev => [...prev, modelMsg]);
 
     } catch (e: any) {
@@ -631,9 +553,6 @@ export const useAiAgent = () => {
     sendMessage,
     startNewChat,
     initChat,
-    sessionId,
-    executeActions,
-    updateMessageStatus,
-    setMessages
+    sessionId
   };
 };
