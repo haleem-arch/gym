@@ -7,6 +7,7 @@ import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, B
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
+import { Confetti } from '../components/Confetti';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -31,6 +32,9 @@ const WorkoutHome = () => {
   const [runStats, setRunStats] = useState({ distance: '', elevation: '', pace: '', duration: '' });
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
   const [isPullingStrava, setIsPullingStrava] = useState(false);
+  
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -92,7 +96,13 @@ const WorkoutHome = () => {
       setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setShowRunModal(false);
       setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
-      alert("🎉 Strava run logged successfully!");
+      
+      setShowConfetti(true);
+      setTimeout(() => {
+        setShowConfetti(false);
+        setShowSavedToast(true);
+        setTimeout(() => setShowSavedToast(false), 2000);
+      }, 800);
     } catch (err) {
       console.error(err);
       alert("Failed to log run");
@@ -958,6 +968,22 @@ const WorkoutHome = () => {
         </div>
       )}
       </>
+      )}
+      
+      {showConfetti && <Confetti count={40} />}
+      
+      {showSavedToast && (
+        <motion.div
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-surface border border-gray-700 text-white font-extrabold px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl z-50 text-sm tracking-wide"
+        >
+          <div className="bg-success text-white rounded-full p-0.5">
+            <Check size={16} strokeWidth={3} />
+          </div>
+          SAVED
+        </motion.div>
       )}
     </div>
   );
