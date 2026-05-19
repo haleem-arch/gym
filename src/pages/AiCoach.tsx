@@ -32,9 +32,22 @@ const MessageText = ({ text }: { text: string }) => {
 const AiCoach = () => {
   const { messages, isTyping, sendMessage, initChat, startNewChat } = useAiAgent();
   const [input, setInput] = useState('');
+  const [selectedDateStr, setSelectedDateStr] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { initChat(); }, []);
+
+  useEffect(() => {
+    const dStr = localStorage.getItem('athlete_dashboard_selected_date') || new Date().toISOString().split('T')[0];
+    try {
+      const parts = dStr.split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      const formatted = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      setSelectedDateStr(formatted);
+    } catch (e) {
+      setSelectedDateStr(dStr);
+    }
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,6 +62,11 @@ const AiCoach = () => {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); }
+  };
+
+  const handleChipClick = (promptText: string) => {
+    if (isTyping) return;
+    sendMessage(promptText);
   };
 
   return (
@@ -117,8 +135,37 @@ const AiCoach = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        <div ref={bottomRef} />
       </div>
+
+      {/* Suggestions Chips */}
+      {!isTyping && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-4 py-2 bg-background border-t border-gray-900/60 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => handleChipClick(`Analyze my readiness for ${selectedDateStr || 'my selected date'}`)}
+            className="flex items-center gap-1.5 bg-surface/40 border border-gray-800 hover:border-primary/50 text-[10px] uppercase tracking-wider text-gray-300 font-black px-3.5 py-2 rounded-xl transition-all active:scale-95 whitespace-nowrap cursor-pointer hover:text-white"
+          >
+            <span>🔋</span>
+            <span>Readiness Report</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleChipClick("Review my workout volume progress")}
+            className="flex items-center gap-1.5 bg-surface/40 border border-gray-800 hover:border-primary/50 text-[10px] uppercase tracking-wider text-gray-300 font-black px-3.5 py-2 rounded-xl transition-all active:scale-95 whitespace-nowrap cursor-pointer hover:text-white"
+          >
+            <span>🏋️‍♂️</span>
+            <span>Workout Progress</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleChipClick("Suggest a meal breakdown for my REST split today")}
+            className="flex items-center gap-1.5 bg-surface/40 border border-gray-800 hover:border-primary/50 text-[10px] uppercase tracking-wider text-gray-300 font-black px-3.5 py-2 rounded-xl transition-all active:scale-95 whitespace-nowrap cursor-pointer hover:text-white"
+          >
+            <span>🥗</span>
+            <span>Meal Breakdown</span>
+          </button>
+        </div>
+      )}
 
       {/* Input — sticky at bottom */}
       <div className="p-3 bg-background border-t border-gray-800 sticky bottom-0 z-30 flex-shrink-0">
