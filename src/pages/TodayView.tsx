@@ -9,7 +9,6 @@ import { supabase } from '../lib/supabase';
 import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
-import { BioStatusRing } from '../components/BioStatusRing';
 
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
@@ -24,6 +23,7 @@ const TodayView = () => {
   };
   const activeDateStr = getLocalDateString(activeDate);
   const { dayType, setDayType } = useSchedule(activeDateStr);
+  const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [sleepAnalysis, setSleepAnalysis] = useState<{
     score: number;
@@ -385,6 +385,104 @@ const TodayView = () => {
 
   const hasCompletedRun = completedWorkoutsList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
   const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+
+  const getReadinessData = () => {
+    const total = sleepHours || 0;
+    const deep = deepSleepHours || 0;
+    const rem = remSleepHours || 0;
+    const light = lightSleepHours || 0;
+    
+    let sleepScore = 75; // baseline average if no sleep data is logged yet
+    if (total > 0) {
+      let durationPoints = 0;
+      if (total >= 8) durationPoints = 50;
+      else if (total >= 7) durationPoints = 42;
+      else if (total >= 6) durationPoints = 30;
+      else if (total >= 5) durationPoints = 15;
+      else durationPoints = 5;
+
+      const totalStaged = (deep + rem + light) || total;
+      const deepRatio = deep / totalStaged;
+      const remRatio = rem / totalStaged;
+
+      let deepPoints = 0;
+      if (deepRatio >= 0.20) deepPoints = 25;
+      else if (deepRatio >= 0.14) deepPoints = 18;
+      else if (deepRatio >= 0.08) deepPoints = 10;
+      else deepPoints = 2;
+
+      let remPoints = 0;
+      if (remRatio >= 0.22) remPoints = 25;
+      else if (remRatio >= 0.16) remPoints = 18;
+      else if (remRatio >= 0.10) remPoints = 10;
+      else remPoints = 2;
+
+      sleepScore = Math.min(100, Math.round(durationPoints + deepPoints + remPoints));
+    }
+
+    const completedList = completedWorkoutsList || [];
+    const hasTodayRun = completedList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
+    const hasTodayGym = completedList.some(w => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+
+    let workoutScore = 100;
+    if (dayType === 'RUN') {
+      workoutScore = hasTodayRun ? 100 : 0;
+    } else if (['PUSH', 'PULL', 'LEGS'].includes(dayType)) {
+      workoutScore = hasTodayGym ? 100 : 0;
+    } else if (dayType === 'RUN + GYM') {
+      if (hasTodayRun && hasTodayGym) workoutScore = 100;
+      else if (hasTodayRun || hasTodayGym) workoutScore = 50;
+      else workoutScore = 0;
+    } else if (dayType === 'REST') {
+      workoutScore = completedList.length > 0 ? 80 : 100;
+    }
+
+    let readinessScore = sleepScore;
+    
+    let recommendation = "";
+    let verdict = "";
+    let color = "";
+    let bgGradient = "";
+    
+    if (readinessScore >= 85) {
+      verdict = "Optimal Readiness";
+      recommendation = "Central nervous system (CNS) and muscle tissue recovery are fully restored. Your body is in the prime adaptation zone for high-intensity load or progressive overload splits today. Push hard.";
+      color = "#6366f1"; // Indigo
+      bgGradient = "from-indigo-500/20 to-purple-500/20";
+    } else if (readinessScore >= 70) {
+      verdict = "Moderate Readiness";
+      recommendation = "Adequate systemic restoration. Fit for training, but keep special focus on a thorough warm-up split. Ensure hydration levels remain high.";
+      color = "#3b82f6"; // Blue
+      bgGradient = "from-blue-500/20 to-indigo-500/20";
+    } else if (readinessScore >= 50) {
+      verdict = "Accumulated Fatigue";
+      recommendation = "Sleep debt or deficit in REM/Deep stages is impacting your recovery index. Consider a minor volume reduction or focus on technical accuracy rather than heavy resistance.";
+      color = "#f59e0b"; // Orange
+      bgGradient = "from-amber-500/20 to-orange-500/20";
+    } else {
+      verdict = "High Recovery Deficit";
+      recommendation = "Significant sleep deprivation or deep repair debt detected. We suggest substituting today's scheduled training split with active rest or hydration focus.";
+      color = "#ef4444"; // Red
+      bgGradient = "from-red-500/20 to-orange-500/20";
+    }
+
+    return {
+      readinessScore,
+      sleepScore,
+      workoutScore,
+      verdict,
+      recommendation,
+      color,
+      bgGradient,
+      hasSleepData: total > 0,
+      total,
+      deep,
+      rem,
+      light
+    };
+  };
+
+  const readiness = getReadinessData();
 
   return (
     <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
@@ -760,16 +858,65 @@ const TodayView = () => {
       {/* Subtle Separation Divider */}
       <div className="w-full border-t border-white/10 my-1" />
 
-      {/* TODAY'S SCORE Header */}
-      <div className="flex flex-col gap-1.5 w-full animate-fade-in">
-        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Today's Score</span>
-        <BioStatusRing 
-          kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
-          waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
-          workoutStatus={workoutStatus}
-          sleepPct={sleepHours / 8}
-          isRestDay={dayType === 'REST'}
-        />
+      {/* DAILY PHYSIOLOGICAL READINESS INDEX */}
+      <div className="flex flex-col gap-3 w-full animate-fade-in">
+        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest pl-1">Readiness Index</span>
+        <motion.div
+          onClick={() => setShowReadinessModal(true)}
+          whileTap={{ scale: 0.98 }}
+          className="bg-surface rounded-3xl p-4 border border-gray-800 flex items-center justify-between gap-5 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group"
+        >
+          {/* Subtle background glow depending on readiness */}
+          <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 transition-all group-hover:scale-110 duration-700 pointer-events-none`} />
+
+          {/* Left: SVG Ring (smaller size: 80x80px) */}
+          <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0 z-10">
+            <svg width="80" height="80" viewBox="0 0 80 80" className="transform -rotate-90">
+              <circle
+                cx="40"
+                cy="40"
+                r="34"
+                stroke="#1e293b"
+                strokeWidth="6"
+                fill="transparent"
+              />
+              <motion.circle
+                cx="40"
+                cy="40"
+                r="34"
+                stroke={readiness.color}
+                strokeWidth="6"
+                fill="transparent"
+                strokeDasharray={213.6}
+                strokeDashoffset={213.6 - (213.6 * readiness.readinessScore) / 100}
+                strokeLinecap="round"
+                initial={{ strokeDashoffset: 213.6 }}
+                animate={{ strokeDashoffset: 213.6 - (213.6 * readiness.readinessScore) / 100 }}
+                transition={{ type: 'spring', damping: 20, stiffness: 80 }}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+              <span className="text-xl font-black text-white tracking-tight leading-none">{readiness.readinessScore}</span>
+              <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider mt-0.5 leading-none">Score</span>
+            </div>
+          </div>
+
+          {/* Right: State Information */}
+          <div className="flex-1 flex flex-col justify-center z-10 leading-normal">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Sparkles size={13} style={{ color: readiness.color }} className="animate-pulse" />
+              <span className="text-xs font-black tracking-wider uppercase" style={{ color: readiness.color }}>
+                {readiness.verdict}
+              </span>
+            </div>
+            <p className="text-[11px] font-semibold text-gray-450 leading-relaxed mb-1.5">
+              {readiness.recommendation.split('.')[0]}.
+            </p>
+            <span className="text-[9px] font-black text-primary group-hover:text-blue-400 transition-colors uppercase tracking-widest flex items-center gap-0.5">
+              Breakdown & Coach Tips →
+            </span>
+          </div>
+        </motion.div>
       </div>
       
       {/* Dev Reset Button */}
@@ -1139,6 +1286,135 @@ const TodayView = () => {
           </>
         );
       })()}
+
+        {showReadinessModal && (
+          <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowReadinessModal(false)} />
+            
+            {/* Modal Container */}
+            <div className="fixed inset-0 z-[51] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative w-full max-w-sm my-auto mb-16 pointer-events-auto"
+              >
+                {/* Close Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowReadinessModal(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+
+                {/* Title */}
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                    <Sparkles size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Physiological Readiness</h3>
+                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Unified AI Score</p>
+                  </div>
+                </div>
+
+                {/* Score Dial */}
+                <div className="flex flex-col items-center mb-6 bg-slate-950/40 p-5 rounded-3xl border border-slate-800/40">
+                  <div className="relative w-32 h-32 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="52"
+                        stroke="#1e293b"
+                        strokeWidth="8"
+                        fill="transparent"
+                      />
+                      <motion.circle
+                        cx="64"
+                        cy="64"
+                        r="52"
+                        stroke={readiness.color}
+                        strokeWidth="8"
+                        fill="transparent"
+                        strokeDasharray={326.7}
+                        strokeDashoffset={326.7 - (326.7 * readiness.readinessScore) / 100}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                      />
+                    </svg>
+                    <div className="absolute flex flex-col items-center justify-center text-center">
+                      <span className="text-4xl font-black text-white tracking-tighter">{readiness.readinessScore}</span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Readiness Index</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase" style={{ backgroundColor: `${readiness.color}15`, color: readiness.color, border: `1px solid ${readiness.color}30` }}>
+                    {readiness.verdict}
+                  </div>
+                </div>
+
+                {/* Breakdown Progress Bars */}
+                <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
+                  {/* Recovery Foundation */}
+                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <span>💤</span> Recovery Foundation (Sleep Score)
+                    </h5>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-gray-300">Sleep Quality</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{readiness.sleepScore}/100</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${readiness.sleepScore}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Workout Compliance */}
+                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-[#a855f7] uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <span>🏋️‍♂️</span> Training Compliance (Workout Score)
+                    </h5>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-gray-300">Target Fulfillment</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{readiness.workoutScore}/100</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#a855f7] h-2 rounded-full" style={{ width: `${readiness.workoutScore}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Physiological Coach Verdict */}
+                  <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                      <span>🧠</span> Physiological Verdict
+                    </h5>
+                    <p className="text-xs text-gray-400 leading-relaxed font-semibold">
+                      Your recovery foundation is scored <span className="text-white font-bold">{readiness.sleepScore}/100</span> based on <span className="text-white font-bold">{readiness.total.toFixed(1)}h</span> of sleep (REM: {readiness.rem.toFixed(1)}h, Deep: {readiness.deep.toFixed(1)}h). Today's scheduled plan is <span className="text-white font-bold">{dayType}</span>. {readiness.recommendation}
+                    </p>
+                  </div>
+                </div>
+
+                {/* OK Button */}
+                <button 
+                  onClick={() => setShowReadinessModal(false)}
+                  className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
+                >
+                  Acknowledge & Train
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
       </AnimatePresence>
     </div>
   );
