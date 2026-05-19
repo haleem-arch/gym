@@ -1285,10 +1285,12 @@ FORMAT EXACTLY LIKE THIS:
           {errorMsg.includes('permissions') || errorMsg.includes('expired') || errorMsg.includes('authorize') || errorMsg.includes('verify') ? (
             <button
               onClick={handleConnectStrava}
-              className="w-full py-2.5 rounded-xl font-extrabold bg-red-50 hover:bg-red-600 text-white text-xs transition-colors flex items-center justify-center gap-2 shadow-lg tracking-wide uppercase"
+              className="w-full py-2.5 rounded-xl font-extrabold bg-red-500/20 hover:bg-red-600 border border-red-500/30 text-red-200 text-xs transition-colors flex items-center justify-center shadow-lg tracking-wide uppercase transform-gpu backface-hidden"
             >
-              <Activity size={16} />
-              <span>Click Here to Authorize Strava (Full Access)</span>
+              <div className="flex items-center justify-center gap-2">
+                <Activity size={16} />
+                <span>Click Here to Authorize Strava (Full Access)</span>
+              </div>
             </button>
           ) : null}
         </div>
@@ -1319,19 +1321,21 @@ FORMAT EXACTLY LIKE THIS:
             <button
               onClick={handleConnectStrava}
               disabled={loading}
-              className="w-full py-4 rounded-2xl font-extrabold bg-primary hover:bg-blue-600 text-white shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 text-sm uppercase tracking-wider disabled:opacity-50"
+              className="w-full py-4 rounded-2xl font-extrabold bg-primary hover:bg-blue-600 text-white shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center text-sm uppercase tracking-wider disabled:opacity-50 transform-gpu backface-hidden"
             >
-              {loading ? (
-                <>
-                  <RefreshCw size={18} className="animate-spin" />
-                  <span>Connecting Strava API...</span>
-                </>
-              ) : (
-                <>
-                  <Activity size={18} />
-                  <span>Login / Connect with Strava</span>
-                </>
-              )}
+              <div className="flex items-center justify-center gap-2.5">
+                {loading ? (
+                  <>
+                    <RefreshCw size={18} className="animate-spin" />
+                    <span>Connecting Strava API...</span>
+                  </>
+                ) : (
+                  <>
+                    <Activity size={18} />
+                    <span>Login / Connect with Strava</span>
+                  </>
+                )}
+              </div>
             </button>
 
             <div className="text-[10px] text-gray-500 flex flex-col items-center gap-1 justify-center mt-1">
