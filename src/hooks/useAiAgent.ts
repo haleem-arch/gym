@@ -15,6 +15,7 @@ export interface AiMessage {
   id: string;
   role: 'user' | 'model';
   text: string;
+  draftMeal?: any;
 }
 
 export interface DbAction {
@@ -521,9 +522,23 @@ export const useAiAgent = () => {
       const aiRes = await callGroq(text, context);
       let aiText = aiRes.reply;
 
+      let draftMealData: any = null;
+      let actionsToExecute = aiRes.actions || [];
+
+      // Intercept diet_meals insertions
+      if (actionsToExecute.length > 0) {
+        actionsToExecute = actionsToExecute.filter(a => {
+          if (a.type === 'insert' && a.table === 'diet_meals') {
+            draftMealData = a.data;
+            return false; // Remove from execution
+          }
+          return true;
+        });
+      }
+
       // Handle DB Actions
-      if (aiRes.actions && aiRes.actions.length > 0) {
-        const { success, errorMsg } = await executeActions(aiRes.actions);
+      if (actionsToExecute.length > 0) {
+        const { success, errorMsg } = await executeActions(actionsToExecute);
         if (success) {
           aiText += "\n\n*(✓ Successfully saved to database)*";
         } else {
@@ -532,7 +547,12 @@ export const useAiAgent = () => {
       }
 
       const modelMsgId = crypto.randomUUID();
-      const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiText };
+      const modelMsg: AiMessage = { 
+        id: modelMsgId, 
+        role: 'model', 
+        text: aiText,
+        ...(draftMealData ? { draftMeal: draftMealData } : {})
+      };
       setMessages(prev => [...prev, modelMsg]);
 
     } catch (e: any) {
@@ -547,10 +567,15 @@ export const useAiAgent = () => {
     }
   };
 
+  const updateMessage = (id: string, updates: Partial<AiMessage>) => {
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+  };
+
   return {
     messages,
     isTyping,
     sendMessage,
+    updateMessage,
     startNewChat,
     initChat,
     sessionId

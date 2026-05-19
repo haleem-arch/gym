@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAiAgent } from '../hooks/useAiAgent';
-import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
+import { Send, Bot, Loader2, Sparkles, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 
 // Renders model text with line breaks and basic markdown (bold, bullets)
 const MessageText = ({ text }: { text: string }) => {
@@ -29,8 +31,97 @@ const MessageText = ({ text }: { text: string }) => {
   );
 };
 
+const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplete: (saved: boolean) => void }) => {
+  const [data, setData] = useState(initialData);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleDeleteItem = (itemId: string) => {
+    setData((prev: any) => ({
+      ...prev,
+      items: prev.items.filter((item: any) => item.id !== itemId)
+    }));
+  };
+
+  const handleLog = async () => {
+    if (data.items.length === 0) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('diet_meals').insert(data);
+      if (error) throw error;
+      
+      // Dispatch an event so the Diet page updates
+      window.dispatchEvent(new CustomEvent('diet_updated'));
+      onComplete(true);
+    } catch (err) {
+      console.error("Failed to save draft meal", err);
+      alert("Failed to save meal");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDiscard = () => {
+    onComplete(false);
+  };
+
+  if (!data || data.items.length === 0) {
+    return (
+      <div className="mt-3 p-3 bg-surface border border-gray-800 rounded-xl flex items-center justify-between opacity-50">
+        <span className="text-xs text-gray-500">Draft empty</span>
+        <button onClick={handleDiscard} className="text-[10px] uppercase font-bold text-gray-400">Dismiss</button>
+      </div>
+    );
+  }
+
+  const totalKcal = data.items.reduce((acc: number, item: any) => acc + (item.macros?.kcal || 0), 0);
+
+  return (
+    <div className="mt-3 bg-surface border border-gray-700/50 rounded-xl overflow-hidden shadow-lg shadow-black/20">
+      <div className="bg-gray-800/40 px-3 py-2 border-b border-gray-700/50 flex justify-between items-center">
+        <span className="text-xs font-bold text-gray-300 tracking-wide uppercase">Draft Meal</span>
+        <span className="text-xs font-black text-white">{Math.round(totalKcal)} kcal</span>
+      </div>
+      
+      <div className="flex flex-col">
+        {data.items.map((item: any) => (
+          <SwipeToDeleteRow key={item.id} onDelete={() => handleDeleteItem(item.id)}>
+            <div className="px-3 py-2.5 border-b border-gray-800/30 flex justify-between items-center bg-surface">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-200">{item.name}</span>
+                <span className="text-[10px] text-gray-500">{item.grams}g</span>
+              </div>
+              <div className="flex gap-2 text-[10px] font-semibold">
+                <span className="text-blue-400">{Math.round(item.macros?.protein || 0)}P</span>
+                <span className="text-orange-400">{Math.round(item.macros?.carbs || 0)}C</span>
+                <span className="text-red-400">{Math.round(item.macros?.fat || 0)}F</span>
+              </div>
+            </div>
+          </SwipeToDeleteRow>
+        ))}
+      </div>
+
+      <div className="p-2 flex gap-2">
+        <button 
+          onClick={handleDiscard}
+          disabled={isSaving}
+          className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs transition-colors"
+        >
+          Discard
+        </button>
+        <button 
+          onClick={handleLog}
+          disabled={isSaving}
+          className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1 shadow-md shadow-emerald-900/20"
+        >
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={3} />} Log
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const AiCoach = () => {
-  const { messages, isTyping, sendMessage, initChat, startNewChat } = useAiAgent();
+  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +194,22 @@ const AiCoach = () => {
                 style={msg.role === 'model' ? { maxHeight: '420px', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
               >
                 {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
+                
+                {msg.draftMeal && (
+                  <DraftMealBox 
+                    initialData={msg.draftMeal} 
+                    onComplete={(saved) => {
+                      if (saved) {
+                        updateMessage(msg.id, { 
+                          draftMeal: null, 
+                          text: msg.text + "\n\n*(✓ Successfully saved to database)*" 
+                        });
+                      } else {
+                        updateMessage(msg.id, { draftMeal: null });
+                      }
+                    }}
+                  />
+                )}
               </div>
             </motion.div>
           ))}
