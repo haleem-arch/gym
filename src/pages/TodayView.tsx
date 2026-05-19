@@ -10,9 +10,47 @@ import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
-import { LiquidPourButton } from '../components/LiquidPourButton';
+
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
+
+const RippleButton = ({ onClick, className, children }: { onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, className?: string, children: React.ReactNode }) => {
+  const [ripples, setRipples] = useState<{x: number, y: number, id: number}[]>([]);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const newRipple = { x, y, id: Date.now() };
+    
+    setRipples(prev => [...prev, newRipple]);
+    if (onClick) onClick(e);
+
+    setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== newRipple.id));
+    }, 600);
+  };
+
+  return (
+    <button onClick={handleClick} className={`relative overflow-hidden ${className}`}>
+      {ripples.map(ripple => (
+        <span
+          key={ripple.id}
+          className="absolute bg-white/40 rounded-full ripple-anim pointer-events-none"
+          style={{
+            left: ripple.x,
+            top: ripple.y,
+            width: 100,
+            height: 100,
+            marginTop: -50,
+            marginLeft: -50,
+          }}
+        />
+      ))}
+      {children}
+    </button>
+  );
+};
 
 const TodayView = () => {
   const navigate = useNavigate();
@@ -733,10 +771,12 @@ const TodayView = () => {
                    <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal">/{waterTarget}L</span></span>
                  </div>
                  <div className="w-full flex flex-col items-center">
-                   <LiquidPourButton 
-                     onLog={(amount) => logWater(amount)} 
-                     className="mt-1"
-                   />
+                   <RippleButton 
+                     onClick={() => logWater(0.25)} 
+                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5 cursor-pointer"
+                   >
+                     + 250ml WATER
+                   </RippleButton>
                    <span className="text-xs font-semibold text-gray-500 mt-2 block text-center leading-none">
                      {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
                    </span>
