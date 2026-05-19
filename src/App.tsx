@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
@@ -22,6 +23,56 @@ import DashboardPage from './pages/coach/DashboardPage';
 import ClientsListPage from './pages/coach/ClientsListPage';
 import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
+
+const PageTransition = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <motion.div
+      initial={{ x: 100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -100, opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-28 no-scrollbar bg-background"
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const AppContent = () => {
+  const location = useLocation();
+  
+  return (
+    <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
+      <div className="flex-1 relative">
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageTransition><TodayView /></PageTransition>} />
+            <Route path="/workout" element={<PageTransition><WorkoutHome /></PageTransition>} />
+            <Route path="/workout/active" element={<PageTransition><WorkoutTracker /></PageTransition>} />
+            <Route path="/workout/:id" element={<PageTransition><WorkoutDetail /></PageTransition>} />
+            <Route path="/diet" element={<PageTransition><DietHome /></PageTransition>} />
+            <Route path="/diet/meal/:id" element={<PageTransition><DietMealBuilder /></PageTransition>} />
+            <Route path="/diet/search" element={<PageTransition><DietSearch /></PageTransition>} />
+            <Route path="/diet/food/new" element={<PageTransition><FoodCreator /></PageTransition>} />
+            <Route path="/diet/inventory" element={<PageTransition><FoodInventory /></PageTransition>} />
+            <Route path="/inbody" element={<PageTransition><InBodyView /></PageTransition>} />
+            <Route path="/strava" element={<PageTransition><StravaAnalyzer /></PageTransition>} />
+            <Route path="/ai" element={<PageTransition><AiCoach /></PageTransition>} />
+
+            {/* Coach Routes */}
+            <Route path="/coach/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
+            <Route path="/coach/clients" element={<PageTransition><ClientsListPage /></PageTransition>} />
+            <Route path="/coach/clients/new" element={<PageTransition><AddClientPage /></PageTransition>} />
+            <Route path="/coach/clients/:clientId" element={<PageTransition><ClientManagementPage /></PageTransition>} />
+
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </AnimatePresence>
+      </div>
+      <BottomNav />
+    </div>
+  );
+};
 
 function App() {
   const [session, setSession] = useState<any>(undefined);
@@ -60,33 +111,7 @@ function App() {
 
   return (
     <Router>
-      <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
-        <div className="flex-1 overflow-y-auto pb-28 no-scrollbar">
-          <Routes>
-            <Route path="/" element={<TodayView />} />
-            <Route path="/workout" element={<WorkoutHome />} />
-            <Route path="/workout/active" element={<WorkoutTracker />} />
-            <Route path="/workout/:id" element={<WorkoutDetail />} />
-            <Route path="/diet" element={<DietHome />} />
-            <Route path="/diet/meal/:id" element={<DietMealBuilder />} />
-            <Route path="/diet/search" element={<DietSearch />} />
-            <Route path="/diet/food/new" element={<FoodCreator />} />
-            <Route path="/diet/inventory" element={<FoodInventory />} />
-            <Route path="/inbody" element={<InBodyView />} />
-            <Route path="/strava" element={<StravaAnalyzer />} />
-            <Route path="/ai" element={<AiCoach />} />
-
-            {/* Coach Routes */}
-            <Route path="/coach/dashboard" element={<DashboardPage />} />
-            <Route path="/coach/clients" element={<ClientsListPage />} />
-            <Route path="/coach/clients/new" element={<AddClientPage />} />
-            <Route path="/coach/clients/:clientId" element={<ClientManagementPage />} />
-
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
-        <BottomNav />
-      </div>
+      <AppContent />
     </Router>
   );
 }
