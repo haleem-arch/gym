@@ -366,8 +366,8 @@ const AiCoach = () => {
         </div>
       )}
 
-      {/* Input — sticky at bottom */}
-      <div className="p-3 bg-background border-t border-gray-800 sticky bottom-0 z-30 flex-shrink-0">
+      {/* Input */}
+      <div className="p-3 bg-background border-t border-gray-800 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}

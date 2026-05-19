@@ -281,23 +281,73 @@ export const useAiAgent = () => {
     if (!uid) return '';
     const parts: string[] = [];
 
-    // Always load schedule (cached)
+    const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+    parts.push(`SELECTED_DASHBOARD_DATE: ${selectedDate}`);
+    parts.push(`REAL_TODAY_DATE: ${getLocalDate()}`);
+
+    // ── Schedule ─────────────────────────────────────────────────────────────
     let sched = fromCache('sched');
     if (!sched) {
       const { data } = await supabase.from('schedules').select('id,week_start,days').eq('user_id', uid).order('week_start', { ascending: false }).limit(1).maybeSingle();
       sched = data;
       if (sched) toCache('sched', sched);
     }
-    if (sched) parts.push(`SCHEDULE: ${JSON.stringify(sched)}`);
+    if (sched) parts.push(`WEEKLY_SCHEDULE: ${JSON.stringify(sched.days)}`);
 
-    const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
-    parts.push(`SELECTED_DASHBOARD_DATE: ${selectedDate}`);
-    parts.push(`REAL_TODAY_DATE: ${getLocalDate()}`);
+    // ── InBody / Body Composition ─────────────────────────────────────────────
+    const { data: inbodyScans } = await supabase
+      .from('inbody_scans')
+      .select('*')
+      .eq('user_id', uid)
+      .order('scan_date', { ascending: false })
+      .limit(3);
+    if (inbodyScans && inbodyScans.length > 0) {
+      const latest = inbodyScans[0];
+      parts.push(`LATEST_INBODY_SCAN (${latest.scan_date}): Weight=${latest.weight}kg | Muscle=${latest.skeletal_muscle_mass}kg | BF=${latest.body_fat_percentage}% | BFMass=${latest.body_fat_mass}kg | BMI=${latest.bmi} | SMM%=${latest.smm_percentage} | VisceralFat=${latest.visceral_fat_level}`);
+      if (inbodyScans.length > 1) {
+        const prev = inbodyScans[1];
+        const wDiff = (latest.weight - prev.weight).toFixed(1);
+        const mDiff = ((latest.skeletal_muscle_mass || 0) - (prev.skeletal_muscle_mass || 0)).toFixed(2);
+        const fDiff = ((latest.body_fat_percentage || 0) - (prev.body_fat_percentage || 0)).toFixed(1);
+        parts.push(`BODY_COMPOSITION_TREND: Weight ${wDiff > '0' ? '+' : ''}${wDiff}kg | Muscle ${mDiff > '0' ? '+' : ''}${mDiff}kg | BF% ${fDiff > '0' ? '+' : ''}${fDiff}% (since ${prev.scan_date})`);
+      }
+    }
 
-    // Always load diet (cached)
+    // ── Sleep logs ────────────────────────────────────────────────────────────
+    const { data: sleepLogs } = await supabase
+      .from('sleep_logs')
+      .select('*')
+      .eq('user_id', uid)
+      .order('date', { ascending: false })
+      .limit(7);
+    if (sleepLogs && sleepLogs.length > 0) {
+      const sleepSummary = sleepLogs.map(s =>
+        `${s.date}: ${s.hours_slept}hrs | Quality: ${s.quality || 'N/A'} | Bedtime: ${s.bedtime || 'N/A'} | Wake: ${s.wake_time || 'N/A'} | Deep: ${s.deep_sleep_pct || 0}% | REM: ${s.rem_sleep_pct || 0}% | Light: ${s.light_sleep_pct || 0}%`
+      );
+      parts.push(`SLEEP_HISTORY (last 7 days):\n${sleepSummary.join('\n')}`);
+      const avgSleep = sleepLogs.reduce((s, l) => s + (l.hours_slept || 0), 0) / sleepLogs.length;
+      parts.push(`AVG_SLEEP_LAST_7_DAYS: ${avgSleep.toFixed(1)} hours`);
+    }
+
+    // ── Biometric logs (HRV, RHR, readiness) ─────────────────────────────────
+    const { data: bioLogs } = await supabase
+      .from('biometric_logs')
+      .select('*')
+      .eq('user_id', uid)
+      .order('date', { ascending: false })
+      .limit(7);
+    if (bioLogs && bioLogs.length > 0) {
+      const bioSummary = bioLogs.map(b =>
+        `${b.date}: HRV=${b.hrv ?? 'N/A'}ms | RHR=${b.resting_heart_rate ?? 'N/A'}bpm | Readiness=${b.readiness_score ?? 'N/A'}/100`
+      );
+      parts.push(`BIOMETRICS_HISTORY (last 7 days):\n${bioSummary.join('\n')}`);
+      const latest = bioLogs[0];
+      if (latest.readiness_score) parts.push(`TODAY_READINESS_SCORE: ${latest.readiness_score}/100 — HRV: ${latest.hrv}ms | RHR: ${latest.resting_heart_rate}bpm`);
+    }
+
+    // ── Diet log for selected date (ID + totals + full meals) ─────────────────
     const ckey = `diet_${selectedDate}`;
     let log = fromCache(ckey);
-
     if (!log) {
       const { data: existing } = await supabase
         .from('diet_logs')
@@ -305,17 +355,12 @@ export const useAiAgent = () => {
         .eq('user_id', uid)
         .eq('date', selectedDate)
         .maybeSingle();
-
       if (existing) {
         log = existing;
       } else if (selectedDate === getLocalDate()) {
         const { data: created } = await supabase
           .from('diet_logs')
-          .insert({
-            user_id: uid,
-            date: selectedDate,
-            daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
-          })
+          .insert({ user_id: uid, date: selectedDate, daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false } })
           .select('id,daily_totals')
           .single();
         log = created;
@@ -325,97 +370,96 @@ export const useAiAgent = () => {
 
     if (log) {
       parts.push(`SELECTED_DATE_DIET_LOG_ID: ${log.id}`);
-      parts.push(`SELECTED_DATE_TOTALS: ${JSON.stringify(log.daily_totals)}`);
+      const t = log.daily_totals || {};
+      const remainP = Math.max(0, 160 - (t.protein || 0));
+      const remainC = Math.max(0, 240 - (t.carbs || 0));
+      const remainF = Math.max(0, 70 - (t.fat || 0));
+      const remainKcal = Math.max(0, 2400 - (t.kcal || 0));
+      parts.push(`SELECTED_DATE_DIET_TOTALS: ${t.kcal || 0}kcal / ${t.protein || 0}g P / ${t.carbs || 0}g C / ${t.fat || 0}g F | Water: ${(t.water || 0) / 1000}L`);
+      parts.push(`REMAINING_MACROS_TODAY: ${remainKcal}kcal | Protein: ${remainP}g | Carbs: ${remainC}g | Fat: ${remainF}g`);
       parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
+
+      // Load full meals with all food items
+      const { data: meals } = await supabase
+        .from('diet_meals')
+        .select('name, time, items')
+        .eq('diet_log_id', log.id)
+        .order('time', { ascending: true });
+      if (meals && meals.length > 0) {
+        const mealStr = meals.map(m => {
+          const items = (m.items || []).map((it: any) =>
+            `  - ${it.name} (${it.grams}g): ${it.macros?.kcal || 0}kcal P:${it.macros?.protein || 0}g C:${it.macros?.carbs || 0}g F:${it.macros?.fat || 0}g`
+          ).join('\n');
+          return `${m.time} — ${m.name}:\n${items}`;
+        });
+        parts.push(`MEALS_LOGGED_TODAY:\n${mealStr.join('\n\n')}`);
+      } else {
+        parts.push(`MEALS_LOGGED_TODAY: No meals logged yet for ${selectedDate}`);
+      }
     } else {
-      parts.push(`SELECTED_DATE_TOTALS: No meals or calories logged for selected date ${selectedDate}`);
+      parts.push(`SELECTED_DATE_DIET_LOG_ID: none`);
+      parts.push(`REMAINING_MACROS_TODAY: Full day remaining — 2400kcal | 160g P | 240g C | 70g F`);
     }
 
-    // Load completed workouts on the selected date
+    // ── Workouts on selected date ─────────────────────────────────────────────
     const { data: selectedDayWorkouts } = await supabase.from('workouts')
       .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('date', selectedDate)
       .eq('status', 'completed');
-
     if (selectedDayWorkouts && selectedDayWorkouts.length > 0) {
-      const daySummary = selectedDayWorkouts
-        .map(w => {
-          if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) {
-            try {
-              const runStats = JSON.parse(w.notes);
-              return `RUN: ${runStats.distance_km}km run in ${Math.round((w.duration || 0) / 60)} mins (Pace: ${runStats.pace}, Elev: ${runStats.elevation_m}m)`;
-            } catch (e) {
-              return `RUN: completed (${Math.round((w.duration || 0) / 60)} mins)`;
-            }
-          }
-          const exSummary = w.workout_exercises?.map((we: any) => {
-            const name = we.exercises?.name;
-            const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
-            return `${name}: [${setInfo}]`;
-          }).join(' | ') || '';
-          return `${w.day_type}: ${exSummary} (Volume: ${w.total_volume}kg)`;
-        });
-      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): \n${daySummary.join('\n')}`);
+      const daySummary = selectedDayWorkouts.map(w => {
+        if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) return null;
+        const exSummary = w.workout_exercises?.map((we: any) => {
+          const name = we.exercises?.name;
+          const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
+          return `  - ${name}: [${setInfo}]`;
+        }).join('\n') || '';
+        return `${w.day_type} (${Math.round((w.duration || 0) / 60)} min, ${w.total_volume}kg volume):\n${exSummary}`;
+      }).filter(Boolean);
+      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}):\n${daySummary.join('\n\n')}`);
     } else {
-      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): No workouts completed on this date.`);
+      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): No gym session completed.`);
     }
 
-    // Load custom workout plans
+    // ── Current workout plans ─────────────────────────────────────────────────
     const { data: customPlans } = await supabase.from('user_workout_plans').select('plan_type, exercises').eq('user_id', uid);
-    
-    const defaultPlans = {
+    const defaultPlans: Record<string, string[]> = {
       PUSH: ['Incline DB Press', 'Machine Chest Press', 'Lateral Raises', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
       PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
       LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
     };
-
     const currentPlans = { ...defaultPlans };
     if (customPlans) {
-      customPlans.forEach(p => {
-        if (p.exercises && p.exercises.length > 0) currentPlans[p.plan_type as keyof typeof currentPlans] = p.exercises;
-      });
+      customPlans.forEach(p => { if (p.exercises?.length > 0) currentPlans[p.plan_type] = p.exercises; });
     }
     parts.push(`CURRENT_WORKOUT_PLANS: ${JSON.stringify(currentPlans)}`);
 
-    const activeWorkoutStr = localStorage.getItem('athlete_dashboard_active_workout');
-    if (activeWorkoutStr) {
-       try {
-         const aw = JSON.parse(activeWorkoutStr);
-         const activeEx = aw.exercises.map((e: any) => e.name);
-         parts.push(`ACTIVE_WORKOUT_IN_PROGRESS: ${JSON.stringify(activeEx)}`);
-       } catch (e) {}
-    }
-
-    // Load recent past workouts for performance tracking context
+    // ── Recent 10 past gym sessions (full sets + weights) ─────────────────────
     const { data: recentWorkouts } = await supabase.from('workouts')
-      .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
+      .select('day_type, created_at, date, duration, total_volume, workout_exercises(sets, exercises(name))')
       .eq('user_id', uid)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
-      .limit(5);
-    
+      .limit(10);
     if (recentWorkouts && recentWorkouts.length > 0) {
-      const summary = recentWorkouts
-        .filter(w => w.day_type !== 'RUN') // Hide runs from AI completely
-        .map(w => {
-         const exSummary = w.workout_exercises?.map((we: any) => {
-           const name = we.exercises?.name;
-           const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
-           return `${name}: [${setInfo}]`;
-         }).join(' | ') || '';
-         return `${w.day_type} on ${new Date(w.created_at).toLocaleDateString()}: ${exSummary}`;
-      });
-      parts.push(`RECENT_COMPLETED_WORKOUTS (with weights and sets): \n${summary.join('\n')}`);
+      const gymSessions = recentWorkouts.filter(w => w.day_type !== 'RUN');
+      if (gymSessions.length > 0) {
+        const summary = gymSessions.map(w => {
+          const exSummary = w.workout_exercises?.map((we: any) => {
+            const name = we.exercises?.name;
+            const setInfo = we.sets?.map((s: any) => `${s.weight}kg×${s.reps}`).join(', ') || 'no sets';
+            return `  - ${name}: [${setInfo}]`;
+          }).join('\n') || '';
+          return `${w.day_type} on ${w.date || new Date(w.created_at).toLocaleDateString()} (${w.total_volume}kg total):\n${exSummary}`;
+        });
+        parts.push(`RECENT_GYM_SESSIONS (last ${gymSessions.length}, with all sets/weights):\n${summary.join('\n\n')}`);
 
-      // Calculate recent volume trend
-      const recentLifts = recentWorkouts.filter(w => w.day_type !== 'RUN' && w.total_volume > 0);
-      if (recentLifts.length >= 2) {
-        const latestVol = recentLifts[0].total_volume;
-        const prevVol = recentLifts[1].total_volume;
-        const diff = latestVol - prevVol;
-        if (diff > 0) {
-          parts.push(`VOLUME TREND: The user lifted ${diff}kg MORE in their last session (${latestVol}kg) compared to the previous session (${prevVol}kg). Congratulate them on the progressive overload!`);
+        // Volume trend
+        const vols = gymSessions.filter(w => w.total_volume > 0);
+        if (vols.length >= 2) {
+          const diff = vols[0].total_volume - vols[1].total_volume;
+          if (diff !== 0) parts.push(`VOLUME_TREND: ${diff > 0 ? `+${diff}kg MORE` : `${diff}kg LESS`} in last session vs previous (${vols[0].total_volume}kg vs ${vols[1].total_volume}kg)`);
         }
       }
     }
