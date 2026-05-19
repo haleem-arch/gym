@@ -278,27 +278,30 @@ export const useAiAgent = () => {
     }
     if (sched) parts.push(`SCHEDULE: ${JSON.stringify(sched)}`);
 
+    const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+    parts.push(`SELECTED_DASHBOARD_DATE: ${selectedDate}`);
+    parts.push(`REAL_TODAY_DATE: ${getLocalDate()}`);
+
     // Always load diet (cached)
-    const ckey = `diet_${getLocalDate()}`; // local date to match useDiet
+    const ckey = `diet_${selectedDate}`;
     let log = fromCache(ckey);
 
     if (!log) {
-      const localToday = getLocalDate();
       const { data: existing } = await supabase
         .from('diet_logs')
         .select('id,daily_totals')
         .eq('user_id', uid)
-        .eq('date', localToday)
+        .eq('date', selectedDate)
         .maybeSingle();
 
       if (existing) {
         log = existing;
-      } else {
+      } else if (selectedDate === getLocalDate()) {
         const { data: created } = await supabase
           .from('diet_logs')
           .insert({
             user_id: uid,
-            date: localToday,
+            date: selectedDate,
             daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
           })
           .select('id,daily_totals')
@@ -309,9 +312,41 @@ export const useAiAgent = () => {
     }
 
     if (log) {
-      parts.push(`TODAY_DIET_LOG_ID: ${log.id}`);
-      parts.push(`TODAY_TOTALS: ${JSON.stringify(log.daily_totals)}`);
+      parts.push(`SELECTED_DATE_DIET_LOG_ID: ${log.id}`);
+      parts.push(`SELECTED_DATE_TOTALS: ${JSON.stringify(log.daily_totals)}`);
       parts.push(`IMPORTANT: Use diet_log_id="${log.id}" for any diet_meals insert`);
+    } else {
+      parts.push(`SELECTED_DATE_TOTALS: No meals or calories logged for selected date ${selectedDate}`);
+    }
+
+    // Load completed workouts on the selected date
+    const { data: selectedDayWorkouts } = await supabase.from('workouts')
+      .select('day_type, created_at, title, duration, notes, total_volume, workout_exercises(sets, exercises(name))')
+      .eq('user_id', uid)
+      .eq('date', selectedDate)
+      .eq('status', 'completed');
+
+    if (selectedDayWorkouts && selectedDayWorkouts.length > 0) {
+      const daySummary = selectedDayWorkouts
+        .map(w => {
+          if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) {
+            try {
+              const runStats = JSON.parse(w.notes);
+              return `RUN: ${runStats.distance_km}km run in ${Math.round((w.duration || 0) / 60)} mins (Pace: ${runStats.pace}, Elev: ${runStats.elevation_m}m)`;
+            } catch (e) {
+              return `RUN: completed (${Math.round((w.duration || 0) / 60)} mins)`;
+            }
+          }
+          const exSummary = w.workout_exercises?.map((we: any) => {
+            const name = we.exercises?.name;
+            const setInfo = we.sets?.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ') || 'no sets';
+            return `${name}: [${setInfo}]`;
+          }).join(' | ') || '';
+          return `${w.day_type}: ${exSummary} (Volume: ${w.total_volume}kg)`;
+        });
+      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): \n${daySummary.join('\n')}`);
+    } else {
+      parts.push(`COMPLETED_WORKOUTS_ON_SELECTED_DATE (${selectedDate}): No workouts completed on this date.`);
     }
 
     // Load custom workout plans

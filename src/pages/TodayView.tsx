@@ -216,6 +216,10 @@ const TodayView = () => {
     };
   }, [activeDateStr, workout, isToday, dayType]);
 
+  useEffect(() => {
+    localStorage.setItem('athlete_dashboard_selected_date', activeDateStr);
+  }, [activeDateStr]);
+
   const analyzeSleepWithAi = () => {
     const total = sleepHours || 0;
     const deep = deepSleepHours || 0;
@@ -288,11 +292,11 @@ const TodayView = () => {
 
     let durationAnalysis = "";
     if (total >= 7.5 && total <= 9.2) {
-      durationAnalysis = `Your sleep duration of ${totalStr} falls squarely within the healthy athletic window.`;
+      durationAnalysis = `For your sleep on ${dateDisplay}, your sleep duration of ${totalStr} fell squarely within the healthy athletic window.`;
     } else if (total > 9.2) {
-      durationAnalysis = `With ${totalStr} of sleep, you have accumulated ample horizontal time to aid heavy systemic repair.`;
+      durationAnalysis = `With ${totalStr} of sleep logged on ${dateDisplay}, you accumulated ample horizontal time to aid heavy systemic repair.`;
     } else {
-      durationAnalysis = `At ${totalStr}, your total sleep volume is sub-optimal for maintaining intense physical training.`;
+      durationAnalysis = `For your sleep on ${dateDisplay}, at ${totalStr}, your total sleep volume was sub-optimal for maintaining intense physical training.`;
     }
 
     let deepAnalysis = "";
@@ -394,8 +398,9 @@ const TodayView = () => {
     const rem = remSleepHours || 0;
     const light = lightSleepHours || 0;
     
-    let sleepScore = 75; // baseline average if no sleep data is logged yet
-    if (total > 0) {
+    let sleepScore = 0;
+    const hasSleepData = total > 0;
+    if (hasSleepData) {
       let durationPoints = 0;
       if (total >= 8) durationPoints = 50;
       else if (total >= 7) durationPoints = 42;
@@ -446,7 +451,12 @@ const TodayView = () => {
     let color = "";
     let bgGradient = "";
     
-    if (readinessScore >= 85) {
+    if (!hasSleepData) {
+      verdict = "No Sleep Data";
+      recommendation = "Please log sleep data for this day to analyze your physiological readiness score.";
+      color = "#64748b"; // Slate-500
+      bgGradient = "from-slate-800/10 to-slate-900/10";
+    } else if (readinessScore >= 85) {
       verdict = "Optimal Readiness";
       recommendation = "Central nervous system (CNS) and muscle tissue recovery are fully restored. Your body is in the prime adaptation zone for high-intensity load or progressive overload splits today. Push hard.";
       color = "#6366f1"; // Indigo
@@ -904,7 +914,7 @@ const TodayView = () => {
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-base font-extrabold text-white tracking-tight leading-none">{readiness.readinessScore}</span>
+              <span className="text-base font-extrabold text-white tracking-tight leading-none">{readiness.hasSleepData ? readiness.readinessScore : '--'}</span>
               <span className="text-[6px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 leading-none">Score</span>
             </div>
           </div>
@@ -1354,7 +1364,9 @@ const TodayView = () => {
                       />
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-4xl font-black text-white tracking-tighter">{readiness.readinessScore}</span>
+                      <span className="text-4xl font-black text-white tracking-tighter">
+                        {readiness.hasSleepData ? readiness.readinessScore : '--'}
+                      </span>
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Readiness Index</span>
                     </div>
                   </div>
@@ -1374,11 +1386,13 @@ const TodayView = () => {
                       <div className="flex justify-between font-bold leading-none">
                         <span className="text-gray-300">Sleep Quality</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{readiness.sleepScore}/100</span>
+                          <span className="text-white font-black">
+                            {readiness.hasSleepData ? `${readiness.sleepScore}/100` : '--/100'}
+                          </span>
                         </div>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${readiness.sleepScore}%` }}></div>
+                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${readiness.hasSleepData ? readiness.sleepScore : 0}%` }}></div>
                       </div>
                     </div>
                   </div>
@@ -1407,7 +1421,15 @@ const TodayView = () => {
                       <span>🧠</span> Physiological Verdict
                     </h5>
                     <p className="text-xs text-gray-400 leading-relaxed font-semibold">
-                      Your recovery foundation is scored <span className="text-white font-bold">{readiness.sleepScore}/100</span> based on <span className="text-white font-bold">{readiness.total.toFixed(1)}h</span> of sleep (REM: {readiness.rem.toFixed(1)}h, Deep: {readiness.deep.toFixed(1)}h). Today's scheduled plan is <span className="text-white font-bold">{dayType}</span>. {readiness.recommendation}
+                      {readiness.hasSleepData ? (
+                        <>
+                          Your recovery foundation is scored <span className="text-white font-bold">{readiness.sleepScore}/100</span> based on <span className="text-white font-bold">{readiness.total.toFixed(1)}h</span> of sleep (REM: {readiness.rem.toFixed(1)}h, Deep: {readiness.deep.toFixed(1)}h). Today's scheduled plan is <span className="text-white font-bold">{dayType}</span>. {readiness.recommendation}
+                        </>
+                      ) : (
+                        <>
+                          No sleep data logged for this date. Today's scheduled plan is <span className="text-white font-bold">{dayType}</span>. Please sync or enter sleep details to unlock readiness scores.
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>

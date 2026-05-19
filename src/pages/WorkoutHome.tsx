@@ -210,11 +210,14 @@ const WorkoutHome = () => {
     let advice = "";
     const tips: string[] = [];
 
+    const isSelectedToday = getLocalDateString() === new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const dateFormatted = isSelectedToday ? 'Today' : new Date(getLocalDateString()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
     if (hasRun && hasGym) {
       score = 98;
       verdict = "Double Stimulus Completed";
       action = "🔥 Elite Output: You logged both your running mileage and your strength training. Outstanding adaptation response!";
-      advice = `Today's dual-stimulus session combined a cardiovascular run of ${runDistance.toFixed(2)} km with a resistance training load of ${volumeLifted.toLocaleString()} kg. This simultaneous stimulation of mitochondrial growth and muscle hypertrophy is highly effective for elite hybrid athletes. However, this creates a high systemic stress response. Glycogen reserves will be heavily depleted, and muscle tissue damage requires immediate attention.`;
+      advice = `Your dual-stimulus session on ${dateFormatted} combined a cardiovascular run of ${runDistance.toFixed(2)} km with a resistance training load of ${volumeLifted.toLocaleString()} kg. This simultaneous stimulation of mitochondrial growth and muscle hypertrophy is highly effective for elite hybrid athletes. However, this creates a high systemic stress response. Glycogen reserves will be heavily depleted, and muscle tissue damage requires immediate attention.`;
       tips.push("Carb reload: Prioritize eating 70-100g of high-glycemic carbohydrates alongside 30-40g of protein within 90 minutes.");
       tips.push("Active flush: Spend 10 minutes performing light foam rolling on the targeted lifting muscles and your calves/quads.");
       tips.push("Hydration formula: Rehydrate with electrolyte-dense water (at least 1.5L containing sodium/potassium) to offset cardio sweat loss.");
@@ -222,7 +225,7 @@ const WorkoutHome = () => {
       score = 92;
       verdict = "Aerobic System Stimulated";
       action = "🏃 Aerobic Focus: Cardiovascular session completed. Focus on structural recovery of lower-body joints.";
-      advice = `Your cardiovascular training today stimulated critical aerobic adaptations, clocking in a total distance of ${runDistance.toFixed(2)} km over ${Math.round(runDuration)} minutes. Settle-in paces around ${runPace}/km promote capillary density and cellular oxygen utilization. Your heart rate recovery indicates a highly efficient cardiovascular engine.`;
+      advice = `Your cardiovascular training on ${dateFormatted} stimulated critical aerobic adaptations, clocking in a total distance of ${runDistance.toFixed(2)} km over ${Math.round(runDuration)} minutes. Settle-in paces around ${runPace}/km promote capillary density and cellular oxygen utilization. Your heart rate recovery indicates a highly efficient cardiovascular engine.`;
       tips.push("Joint care: Perform 5-10 mins of hamstring/calf stretches and ankle mobility exercises to relieve impact stress.");
       tips.push("Rehydrate: Consume fluid equivalent to 150% of your estimated sweat loss, adding an electrolyte tablet.");
       tips.push("Keep consistency: Maintain structural tissue integrity by keeping tomorrow's session light or resistance-focused.");
@@ -230,7 +233,7 @@ const WorkoutHome = () => {
       score = 90;
       verdict = "Myofibrillar Hypertrophy Stimulated";
       action = "🏋️‍♂️ Strength Loaded: Complete mechanical overload achieved on your strength split. Optimize recovery windows.";
-      advice = `Your resistance training session stimulated high mechanical tension on your ${gymType} split, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg. This mechanical stimulus triggers muscular protein synthesis and neuromuscular adaptation. Physical fatigue in target muscle groups will peak in 24-48 hours.`;
+      advice = `Your resistance training session on ${dateFormatted} stimulated high mechanical tension on your ${gymType} split, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg. This mechanical stimulus triggers muscular protein synthesis and neuromuscular adaptation. Physical fatigue in target muscle groups will peak in 24-48 hours.`;
       tips.push("Amino availability: Consume 30-40g of whey protein or essential amino acids (EAAs) immediately to trigger protein synthesis.");
       tips.push("Targeted blood flow: Perform active recovery or light movements tomorrow to flush metabolic waste from trained muscle groups.");
       tips.push("Sleep quality: Ensure 8+ hours of sleep tonight, as deep sleep is the prime phase for growth hormone release and muscle repair.");
@@ -238,7 +241,7 @@ const WorkoutHome = () => {
       score = 50;
       verdict = "Minimal Training Load Detected";
       action = "💤 Recovery Day: Focus on physical restoration, hydration, and central nervous system (CNS) reset.";
-      advice = "No major lifting or running workload was recorded today. This is perfectly in line with a planned recovery block, allowing your physiological systems, connective tissues, and endocrine balance to reset.";
+      advice = `No major lifting or running workload was recorded for ${dateFormatted}. This is perfectly in line with a planned recovery block, allowing your physiological systems, connective tissues, and endocrine balance to reset.`;
       tips.push("Active rest: Walk 5,000-8,000 light steps to keep joint fluids moving without inducing fatigue.");
       tips.push("Circadian shift: Go to bed 30 minutes earlier to supercharge recovery mechanisms.");
     }
