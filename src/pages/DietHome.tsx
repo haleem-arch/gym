@@ -1,4 +1,4 @@
-
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDiet } from '../hooks/useDiet';
 import { MacroProgressBar } from '../components/MacroProgressBar';
@@ -10,6 +10,8 @@ import { supabase } from '../lib/supabase';
 const DietHome = () => {
   const navigate = useNavigate();
   const { log, meals, waterLogs, loading, targets, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater } = useDiet();
+
+  const [isCollapsing, setIsCollapsing] = useState(false);
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
   const WATER_GOAL_ML = 3500; // 3.5 Liters
@@ -62,8 +64,34 @@ const DietHome = () => {
 
   const totals = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
 
+  const handleFinishDay = () => {
+    if (!totals.completed) {
+      setIsCollapsing(true);
+      setTimeout(() => {
+        toggleDayCompletion();
+        setIsCollapsing(false);
+      }, 800);
+    } else {
+      toggleDayCompletion();
+    }
+  };
+
+  const containerVariants = {
+    normal: { scale: 1, rotate: 0, opacity: 1 },
+    collapsing: { 
+      scale: 0.05, 
+      rotate: 180, 
+      opacity: 0,
+      transition: { duration: 0.8, ease: "anticipate" as any }
+    }
+  };
+
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full pb-20">
+    <motion.div 
+      variants={containerVariants}
+      animate={isCollapsing ? "collapsing" : "normal"}
+      className="p-5 flex flex-col gap-6 min-h-full pb-20 origin-center"
+    >
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nutrition</h1>
@@ -233,7 +261,7 @@ const DietHome = () => {
             
             {/* End Day Button */}
             <button
-              onClick={toggleDayCompletion}
+              onClick={handleFinishDay}
               className={`w-full mt-4 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${totals.completed ? 'bg-surface border border-gray-700 text-gray-400' : 'bg-success text-white'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -242,7 +270,7 @@ const DietHome = () => {
           </motion.div>
         </>
       )}
-    </div>
+    </motion.div>
   );
 };
 

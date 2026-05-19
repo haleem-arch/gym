@@ -10,7 +10,7 @@ import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
-
+import { NumberRoller } from '../components/NumberRoller';
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
 
@@ -768,7 +768,7 @@ const TodayView = () => {
                    </div>
                  </div>
                  <div className="my-auto flex items-center justify-center py-3">
-                   <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal">/{waterTarget}L</span></span>
+                   <span className="text-2xl font-black text-white"><NumberRoller value={waterCurrent} decimals={1} duration={800} /><span className="text-sm text-gray-500 font-normal">/{waterTarget}L</span></span>
                  </div>
                  <div className="w-full flex flex-col items-center">
                    <RippleButton 

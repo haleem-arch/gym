@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
 import { RewardScreen } from '../components/RewardScreen';
+import { TypewriterText } from '../components/TypewriterText';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -886,14 +887,14 @@ const WorkoutHome = () => {
             <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
               <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
                 <p className="text-white font-extrabold mb-1">Coach Verdict</p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.action}</p>
+                <TypewriterText className="text-gray-400 font-medium" text={workoutAnalysis.action} speed={10} glitchProbability={0.08} />
               </div>
 
               <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
                 <p className="text-white font-extrabold mb-1.5 flex items-center gap-1">
                   <span>💡</span> Physiological Analysis
                 </p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.advice}</p>
+                <TypewriterText className="text-gray-400 font-medium" text={workoutAnalysis.advice} speed={12} glitchProbability={0.08} />
               </div>
 
               {/* Workout Benchmarks/Targets Visualizer */}
@@ -943,14 +944,13 @@ const WorkoutHome = () => {
                   <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                     <span>⚡</span> Recovery Plan
                   </h5>
-                  <ul className="space-y-2 text-xs text-indigo-200/90 font-semibold list-disc list-inside">
-                    {workoutAnalysis.tips.map((tip, idx) => (
-                      <li key={idx} className="leading-relaxed">
-                        <span className="text-indigo-300 font-bold">{tip.split(':')[0]}:</span>
-                        {tip.split(':').slice(1).join(':')}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="text-xs text-indigo-200/90 font-semibold">
+                    <TypewriterText 
+                      text={workoutAnalysis.tips.map(tip => `• **${tip.split(':')[0]}:**${tip.split(':').slice(1).join(':')}`).join('\n')} 
+                      speed={15} 
+                      glitchProbability={0.05} 
+                    />
+                  </div>
                 </div>
               )}
             </div>
