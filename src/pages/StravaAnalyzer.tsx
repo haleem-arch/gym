@@ -236,18 +236,111 @@ const StravaAnalyzer = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
+  // Helper to save Strava configurations in Supabase targets column for PWA compatibility
+  const saveStravaConfigToSupabase = async (
+    access: string,
+    refresh: string,
+    cid?: string,
+    csecret?: string,
+    ruri?: string
+  ) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
 
-    if (code) {
-      handleOAuthCallback(code);
-    } else {
-      loadCachedActivities();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      const currentTargets = profile?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        strava: {
+          ...(currentTargets.strava || {}),
+          access_token: access,
+          refresh_token: refresh,
+          ...(cid ? { client_id: cid } : {}),
+          ...(csecret ? { client_secret: csecret } : {}),
+          ...(ruri ? { redirect_uri: ruri } : {})
+        }
+      };
+
+      await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', session.user.id);
+    } catch (err) {
+      console.error('Failed to save Strava config to Supabase:', err);
     }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      let activeClientId = clientId;
+      let activeClientSecret = clientSecret;
+      let activeRedirectUri = redirectUri;
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('targets')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (data?.targets?.strava) {
+            const strava = data.targets.strava;
+            if (strava.client_id) {
+              activeClientId = strava.client_id;
+              setClientId(strava.client_id);
+              localStorage.setItem('strava_client_id', strava.client_id);
+            }
+            if (strava.client_secret) {
+              activeClientSecret = strava.client_secret;
+              setClientSecret(strava.client_secret);
+              localStorage.setItem('strava_client_secret', strava.client_secret);
+            }
+            if (strava.access_token) {
+              setAccessToken(strava.access_token);
+              localStorage.setItem('strava_access_token', strava.access_token);
+            }
+            if (strava.refresh_token) {
+              setRefreshToken(strava.refresh_token);
+              localStorage.setItem('strava_refresh_token', strava.refresh_token);
+            }
+            if (strava.redirect_uri) {
+              activeRedirectUri = strava.redirect_uri;
+              setRedirectUri(strava.redirect_uri);
+              localStorage.setItem('strava_redirect_uri', strava.redirect_uri);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error loading Strava config from Supabase:', err);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+
+      if (code) {
+        handleOAuthCallback(code, activeClientId, activeClientSecret, activeRedirectUri);
+      } else {
+        loadCachedActivities();
+      }
+    };
+
+    init();
   }, []);
 
-  const handleOAuthCallback = async (authCode: string) => {
+  const handleOAuthCallback = async (
+    authCode: string,
+    cid = clientId,
+    csecret = clientSecret,
+    ruri = redirectUri
+  ) => {
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('Authorizing Strava connection...');
@@ -257,8 +350,8 @@ const StravaAnalyzer = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: clientId,
-          client_secret: clientSecret,
+          client_id: cid,
+          client_secret: csecret,
           code: authCode,
           grant_type: 'authorization_code'
         })
@@ -278,8 +371,16 @@ const StravaAnalyzer = () => {
       localStorage.setItem('strava_access_token', newAccess);
       localStorage.setItem('strava_refresh_token', newRefresh);
 
+      await saveStravaConfigToSupabase(newAccess, newRefresh, cid, csecret, ruri);
+
       window.history.replaceState({}, document.title, window.location.pathname);
-      setSuccessMsg('Strava authorized successfully! Fetching all your runs...');
+      
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+      if (!isStandalone && window.opener) {
+        setSuccessMsg('Strava authorized successfully! You can now close this tab and return to the app.');
+      } else {
+        setSuccessMsg('Strava authorized successfully! Fetching all your runs...');
+      }
 
       await fetchActivities(newAccess, true); // true = full initial fetch & cache
 
@@ -347,7 +448,14 @@ const StravaAnalyzer = () => {
 
   const handleConnectStrava = () => {
     const oauthUrl = `https://www.strava.com/oauth/mobile/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all,profile:read_all`;
-    window.location.href = oauthUrl;
+    
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    
+    if (isStandalone) {
+      window.open(oauthUrl, '_blank');
+    } else {
+      window.location.href = oauthUrl;
+    }
   };
 
   // Fetch activities from Strava. Supports differential syncing (only new runs) and background stream caching!
@@ -359,6 +467,48 @@ const StravaAnalyzer = () => {
 
     try {
       let currentAccess = tokenToUse;
+      let currentRefresh = refreshToken;
+      let currentClientId = clientId;
+      let currentClientSecret = clientSecret;
+
+      // Sync latest tokens from Supabase profile targets JSON before doing API calls (essential for PWA cross-sandbox sync)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('targets')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (data?.targets?.strava) {
+            const strava = data.targets.strava;
+            if (strava.access_token) {
+              currentAccess = strava.access_token;
+              setAccessToken(currentAccess);
+              localStorage.setItem('strava_access_token', currentAccess);
+            }
+            if (strava.refresh_token) {
+              currentRefresh = strava.refresh_token;
+              setRefreshToken(currentRefresh);
+              localStorage.setItem('strava_refresh_token', currentRefresh);
+            }
+            if (strava.client_id) {
+              currentClientId = strava.client_id;
+              setClientId(currentClientId);
+              localStorage.setItem('strava_client_id', currentClientId);
+            }
+            if (strava.client_secret) {
+              currentClientSecret = strava.client_secret;
+              setClientSecret(currentClientSecret);
+              localStorage.setItem('strava_client_secret', currentClientSecret);
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.error('Failed to sync tokens from Supabase before fetch:', dbErr);
+      }
+
       let url = 'https://www.strava.com/api/v3/athlete/activities?per_page=200';
 
       // Differential Sync Optimization: If not a full initial fetch, only get activities AFTER our latest stored run!
@@ -376,10 +526,10 @@ const StravaAnalyzer = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            client_id: clientId,
-            client_secret: clientSecret,
+            client_id: currentClientId,
+            client_secret: currentClientSecret,
             grant_type: 'refresh_token',
-            refresh_token: refreshToken
+            refresh_token: currentRefresh
           })
         });
 
@@ -392,9 +542,12 @@ const StravaAnalyzer = () => {
         setAccessToken(currentAccess);
         localStorage.setItem('strava_access_token', currentAccess);
         if (tokenData.refresh_token) {
-          setRefreshToken(tokenData.refresh_token);
-          localStorage.setItem('strava_refresh_token', tokenData.refresh_token);
+          currentRefresh = tokenData.refresh_token;
+          setRefreshToken(currentRefresh);
+          localStorage.setItem('strava_refresh_token', currentRefresh);
         }
+
+        await saveStravaConfigToSupabase(currentAccess, currentRefresh, currentClientId, currentClientSecret);
 
         res = await fetch(url, { headers: { 'Authorization': `Bearer ${currentAccess}` } });
       }
@@ -746,7 +899,7 @@ const StravaAnalyzer = () => {
     fetchActivities(accessToken, false); // false = differential sync (only new runs)
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     localStorage.setItem('strava_access_token', accessToken);
     localStorage.setItem('strava_client_id', clientId);
     localStorage.setItem('strava_client_secret', clientSecret);
@@ -754,6 +907,7 @@ const StravaAnalyzer = () => {
     localStorage.setItem('strava_redirect_uri', redirectUri);
     setShowSettings(false);
     setSuccessMsg('OAuth credentials & Redirect URI saved successfully!');
+    await saveStravaConfigToSupabase(accessToken, refreshToken, clientId, clientSecret, redirectUri);
   };
 
   const formatPace = (speedMs: number) => {
