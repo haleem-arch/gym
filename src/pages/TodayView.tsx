@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -24,6 +24,16 @@ const TodayView = () => {
   };
   const activeDateStr = getLocalDateString(activeDate);
   const { dayType, setDayType } = useSchedule(activeDateStr);
+  const [showSleepModal, setShowSleepModal] = useState(false);
+  const [sleepAnalysis, setSleepAnalysis] = useState<{
+    score: number;
+    verdict: string;
+    action: string;
+    advice: string;
+    deepStatus: 'optimal' | 'moderate' | 'low';
+    remStatus: 'optimal' | 'moderate' | 'low';
+    totalStatus: 'optimal' | 'moderate' | 'low';
+  } | null>(null);
   const isToday = activeDate.toDateString() === new Date().toDateString();
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -198,6 +208,92 @@ const TodayView = () => {
       supabase.removeChannel(dbBiometricsChannel);
     };
   }, [activeDateStr, workout, isToday, dayType]);
+
+  const analyzeSleepWithAi = () => {
+    const total = sleepHours || 0;
+    const deep = deepSleepHours || 0;
+    const rem = remSleepHours || 0;
+    const light = lightSleepHours || 0;
+
+    if (total === 0) {
+      setSleepAnalysis({
+        score: 0,
+        totalStatus: 'low',
+        deepStatus: 'low',
+        remStatus: 'low',
+        verdict: "No Sleep Data Recorded",
+        advice: "Please sync or enter sleep data for today to get a detailed physiological recovery analysis.",
+        action: "Rest & Log Sleep"
+      });
+      setShowSleepModal(true);
+      return;
+    }
+
+    // Calculate score
+    let durationPoints = 0;
+    if (total >= 8) durationPoints = 50;
+    else if (total >= 7) durationPoints = 42;
+    else if (total >= 6) durationPoints = 30;
+    else if (total >= 5) durationPoints = 15;
+    else durationPoints = 5;
+
+    const totalStaged = (deep + rem + light) || total;
+    const deepRatio = deep / totalStaged;
+    const remRatio = rem / totalStaged;
+
+    let deepPoints = 0;
+    if (deepRatio >= 0.20) deepPoints = 25;
+    else if (deepRatio >= 0.14) deepPoints = 18;
+    else if (deepRatio >= 0.08) deepPoints = 10;
+    else deepPoints = 2;
+
+    let remPoints = 0;
+    if (remRatio >= 0.22) remPoints = 25;
+    else if (remRatio >= 0.16) remPoints = 18;
+    else if (remRatio >= 0.10) remPoints = 10;
+    else remPoints = 2;
+
+    const score = Math.min(100, Math.round(durationPoints + deepPoints + remPoints));
+
+    // Status strings
+    const totalStatus = total >= 7.5 ? 'optimal' : total >= 6 ? 'moderate' : 'low';
+    const deepStatus = deepRatio >= 0.18 ? 'optimal' : deepRatio >= 0.10 ? 'moderate' : 'low';
+    const remStatus = remRatio >= 0.20 ? 'optimal' : remRatio >= 0.12 ? 'moderate' : 'low';
+
+    // Formulate Verdict
+    let verdict = "";
+    let advice = "";
+    let action = "";
+
+    if (score >= 85) {
+      verdict = "CNS & Muscular Primed";
+      advice = `Outstanding sleep architecture! You achieved ${deep.toFixed(1)}h of Deep Sleep (${Math.round(deepRatio * 100)}%) for full growth hormone release and muscle repair, and ${rem.toFixed(1)}h of REM Sleep (${Math.round(remRatio * 100)}%) for nervous system recovery. Your cardiovascular readiness is maximum.`;
+      action = "💪 Full Green Light: Train heavy, smash PRs, or run a high-intensity session!";
+    } else if (score >= 70) {
+      verdict = "Sub-Optimal Rest; Recovery Moderate";
+      advice = `Decent rest, but sleep architecture has minor gaps. ${totalStatus === 'low' ? 'Total sleep duration is slightly short. ' : ''}${deepStatus === 'low' ? 'Deep sleep was shallow, meaning physical recovery is laggy. ' : ''}${remStatus === 'low' ? 'REM sleep was brief, which may lead to slower reaction times and cognitive fatigue. ' : ''}You are fully capable of training, but CNS focus might feel slightly off.`;
+      action = "🏋️‍♂️ Yellow Light: Moderate training. Push yourself, but avoid going to absolute failure on heavy compound movements.";
+    } else if (score >= 50) {
+      verdict = "Systemic Fatigue Warning";
+      advice = `Your recovery is compromised. Total sleep is low (${total.toFixed(1)}h) or sleep stages were severely disrupted. With deep sleep at ${deep.toFixed(1)}h and REM at ${rem.toFixed(1)}h, your muscles have not fully synthesized glycogen and your nervous system's capacity is reduced. High stress levels will trigger higher cortisol.`;
+      action = "🏃‍♀️ Orange Light: Active Recovery. Focus on Zone 2 cardio, mobility work, or lower weight (60-70% 1RM) accessory lifts.";
+    } else {
+      verdict = "Severe Deficit: Rest Recommended";
+      advice = `Critical recovery status! Sleep is severely deficient at ${total.toFixed(1)}h. Your body's inflammatory markers are elevated and your coordination is physically impaired. Training today carries a significantly elevated risk of tendon/muscle injury and will delay recovery for the rest of the week.`;
+      action = "🛑 Red Light: Complete Rest Day. Hydrate, focus on nutrition, and go to bed early tonight.";
+    }
+
+    setSleepAnalysis({
+      score,
+      verdict,
+      advice,
+      action,
+      totalStatus,
+      deepStatus,
+      remStatus
+    });
+    setShowSleepModal(true);
+  };
 
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
@@ -595,6 +691,13 @@ const TodayView = () => {
                   );
                 })()}
               </div>
+              <button
+                onClick={analyzeSleepWithAi}
+                className="mt-3.5 w-full py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all flex items-center justify-center gap-1.5 border border-indigo-500/20 active:scale-[0.97] transform-gpu backface-hidden cursor-pointer"
+              >
+                <Sparkles size={11} className="text-indigo-400" />
+                <span>AI Sleep recovery coach</span>
+              </button>
             </motion.div>
           </div>
         )}
@@ -767,6 +870,138 @@ const TodayView = () => {
               <div className="text-[9px] text-gray-500 text-center leading-normal">
                 ✓ Fully optimized for Microsoft Excel & Google Sheets<br />
                 ✓ Arabic presets and detailed sets are preserved in UTF-8
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {showSleepModal && sleepAnalysis && (
+          <>
+            {/* Overlay */}
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowSleepModal(false)} />
+            
+            {/* Modal Content */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-y-auto md:top-[15%] md:left-1/2 md:-translate-x-1/2 md:max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-[51] flex flex-col justify-between overflow-y-auto no-scrollbar"
+            >
+              {/* Close Button */}
+              <button 
+                type="button"
+                onClick={() => setShowSleepModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+
+              {/* Title */}
+              <div className="flex items-center gap-2 mb-6">
+                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">Sleep Recovery Engine</h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">AI Athlete Intelligence</p>
+                </div>
+              </div>
+
+              {/* Readiness Score Ring & Verdict */}
+              <div className="flex flex-col items-center justify-center text-center gap-4 py-4 bg-slate-950/40 rounded-2xl border border-slate-800/40 mb-6">
+                {/* Visual Ring */}
+                <div className="relative w-24 h-24 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle 
+                      cx="50" cy="50" r="42" 
+                      stroke="#1e293b" strokeWidth="8" fill="transparent" 
+                    />
+                    <circle 
+                      cx="50" cy="50" r="42" 
+                      stroke={
+                        sleepAnalysis.score >= 85 ? '#10b981' : 
+                        sleepAnalysis.score >= 70 ? '#f59e0b' : 
+                        sleepAnalysis.score >= 50 ? '#f97316' : '#ef4444'
+                      } 
+                      strokeWidth="8" fill="transparent" 
+                      strokeDasharray={263.89}
+                      strokeDashoffset={263.89 * (1 - sleepAnalysis.score / 100)}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                    <span className="text-2xl font-black text-white">{sleepAnalysis.score}%</span>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Readiness</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-md font-extrabold text-white tracking-tight">{sleepAnalysis.verdict}</h4>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5 tracking-wider">Physiological Readiness Rating</p>
+                </div>
+              </div>
+
+              {/* Detailed Feedback & Action Item */}
+              <div className="flex-1 space-y-4 mb-6">
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                  <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <span>🔬</span> Physiological Verdict
+                  </h5>
+                  <p className="text-xs text-gray-300 leading-relaxed font-medium">
+                    {sleepAnalysis.advice}
+                  </p>
+                </div>
+
+                <div className={`p-4 rounded-2xl border ${
+                  sleepAnalysis.score >= 85 ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' :
+                  sleepAnalysis.score >= 70 ? 'bg-amber-950/20 border-amber-500/30 text-amber-300' :
+                  sleepAnalysis.score >= 50 ? 'bg-orange-950/20 border-orange-500/30 text-orange-300' :
+                  'bg-red-950/20 border-red-500/30 text-red-300'
+                }`}>
+                  <h5 className="text-[10px] font-black uppercase tracking-wider mb-1.5">
+                    🎯 Today's Action Plan
+                  </h5>
+                  <p className="text-xs font-bold leading-normal">
+                    {sleepAnalysis.action}
+                  </p>
+                </div>
+              </div>
+
+              {/* Staged Diagnostics Grid */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40 text-center">
+                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Total Duration</span>
+                  <div className="flex items-center justify-center gap-1 mt-1 text-xs font-black text-white">
+                    <span>{(sleepHours || 0).toFixed(1)}h</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      sleepAnalysis.totalStatus === 'optimal' ? 'bg-emerald-500' :
+                      sleepAnalysis.totalStatus === 'moderate' ? 'bg-amber-500' : 'bg-red-500'
+                    }`}></span>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40 text-center">
+                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Deep Sleep</span>
+                  <div className="flex items-center justify-center gap-1 mt-1 text-xs font-black text-white">
+                    <span>{(deepSleepHours || 0).toFixed(1)}h</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      sleepAnalysis.deepStatus === 'optimal' ? 'bg-emerald-500' :
+                      sleepAnalysis.deepStatus === 'moderate' ? 'bg-amber-500' : 'bg-red-500'
+                    }`}></span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40 text-center">
+                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">REM Sleep</span>
+                  <div className="flex items-center justify-center gap-1 mt-1 text-xs font-black text-white">
+                    <span>{(remSleepHours || 0).toFixed(1)}h</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      sleepAnalysis.remStatus === 'optimal' ? 'bg-emerald-500' :
+                      sleepAnalysis.remStatus === 'moderate' ? 'bg-amber-500' : 'bg-red-500'
+                    }`}></span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </>
