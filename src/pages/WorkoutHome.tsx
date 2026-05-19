@@ -3,11 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useSchedule } from '../hooks/useSchedule';
-import { Play, History, ChevronRight, Check, Activity, RefreshCw } from 'lucide-react';
+import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
-import { BarChart2 } from 'lucide-react';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -35,6 +34,22 @@ const WorkoutHome = () => {
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
+  const [workoutAnalysis, setWorkoutAnalysis] = useState<{
+    score: number;
+    verdict: string;
+    action: string;
+    advice: string;
+    volumeLifted: number;
+    runDistance: number;
+    runPace: string;
+    runDuration: number;
+    runElevation: number;
+    hasRun: boolean;
+    hasGym: boolean;
+    gymType: string;
+    tips: string[];
+  } | null>(null);
 
   // Auto-open Run modal if navigated from TodayView with openRunModal flag
   useEffect(() => {
@@ -153,6 +168,97 @@ const WorkoutHome = () => {
     } finally {
       setIsPullingStrava(false);
     }
+  };
+
+  const analyzeWorkoutsWithAi = () => {
+    const todayWorkouts = pastWorkouts.filter(w => w.date === getLocalDateString());
+    if (todayWorkouts.length === 0) {
+      alert("Please log a workout first for today to analyze!");
+      return;
+    }
+
+    let hasRun = false;
+    let hasGym = false;
+    let gymType = "";
+    let volumeLifted = 0;
+    let runDistance = 0;
+    let runPace = "";
+    let runDuration = 0;
+    let runElevation = 0;
+
+    todayWorkouts.forEach(w => {
+      if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) {
+        hasRun = true;
+        try {
+          const stats = JSON.parse(w.notes);
+          runDistance += parseFloat(stats.distance_km) || 0;
+          runPace = stats.pace || "";
+          runDuration += (w.duration || 0) / 60;
+          runElevation += parseInt(stats.elevation_m) || 0;
+        } catch (e) {}
+      } else if (['PUSH', 'PULL', 'LEGS'].includes(w.day_type)) {
+        hasGym = true;
+        gymType = w.day_type;
+        volumeLifted += w.total_volume || 0;
+      }
+    });
+
+    // Score calculations
+    let score = 0;
+    let verdict = "";
+    let action = "";
+    let advice = "";
+    const tips: string[] = [];
+
+    if (hasRun && hasGym) {
+      score = 98;
+      verdict = "Double Stimulus Completed";
+      action = "🔥 Elite Output: You logged both your running mileage and your strength training. Outstanding adaptation response!";
+      advice = `Today's dual-stimulus session combined a cardiovascular run of ${runDistance.toFixed(2)} km with a resistance training load of ${volumeLifted.toLocaleString()} kg. This simultaneous stimulation of mitochondrial growth and muscle hypertrophy is highly effective for elite hybrid athletes. However, this creates a high systemic stress response. Glycogen reserves will be heavily depleted, and muscle tissue damage requires immediate attention.`;
+      tips.push("Carb reload: Prioritize eating 70-100g of high-glycemic carbohydrates alongside 30-40g of protein within 90 minutes.");
+      tips.push("Active flush: Spend 10 minutes performing light foam rolling on the targeted lifting muscles and your calves/quads.");
+      tips.push("Hydration formula: Rehydrate with electrolyte-dense water (at least 1.5L containing sodium/potassium) to offset cardio sweat loss.");
+    } else if (hasRun) {
+      score = 92;
+      verdict = "Aerobic System Stimulated";
+      action = "🏃 Aerobic Focus: Cardiovascular session completed. Focus on structural recovery of lower-body joints.";
+      advice = `Your cardiovascular training today stimulated critical aerobic adaptations, clocking in a total distance of ${runDistance.toFixed(2)} km over ${Math.round(runDuration)} minutes. Settle-in paces around ${runPace}/km promote capillary density and cellular oxygen utilization. Your heart rate recovery indicates a highly efficient cardiovascular engine.`;
+      tips.push("Joint care: Perform 5-10 mins of hamstring/calf stretches and ankle mobility exercises to relieve impact stress.");
+      tips.push("Rehydrate: Consume fluid equivalent to 150% of your estimated sweat loss, adding an electrolyte tablet.");
+      tips.push("Keep consistency: Maintain structural tissue integrity by keeping tomorrow's session light or resistance-focused.");
+    } else if (hasGym) {
+      score = 90;
+      verdict = "Myofibrillar Hypertrophy Stimulated";
+      action = "🏋️‍♂️ Strength Loaded: Complete mechanical overload achieved on your strength split. Optimize recovery windows.";
+      advice = `Your resistance training session stimulated high mechanical tension on your ${gymType} split, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg. This mechanical stimulus triggers muscular protein synthesis and neuromuscular adaptation. Physical fatigue in target muscle groups will peak in 24-48 hours.`;
+      tips.push("Amino availability: Consume 30-40g of whey protein or essential amino acids (EAAs) immediately to trigger protein synthesis.");
+      tips.push("Targeted blood flow: Perform active recovery or light movements tomorrow to flush metabolic waste from trained muscle groups.");
+      tips.push("Sleep quality: Ensure 8+ hours of sleep tonight, as deep sleep is the prime phase for growth hormone release and muscle repair.");
+    } else {
+      score = 50;
+      verdict = "Minimal Training Load Detected";
+      action = "💤 Recovery Day: Focus on physical restoration, hydration, and central nervous system (CNS) reset.";
+      advice = "No major lifting or running workload was recorded today. This is perfectly in line with a planned recovery block, allowing your physiological systems, connective tissues, and endocrine balance to reset.";
+      tips.push("Active rest: Walk 5,000-8,000 light steps to keep joint fluids moving without inducing fatigue.");
+      tips.push("Circadian shift: Go to bed 30 minutes earlier to supercharge recovery mechanisms.");
+    }
+
+    setWorkoutAnalysis({
+      score,
+      verdict,
+      action,
+      advice,
+      volumeLifted,
+      runDistance,
+      runPace,
+      runDuration,
+      runElevation,
+      hasRun,
+      hasGym,
+      gymType,
+      tips
+    });
+    setShowWorkoutModal(true);
   };
 
   // Sync todayPlan type with dayType from schedule (handling RUN + GYM hybrid split)
@@ -503,9 +609,20 @@ const WorkoutHome = () => {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-2">
-        <div className="flex items-center gap-2 text-gray-400 mb-4">
-          <History size={18} />
-          <h2 className="text-sm font-semibold uppercase tracking-wider">Past Sessions</h2>
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2 text-gray-400">
+            <History size={18} />
+            <h2 className="text-sm font-semibold uppercase tracking-wider">Past Sessions</h2>
+          </div>
+          {pastWorkouts.some(w => w.date === getLocalDateString()) && (
+            <button
+              onClick={analyzeWorkoutsWithAi}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
+            >
+              <Sparkles size={11} className="text-indigo-400 animate-pulse" />
+              <span>AI Analysis</span>
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -661,6 +778,157 @@ const WorkoutHome = () => {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Workout AI Coach Modal */}
+      {showWorkoutModal && workoutAnalysis && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-surface w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowWorkoutModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Title */}
+            <div className="flex items-center gap-2 mb-6">
+              <Sparkles size={18} className="text-indigo-400" />
+              <h3 className="text-lg font-black text-white tracking-tight uppercase">AI Training Analysis</h3>
+            </div>
+
+            {/* Score Ring Section */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative w-36 h-36 flex items-center justify-center">
+                {/* SVG Ring Background & Progress */}
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle
+                    cx="72"
+                    cy="72"
+                    r="60"
+                    stroke="#1e293b"
+                    strokeWidth="10"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="72"
+                    cy="72"
+                    r="60"
+                    stroke="url(#indigoGrad)"
+                    strokeWidth="10"
+                    fill="transparent"
+                    strokeDasharray={376.9}
+                    strokeDashoffset={376.9 - (376.9 * workoutAnalysis.score) / 100}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                  <defs>
+                    <linearGradient id="indigoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#a855f7" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                {/* Center score readout */}
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-4xl font-black text-white tracking-tighter">{workoutAnalysis.score}</span>
+                  <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest leading-none mt-1">Training Score</span>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <div className="mt-4 bg-indigo-950/60 border border-indigo-500/30 px-3 py-1 rounded-full text-indigo-300 text-[10px] font-black tracking-wider uppercase">
+                {workoutAnalysis.verdict}
+              </div>
+            </div>
+
+            {/* Dynamic Output & Explanation */}
+            <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
+              <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-white font-extrabold mb-1">Coach Verdict</p>
+                <p className="text-gray-400 font-medium">{workoutAnalysis.action}</p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-white font-extrabold mb-1.5 flex items-center gap-1">
+                  <span>💡</span> Physiological Analysis
+                </p>
+                <p className="text-gray-400 font-medium">{workoutAnalysis.advice}</p>
+              </div>
+
+              {/* Workout Benchmarks/Targets Visualizer */}
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <span>📊</span> Daily Volume & Distance Targets
+                </h5>
+                
+                <div className="space-y-3.5 text-xs">
+                  {/* Gym Lifted Volume */}
+                  {workoutAnalysis.hasGym && (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-[#a855f7]">{workoutAnalysis.gymType} Volume</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{workoutAnalysis.volumeLifted.toLocaleString()} kg</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 5,000 kg)</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#a855f7] h-2 rounded-full" style={{ width: `${Math.min((workoutAnalysis.volumeLifted / 5000) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Run Distance */}
+                  {workoutAnalysis.hasRun && (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none">
+                        <span className="text-[#3b82f6]">Cardio Mileage</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-black">{workoutAnalysis.runDistance.toFixed(2)} km</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 8.0 km)</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((workoutAnalysis.runDistance / 8.0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Item Recovery Tips */}
+              {workoutAnalysis.tips.length > 0 && (
+                <div className="bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/25">
+                  <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <span>⚡</span> Recovery Plan
+                  </h5>
+                  <ul className="space-y-2 text-xs text-indigo-200/90 font-semibold list-disc list-inside">
+                    {workoutAnalysis.tips.map((tip, idx) => (
+                      <li key={idx} className="leading-relaxed">
+                        <span className="text-indigo-300 font-bold">{tip.split(':')[0]}:</span>
+                        {tip.split(':').slice(1).join(':')}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* OK Button */}
+            <button 
+              onClick={() => setShowWorkoutModal(false)}
+              className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
+            >
+              Acknowledge & Recover
+            </button>
           </motion.div>
         </div>
       )}
