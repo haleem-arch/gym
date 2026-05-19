@@ -7,6 +7,7 @@ interface BioStatusRingProps {
   sleepPct: number;      // 0.0 to 1.0
   isRestDay?: boolean;
   compact?: boolean;
+  onClick?: () => void;
 }
 
 export const BioStatusRing = ({
@@ -15,23 +16,24 @@ export const BioStatusRing = ({
   workoutStatus,
   sleepPct,
   isRestDay = false,
-  compact = false
+  compact = false,
+  onClick
 }: BioStatusRingProps) => {
   // SVG Geometry Settings dynamically scaled
-  const size = compact ? 64 : 100;
+  const size = compact ? 80 : 100;
   const center = size / 2;
-  const strokeWidth = compact ? 2.5 : 3.5;
+  const strokeWidth = compact ? 3 : 3.5;
 
-  const rOuter = compact ? 27 : 42;
+  const rOuter = compact ? 34 : 42;
   const circOuter = 2 * Math.PI * rOuter;
   
-  const rMiddle = compact ? 21 : 32;
+  const rMiddle = compact ? 27 : 32;
   const circMiddle = 2 * Math.PI * rMiddle;
   
-  const rInner = compact ? 15 : 22;
+  const rInner = compact ? 20 : 22;
   const circInner = 2 * Math.PI * rInner;
 
-  const rInnerInner = compact ? 9 : 12;
+  const rInnerInner = compact ? 13 : 12;
   const circInnerInner = 2 * Math.PI * rInnerInner;
 
   // Colors
@@ -55,12 +57,14 @@ export const BioStatusRing = ({
 
   return (
     <motion.div 
+      onClick={onClick}
+      whileTap={onClick ? { scale: 0.98 } : undefined}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
       style={{ backgroundColor: compact ? 'transparent' : '#0D1117' }}
       className={compact 
-        ? "rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 w-full min-h-[140px] bg-surface" 
+        ? `rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 w-full min-h-[140px] bg-surface ${onClick ? 'cursor-pointer hover:border-gray-700 transition-colors' : ''}` 
         : "rounded-[20px] p-4 border border-gray-800 shadow-2xl flex items-center justify-between gap-6 w-full"
       }
     >
@@ -116,7 +120,7 @@ export const BioStatusRing = ({
 
         {/* Small readable percentage inside the inner ring */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
-          <span className={`${compact ? 'text-[8px]' : 'text-[9px]'} font-extrabold text-white tracking-tight leading-none`}>
+          <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} font-extrabold text-white tracking-tight leading-none`}>
             {dailyBioScore}%
           </span>
         </div>

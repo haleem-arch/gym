@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -25,6 +25,7 @@ const TodayView = () => {
   const activeDateStr = getLocalDateString(activeDate);
   const { dayType, setDayType } = useSchedule(activeDateStr);
   const [showReadinessModal, setShowReadinessModal] = useState(false);
+  const [showTargetsModal, setShowTargetsModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [sleepAnalysis, setSleepAnalysis] = useState<{
     score: number;
@@ -922,6 +923,7 @@ const TodayView = () => {
           sleepPct={sleepHours / 8}
           isRestDay={dayType === 'REST'}
           compact={true}
+          onClick={() => setShowTargetsModal(true)}
         />
       </div>
       
@@ -1416,6 +1418,139 @@ const TodayView = () => {
                   className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
                 >
                   Acknowledge & Train
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+
+        {showTargetsModal && (
+          <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" onClick={() => setShowTargetsModal(false)} />
+            
+            {/* Modal Container */}
+            <div className="fixed inset-0 z-[51] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative w-full max-w-sm my-auto mb-16 pointer-events-auto"
+              >
+                {/* Close Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowTargetsModal(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+
+                {/* Title */}
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                    <Target size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Today's Targets</h3>
+                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Biometric Compliance</p>
+                  </div>
+                </div>
+
+                {/* Rings Visualizer (full version) */}
+                <div className="flex flex-col items-center mb-6 bg-slate-950/40 p-5 rounded-3xl border border-slate-800/40">
+                  <BioStatusRing 
+                    kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
+                    waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
+                    workoutStatus={workoutStatus}
+                    sleepPct={sleepHours / 8}
+                    isRestDay={dayType === 'REST'}
+                    compact={false}
+                  />
+                  <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    Overall Target Fulfillment
+                  </div>
+                </div>
+
+                {/* Detailed progress values */}
+                <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
+                  {/* Nutrition Progress */}
+                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-[#F97316] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>🍎 Nutrition Target</span>
+                      <span>{Math.round((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100)}%</span>
+                    </h5>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
+                        <span>Energy Consumption</span>
+                        <span className="text-white font-black">{Math.round(macros.kcal)} / {targets.kcal} kcal</span>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#F97316] h-2 rounded-full" style={{ width: `${Math.min((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hydration Progress */}
+                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-[#38BDF8] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>💧 Hydration Target</span>
+                      <span>{Math.round((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100)}%</span>
+                    </h5>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
+                        <span>Water Consumed</span>
+                        <span className="text-white font-black">{(waterTotalMl / 1000).toFixed(1)} / {waterTarget} L</span>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#38BDF8] h-2 rounded-full" style={{ width: `${Math.min((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Training Progress */}
+                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-[#A78BFA] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>🏋️‍♂️ Training Compliance</span>
+                      <span>{Math.round((dayType === 'REST' ? 1.0 : workoutStatus) * 100)}%</span>
+                    </h5>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
+                        <span>Status</span>
+                        <span className="text-white font-black">
+                          {dayType === 'REST' ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#A78BFA] h-2 rounded-full" style={{ width: `${Math.min((dayType === 'REST' ? 1.0 : workoutStatus) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sleep Progress */}
+                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                    <h5 className="text-[10px] font-black text-[#6366F1] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>💤 Sleep Recovery</span>
+                      <span>{Math.round((sleepHours / 8) * 100)}%</span>
+                    </h5>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
+                        <span>Time Asleep</span>
+                        <span className="text-white font-black">{sleepHours.toFixed(1)} / 8.0 hrs</span>
+                      </div>
+                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                        <div className="bg-[#6366F1] h-2 rounded-full" style={{ width: `${Math.min((sleepHours / 8) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Close Button */}
+                <button 
+                  onClick={() => setShowTargetsModal(false)}
+                  className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
+                >
+                  Close Details
                 </button>
               </motion.div>
             </div>
