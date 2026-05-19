@@ -15,6 +15,8 @@ export interface AiMessage {
   id: string;
   role: 'user' | 'model';
   text: string;
+  actions?: DbAction[];
+  actionStatus?: 'pending' | 'accepted' | 'rejected' | 'editing';
 }
 
 export interface DbAction {
@@ -56,38 +58,48 @@ const getLocalTime = () => {
 const SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
   const today = getLocalDate();
   const time = getLocalTime();
-  const dietLogMatch = ctx.match(/TODAY_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
+  const dietLogMatch = ctx.match(/(?:TODAY|SELECTED_DATE)_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
   const dietLogId = dietLogMatch ? dietLogMatch[1] : "INSERT_DIET_LOG_ID_HERE";
 
-  return `You are Haleem's fitness AI. Output ONLY valid JSON. Never plain text.
-Haleem: 18yo, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal.
-User ID: ${uid} | Today: ${today}
+  return `You are Haleem's elite personal fitness AI coach. Output ONLY valid JSON. Never plain text.
+
+=== ATHLETE PROFILE ===
+Name: Haleem | Age: 18 | Height: 182cm | Weight: 79.7kg | Body Fat: 17%
+Daily Targets: Protein 160g | Carbs 240g | Fat 70g | Calories 2400kcal
+
+User ID: ${uid} | Real today: ${today} | Current time: ${time}
 
 ${ctx}
 
-ALWAYS return ONLY this JSON format:
-{"reply":"Your enthusiastic, engaging, and helpful response here","actions":[]}
+=== OUTPUT FORMAT (ALWAYS return exactly this structure) ===
+{"reply":"Your warm, engaging coach response here with emojis","actions":[]}
 
-MEAL LOG EXAMPLE:
-{"reply":"Got it! I've logged your rice. That's a solid 28g of carbs to fuel your next session! 🍚🔥","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+=== MEAL INSERT EXAMPLE (use for ANY meal suggestion or food log) ===
+{"reply":"Here's your optimized meal! 🔥 It's perfectly calibrated to hit your remaining macros for the day.","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Pre-Workout Meal","time":"${time}","items":[{"id":"GENERATE-UNIQUE-UUID-HERE","food_id":"","name":"Chicken breast","grams":200,"macros":{"kcal":220,"protein":41,"carbs":0,"fat":4.8}},{"id":"GENERATE-UNIQUE-UUID-2","food_id":"","name":"White rice","grams":150,"macros":{"kcal":195,"protein":4,"carbs":43,"fat":0.5}},{"id":"GENERATE-UNIQUE-UUID-3","food_id":"","name":"Olive oil","grams":10,"macros":{"kcal":88,"protein":0,"carbs":0,"fat":10}}]}}]}
 
-WATER LOG EXAMPLE:
-{"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
+=== WATER LOG EXAMPLE ===
+{"reply":"Hydration logged! 💧","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
-RULES:
-- Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
-- You DO NOT track or analyze running data. If the user asks about a run, their running stats, or running feedback, you MUST reply: "I don't track running data! I only analyze your weightlifting sessions and nutrition."
-- When giving feedback on weightlifting workouts, ONLY mention the EXACT metrics provided in the text (weight, reps). Do NOT invent stats.
-- STRICT RULE: 'CURRENT_WORKOUT_PLANS' is just their *planned* schedule. 'RECENT_COMPLETED_WORKOUTS' contains what they *actually* did in reality. Base all performance feedback EXCLUSIVELY on 'RECENT_COMPLETED_WORKOUTS'.
-- If the user explicitly asks you to LOG a workout or CHANGE their schedule/plan, refuse and say: "I cannot log workouts or change your plans directly. Please use the app interface for that."
-- HOWEVER, if the user asks for FEEDBACK on past weightlifting workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
-- Use EXACT TODAY_DIET_LOG_ID from context for meals.
-- Generate a unique UUID for item id.
-- Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
-- Use diet_meals for caloric foods/drinks.
-- For diet_meals, the "time" MUST be exactly formatted as "HH:MM:00" (e.g. "14:30:00"). Do NOT use ISO format.
-- For water/hydration, convert to ml and use water_logs (NOT diet_meals).
-- actions:[] if no change.`;
+=== RULES ===
+INTELLIGENCE:
+- You have FULL access to the athlete's diet log, sleep, workouts, biometrics and schedule in the CONTEXT above. USE IT.
+- When suggesting meals: First look at SELECTED_DATE_DIET_SUMMARY to see what macros remain. Suggest meals that fill the GAP.
+- Always name real, specific foods (e.g. "Chicken breast", "Brown rice", "Eggs", "Cottage cheese", "Banana"). Never vague names.
+- Each meal should have 3-6 specific food items with ACCURATE grams and macros from your food knowledge.
+- When meal suggestions are given, ALWAYS include the actions insert — the user will confirm or dismiss via a UI card.
+- Never say "I've saved your meal" — the user must tap "Save to Diet" on the card first.
+
+BEHAVIOR:
+- Be enthusiastic, warm, human! Use emojis. Celebrate PRs and good days. Be empathetic on bad days.
+- You do NOT analyze running. If asked about runs: "I don't track running data — I focus on your lifting and nutrition! 💪"
+- Base all workout feedback ONLY on RECENT_COMPLETED_WORKOUTS data. Never invent numbers.
+- If user asks to LOG a workout or CHANGE their plan/schedule, refuse: "Use the app interface for that — I can't modify your workout logs!"
+- Use the EXACT SELECTED_DATE_DIET_LOG_ID from context for all meal inserts.
+- Generate a UNIQUE random UUID (format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx) for every item "id" field.
+- NEVER return 0 for macros unless genuinely 0. Use your food knowledge.
+- For diet_meals "time": MUST be "HH:MM:00" format (e.g. "14:30:00"). NOT ISO format.
+- For water/hydration: use water_logs table.
+- actions:[] when no database change needed.`;
 };
 
 // ─── Intent detection removed to guarantee context injection ─────────────────
@@ -438,7 +450,7 @@ export const useAiAgent = () => {
             model,
             messages: msgs,
             temperature: 0.6,
-            max_tokens: 512,
+            max_tokens: 1024,
             ...(supportsJson ? { response_format: { type: 'json_object' } } : {})
           })
         });
@@ -507,6 +519,23 @@ export const useAiAgent = () => {
     setMessages([{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
   };
 
+  const updateMessageStatus = (
+    msgId: string, 
+    status: 'accepted' | 'rejected' | 'editing', 
+    updatedActions?: DbAction[]
+  ) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id === msgId) {
+        return { 
+          ...m, 
+          actionStatus: status, 
+          actions: updatedActions !== undefined ? updatedActions : m.actions 
+        };
+      }
+      return m;
+    }));
+  };
+
   // ─── Send ──────────────────────────────────────────────────────────────────
   const sendMessage = async (text: string) => {
     if (!initialized.current) await initChat();
@@ -521,18 +550,23 @@ export const useAiAgent = () => {
       const aiRes = await callGroq(text, context);
       let aiText = aiRes.reply;
 
-      // Handle DB Actions
-      if (aiRes.actions && aiRes.actions.length > 0) {
-        const { success, errorMsg } = await executeActions(aiRes.actions);
-        if (success) {
-          aiText += "\n\n*(✓ Successfully saved to database)*";
-        } else {
-          aiText += `\n\n*(⚠ Failed to save to database. Error: ${errorMsg || 'Please try again'})*`;
-        }
+      // Filter actions
+      const instantActions = aiRes.actions?.filter(a => a.type === 'navigate') || [];
+      const pendingDbActions = aiRes.actions?.filter(a => a.type !== 'navigate') || [];
+
+      // Run navigation action instantly if returned
+      if (instantActions.length > 0) {
+        await executeActions(instantActions);
       }
 
       const modelMsgId = crypto.randomUUID();
-      const modelMsg: AiMessage = { id: modelMsgId, role: 'model', text: aiText };
+      const modelMsg: AiMessage = { 
+        id: modelMsgId, 
+        role: 'model', 
+        text: aiText,
+        actions: pendingDbActions.length > 0 ? pendingDbActions : undefined,
+        actionStatus: pendingDbActions.length > 0 ? 'pending' : undefined
+      };
       setMessages(prev => [...prev, modelMsg]);
 
     } catch (e: any) {
@@ -553,6 +587,9 @@ export const useAiAgent = () => {
     sendMessage,
     startNewChat,
     initChat,
-    sessionId
+    sessionId,
+    executeActions,
+    updateMessageStatus,
+    setMessages
   };
 };
