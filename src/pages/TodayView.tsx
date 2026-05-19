@@ -265,21 +265,54 @@ const TodayView = () => {
     let advice = "";
     let action = "";
 
+    const formatHours = (hrs: number) => {
+      const totalMins = Math.round(hrs * 60);
+      if (totalMins < 60) return `${totalMins} min`;
+      const h = Math.floor(totalMins / 60);
+      const m = totalMins % 60;
+      return m > 0 ? `${h} hours and ${m} min` : `${h} hours`;
+    };
+
+    const totalStr = formatHours(total);
+    const deepStr = formatHours(deep);
+    const remStr = formatHours(rem);
+
+    let totalFeedback = "";
+    if (total >= 7.5 && total <= 9.5) {
+      totalFeedback = `You slept a total of ${totalStr}, which is well in the good spot.`;
+    } else if (total > 9.5) {
+      totalFeedback = `You slept a total of ${totalStr}, which is an abundant duration and excellent for recovery.`;
+    } else {
+      totalFeedback = `You slept a total of ${totalStr}, which is below the recommended baseline.`;
+    }
+
+    let remFeedback = "";
+    if (remRatio < 0.15) {
+      remFeedback = `However, as you can see, your REM sleep is less than average (${remStr}), which can affect cognitive recovery and mental focus.`;
+    } else {
+      remFeedback = `Your REM sleep was sufficient at ${remStr}, helping to restore your mental clarity and memory consolidation.`;
+    }
+
+    let deepFeedback = "";
+    if (deepRatio >= 0.15) {
+      deepFeedback = `For the rest, you slept ${deepStr} in deep sleep, which is good for muscle recovery and growth hormone release.`;
+    } else {
+      deepFeedback = `Additionally, deep sleep was low at ${deepStr}, meaning physical recovery might feel slightly delayed.`;
+    }
+
+    advice = `${totalFeedback} ${remFeedback} ${deepFeedback}`;
+
     if (score >= 85) {
       verdict = "CNS & Muscular Primed";
-      advice = `Outstanding sleep architecture! You achieved ${deep.toFixed(1)}h of Deep Sleep (${Math.round(deepRatio * 100)}%) for full growth hormone release and muscle repair, and ${rem.toFixed(1)}h of REM Sleep (${Math.round(remRatio * 100)}%) for nervous system recovery. Your cardiovascular readiness is maximum.`;
       action = "💪 Full Green Light: Train heavy, smash PRs, or run a high-intensity session!";
     } else if (score >= 70) {
       verdict = "Sub-Optimal Rest; Recovery Moderate";
-      advice = `Decent rest, but sleep architecture has minor gaps. ${totalStatus === 'low' ? 'Total sleep duration is slightly short. ' : ''}${deepStatus === 'low' ? 'Deep sleep was shallow, meaning physical recovery is laggy. ' : ''}${remStatus === 'low' ? 'REM sleep was brief, which may lead to slower reaction times and cognitive fatigue. ' : ''}You are fully capable of training, but CNS focus might feel slightly off.`;
       action = "🏋️‍♂️ Yellow Light: Moderate training. Push yourself, but avoid going to absolute failure on heavy compound movements.";
     } else if (score >= 50) {
       verdict = "Systemic Fatigue Warning";
-      advice = `Your recovery is compromised. Total sleep is low (${total.toFixed(1)}h) or sleep stages were severely disrupted. With deep sleep at ${deep.toFixed(1)}h and REM at ${rem.toFixed(1)}h, your muscles have not fully synthesized glycogen and your nervous system's capacity is reduced. High stress levels will trigger higher cortisol.`;
       action = "🏃‍♀️ Orange Light: Active Recovery. Focus on Zone 2 cardio, mobility work, or lower weight (60-70% 1RM) accessory lifts.";
     } else {
       verdict = "Severe Deficit: Rest Recommended";
-      advice = `Critical recovery status! Sleep is severely deficient at ${total.toFixed(1)}h. Your body's inflammatory markers are elevated and your coordination is physically impaired. Training today carries a significantly elevated risk of tendon/muscle injury and will delay recovery for the rest of the week.`;
       action = "🛑 Red Light: Complete Rest Day. Hydrate, focus on nutrition, and go to bed early tonight.";
     }
 
@@ -594,15 +627,13 @@ const TodayView = () => {
                 <span className="text-[10px] font-bold text-primary bg-blue-950/50 px-1.5 py-0.5 rounded-full">Today</span>
               </div>
               
-              <div className="flex justify-center items-center my-auto py-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-950/40 rounded-xl border border-blue-900/50 text-sky-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><path d="M12 10V4"/><circle cx="12" cy="4" r="1"/></svg>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-black text-white tracking-tight">{(todaySteps || 0).toLocaleString()}</span>
-                    <span className="text-xs text-gray-500 font-bold">Steps</span>
-                  </div>
+              <div className="flex flex-col justify-center items-center my-auto py-3 gap-1">
+                <div className="w-10 h-10 bg-sky-500/10 border border-sky-500/25 rounded-2xl flex items-center justify-center text-sky-450 shadow-inner">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><path d="M12 10V4"/><circle cx="12" cy="4" r="1"/></svg>
+                </div>
+                <div className="flex flex-col items-center leading-none">
+                  <span className="text-[32px] font-black text-white tracking-tight">{(todaySteps || 0).toLocaleString()}</span>
+                  <span className="text-[9px] font-extrabold text-sky-400 uppercase tracking-widest mt-1">Steps</span>
                 </div>
               </div>
 
@@ -693,10 +724,10 @@ const TodayView = () => {
               </div>
               <button
                 onClick={analyzeSleepWithAi}
-                className="mt-3.5 w-full py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all flex items-center justify-center gap-1.5 border border-indigo-500/20 active:scale-[0.97] transform-gpu backface-hidden cursor-pointer"
+                className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/15 hover:to-purple-500/15 text-indigo-300 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all flex items-center justify-center gap-2 border border-indigo-500/25 active:scale-[0.97] transform-gpu backface-hidden cursor-pointer"
               >
-                <Sparkles size={11} className="text-indigo-400" />
-                <span>AI Sleep recovery coach</span>
+                <Sparkles size={12} className="text-indigo-400" />
+                <span>AI Sleep Recovery Coach</span>
               </button>
             </motion.div>
           </div>
@@ -907,40 +938,105 @@ const TodayView = () => {
                 </div>
               </div>
 
-              {/* Readiness Score Ring & Verdict */}
-              <div className="flex flex-col items-center justify-center text-center gap-4 py-4 bg-slate-950/40 rounded-2xl border border-slate-800/40 mb-6">
-                {/* Visual Ring */}
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle 
-                      cx="50" cy="50" r="42" 
-                      stroke="#1e293b" strokeWidth="8" fill="transparent" 
-                    />
-                    <circle 
-                      cx="50" cy="50" r="42" 
-                      stroke={
-                        sleepAnalysis.score >= 85 ? '#10b981' : 
-                        sleepAnalysis.score >= 70 ? '#f59e0b' : 
-                        sleepAnalysis.score >= 50 ? '#f97316' : '#ef4444'
-                      } 
-                      strokeWidth="8" fill="transparent" 
-                      strokeDasharray={263.89}
-                      strokeDashoffset={263.89 * (1 - sleepAnalysis.score / 100)}
-                      strokeLinecap="round"
-                      className="transition-all duration-1000 ease-out"
-                    />
-                  </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <span className="text-2xl font-black text-white">{sleepAnalysis.score}%</span>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Readiness</span>
-                  </div>
-                </div>
+              {/* Divided Donut Ring & Diagnostics Grid */}
+              {(() => {
+                const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
+                const deepRatio = deepSleepHours / totalStaged;
+                const remRatio = remSleepHours / totalStaged;
+                const lightRatio = lightSleepHours / totalStaged;
+                
+                const formatStageMins = (hrs: number) => {
+                  const totalMins = Math.round(hrs * 60);
+                  if (totalMins < 60) return `${totalMins} min`;
+                  const h = Math.floor(totalMins / 60);
+                  const m = totalMins % 60;
+                  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                };
 
-                <div>
-                  <h4 className="text-md font-extrabold text-white tracking-tight">{sleepAnalysis.verdict}</h4>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5 tracking-wider">Physiological Readiness Rating</p>
-                </div>
-              </div>
+                return (
+                  <div className="flex flex-col gap-4 py-4 px-4 bg-slate-950/40 rounded-2xl border border-slate-800/40 mb-6">
+                    <div className="flex items-center justify-between gap-6">
+                      {/* Visual Segmented Ring */}
+                      <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          {/* Background base */}
+                          <circle 
+                            cx="50" cy="50" r="40" 
+                            stroke="#1e293b" strokeWidth="8" fill="transparent" 
+                          />
+                          {/* Deep Segment (Purple) */}
+                          {deepRatio > 0 && (
+                            <circle 
+                              cx="50" cy="50" r="40" 
+                              stroke="#a855f7" 
+                              strokeWidth="8" fill="transparent" 
+                              strokeDasharray={`${deepRatio * 251.33} 251.33`}
+                              strokeDashoffset={0}
+                              strokeLinecap="round"
+                            />
+                          )}
+                          {/* REM Segment (Blue) */}
+                          {remRatio > 0 && (
+                            <circle 
+                              cx="50" cy="50" r="40" 
+                              stroke="#3b82f6" 
+                              strokeWidth="8" fill="transparent" 
+                              strokeDasharray={`${remRatio * 251.33} 251.33`}
+                              strokeDashoffset={-deepRatio * 251.33}
+                              strokeLinecap="round"
+                            />
+                          )}
+                          {/* Light Segment (Emerald) */}
+                          {lightRatio > 0 && (
+                            <circle 
+                              cx="50" cy="50" r="40" 
+                              stroke="#10b981" 
+                              strokeWidth="8" fill="transparent" 
+                              strokeDasharray={`${lightRatio * 251.33} 251.33`}
+                              strokeDashoffset={-(deepRatio + remRatio) * 251.33}
+                              strokeLinecap="round"
+                            />
+                          )}
+                        </svg>
+                        <div className="absolute flex flex-col items-center">
+                          <span className="text-[17px] font-black text-white leading-none">{sleepAnalysis.score}%</span>
+                          <span className="text-[6.5px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Readiness</span>
+                        </div>
+                      </div>
+
+                      {/* Sleep stage numbers beside the ring */}
+                      <div className="flex-1 flex flex-col gap-1.5 text-xs text-gray-300 font-bold">
+                        <div className="flex justify-between items-center bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800/30">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span>
+                            <span className="text-gray-400 font-semibold text-[9px] uppercase tracking-wider">Deep</span>
+                          </div>
+                          <span className="text-white text-xs font-black">{formatStageMins(deepSleepHours)}</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800/30">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                            <span className="text-gray-400 font-semibold text-[9px] uppercase tracking-wider">REM</span>
+                          </div>
+                          <span className="text-white text-xs font-black">{formatStageMins(remSleepHours)}</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800/30">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
+                            <span className="text-gray-400 font-semibold text-[9px] uppercase tracking-wider">Light</span>
+                          </div>
+                          <span className="text-white text-xs font-black">{formatStageMins(lightSleepHours)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-center border-t border-slate-800/60 pt-3">
+                      <h4 className="text-sm font-extrabold text-white tracking-tight">{sleepAnalysis.verdict}</h4>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5 tracking-wider">Physiological Readiness Rating</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Detailed Feedback & Action Item */}
               <div className="flex-1 space-y-4 mb-6">
@@ -965,42 +1061,6 @@ const TodayView = () => {
                   <p className="text-xs font-bold leading-normal">
                     {sleepAnalysis.action}
                   </p>
-                </div>
-              </div>
-
-              {/* Staged Diagnostics Grid */}
-              <div className="grid grid-cols-3 gap-2.5">
-                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40 text-center">
-                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Total Duration</span>
-                  <div className="flex items-center justify-center gap-1 mt-1 text-xs font-black text-white">
-                    <span>{(sleepHours || 0).toFixed(1)}h</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      sleepAnalysis.totalStatus === 'optimal' ? 'bg-emerald-500' :
-                      sleepAnalysis.totalStatus === 'moderate' ? 'bg-amber-500' : 'bg-red-500'
-                    }`}></span>
-                  </div>
-                </div>
-                
-                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40 text-center">
-                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Deep Sleep</span>
-                  <div className="flex items-center justify-center gap-1 mt-1 text-xs font-black text-white">
-                    <span>{(deepSleepHours || 0).toFixed(1)}h</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      sleepAnalysis.deepStatus === 'optimal' ? 'bg-emerald-500' :
-                      sleepAnalysis.deepStatus === 'moderate' ? 'bg-amber-500' : 'bg-red-500'
-                    }`}></span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40 text-center">
-                  <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">REM Sleep</span>
-                  <div className="flex items-center justify-center gap-1 mt-1 text-xs font-black text-white">
-                    <span>{(remSleepHours || 0).toFixed(1)}h</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      sleepAnalysis.remStatus === 'optimal' ? 'bg-emerald-500' :
-                      sleepAnalysis.remStatus === 'moderate' ? 'bg-amber-500' : 'bg-red-500'
-                    }`}></span>
-                  </div>
                 </div>
               </div>
             </motion.div>
