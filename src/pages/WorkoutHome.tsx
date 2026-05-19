@@ -784,11 +784,11 @@ const WorkoutHome = () => {
 
       {/* Workout AI Coach Modal */}
       {showWorkoutModal && workoutAnalysis && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex justify-center items-start p-4 py-8">
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-surface w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            className="bg-surface w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl relative my-auto mb-16"
           >
             {/* Close Button */}
             <button 
@@ -886,18 +886,18 @@ const WorkoutHome = () => {
                     </div>
                   )}
 
-                  {/* Run Distance */}
+                  {/* Run Duration */}
                   {workoutAnalysis.hasRun && (
                     <div className="flex flex-col gap-1.5">
                       <div className="flex justify-between font-bold leading-none">
-                        <span className="text-[#3b82f6]">Cardio Mileage</span>
+                        <span className="text-[#3b82f6]">Cardio Duration</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{workoutAnalysis.runDistance.toFixed(2)} km</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 8.0 km)</span>
+                          <span className="text-white font-black">{Math.round(workoutAnalysis.runDuration)} mins</span>
+                          <span className="text-[9px] text-gray-500 font-bold">(Target: 40 mins)</span>
                         </div>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((workoutAnalysis.runDistance / 8.0) * 100, 100)}%` }}></div>
+                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((workoutAnalysis.runDuration / 40) * 100, 100)}%` }}></div>
                       </div>
                     </div>
                   )}
