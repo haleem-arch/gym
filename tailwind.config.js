@@ -15,6 +15,13 @@ export default {
         primary: '#3b82f6',
         success: '#22c55e',
         danger: '#ef4444',
+        accent: '#ff6b35',
+        secondary: '#0076c0',
+        border: '#30363d',
+      },
+      fontFamily: {
+        outfit: ['Outfit', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       }
     },
   },
