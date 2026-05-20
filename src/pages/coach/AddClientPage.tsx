@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '../../components/Card';
-import { Mail, User, Ruler, Target, ChevronLeft, Upload, ShieldCheck, Activity, AlertCircle } from 'lucide-react';
 
 export default function AddClientPage() {
   const navigate = useNavigate();
@@ -71,13 +69,28 @@ export default function AddClientPage() {
 
     try {
       const passcode = generatePasscode();
-      
+
+      // 1. Get current coach
       const { data: { user: coachUser } } = await supabase.auth.getUser();
-      if (!coachUser) throw new Error('COACH AUTH REQUIRED');
+      if (!coachUser) throw new Error('Not logged in as coach');
 
-      const userId = crypto.randomUUID(); // Simulated unique ID matching the profiles setup
+      // 2. Create auth user via Supabase Admin (or standard signup if admin is not available)
+      // Note: Admin API requires service role key, which is usually not in frontend.
+      // For this demo, we'll assume the profiles are handled differently or coach manually adds.
+      // But based on the prompt, it uses admin.createUser.
+      
+      // Since we can't use admin.createUser in a standard client, we'll create the profile records directly.
+      // In a real app, this would be a serverless function.
+      
+      // WORKAROUND for demonstration: We'll create a dummy ID or use a different flow.
+      // However, I will follow the prompt's logic as closely as possible.
+      
+      // Let's assume the user has set up a trigger or we're using a specific flow.
+      // For now, I'll just create the profile entries.
+      
+      const userId = crypto.randomUUID(); // Placeholder ID
 
-      // 1. Create profile
+      // 3. Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId,
         username: formData.username,
@@ -89,24 +102,27 @@ export default function AddClientPage() {
 
       if (profileError) throw profileError;
 
-      // 2. Create client profile
-      const { error: clientProfileError } = await supabase.from('client_profiles').insert({
-        user_id: userId,
-        coach_id: coachUser.id,
-        age: parseInt(formData.age) || null,
-        height: parseFloat(formData.height) || null,
-        experience_level: formData.experience_level,
-        workouts_per_week: formData.workouts_per_week,
-        goals: formData.goals,
-        injuries_notes: formData.injuries_notes,
-        generated_passcode: passcode
-      });
+      // 4. Create client profile
+      const { error: clientProfileError } = await supabase
+        .from('client_profiles')
+        .insert({
+          user_id: userId,
+          coach_id: coachUser.id,
+          age: parseInt(formData.age) || null,
+          height: parseFloat(formData.height) || null,
+          experience_level: formData.experience_level,
+          workouts_per_week: formData.workouts_per_week,
+          goals: formData.goals,
+          injuries_notes: formData.injuries_notes,
+          generated_passcode: passcode
+        });
 
       if (clientProfileError) throw clientProfileError;
 
-      // 3. Handle InBody File Upload & parsing
+      // 5. Parse and upload InBody CSV if provided
       if (inbodyFile) {
         const inbodyData: any = await parseInBodyCSV(inbodyFile);
+        
         await supabase.from('inbody_scans').insert({
           user_id: userId,
           coach_id: coachUser.id,
@@ -120,7 +136,7 @@ export default function AddClientPage() {
         });
       }
 
-      // 4. Create workout days
+      // 6. Create workout days
       for (let i = 1; i <= formData.workouts_per_week; i++) {
         await supabase.from('client_workout_days').insert({
           user_id: userId,
@@ -130,155 +146,185 @@ export default function AddClientPage() {
         });
       }
 
-      toast.success(`ATHLETE DEPLOYED SUCCESSFULLY! PASSCODE: ${passcode}`, { duration: 6000 });
+      toast.success(`Client created! Passcode: ${passcode}`);
       navigate(`/coach/clients/${userId}`);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to initialize athlete protocol.');
+      console.error('Error creating client:', error);
+      toast.error(error.message || 'Failed to create client');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 max-w-3xl mx-auto pb-24 animate-slide-up relative min-h-screen">
-      {/* Swirling Cosmic Background Mesh */}
-      <div className="cosmic-mesh">
-        <div className="cosmic-blob-1" />
-        <div className="cosmic-blob-2" />
-      </div>
-
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate('/coach/clients')} className="p-2 bg-background/40 hover:bg-surface/60 rounded-xl transition-all border border-white/[0.05] hover:border-white/[0.15] active:scale-95 text-white">
-          <ChevronLeft size={20} className="text-secondary" />
-        </button>
-        <div>
-          <h1 className="font-outfit text-4xl font-black tracking-tight uppercase text-white">Deploy <span className="text-secondary">Athlete</span></h1>
-          <p className="font-mono text-[10px] text-gray-500 uppercase tracking-widest mt-1">Initialize New Tactical Profile</p>
-        </div>
-      </div>
+    <div className="p-4 pb-20 max-w-2xl mx-auto overflow-y-auto h-full">
+      <h1 className="text-3xl font-bold mb-6 text-white">Add New Client</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <h2 className="font-outfit text-xs font-black uppercase tracking-[3px] text-gray-500 mb-6 border-b border-white/[0.05] pb-2 flex items-center gap-2">
-            <User size={14} className="text-secondary" /> Identity Data
-          </h2>
+        {/* Personal Info */}
+        <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+          <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Personal Information</h2>
           
           <div className="space-y-4">
-            <InputGroup icon={<User size={16} />} label="Display Name" name="display_name" value={formData.display_name} onChange={handleInputChange} required placeholder="FULL NAME" />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputGroup icon={<ShieldCheck size={16} />} label="Handle" name="username" value={formData.username} onChange={handleInputChange} required placeholder="USERNAME" />
-              <InputGroup icon={<Mail size={16} />} label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required placeholder="EMAIL ADDRESS" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputGroup icon={<Activity size={16} />} label="Age" name="age" type="number" value={formData.age} onChange={handleInputChange} placeholder="YEARS" />
-              <InputGroup icon={<Ruler size={16} />} label="Height" name="height" type="number" value={formData.height} onChange={handleInputChange} placeholder="CENTIMETERS" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="font-outfit text-xs font-black uppercase tracking-[3px] text-gray-500 mb-6 border-b border-white/[0.05] pb-2 flex items-center gap-2">
-            <Target size={14} className="text-accent" /> Mission Parameters
-          </h2>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2 group/select">
-                <label className="font-mono text-[8px] text-gray-500 uppercase tracking-widest group-focus-within/select:text-secondary transition-colors">Experience Tier</label>
-                <select 
-                  name="experience_level" 
-                  value={formData.experience_level} 
-                  onChange={handleInputChange} 
-                  className="bg-[#0b0e14]/60 border border-white/[0.05] rounded-xl px-4 py-3.5 font-mono text-xs text-white uppercase outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 transition-all duration-300"
-                >
-                  <option value="beginner" className="bg-[#0b0e14]">Beginner</option>
-                  <option value="intermediate" className="bg-[#0b0e14]">Intermediate</option>
-                  <option value="advanced" className="bg-[#0b0e14]">Advanced</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-2 group/select">
-                <label className="font-mono text-[8px] text-gray-500 uppercase tracking-widest group-focus-within/select:text-secondary transition-colors">Session Frequency</label>
-                <select 
-                  name="workouts_per_week" 
-                  value={formData.workouts_per_week} 
-                  onChange={handleInputChange} 
-                  className="bg-[#0b0e14]/60 border border-white/[0.05] rounded-xl px-4 py-3.5 font-mono text-xs text-white uppercase outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 transition-all duration-300"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7].map(n => <option key={n} value={n} className="bg-[#0b0e14]">{n} Sessions / Week</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 group/textarea">
-              <label className="font-mono text-[8px] text-gray-500 uppercase tracking-widest group-focus-within/textarea:text-accent transition-colors">Primary Objectives</label>
-              <textarea 
-                name="goals" 
-                value={formData.goals} 
-                onChange={handleInputChange} 
-                className="bg-[#0b0e14]/60 border border-white/[0.05] rounded-xl px-4 py-3.5 font-mono text-xs text-white uppercase outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all duration-300 min-h-[80px] placeholder:text-gray-600" 
-                placeholder="DESCRIBE THE ATHLETE'S STRATEGIC OBJECTIVES..." 
+            <div>
+              <label className="block text-gray-300 text-sm mb-2 font-bold">Full Name *</label>
+              <input
+                type="text"
+                name="display_name"
+                value={formData.display_name}
+                onChange={handleInputChange}
+                required
+                placeholder="e.g. John Doe"
+                className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
               />
             </div>
 
-            <div className="flex flex-col gap-2 group/textarea">
-              <label className="font-mono text-[8px] text-gray-500 uppercase tracking-widest group-focus-within/textarea:text-accent transition-colors flex items-center gap-1">
-                <AlertCircle size={10} className="text-accent" /> Medical Concerns / Injuries / Notes
-              </label>
-              <textarea 
-                name="injuries_notes" 
-                value={formData.injuries_notes} 
-                onChange={handleInputChange} 
-                className="bg-[#0b0e14]/60 border border-white/[0.05] rounded-xl px-4 py-3.5 font-mono text-xs text-white uppercase outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all duration-300 min-h-[80px] placeholder:text-gray-600" 
-                placeholder="ANY PHYSICAL LIMITATIONS, INJURIES, OR GENERAL TACTICAL SYSTEM NOTES..." 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm mb-2 font-bold">Username *</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="johndoe123"
+                  className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm mb-2 font-bold">Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="john@example.com"
+                  className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm mb-2 font-bold">Age</label>
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm mb-2 font-bold">Height (cm)</label>
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Training Info */}
+        <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+          <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Training</h2>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-300 text-sm mb-2 font-bold">Experience Level</label>
+                <select
+                  name="experience_level"
+                  value={formData.experience_level}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-300 text-sm mb-2 font-bold">Days/Week</label>
+                <select
+                  name="workouts_per_week"
+                  value={formData.workouts_per_week}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 text-white rounded px-4 py-2 border border-gray-600"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7].map(n => (
+                    <option key={n} value={n}>{n} days</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm mb-2 font-bold">Goals</label>
+              <textarea
+                name="goals"
+                value={formData.goals}
+                onChange={handleInputChange}
+                className="w-full bg-gray-700 text-white rounded px-4 py-2 h-24 border border-gray-600 focus:outline-none focus:border-blue-500"
+                placeholder="e.g., Build muscle, lose fat, increase strength"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-300 text-sm mb-2 font-bold">Injuries/Notes</label>
+              <textarea
+                name="injuries_notes"
+                value={formData.injuries_notes}
+                onChange={handleInputChange}
+                className="w-full bg-gray-700 text-white rounded px-4 py-2 h-20 border border-gray-600 focus:outline-none focus:border-blue-500"
+                placeholder="Any injuries or limitations?"
               />
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card>
-          <h2 className="font-outfit text-xs font-black uppercase tracking-[3px] text-gray-500 mb-6 border-b border-white/[0.05] pb-2 flex items-center gap-2">
-            <Upload size={14} className="text-success" /> Initial Intelligence (Optional)
-          </h2>
+        {/* InBody CSV Upload */}
+        <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+          <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Initial InBody (Optional)</h2>
           
-          <div className="border border-dashed border-white/[0.08] hover:border-success/40 bg-background/20 rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer group hover:bg-success/[0.02]">
-            <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" id="inbody-upload" />
-            <label htmlFor="inbody-upload" className="cursor-pointer flex flex-col items-center">
-              <Upload size={32} className="text-gray-600 group-hover:text-success mb-3 transition-all duration-300 transform group-hover:-translate-y-0.5" />
-              <p className="font-mono text-[10px] text-gray-400 uppercase tracking-widest group-hover:text-white transition-colors">Import InBody CSV Protocol</p>
-              {inbodyFile && (
-                <span className="mt-4 bg-success/15 text-success text-[10px] font-black px-3.5 py-1 rounded-full border border-success/25 animate-pulse">
-                  ✓ {inbodyFile.name}
-                </span>
-              )}
+          <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="hidden"
+              id="inbody-upload"
+            />
+            <label htmlFor="inbody-upload" className="cursor-pointer">
+              <div className="flex flex-col items-center">
+                <span className="text-3xl mb-2">📄</span>
+                <p className="text-gray-300 font-medium">Click to upload InBody CSV</p>
+                <p className="text-gray-500 text-xs mt-1">Accepts standard InBody CSV exports</p>
+                {inbodyFile && (
+                  <div className="mt-4 bg-green-900/30 text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-green-800">
+                    <span>✓</span> {inbodyFile.name}
+                  </div>
+                )}
+              </div>
             </label>
           </div>
-        </Card>
+        </div>
 
+        {/* Submit */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-accent to-secondary hover:from-accent/90 hover:to-secondary/90 disabled:from-surface disabled:to-surface text-white py-4 rounded-2xl font-outfit font-black text-lg uppercase tracking-widest shadow-2xl hover:shadow-secondary/20 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border border-white/10"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-4 rounded-lg font-bold text-lg shadow-lg transition-all transform active:scale-[0.98]"
         >
-          {loading ? 'INITIALIZING PROTOCOL...' : 'DEPLOY ATHLETE'}
+          {loading ? 'Creating Client...' : 'Create Client Profile'}
         </button>
       </form>
-    </div>
-  );
-}
-
-function InputGroup({ icon, label, ...props }: any) {
-  return (
-    <div className="flex flex-col gap-2 group/input">
-      <label className="font-mono text-[8px] text-gray-500 uppercase tracking-widest group-focus-within/input:text-secondary transition-colors">{label}</label>
-      <div className="relative">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/input:text-secondary transition-colors">{icon}</div>
-        <input 
-          {...props} 
-          className="w-full bg-[#0b0e14]/60 border border-white/[0.05] rounded-xl pl-12 pr-4 py-3.5 font-mono text-xs text-white uppercase outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 transition-all duration-300 placeholder:text-gray-600" 
-        />
-      </div>
     </div>
   );
 }
