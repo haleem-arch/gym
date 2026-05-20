@@ -1,0 +1,16 @@
+{
+  "name": "Stride Rite Elite",
+  "short_name": "StrideRite",
+  "description": "Elite Performance Dashboard for Outrunners",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0a0e12",
+  "theme_color": "#0076c0",
+  "icons": [
+    {
+      "src": "icon.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg"
+    }
+  ]
+}

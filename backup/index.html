@@ -1,0 +1,2454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stride Rite | Elite Performance Center</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stride Rite">
+    <link rel="apple-touch-icon" href="icon.jpg">
+    <style>
+        :root {
+            --primary: #ffffff;
+            --accent: #ff6b35;
+            --secondary: #0076c0;
+            --bg-light: #0a0e12;
+            --bg-white: #151b23;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
+            --border: #30363d;
+            --success: #40b549;
+            --error: #ff4444;
+            --warning: #ffc107;
+            --easing: cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: 0.2s var(--easing);
+            --transition-normal: 0.3s var(--easing);
+            --transition-slow: 0.4s var(--easing);
+        }
+
+        * {
+            box-sizing: border-box;
+            overflow-wrap: anywhere;
+            transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+            touch-action: pan-y;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            animation: pageLoad 0.5s var(--easing);
+        }
+
+        @keyframes pageLoad {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(36px, 8vw, 56px);
+            font-weight: 900;
+            line-height: 1.15;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(24px, 5vw, 32px);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+
+        .metric-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+        }
+
+        .ai-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            transition: all var(--transition-normal);
+        }
+
+        .ai-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+            border-color: var(--accent);
+        }
+
+        .ai-calendar-day {
+            min-height: 120px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all var(--transition-normal);
+            cursor: pointer;
+            position: relative;
+            background: var(--bg-white);
+        }
+
+        .ai-calendar-day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            border-color: var(--accent);
+            z-index: 20;
+        }
+
+        .ai-calendar-day.today {
+            border: 2px solid var(--accent);
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .ai-calendar-day.active {
+            border: 2px solid var(--tp-blue);
+            box-shadow: 0 0 15px rgba(0, 118, 192, 0.4);
+        }
+
+        .ai-calendar-day.completed {
+            background: rgba(64, 181, 73, 0.1);
+            border-color: var(--success);
+        }
+
+        .zone {
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all var(--transition-normal);
+            margin-bottom: 8px;
+        }
+
+        .zone:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .zone-1 {
+            background: rgba(64, 181, 73, 0.15);
+        }
+
+        .zone-2 {
+            background: rgba(0, 118, 192, 0.15);
+        }
+
+        .zone-3 {
+            background: rgba(255, 152, 0, 0.15);
+        }
+
+        .zone-4 {
+            background: rgba(255, 107, 53, 0.15);
+        }
+
+        .zone-5 {
+            background: rgba(255, 68, 68, 0.15);
+        }
+
+        .zone-pace {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .workout-tag {
+            font-family: 'Outfit', sans-serif;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            display: inline-block;
+            letter-spacing: 1px;
+        }
+
+        .tag-run {
+            background: rgba(0, 118, 192, 0.1);
+            color: var(--secondary);
+        }
+
+        .tag-speed {
+            background: rgba(255, 107, 53, 0.1);
+            color: var(--accent);
+        }
+
+        .tag-rest {
+            background: rgba(160, 160, 160, 0.1);
+            color: var(--text-muted);
+        }
+
+        .btn,
+        button {
+            font-family: 'Outfit', sans-serif;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary,
+        .btn-complete {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover,
+        .btn-complete:hover {
+            background: #e85a24;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            background: rgba(255, 107, 53, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .btn-completed {
+            background: rgba(64, 181, 73, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            background: var(--bg-white);
+            transition: all var(--transition-normal);
+            color: var(--text-primary);
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+            transition: color var(--transition-normal);
+        }
+
+        input:focus::placeholder {
+            color: rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 14, 18, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 40px;
+            transition: all var(--transition-normal);
+        }
+
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .reveal.visible {
+            animation: slideUp 0.6s var(--easing) forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 16px 20px;
+            }
+
+            .section {
+                padding: 24px 16px;
+            }
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Dark Mode overrides removed since this is now a pure dark theme */
+    </style>
+</head>
+
+<body class="p-6">
+
+    <!-- Early Strava OAuth detection - runs before any framework -->
+    <script>
+        (function () {
+            const p = new URLSearchParams(window.location.search);
+            if (p.get('code')) {
+                // Make the status bar immediately visible
+                document.write('<div id="strava-auth-banner" style="position:fixed;top:0;left:0;right:0;background:#1d4ed8;color:white;padding:10px 20px;z-index:99999;font-family:monospace;font-size:12px;display:flex;align-items:center;gap:10px;"><span style="animation:spin 1s linear infinite;display:inline-block">⟳</span> STRAVA AUTH IN PROGRESS — Code detected. Exchanging for token...</div>');
+            }
+        })();
+    </script>
+
+    <div class="max-w-[1800px] mx-auto grid grid-cols-12 gap-8 reveal">
+
+        <!-- HEADER -->
+        <header
+            class="col-span-12 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[var(--border)] pb-8 mb-4 gap-6">
+            <div class="flex flex-col gap-2">
+                <h1 class="outfit text-5xl md:text-6xl font-black tracking-tighter uppercase">STRIDE RITE <span
+                        style="color: var(--accent);">| ELITE</span></h1>
+                <span class="mono text-xs font-bold uppercase tracking-widest"
+                    style="color: var(--text-secondary);">Master Training Protocol: 26 Days to Sub-19:00</span>
+            </div>
+            <div class="flex gap-12">
+                <div class="text-right">
+                    <p class="metric-label">Fitness (CTL)</p>
+                    <p class="metric-value">72.4</p>
+                </div>
+                <div class="text-right border-l border-[var(--border)] pl-12">
+                    <p class="metric-label">Form (TSB)</p>
+                    <p class="metric-value" style="color: var(--success);">+12.1</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- TODAY'S MISSION BRIEFING -->
+        <div id="todays-mission" class="col-span-12 hidden reveal">
+            <div class="relative overflow-hidden rounded-xl border"
+                style="background: linear-gradient(135deg, rgba(255, 107, 53, 0.08) 0%, rgba(0, 118, 192, 0.08) 100%); border-color: rgba(255, 107, 53, 0.25);">
+                <div class="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10"
+                    style="background: radial-gradient(circle, var(--accent) 0%, transparent 70%); transform: translate(30%, -30%);">
+                </div>
+                <div class="p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="flex items-start gap-4">
+                        <div class="w-14 h-14 shrink-0 rounded-xl flex items-center justify-center"
+                            style="background: rgba(255, 107, 53, 0.15);">
+                            <span id="mission-icon" class="text-2xl">🏃</span>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] font-black uppercase tracking-[3px] px-2 py-0.5 rounded"
+                                    style="background: var(--accent); color: white;">TODAY</span>
+                                <span id="mission-date" class="mono text-[10px] font-bold uppercase tracking-widest"
+                                    style="color: var(--text-secondary);"></span>
+                                <span id="mission-countdown"
+                                    class="mono text-[10px] font-bold uppercase tracking-widest"
+                                    style="color: var(--secondary);"></span>
+                            </div>
+                            <h2 id="mission-title"
+                                class="outfit text-2xl md:text-3xl font-black tracking-tight uppercase"
+                                style="color: var(--text-primary);"></h2>
+                            <p id="mission-desc" class="text-xs leading-relaxed max-w-xl"
+                                style="color: var(--text-secondary);"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <div class="flex flex-col items-center px-4 py-2 rounded-lg"
+                            style="background: var(--bg-white); border: 1px solid var(--border);">
+                            <span class="metric-label">Distance</span>
+                            <span id="mission-dist" class="mono text-lg font-bold" style="color: var(--accent);"></span>
+                        </div>
+                        <div class="flex flex-col items-center px-4 py-2 rounded-lg"
+                            style="background: var(--bg-white); border: 1px solid var(--border);">
+                            <span class="metric-label">TSS</span>
+                            <span id="mission-tss" class="mono text-lg font-bold"
+                                style="color: var(--secondary);"></span>
+                        </div>
+                        <button id="mission-go-btn"
+                            class="px-5 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                            style="background: var(--accent); color: white; box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);">
+                            VIEW →
+                        </button>
+                        <button id="notif-btn" onclick="enableNotifications()"
+                            class="px-3 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5"
+                            style="background: rgba(0, 118, 192, 0.15); color: var(--secondary); border: 1px solid rgba(0, 118, 192, 0.3);"
+                            title="Enable daily notifications">
+                            <i data-lucide="bell" class="w-4 h-4"></i>
+                            <span id="notif-btn-text" class="hidden md:inline">NOTIFY</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GLOBAL CONTEXT HUB -->
+        <div id="global-hub-wrap"
+            class="col-span-12 ai-card mb-2 flex flex-col xl:flex-row justify-between items-start xl:items-center p-6 gap-6 reveal shadow-md">
+
+            <div class="flex flex-col md:flex-row gap-8 items-start md:items-center w-full xl:w-auto">
+                <!-- INBODY -->
+                <div class="flex items-center gap-3 md:border-r border-[var(--border)] md:pr-8 w-full md:w-auto">
+                    <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
+                        style="background: rgba(0, 118, 192, 0.1);">
+                        <i data-lucide="file-spreadsheet"
+                            style="color: var(--secondary); width: 24px; height: 24px;"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="metric-label">InBody Scanner</span>
+                        <label
+                            class="cursor-pointer bg-[var(--bg-light)] border border-[var(--border)] px-3 py-1.5 mt-1 rounded text-[10px] font-bold uppercase tracking-widest transition-colors inline-block text-center hover:border-[var(--accent)]"
+                            id="inbody-upload-label" style="color: var(--text-primary);">
+                            <i data-lucide="upload" class="w-3 h-3 inline mr-1"></i> Upload CSV
+                            <input type="file" id="inbody-csv-upload" accept=".csv" class="hidden"
+                                onchange="handleInbodyCSV(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ARCHIVE -->
+                <div class="flex items-center gap-3 md:border-r border-[var(--border)] md:pr-8 w-full md:w-auto">
+                    <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
+                        style="background: rgba(64, 181, 73, 0.1);">
+                        <i data-lucide="database" style="color: var(--success); width: 24px; height: 24px;"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="metric-label">Strava Archive</span>
+                        <label
+                            class="cursor-pointer bg-[var(--bg-light)] border border-[var(--border)] px-3 py-1.5 mt-1 rounded text-[10px] font-bold uppercase tracking-widest transition-colors inline-block text-center hover:border-[var(--accent)]"
+                            id="strava-archive-label" style="color: var(--text-primary);">
+                            <i data-lucide="upload" class="w-3 h-3 inline mr-1" id="strava-archive-icon"></i>
+                            <span id="strava-archive-text">Activities.csv</span>
+                            <input type="file" accept=".csv" class="hidden" id="strava-archive-input"
+                                onchange="handleStravaCSV(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- LIVE -->
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
+                        style="background: rgba(255, 107, 53, 0.1);">
+                        <i data-lucide="activity" style="color: var(--accent); width: 24px; height: 24px;"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="metric-label" style="color: var(--accent);">Live Telemetry</span>
+                        <button onclick="authorizeStrava()" id="auth-strava-btn"
+                            class="btn-primary rounded px-4 py-1.5 mt-1 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border-none">
+                            <i data-lucide="link" class="w-3 h-3"></i> Connect Strava
+                        </button>
+                        <input type="hidden" id="strava-token-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ENGINE & CONFIG -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full xl:w-auto">
+                <div class="flex flex-col w-full sm:w-auto">
+                    <span class="metric-label mb-1">AI Logic Engine</span>
+                    <div class="flex gap-2">
+                        <select id="model-selector" onchange="changeModel(this.value)"
+                            class="bg-[var(--bg-light)] border border-[var(--border)] rounded px-2 py-1 text-[10px] font-bold uppercase outline-none cursor-pointer transition-colors"
+                            style="color: var(--text-primary);">
+                            <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+                            <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+                            <option value="gemini-2.0-flash-exp">Gemini 2.0 Exp</option>
+                        </select>
+                        <input type="password" id="api-key-input" onchange="updateKey(this.value)" placeholder="API Key"
+                            class="bg-[var(--bg-light)] border border-[var(--border)] rounded px-2 py-1 text-[10px] w-24 outline-none transition-colors focus:border-[var(--accent)]"
+                            style="color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <div id="weather-ui"
+                    class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest sm:border-l border-[var(--border)] sm:pl-6 h-8"
+                    style="color: var(--text-secondary);">
+                    <i data-lucide="thermometer" class="w-4 h-4"></i> Locating...
+                </div>
+
+                <div class="flex items-center gap-2 sm:border-l border-[var(--border)] sm:pl-6">
+                    <button onclick="exportData()" class="p-2 transition-colors hover:text-[var(--accent)]"
+                        style="color: var(--text-secondary);" title="Backup"><i data-lucide="download"
+                            class="w-4 h-4"></i></button>
+                    <label class="p-2 transition-colors cursor-pointer hover:text-[var(--accent)]"
+                        style="color: var(--text-secondary);" title="Restore">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <input type="file" accept=".json" class="hidden" onchange="importData(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEFT: INTELLIGENCE CALENDAR & PMC -->
+        <div class="col-span-12 lg:col-span-6 xl:col-span-7 flex flex-col gap-6">
+            <div class="ai-card overflow-hidden reveal relative">
+                <!-- Mobile Scroll Hint Gradient -->
+                <div
+                    class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[var(--bg-white)] to-transparent z-10 md:hidden pointer-events-none">
+                </div>
+
+                <div class="overflow-x-auto hide-scrollbar touch-pan-x">
+                    <div class="grid grid-cols-7 min-w-[700px] md:min-w-full" id="calendar-root">
+                        <div
+                            class="p-3 text-center metric-label border-r border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            MON</div>
+                        <div
+                            class="p-3 text-center metric-label border-r border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            TUE</div>
+                        <div
+                            class="p-3 text-center metric-label border-r border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            WED</div>
+                        <div
+                            class="p-3 text-center metric-label border-r border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            THU</div>
+                        <div
+                            class="p-3 text-center metric-label border-r border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            FRI</div>
+                        <div
+                            class="p-3 text-center metric-label border-r border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            SAT</div>
+                        <div class="p-3 text-center metric-label border-b border-[var(--border)] bg-[var(--bg-light)]">
+                            SUN</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-card p-6 flex flex-col justify-between reveal">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="outfit font-bold text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <i data-lucide="brain-circuit"
+                                style="color: var(--secondary); width: 16px; height: 16px;"></i> Hybrid Engine Room
+                        </h2>
+                        <p class="mono text-[10px] w-full md:w-64 leading-relaxed uppercase tracking-widest font-bold"
+                            style="color: var(--text-secondary);">AI Physiological Model: Merges Strava live data &
+                            Archive CSV to estimate true race capacity.</p>
+                    </div>
+                    <button onclick="runEngineDiagnostic()" id="engine-btn"
+                        class="border rounded px-3 py-2 text-[9px] font-bold uppercase transition-colors flex items-center gap-1 mt-4 md:mt-0"
+                        style="background: rgba(0, 118, 192, 0.2); color: var(--secondary); border-color: rgba(0, 118, 192, 0.5);">
+                        <i data-lucide="zap" class="w-3 h-3"></i> Run AI Diagnostic
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    <div
+                        class="bg-[var(--bg-light)] border border-[var(--border)] rounded p-4 flex flex-col items-center">
+                        <span class="metric-label mb-1">Max VDOT</span>
+                        <span id="vdot-score" class="metric-value">--</span>
+                    </div>
+                    <div
+                        class="bg-[var(--bg-light)] border border-[var(--border)] rounded p-4 flex flex-col items-center">
+                        <span class="metric-label mb-1">VO2 Max</span>
+                        <span id="vo2-score" class="metric-value" style="color: var(--secondary);">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-card p-8 mt-6 reveal">
+                <h2 class="outfit font-bold text-sm uppercase tracking-wider mb-6 flex items-center gap-2">
+                    <i data-lucide="trending-up" style="color: var(--secondary); width: 16px; height: 16px;"></i>
+                    Performance Management Chart (PMC)
+                </h2>
+                <div style="height: 250px;"><canvas id="masterTrendsChart"></canvas></div>
+            </div>
+
+            <!-- BIOMECHANICS -->
+            <div class="ai-card p-6 reveal">
+                <h2 class="outfit font-bold text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="activity-square" style="color: var(--error); width: 16px; height: 16px;"></i>
+                    Biomechanical Status
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="biomechanics-grid">
+                    <!-- JS Generated -->
+                </div>
+            </div>
+
+            <!-- THE GEAR BAY -->
+            <div class="ai-card p-6 reveal">
+                <h2 class="font-bold text-sm uppercase tracking-wider mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i data-lucide="footprints"
+                            class="w-4 h-4 text-[#ff6b35]"></i> The Gear Bay</span>
+                    <button onclick="addShoe()"
+                        class="text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-1 rounded hover:bg-orange-500/40 transition-colors uppercase tracking-widest">+
+                        Add Shoe</button>
+                </h2>
+                <div id="gear-bay-list" class="flex flex-col gap-2">
+                    <!-- JS Generated -->
+                </div>
+            </div>
+
+            <!-- TACTICAL COMMAND -->
+            <div class="ai-card p-6 border-t-4 border-[var(--error)] reveal">
+                <h2 class="font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="crosshair" style="color: var(--error); width: 16px; height: 16px;"></i> Tactical
+                    Command
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div
+                        class="bg-[var(--bg-light)] border border-[var(--border)] p-4 rounded flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest mb-2"
+                                style="color: var(--secondary);"><i data-lucide="map" class="w-3 h-3 inline"></i>
+                                Segment Sniper</h3>
+                            <div class="flex gap-2 mb-3">
+                                <input type="number" id="seg-dist" placeholder="Dist (km)"
+                                    class="bg-[var(--bg-white)] border border-[var(--border)] rounded p-2 text-xs w-full outline-none"
+                                    style="color: var(--text-primary);">
+                                <input type="number" id="seg-elev" placeholder="Elev (m)"
+                                    class="bg-[var(--bg-white)] border border-[var(--border)] rounded p-2 text-xs w-full outline-none"
+                                    style="color: var(--text-primary);">
+                            </div>
+                        </div>
+                        <button onclick="snipeSegment()" id="snipe-btn"
+                            class="border rounded px-3 py-2 text-[10px] font-bold uppercase transition-colors"
+                            style="background: rgba(0, 118, 192, 0.2); color: var(--secondary); border-color: rgba(0, 118, 192, 0.5);">Generate
+                            Attack Plan</button>
+                    </div>
+                    <div class="border p-4 rounded flex flex-col justify-center items-center text-center"
+                        style="background: rgba(255, 68, 68, 0.05); border-color: rgba(255, 68, 68, 0.3);">
+                        <h3 class="text-xs font-bold uppercase tracking-widest mb-2" style="color: var(--error);">Target
+                            Race: May 31</h3>
+                        <button onclick="initiateSub19()" id="sub19-btn"
+                            class="border rounded px-4 py-3 text-xs font-black uppercase transition-colors animate-pulse w-full"
+                            style="background: rgba(255, 68, 68, 0.1); color: var(--error); border-color: rgba(255, 68, 68, 0.5);">Initiate
+                            Operation Sub-19</button>
+                    </div>
+                </div>
+                <div id="tactical-response"
+                    class="mt-4 text-xs bg-[var(--bg-light)] p-4 rounded border border-[var(--border)] hidden leading-relaxed"
+                    style="color: var(--text-primary);"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT: TRAINING PEAKS STYLE WORKOUT DETAILS -->
+        <div class="col-span-12 lg:col-span-6 xl:col-span-5 flex flex-col gap-6">
+            <div id="workout-pane" class="ai-card p-10 sticky top-6 border-t-4 border-blue-500 reveal">
+                <div id="workout-warnings"></div>
+                <!-- Title & Date -->
+                <div
+                    class="flex justify-between items-start mb-6 border-b border-[var(--border)] pb-6 flex-col md:flex-row gap-4">
+                    <div class="flex flex-col gap-2">
+                        <span id="active-tag" class="workout-tag tag-speed">Speed Endurance</span>
+                        <h3 id="active-title" class="outfit text-4xl md:text-5xl font-black tracking-tighter uppercase">
+                            INTERVALS: 12x400</h3>
+                        <p id="active-date" class="mono text-xs uppercase tracking-widest font-bold"
+                            style="color: var(--text-secondary);">Tuesday, May 12</p>
+                    </div>
+                </div>
+
+                <p id="active-desc"
+                    class="text-xs bg-[var(--bg-light)] p-4 rounded border border-[var(--border)] mb-6 leading-relaxed italic"
+                    style="color: var(--text-primary);"></p>
+
+                <!-- Core TP Metrics Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-[var(--bg-light)] p-4 rounded border border-[var(--border)]">
+                        <p class="metric-label mb-2 flex justify-between"><span>Duration</span> <span
+                                style="color: var(--secondary);">Planned</span></p>
+                        <p id="m-dur" class="metric-value" style="color: var(--text-primary);">1:12:45</p>
+                        <div id="m-dur-actual" class="hidden border-t border-[var(--border)] pt-2 mt-2">
+                            <p class="metric-label mb-1"><span style="color: var(--success);">Actual</span></p>
+                            <p id="m-dur-a-val" class="text-lg font-bold mono tracking-tight"
+                                style="color: var(--success);">1:14:00</p>
+                        </div>
+                    </div>
+                    <div class="bg-[var(--bg-light)] p-4 rounded border border-[var(--border)]">
+                        <p class="metric-label mb-2 flex justify-between"><span>Distance</span> <span
+                                style="color: var(--secondary);">Planned</span></p>
+                        <p id="m-dist" class="metric-value" style="color: var(--text-primary);">14.0 <span
+                                class="text-xs" style="color: var(--text-secondary);">km</span></p>
+                        <div id="m-dist-actual" class="hidden border-t border-[var(--border)] pt-2 mt-2">
+                            <p class="metric-label mb-1"><span style="color: var(--success);">Actual</span></p>
+                            <p id="m-dist-a-val" class="text-lg font-bold mono tracking-tight"
+                                style="color: var(--success);">14.2 <span class="text-xs opacity-50">km</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-[var(--bg-light)] p-4 rounded border border-[var(--border)]">
+                        <p class="metric-label mb-2 flex justify-between"><span>TSS</span> <span
+                                style="color: var(--secondary);">Planned</span></p>
+                        <p id="m-tss" class="metric-value">105</p>
+                        <div id="m-tss-actual" class="hidden border-t border-[var(--border)] pt-2 mt-2">
+                            <p class="metric-label mb-1"><span style="color: var(--success);">Actual</span></p>
+                            <p id="m-tss-a-val" class="text-lg font-bold mono tracking-tight"
+                                style="color: var(--success);">--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Literal Pace Graph w/ Overlays -->
+                <div class="mb-8">
+                    <h4
+                        class="outfit font-bold text-[10px] uppercase text-gray-500 mb-4 tracking-widest flex justify-between items-center">
+                        <div class="flex gap-4">
+                            <span class="flex items-center gap-1">
+                                <div class="w-2 h-2 bg-[#0076c0] rounded-full"></div> Planned
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <div class="w-2 h-2 bg-[#40b549] rounded-full"></div> Actual
+                            </span>
+                        </div>
+                        <span id="pace-avg" class="text-blue-400 font-black">Avg: 4:35/km</span>
+                    </h4>
+                    <div class="chart-box bg-[#0d1117] rounded border border-[#30363d] p-4">
+                        <canvas id="paceProfileChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- THE WAR ROOM (POST-RUN ANALYSIS) -->
+                <div id="war-room-module" class="hidden">
+                    <h4
+                        class="outfit font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-[#30363d] pb-2 text-white">
+                        <i data-lucide="microscope" class="w-4 h-4 text-gray-400"></i> Post-Run War Room
+                    </h4>
+
+                    <!-- 1. Execution Score -->
+                    <div class="bg-purple-500/5 p-4 rounded-lg border border-purple-500/10 mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex gap-2 items-center">
+                                <i data-lucide="target" class="w-4 h-4 text-purple-500"></i>
+                                <h4 class="outfit font-bold text-[10px] uppercase text-purple-500 tracking-widest">
+                                    Pacing Execution Analysis</h4>
+                            </div>
+                            <button onclick="analyzeExecution()" id="exec-btn"
+                                class="bg-purple-600/20 text-purple-500 border border-purple-500/50 rounded px-3 py-1 text-[9px] font-bold uppercase hover:bg-purple-600/40 transition-colors">Generate
+                                Score</button>
+                        </div>
+                        <div id="exec-response"
+                            class="text-xs text-purple-300 italic bg-purple-900/20 p-3 rounded border border-purple-500/20 hidden leading-relaxed">
+                        </div>
+                    </div>
+
+                    <!-- 2. Aerobic Efficiency Scanner -->
+                    <div class="bg-blue-500/5 p-4 rounded-lg border border-blue-500/10 mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex gap-2 items-center">
+                                <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i>
+                                <h4 class="outfit font-bold text-[10px] uppercase text-blue-500 tracking-widest">Aerobic
+                                    Efficiency Scanner</h4>
+                            </div>
+                            <button onclick="analyzeEfficiency()" id="drift-btn"
+                                class="bg-blue-600/20 text-blue-500 border border-blue-500/50 rounded px-3 py-1 text-[9px] font-bold uppercase hover:bg-blue-600/40 transition-colors">Scan
+                                Cardiac Drift</button>
+                        </div>
+                        <div id="drift-response"
+                            class="text-xs text-blue-300 italic bg-blue-900/20 p-3 rounded border border-blue-500/20 hidden leading-relaxed">
+                        </div>
+                    </div>
+
+                    <!-- 3. Recovery Protocol -->
+                    <div class="bg-green-500/5 p-4 rounded-lg border border-green-500/10 mb-8">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex gap-2 items-center">
+                                <i data-lucide="dna" class="w-4 h-4 text-green-500"></i>
+                                <h4 class="outfit font-bold text-[10px] uppercase text-green-500 tracking-widest">AI
+                                    Recovery & Fueling Protocol</h4>
+                            </div>
+                            <button onclick="generateRecoveryProtocol()" id="rec-btn"
+                                class="bg-green-600/20 text-green-500 border border-green-500/50 rounded px-3 py-1 text-[9px] font-bold uppercase hover:bg-green-600/40 transition-colors">Generate
+                                Routine</button>
+                        </div>
+                        <div id="rec-response"
+                            class="text-xs text-green-300 italic bg-green-900/20 p-3 rounded border border-green-500/20 hidden leading-relaxed">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coach Notes & One-Shot Chat -->
+                <div class="bg-[#1c2128] p-6 rounded-lg border border-[#30363d] mb-8">
+                    <div class="flex gap-2 items-center mb-3">
+                        <i data-lucide="brain" class="w-4 h-4 text-gray-400"></i>
+                        <h4 class="outfit font-bold text-[10px] uppercase text-gray-400 tracking-widest">Physiological
+                            Focus</h4>
+                    </div>
+                    <p id="ai-insight" class="text-xs leading-relaxed text-gray-300 italic mb-4">
+                        "Targeting critical velocity at VO2 Max."
+                    </p>
+
+                    <div id="chat-container" class="border-t border-[#30363d] pt-4 mt-2">
+                        <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Ask Coach (1
+                            Question per session)</p>
+                        <div class="flex gap-2" id="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="e.g. How should my breathing feel?"
+                                class="flex-1 bg-black/40 border border-[#30363d] rounded px-3 py-2 text-xs text-white focus:border-blue-500 outline-none">
+                            <button onclick="askCoach()" id="chat-btn"
+                                class="bg-blue-600 px-4 py-2 rounded flex items-center justify-center hover:bg-blue-500 transition-colors">
+                                <i data-lucide="send" class="w-3 h-3 text-white"></i>
+                            </button>
+                        </div>
+                        <p id="chat-response"
+                            class="text-xs text-blue-300 mt-3 hidden italic bg-blue-900/20 p-3 rounded border border-blue-500/20">
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-3">
+                    <button onclick="syncStrava()" id="sync-strava-btn"
+                        class="w-full bg-orange-600/20 text-orange-500 border border-orange-500/50 py-3 rounded flex justify-center items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-orange-600/40 transition-colors">
+                        <i data-lucide="activity" class="w-4 h-4"></i>
+                        <span>Sync Run via Strava</span>
+                    </button>
+
+                    <button onclick="deleteSync()" id="delete-sync-btn"
+                        class="w-full bg-red-600/10 text-red-500 border border-red-500/30 py-2 rounded flex justify-center items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-red-600/30 transition-colors hidden mb-4">
+                        <i data-lucide="unlink" class="w-3 h-3"></i>
+                        <span>Unsync Strava Session</span>
+                    </button>
+
+                    <button onclick="markComplete()" id="log-btn"
+                        class="w-full btn-complete py-4 rounded flex justify-center items-center gap-2">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        <span>Mark Session Completed</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const workouts = [
+            { id: 0, date: "MAY 06", title: "AEROBIC BASE", desc: "10km steady. Pace: 4:40 - 5:00/km (Zone 2). Maintain consistent effort.", tss: 68, if: 0.78, type: "run", tag: "Aerobic Capacity", insight: "This session builds mitochondrial density and capillary beds. Maintain strict Zone 2 discipline to optimize fat oxidation and metabolic efficiency." },
+            { id: 1, date: "MAY 07", title: "TEMPO PUSH", desc: "2km Warmup. 6km at 4:00 - 4:10/km pace. 2km Cooldown.", tss: 92, if: 0.92, type: "speed", tag: "Threshold Tolerance", insight: "Targeting lactate threshold. By holding 4:05 pace, you are teaching your body to clear lactate at race-specific intensities. Focus on high cadence (180+)." },
+            { id: 2, date: "MAY 08", title: "ACTIVE RECOVERY", desc: "45 min Recovery Ride or 6km light jog. Focus on mobility.", tss: 35, if: 0.65, type: "run", tag: "Recovery Flush", insight: "Purely restorative. The goal is blood flow without structural damage. Keep effort effortless. Heart rate should not exceed 125bpm." },
+            { id: 3, date: "MAY 09", title: "LONG RUN + PROG", desc: "14km total. Start 5:00/km. Last 3km progress to 4:15/km.", tss: 110, if: 0.85, type: "run", tag: "Aerobic Power", insight: "Building muscular endurance. The final 3km progression mimics the late-race fatigue of a 5k. Ensure you fuel properly before this effort." },
+            { id: 4, date: "MAY 10", title: "TOTAL REST", desc: "No impact. Foam rolling and dynamic stretching.", tss: 0, if: 0, type: "rest", tag: "Neural Reset", insight: "Central Nervous System recovery is the priority today. Minimize cognitive stress and maximize sleep quality to prep for the speed block." },
+            { id: 5, date: "MAY 11", title: "RECOVERY FLUSH", desc: "8km very easy. Pace: 5:10 - 5:40/km (Zone 1).", tss: 42, if: 0.68, type: "run", tag: "Active Maintenance", insight: "Gentle aerobic stimulation to keep the legs moving after the rest day. Pre-speed session readiness check." },
+            { id: 6, date: "MAY 12", title: "SPEED: 12x400m", desc: "2km Warmup. 12x400m at 85-88s. 90s jog rest. 2km Cooldown.", tss: 105, if: 0.98, type: "speed", tag: "VO2 Max Power", insight: "Critical VO2 Max development. Short intervals at high intensity improve heart stroke volume and max oxygen uptake. Focus on a strong knee drive." },
+            { id: 7, date: "MAY 13", title: "AEROBIC BASE", desc: "10km steady maintenance.", tss: 68, if: 0.78, type: "run", tag: "Aerobic Capacity", insight: "Standard base building. Consolidating the gains from yesterday's speed work." },
+            { id: 8, date: "MAY 14", title: "TEMPO: 7km", desc: "7km at Threshold effort.", tss: 98, if: 0.93, type: "speed", tag: "Lactate Tolerance", insight: "Extending the duration of threshold effort. Building the mental toughness required for the sub-19 barrier." },
+            { id: 9, date: "MAY 15", title: "ACTIVE RECOVERY", desc: "6km light jog.", tss: 35, if: 0.65, type: "run", tag: "Restoration", insight: "Keep it light. Preparation for the weekend long effort." },
+            { id: 10, date: "MAY 16", title: "LONG RUN: 16km", desc: "16km aerobic effort.", tss: 125, if: 0.86, type: "run", tag: "Endurance Base", insight: "Structural adaptation. Strengthening tendons and ligaments for high-impact forces." },
+            { id: 11, date: "MAY 17", title: "TOTAL REST", desc: "Full recovery.", tss: 0, if: 0, type: "rest", tag: "Full Reset", insight: "Body is repairing at the cellular level. Focus on high protein intake and hydration." },
+            { id: 12, date: "MAY 18", title: "RECOVERY FLUSH", desc: "8km easy.", tss: 42, if: 0.68, type: "run", tag: "Recovery", insight: "Easy miles to flush out any lingering soreness before the next heavy speed day." },
+            { id: 13, date: "MAY 19", title: "SPEED: 14x400m", desc: "Building volume at speed.", tss: 120, if: 0.98, type: "speed", tag: "VO2 Max Power", insight: "The volume increases but the pace stays the same. This is testing your ability to recruit fast-twitch fibers under fatigue." },
+            { id: 14, date: "MAY 20", title: "AEROBIC BASE", desc: "10km steady.", tss: 68, if: 0.78, type: "run", tag: "Aerobic Capacity", insight: "Keep the intensity strictly in Zone 2 to ensure proper recovery from the 14x400m session." },
+            { id: 15, date: "MAY 21", title: "TEMPO: 8km", desc: "8km at Threshold.", tss: 110, if: 0.93, type: "speed", tag: "Lactate Tolerance", insight: "This is a serious threshold effort. You are teaching your body to sustain a challenging pace for a prolonged duration." },
+            { id: 16, date: "MAY 22", title: "ACTIVE RECOVERY", desc: "Recovery ride or jog.", tss: 35, if: 0.65, type: "run", tag: "Restoration", insight: "Crucial recovery day. Your fatigue (ATL) is likely peaking right now. Respect the easy pace." },
+            { id: 17, date: "MAY 23", title: "LONG RUN: 18km", desc: "Building endurance capacity.", tss: 145, if: 0.86, type: "run", tag: "Endurance Base", insight: "The longest run of the cycle. This builds the ultimate aerobic foundation that will support your 5k speed." },
+            { id: 18, date: "MAY 24", title: "TOTAL REST", desc: "Pre-taper rest.", tss: 0, if: 0, type: "rest", tag: "Full Reset", insight: "The final full rest day before the taper begins. Your body needs this to start shedding the accumulated fatigue." },
+            { id: 19, date: "MAY 25", title: "RECOVERY FLUSH", desc: "8km easy. Start of Taper.", tss: 42, if: 0.68, type: "run", tag: "Taper Start", insight: "The taper has officially begun. We are maintaining frequency but dropping volume to let form (TSB) rise." },
+            { id: 20, date: "MAY 26", title: "SPEED: 16x400m", desc: "Final peak speed session.", tss: 140, if: 0.98, type: "speed", tag: "Peak VO2 Max", insight: "The final massive speed workout. Empty the tank here; you will have plenty of time to recover before race day." },
+            { id: 21, date: "MAY 27", title: "AEROBIC BASE", desc: "10km maintenance.", tss: 60, if: 0.75, type: "run", tag: "Maintenance", insight: "Just keeping the engine turning over. Do not push the pace today." },
+            { id: 22, date: "MAY 28", title: "TEMPO: 9km", desc: "Final threshold push.", tss: 115, if: 0.91, type: "speed", tag: "Threshold Peak", insight: "A solid, controlled effort. You should feel strong and bouncy, not depleted." },
+            { id: 23, date: "MAY 29", title: "ACTIVE RECOVERY", desc: "Stay loose.", tss: 30, if: 0.60, type: "run", tag: "Restoration", insight: "Two days out. Keep the muscles loose and hydrated. Mental visualization starts now." },
+            { id: 24, date: "MAY 30", title: "SHAKEOUT", desc: "3km very easy with 3x100m strides.", tss: 20, if: 0.65, type: "run", tag: "Pre-Race Activation", insight: "A very short run just to keep the legs firing. The strides are to remind the nervous system of the race pace." },
+            { id: 25, date: "MAY 31", title: "THE 5K TT", desc: "SUB-19:00 ATTEMPT. GO ALL OUT.", tss: 180, if: 1.05, type: "speed", tag: "RACE DAY", insight: "The culmination of the 26-day peaking cycle. Your form is fully optimized. Trust your training. Execute the race plan: 3:47/km average. Unleash it." }
+        ];
+
+        // AUTO-GENERATE PACE
+        workouts.forEach(w => {
+            let p = [];
+            if (w.type === 'rest') {
+                p = []; w.distance = "0.0"; w.duration = "0:00:00";
+            } else if (w.title.includes('x400')) {
+                let reps = w.title.match(/(\d+)x/)[1];
+                p.push(...Array(20).fill(5.5));
+                for (let i = 0; i < parseInt(reps); i++) { p.push(3.6, 3.6, 3.6, 3.6, 5.8, 5.8, 5.8); }
+                p.push(...Array(20).fill(5.5));
+            } else if (w.title.includes('PROG')) {
+                p.push(...Array(110).fill(5.0)); p.push(...Array(10).fill(4.5)); p.push(...Array(10).fill(4.25)); p.push(...Array(10).fill(4.15));
+            } else if (w.title.includes('TEMPO')) {
+                let dist = parseInt(w.title.match(/(\d+)km/) ? w.title.match(/(\d+)km/)[1] : "6");
+                p.push(...Array(20).fill(5.3)); p.push(...Array(dist * 10).fill(4.05)); p.push(...Array(20).fill(5.5));
+            } else if (w.title.includes('5K TT')) {
+                p.push(...Array(20).fill(5.5));
+                p.push(3.8, 3.8, 3.8, 3.8, 3.8, 3.8, 3.8, 3.8, 3.8, 3.8, 3.75, 3.75, 3.75, 3.75, 3.75, 3.75, 3.75, 3.75, 3.75, 3.75, 3.7, 3.7, 3.7, 3.7, 3.7, 3.7, 3.7, 3.7, 3.7, 3.7, 3.6, 3.6, 3.6, 3.6, 3.6, 3.6, 3.6, 3.6, 3.6, 3.6, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.3);
+                p.push(...Array(10).fill(6.0));
+            } else {
+                let base = w.title.includes('RECOVERY') ? 5.5 : w.title.includes('LONG') ? 5.0 : 4.8;
+                let titleMatch = w.title.match(/(\d+)km/);
+                let dist = titleMatch ? parseInt(titleMatch[1]) : (w.title.includes('LONG') ? 14 : w.title.includes('RECOVERY') ? 6 : 10);
+                for (let i = 0; i < dist * 10; i++) p.push(base + (Math.random() * 0.08 - 0.04));
+            }
+            w.paceData = p;
+
+            if (p.length > 0) {
+                let totalKm = p.length * 0.1; w.distance = totalKm.toFixed(1);
+                let totalSeconds = 0;
+                p.forEach(paceMinPerKm => { totalSeconds += (paceMinPerKm * 60) * 0.1; });
+                let h = Math.floor(totalSeconds / 3600); let m = Math.floor((totalSeconds % 3600) / 60); let s = Math.round(totalSeconds % 60);
+                w.duration = (h > 0 ? h + ':' : '') + (m < 10 && h > 0 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+            }
+        });
+
+        let activeId = 0; let completed = new Set(); let paceChart, pmcChart;
+        let GEMINI_API_KEY = localStorage.getItem('strideRiteApiKey') || "AIzaSyBU5gxnxhngM0CwcY_FG0ATo0SxhXVO7ew";
+        const STRAVA_CLIENT_ID = "203804";
+        const STRAVA_CLIENT_SECRET = "5a723478d3b94586631c47a3e3b6adebeea924c8";
+
+        let selectedModel = localStorage.getItem('strideRiteModel') || "gemini-1.5-flash";
+        // Force reset if broken preview was selected previously
+        if (selectedModel.includes('lite') || selectedModel === 'gemini-flash-latest') selectedModel = "gemini-1.5-flash";
+
+        function updateKey(k) {
+            if (!k) return;
+            GEMINI_API_KEY = k;
+            localStorage.setItem('strideRiteApiKey', k);
+            console.log("API Key Updated");
+        }
+
+        function changeModel(m) {
+            selectedModel = m;
+            localStorage.setItem('strideRiteModel', m);
+            console.log("AI Model Switched to:", m);
+            const modelSel = document.getElementById('model-selector');
+            if (modelSel) modelSel.value = m;
+        }
+
+        async function callGemini(prompt) {
+            const versions = ['v1', 'v1beta'];
+            let lastErr = "Unknown Error";
+            const isDemoKey = (GEMINI_API_KEY === "AIzaSyBU5gxnxhngM0CwcY_FG0ATo0SxhXVO7ew");
+
+            for (let v of versions) {
+                try {
+                    console.log(`AI | Attempting ${selectedModel} via ${v}...`);
+                    let res = await fetch(`https://generativelanguage.googleapis.com/${v}/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    const data = await res.json();
+                    if (res.ok) return data.candidates[0].content.parts[0].text;
+
+                    lastErr = data.error?.message || "API Error";
+                    console.warn(`AI | ${v} attempt failed:`, lastErr);
+                    if (res.status !== 404) break;
+                } catch (e) { lastErr = e.message; }
+            }
+            if (isDemoKey) throw new Error("DEMO KEY EXPIRED. Please enter your own Gemini API Key.");
+            throw new Error(lastErr);
+        }
+
+        async function listModels() {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const available = data.models
+                        .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+                        .map(m => m.name.replace('models/', ''));
+
+                    console.log("STRIDE RITE | AVAILABLE MODELS:", available);
+
+                    const selector = document.getElementById('model-selector');
+                    if (selector && available.length > 0) {
+                        // Keep current selection if valid, else take first available
+                        const current = selector.value;
+                        selector.innerHTML = '';
+                        available.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m;
+                            opt.innerText = m.replace('gemini-', '').toUpperCase();
+                            selector.appendChild(opt);
+                        });
+                        if (available.includes(current)) selector.value = current;
+                        else changeModel(available[0]);
+                    }
+                } else {
+                    console.error("Model discovery failed. Check API Key permissions.");
+                }
+            } catch (e) { console.error("Model discovery failed:", e); }
+        }
+
+        let inbodyWeight = "Unknown"; let inbodyFat = "Unknown";
+        let currentTemp = null; let currentHumidity = null;
+        let stravaArchive = []; let aiVdot = "--"; let aiVo2Max = "--";
+        let shoeArsenal = [];
+        let jointState = {}; const jointsList = ['L-Achilles', 'R-Achilles', 'L-Knee', 'R-Knee', 'L-Calf', 'R-Calf', 'L-Hamstring', 'R-Hamstring', 'IT Band', 'Plantar'];
+
+        // --- MEMORY ENGINE (LOCALSTORAGE & DESKTOP SYNC) ---
+        function saveData() {
+            const memory = {
+                inbodyWeight, inbodyFat, jointState, stravaArchive, aiVdot, aiVo2Max, shoeArsenal,
+                completed: Array.from(completed),
+                workoutsActuals: workouts.map(w => ({
+                    actualDistance: w.actualDistance, actualDuration: w.actualDuration,
+                    actualName: w.actualName, actualPaceData: w.actualPaceData,
+                    executionScoreText: w.executionScoreText
+                })),
+                pmcActuals: pmcChart ? pmcChart.data.datasets[2].data : Array(26).fill(null),
+                lastActiveId: activeId
+            };
+            localStorage.setItem('strideRiteMemory', JSON.stringify(memory));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('strideRiteMemory');
+            if (saved) {
+                try {
+                    const memory = JSON.parse(saved);
+                    inbodyWeight = memory.inbodyWeight || "Unknown";
+                    inbodyFat = memory.inbodyFat || "Unknown";
+                    if (inbodyWeight !== "Unknown") {
+                        const lbl = document.getElementById('inbody-upload-label');
+                        lbl.innerHTML = `<i data-lucide="check" class="w-3 h-3 inline mr-1"></i> ${inbodyWeight}kg | ${inbodyFat}% Fat`;
+                        lbl.className = "cursor-default bg-green-900/40 text-green-500 border border-green-500/50 px-3 py-2 mt-1 rounded text-xs font-bold uppercase tracking-widest inline-block text-center";
+                    }
+                    if (memory.stravaArchive && memory.stravaArchive.length > 0) {
+                        stravaArchive = memory.stravaArchive;
+                        updateArchiveLabel();
+                    }
+                    if (memory.aiVdot) {
+                        aiVdot = memory.aiVdot;
+                        document.getElementById('vdot-score').innerText = aiVdot;
+                    }
+                    if (memory.aiVo2Max) {
+                        aiVo2Max = memory.aiVo2Max;
+                        document.getElementById('vo2-score').innerText = aiVo2Max;
+                    }
+                    if (memory.shoeArsenal) {
+                        shoeArsenal = memory.shoeArsenal;
+                        renderGearBay();
+                    }
+                    if (memory.jointState) jointState = memory.jointState;
+                    if (memory.completed) completed = new Set(memory.completed);
+                    if (memory.workoutsActuals) {
+                        memory.workoutsActuals.forEach((act, idx) => {
+                            if (act.actualDistance && workouts[idx]) {
+                                workouts[idx].actualDistance = act.actualDistance;
+                                workouts[idx].actualDuration = act.actualDuration;
+                                workouts[idx].actualName = act.actualName;
+                                workouts[idx].actualPaceData = act.actualPaceData;
+                                workouts[idx].executionScoreText = act.executionScoreText;
+                            }
+                        });
+                    }
+                    if (memory.pmcActuals && pmcChart) {
+                        pmcChart.data.datasets[2].data = memory.pmcActuals;
+                        pmcChart.update();
+                    }
+                    if (memory.lastActiveId !== undefined) activeId = memory.lastActiveId;
+
+                    // Restore model selector
+                    const modelSel = document.getElementById('model-selector');
+                    if (modelSel) modelSel.value = selectedModel;
+
+                    const keyInput = document.getElementById('api-key-input');
+                    if (keyInput && GEMINI_API_KEY !== "AIzaSyBU5gxnxhngM0CwcY_FG0ATo0SxhXVO7ew") keyInput.value = GEMINI_API_KEY;
+                } catch (e) { console.error("Memory load error:", e); }
+            }
+        }
+
+        function updateArchiveLabel() {
+            const text = document.getElementById('strava-archive-text');
+            const icon = document.getElementById('strava-archive-icon');
+            if (text) text.innerText = `${stravaArchive.length} Runs Archived`;
+            if (icon) { icon.setAttribute('data-lucide', 'check-circle'); lucide.createIcons(); }
+            const lbl = document.getElementById('strava-archive-label');
+            if (lbl) lbl.className = "cursor-pointer bg-purple-900/40 text-purple-400 border border-purple-400/50 px-3 py-2 mt-1 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-purple-900/60 transition-colors inline-block text-center";
+        }
+
+        function exportData() {
+            saveData();
+            const saved = localStorage.getItem('strideRiteMemory');
+            if (!saved) return alert("Nothing to save yet.");
+            const blob = new Blob([saved], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `stride_rite_memory_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (json.workoutsActuals) {
+                        localStorage.setItem('strideRiteMemory', JSON.stringify(json));
+                        alert("Memory Restored Successfully! Reloading dashboard...");
+                        window.location.reload();
+                    } else { alert("Invalid save file."); }
+                } catch (err) { alert("Could not parse JSON file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- STRAVA OAUTH ---
+        function authorizeStrava() {
+            localStorage.setItem('strava_redirect_origin', window.location.href.split('?')[0]);
+            const redirectUri = window.location.href.split('?')[0];
+            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=activity:read_all`;
+            window.location.href = authUrl;
+        }
+
+        async function handleStravaOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const banner = document.getElementById('strava-auth-banner');
+
+            if (code) {
+                const btn = document.getElementById('auth-strava-btn');
+                btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> Authenticating...';
+                btn.className = 'bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2';
+                lucide.createIcons();
+
+                const redirectUri = window.location.href.split('?')[0];
+
+                try {
+                    const res = await fetch('https://www.strava.com/oauth/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Accept': 'application/json'
+                        },
+                        body: `client_id=${STRAVA_CLIENT_ID}&client_secret=${STRAVA_CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${encodeURIComponent(redirectUri)}`
+                    });
+
+                    const data = await res.json();
+
+                    if (banner) banner.remove();
+
+                    if (data.access_token) {
+                        localStorage.setItem('strava_access_token', data.access_token);
+                        document.getElementById('strava-token-input').value = data.access_token;
+                        setStravaConnected(data.athlete ? data.athlete.firstname : null);
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        const errMsg = data.message || data.error || JSON.stringify(data);
+                        btn.innerHTML = `<i data-lucide="alert-triangle" class="w-3 h-3"></i> ${errMsg}`;
+                        btn.className = 'bg-red-600/20 text-red-400 border border-red-500/50 rounded px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2';
+                        showTokenFallback();
+                        lucide.createIcons();
+                    }
+                } catch (e) {
+                    if (banner) banner.remove();
+                    btn.innerHTML = `<i data-lucide="alert-triangle" class="w-3 h-3"></i> Network error`;
+                    btn.className = 'bg-red-600/20 text-red-400 border border-red-500/50 rounded px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2';
+                    showTokenFallback();
+                    lucide.createIcons();
+                    console.error('Strava auth network error:', e);
+                }
+
+            } else {
+                const saved = localStorage.getItem('strava_access_token');
+                if (saved) {
+                    document.getElementById('strava-token-input').value = saved;
+                    setStravaConnected();
+                }
+            }
+        }
+
+        function showTokenFallback() {
+            // Insert a visible token paste input as fallback
+            const hub = document.getElementById('auth-strava-btn').parentElement;
+            if (!document.getElementById('strava-fallback-input')) {
+                const wrap = document.createElement('div');
+                wrap.className = 'flex gap-2 mt-2 items-center';
+                wrap.innerHTML = `
+                    <input id="strava-fallback-input" type="text" placeholder="Paste token from strava.com/settings/api..."
+                        class="bg-black/40 border border-orange-500/30 text-orange-300 rounded px-2 py-1 text-[9px] font-mono w-56 focus:outline-none focus:border-orange-500 placeholder-gray-600">
+                    <button onclick="applyFallbackToken()" class="bg-orange-600/20 text-orange-400 border border-orange-500/30 rounded px-2 py-1 text-[9px] font-bold uppercase tracking-widest hover:bg-orange-600/40">Save</button>
+                `;
+                hub.appendChild(wrap);
+            }
+        }
+
+        function applyFallbackToken() {
+            const t = document.getElementById('strava-fallback-input').value.trim();
+            if (!t) return;
+            localStorage.setItem('strava_access_token', t);
+            document.getElementById('strava-token-input').value = t;
+            document.getElementById('strava-fallback-input').parentElement.remove();
+            setStravaConnected();
+        }
+
+        function setStravaConnected(name) {
+            const btn = document.getElementById('auth-strava-btn');
+            btn.innerHTML = `<i data-lucide="check-circle" class="w-3 h-3"></i> ${name ? name + ' Connected' : 'Connected'}`;
+            btn.className = 'bg-green-600/20 text-green-500 border border-green-500/50 rounded px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2';
+            btn.onclick = () => {
+                if (confirm('Disconnect Strava?')) {
+                    localStorage.removeItem('strava_access_token');
+                    document.getElementById('strava-token-input').value = '';
+                    btn.innerHTML = '<i data-lucide="link" class="w-3 h-3"></i> Connect Strava';
+                    btn.className = 'bg-orange-600/20 text-orange-500 border border-orange-500/50 rounded px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-orange-600/40 transition-colors flex items-center gap-2 whitespace-nowrap';
+                    btn.onclick = authorizeStrava;
+                    lucide.createIcons();
+                }
+            };
+            lucide.createIcons();
+        }
+
+        // --- INBODY CSV PARSER ---
+        function handleInbodyCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result; const rows = text.split('\n');
+                let w = null, f = null;
+                if (rows.length > 1) {
+                    const headers = rows[0].toLowerCase().split(','); const dataRow = rows[1].split(',');
+                    for (let i = 0; i < headers.length; i++) {
+                        if (headers[i].includes('weight') && dataRow[i]) w = parseFloat(dataRow[i]);
+                        if ((headers[i].includes('pbf') || headers[i].includes('fat')) && dataRow[i]) f = parseFloat(dataRow[i]);
+                    }
+                }
+                if (!w) { let m = text.match(/weight[^0-9]*([0-9]{2,3}\.?[0-9]*)/i); if (m) w = m[1]; }
+                if (!f) { let m = text.match(/(?:fat|pbf)[^0-9]*([0-9]{1,2}\.?[0-9]*)/i); if (m) f = m[1]; }
+                if (w || f) {
+                    inbodyWeight = w ? parseFloat(w).toFixed(1) : "Unknown"; inbodyFat = f ? parseFloat(f).toFixed(1) : "Unknown";
+                    const lbl = document.getElementById('inbody-upload-label');
+                    lbl.innerHTML = `<i data-lucide="check" class="w-3 h-3 inline mr-1"></i> ${inbodyWeight}kg | ${inbodyFat}% Fat`;
+                    lbl.className = "cursor-default bg-green-900/40 text-green-500 border border-green-500/50 px-3 py-2 mt-1 rounded text-xs font-bold uppercase tracking-widest inline-block text-center";
+                    lucide.createIcons();
+                    saveData();
+                } else { alert("Could not automatically find Weight or Body Fat in this CSV."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- STRAVA FETCH DATA ---
+        async function syncStrava() {
+            const token = document.getElementById('strava-token-input').value.trim();
+            if (!token || token.includes('appear')) return alert("Please click 'Connect Strava Account' first.");
+
+            const w = workouts[activeId];
+            const syncBtn = document.getElementById('sync-strava-btn');
+            syncBtn.innerHTML = '<span class="animate-pulse">Fetching from Strava...</span>';
+
+            try {
+                const res = await fetch(`https://www.strava.com/api/v3/athlete/activities?per_page=15`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        localStorage.removeItem('strava_access_token');
+                        throw new Error("Token Expired. Please click 'Connect Strava Account' again.");
+                    }
+                    throw new Error("Strava API Error. Ensure you have Runs logged.");
+                }
+                const activities = await res.json();
+                if (activities.length === 0) throw new Error("No activities found.");
+
+                let targetActivity = activities[0];
+                const targetDay = parseInt(w.date.split(' ')[1]); const targetMonthStr = w.date.split(' ')[0];
+                const months = { "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6, "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12 };
+                for (let act of activities) {
+                    let actDate = new Date(act.start_date_local);
+                    if (actDate.getDate() === targetDay && (actDate.getMonth() + 1) === months[targetMonthStr]) { targetActivity = act; break; }
+                }
+
+                const streamRes = await fetch(`https://www.strava.com/api/v3/activities/${targetActivity.id}/streams?keys=velocity_smooth,time,distance`, { headers: { 'Authorization': `Bearer ${token}` } });
+
+                if (streamRes.ok) {
+                    const streams = await streamRes.json();
+                    let velocityStream = streams.find(s => s.type === 'velocity_smooth');
+                    if (velocityStream && w.paceData.length > 0) {
+                        let actualPace = velocityStream.data.map(v => v > 0.5 ? (1000 / (v * 60)) : 10);
+                        let sampledPace = [];
+                        let step = Math.max(1, Math.floor(actualPace.length / w.paceData.length));
+                        for (let i = 0; i < w.paceData.length; i++) {
+                            let idx = i * step; sampledPace.push(idx < actualPace.length ? actualPace[idx] : null);
+                        }
+                        w.actualPaceData = sampledPace;
+                        paceChart.data.datasets[1] = {
+                            label: 'Actual Strava Pace', data: sampledPace, borderColor: '#40b549', backgroundColor: 'rgba(64, 181, 73, 0.1)', fill: true, tension: 0.2, borderWidth: 2, pointRadius: 0
+                        };
+                        paceChart.update();
+                    }
+                }
+
+                w.actualDistance = (targetActivity.distance / 1000).toFixed(2);
+                w.actualDuration = targetActivity.moving_time; w.actualName = targetActivity.name;
+
+                syncBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Synced: ' + w.actualName;
+                syncBtn.className = "w-full bg-green-900/40 text-green-500 border border-green-500/50 py-3 rounded flex justify-center items-center gap-2 text-xs font-bold uppercase tracking-widest mb-4";
+                lucide.createIcons();
+                saveData();
+                selectDay(activeId); // Show War Room immediately
+            } catch (err) {
+                syncBtn.innerHTML = '<span class="text-[10px]">' + err.message + '</span>';
+                syncBtn.className = "w-full bg-red-900/40 text-red-500 border border-red-500/50 py-3 rounded flex justify-center items-center gap-2 font-bold uppercase tracking-widest mb-4 text-center px-4";
+                setTimeout(() => {
+                    syncBtn.innerHTML = '<i data-lucide="activity" class="w-4 h-4"></i><span>Sync Run via Strava</span>';
+                    syncBtn.className = "w-full bg-orange-600/20 text-orange-500 border border-orange-500/50 py-3 rounded flex justify-center items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-orange-600/40 transition-colors mb-4";
+                    lucide.createIcons();
+                }, 4000);
+            }
+        }
+
+        function deleteSync() {
+            if (!confirm("UNSYNC SESSION: Are you sure you want to remove the Strava data from this workout?")) return;
+            const w = workouts[activeId];
+            delete w.actualDistance;
+            delete w.actualDuration;
+            delete w.actualName;
+            delete w.actualPaceData;
+            delete w.executionScoreText;
+            saveData();
+            selectDay(activeId);
+        }
+
+        async function askCoach() {
+            const input = document.getElementById('chat-input'); const btn = document.getElementById('chat-btn'); const responseArea = document.getElementById('chat-response');
+            const question = input.value.trim(); if (!question) return;
+            const w = workouts[activeId];
+            let actualContext = w.actualDistance ? `ACTUAL EXECUTION VIA STRAVA: He ran ${w.actualDistance}km in ${Math.round(w.actualDuration / 60)} minutes.` : "ACTUAL EXECUTION: Not synced yet.";
+
+            input.disabled = true; btn.disabled = true; responseArea.classList.remove('hidden');
+            responseArea.innerHTML = '<span class="animate-pulse">Coach is analyzing your data...</span>';
+
+            let totalActualKm = 0; let totalCompletedRuns = 0;
+            workouts.forEach(wx => { if (completed.has(wx.id) && wx.actualDistance) { totalActualKm += parseFloat(wx.actualDistance); totalCompletedRuns++; } });
+
+            const prompt = `You are an elite endurance coach. Haleem is an 18y/o triathlete aiming for a sub-19:00 5k. 
+            INBODY METRICS: Weight: ${inbodyWeight}kg, Body Fat: ${inbodyFat}%.
+            LIFETIME CYCLE PROGRESS: He has completed ${totalCompletedRuns} synced runs so far, logging a total of ${totalActualKm.toFixed(1)}km actual volume.
+            PLANNED WORKOUT TODAY: "${w.title}" - ${w.desc}. 
+            ${actualContext}
+            His question about this run: "${question}". Answer directly in 1 short sentence.`;
+
+            try {
+                const text = await callGemini(prompt);
+                responseArea.innerHTML = `<strong class="text-blue-400">Coach:</strong> ${text}`;
+                document.getElementById('chat-input-area').style.display = 'none';
+            } catch (err) {
+                responseArea.innerHTML = `<span class="text-red-400">AI Error (${selectedModel}): ${err.message}</span>`;
+                input.disabled = false; btn.disabled = false;
+            }
+        }
+
+        async function generateFueling() {
+            const btn = document.getElementById('fuel-btn');
+            const responseArea = document.getElementById('fueling-response');
+            const w = workouts[activeId];
+
+            if (inbodyWeight === "Unknown") {
+                alert("Please upload your InBody CSV first. The AI needs your bodyweight to calculate exact macros."); return;
+            }
+
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>'; lucide.createIcons();
+            responseArea.classList.remove('hidden');
+            responseArea.innerHTML = '<span class="animate-pulse">Calculating specific macros...</span>';
+
+            const prompt = `You are an elite sports nutritionist. Haleem weighs ${inbodyWeight}kg. 
+            He is doing this workout today: "${w.title}" (${w.desc}, TSS: ${w.tss}, Distance: ${w.distance}km).
+            Generate a precise, concise bulleted list of exactly what he should eat BEFORE and AFTER this specific run. Give actual food examples and exact macro targets (e.g. 60g carbs). Keep it extremely brief and professional. Avoid pleasantries.`;
+
+            try {
+                const text = await callGemini(prompt);
+                responseArea.innerHTML = text.replace(/\n/g, '<br>');
+                btn.innerHTML = 'Regenerate Plan';
+            } catch (e) {
+                responseArea.innerHTML = `<span class="text-red-400 font-bold text-[10px]">AI Error (${selectedModel}): ${e.message}</span>`;
+                btn.innerHTML = 'Retry';
+            }
+        }
+
+        async function analyzeExecution() {
+            const btn = document.getElementById('exec-btn');
+            const responseArea = document.getElementById('exec-response');
+            const w = workouts[activeId];
+
+            if (!w.actualPaceData || w.actualPaceData.length === 0) return alert("You must sync this run with Strava first to get actual pace data.");
+
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>'; lucide.createIcons();
+            responseArea.classList.remove('hidden');
+            responseArea.innerHTML = '<span class="animate-pulse text-purple-400">AI analyzing pacing execution...</span>';
+
+            const prompt = `You are a brutal, strict elite running coach grading an athlete.
+            Workout Intent: ${w.title} (${w.desc})
+            Planned Pace Target Array (min/km): [${w.paceData.slice(0, 20).map(n => n.toFixed(2)).join(',')}]
+            Actual Strava Pace Array (min/km): [${w.actualPaceData.slice(0, 20).map(n => n.toFixed(2)).join(',')}]
+            
+            Analyze their execution. Did they stick to the plan? Did they start too fast and blow up? Did they Negative Split perfectly?
+            Give a strict "Execution Score" in the format "SCORE: [XX]/100".
+            Then write exactly 2 sentences of harsh coaching critique. Do not use pleasantries.`;
+
+            try {
+                const text = await callGemini(prompt);
+                let formatted = text.replace(/\n/g, '<br>');
+                responseArea.innerHTML = formatted;
+                w.executionScoreText = formatted;
+                saveData();
+                btn.innerHTML = 'Regenerate Score';
+            } catch (e) {
+                responseArea.innerHTML = `<span class="text-red-400 font-bold text-[10px]">AI Error (${selectedModel}): ${e.message}</span>`;
+                btn.innerHTML = 'Retry';
+            }
+        }
+
+        function handleStravaCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                let rows = []; let currentRow = ''; let insideQuotes = false;
+                for (let i = 0; i < text.length; i++) {
+                    let char = text[i];
+                    if (char === '"') insideQuotes = !insideQuotes;
+                    if (char === '\n' && !insideQuotes) { rows.push(currentRow); currentRow = ''; }
+                    else { currentRow += char; }
+                }
+                if (currentRow) rows.push(currentRow);
+                if (rows.length < 2) return alert("Empty CSV.");
+
+                let headers = []; let currentCol = ''; insideQuotes = false;
+                for (let i = 0; i < rows[0].length; i++) {
+                    let char = rows[0][i];
+                    if (char === '"') insideQuotes = !insideQuotes;
+                    else if (char === ',' && !insideQuotes) { headers.push(currentCol); currentCol = ''; }
+                    else { currentCol += char; }
+                }
+                headers.push(currentCol);
+                headers = headers.map(h => h.trim().replace(/"/g, ''));
+
+                let distIdx = headers.findIndex(h => h.toLowerCase() === 'distance');
+                let typeIdx = headers.findIndex(h => h.toLowerCase() === 'activity type' || h.toLowerCase() === 'type');
+                let timeIdx = headers.findIndex(h => h.toLowerCase() === 'moving time' || h.toLowerCase() === 'elapsed time');
+                let dateIdx = headers.findIndex(h => h.toLowerCase() === 'activity date' || h.toLowerCase() === 'date');
+                let nameIdx = headers.findIndex(h => h.toLowerCase() === 'activity name' || h.toLowerCase() === 'name');
+
+                let parsed = [];
+                for (let i = 1; i < rows.length; i++) {
+                    if (!rows[i]) continue;
+                    let cols = []; let col = ''; insideQuotes = false;
+                    for (let j = 0; j < rows[i].length; j++) {
+                        let char = rows[i][j];
+                        if (char === '"') insideQuotes = !insideQuotes;
+                        else if (char === ',' && !insideQuotes) { cols.push(col); col = ''; }
+                        else { col += char; }
+                    }
+                    cols.push(col);
+                    if (cols.length < 3) continue;
+
+                    let type = typeIdx !== -1 && cols[typeIdx] ? cols[typeIdx].replace(/"/g, '') : '';
+                    if (type.toLowerCase().includes('run')) {
+                        let name = nameIdx !== -1 && cols[nameIdx] ? cols[nameIdx].replace(/"/g, '') : 'Run';
+                        let dist = distIdx !== -1 ? parseFloat(cols[distIdx] || 0) : 0;
+                        let time = timeIdx !== -1 ? parseFloat(cols[timeIdx] || 0) : 0;
+                        let date = dateIdx !== -1 ? cols[dateIdx].replace(/"/g, '') : '';
+                        if (dist > 0) parsed.push({ date, name, dist, time });
+                    }
+                }
+                stravaArchive = parsed;
+                updateArchiveLabel();
+                saveData();
+                alert(`Successfully archived ${parsed.length} runs!`);
+            };
+            reader.readAsText(file);
+        }
+
+        async function runEngineDiagnostic() {
+            const btn = document.getElementById('engine-btn');
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> Processing...';
+            lucide.createIcons();
+
+            let stravaLiveRuns = [];
+            const token = document.getElementById('strava-token-input').value;
+            if (token) {
+                try {
+                    const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=30', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        stravaLiveRuns = data.filter(d => d.type === 'Run').map(d => ({
+                            name: d.name,
+                            dist: (d.distance / 1000).toFixed(2),
+                            time: d.moving_time,
+                            avgSpeed: d.average_speed,
+                            maxSpeed: d.max_speed,
+                            hr: d.average_heartrate || 0,
+                            maxHr: d.max_heartrate || 0
+                        }));
+                    }
+                } catch (e) { console.error("Strava pull failed", e); }
+            }
+
+            let topArchive = [...stravaArchive]
+                .filter(r => r.dist >= 3);
+
+            // Smart Merge & De-duplicate: Prioritize Live Strava data for the same date
+            const mergedMap = new Map();
+            // Process archive first
+            topArchive.forEach(r => {
+                const dateKey = r.date.split(',')[0]; // Simplify date for matching
+                mergedMap.set(dateKey, r);
+            });
+            // Overwrite with live data if matches
+            stravaLiveRuns.forEach(r => {
+                // Live data dates are usually formatted differently, we'll try to find any existing entry
+                // In a perfect world we'd use Activity IDs, but for this hybrid engine we'll use recent sets.
+                mergedMap.set(r.name + r.dist, r);
+            });
+
+            let curatedDataset = Array.from(mergedMap.values())
+                .sort((a, b) => (a.time / a.dist) - (b.time / b.dist))
+                .slice(0, 15);
+
+            const prompt = `You are an elite sports physiologist calculating ACTUAL, TAPERED race-day potential.
+            Do not just plug numbers into a standard math formula. You must carefully infer their true maximum capacity based on the context of the runs.
+            For example, if the athlete's data shows they ran 19:22 for a 5k *but it was embedded in the middle of an 8k total run*, their true 5k max is much faster (e.g. closer to 18:20).
+            If they run an 8k casually at 4:13/km pace, their Lactate Threshold is massive.
+            Extrapolate what they could do in a 100% all-out, perfectly tapered race effort. 
+            
+            Athlete Weight: ${inbodyWeight}kg.
+            
+            Here are their peak performances (merging Archive and Live API):
+            ${JSON.stringify(curatedDataset)}
+            
+            Analyze these peak performances closely, reading the names for context. Ignore slow warmups.
+            Calculate their true maximum Jack Daniels VDOT and their true VO2 Max (ml/kg/min) based on Extrapolated Max Potential.
+            
+            Return EXACTLY a JSON object with no markdown formatting:
+            {"vdot": 54.2, "vo2max": 58.1}`;
+
+            try {
+                const text = await callGemini(prompt);
+                let cleaned = text.trim().replace(/```json|```/g, '');
+                let parsed = JSON.parse(cleaned);
+                aiVdot = parseFloat(parsed.vdot).toFixed(1);
+                aiVo2Max = parseFloat(parsed.vo2max).toFixed(1);
+                document.getElementById('vdot-score').innerText = aiVdot;
+                document.getElementById('vo2-score').innerText = aiVo2Max;
+                saveData();
+                btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i> Diagnosed';
+            } catch (e) {
+                alert(`AI Error (${selectedModel}): ${e.message}`);
+                btn.innerHTML = 'AI Error';
+            }
+            lucide.createIcons();
+        }
+
+        function addShoe() {
+            let name = prompt("Enter shoe name (e.g. Adios Pro 3):");
+            if (name) {
+                shoeArsenal.push({ id: Date.now(), name: name, km: 0 });
+                saveData();
+                renderGearBay();
+            }
+        }
+        function renderGearBay() {
+            const list = document.getElementById('gear-bay-list');
+            if (!list) return;
+            list.innerHTML = '';
+            shoeArsenal.forEach((s, idx) => {
+                list.innerHTML += `
+                <div class="bg-[var(--bg-light)] border border-[var(--border)] p-3 rounded flex justify-between items-center group">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold uppercase tracking-widest" style="color: var(--text-primary);">${s.name}</span>
+                        <span class="text-[10px] mono" style="color: var(--text-secondary);">${parseFloat(s.km).toFixed(1)} km</span>
+                    </div>
+                    <button onclick="addShoeMileage(${idx})" class="transition-colors hover:text-[var(--accent)]" style="color: var(--text-secondary);"><i data-lucide="plus-circle" class="w-4 h-4"></i></button>
+                </div>`;
+            });
+            lucide.createIcons();
+        }
+        function addShoeMileage(idx) {
+            let km = prompt(`Add km to ${shoeArsenal[idx].name}:`);
+            if (km && !isNaN(km)) {
+                shoeArsenal[idx].km += parseFloat(km);
+                saveData();
+                renderGearBay();
+            }
+        }
+
+        async function snipeSegment() {
+            const dist = document.getElementById('seg-dist').value;
+            const elev = document.getElementById('seg-elev').value;
+            if (!dist) return alert("Enter distance");
+            const btn = document.getElementById('snipe-btn');
+            const resArea = document.getElementById('tactical-response');
+            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
+            lucide.createIcons();
+
+            const prompt = `You are an elite tactical racing coach. Athlete VDOT: ${aiVdot}.
+            Generate a brutal pacing attack plan for a segment of ${dist}km with ${elev || 0}m elevation gain.
+            Keep it strictly under 3 sentences. Focus on where to surge and where to recover. No pleasantries.`;
+
+            try {
+                let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    resArea.classList.remove('hidden');
+                    resArea.innerHTML = `<span class="text-blue-400 font-bold tracking-widest uppercase">Sniper Protocol:</span><br>${data.candidates[0].content.parts[0].text}`;
+                    btn.innerHTML = 'Generate Attack Plan';
+                }
+            } catch (e) { btn.innerHTML = 'Error'; }
+        }
+
+        async function initiateSub19() {
+            const btn = document.getElementById('sub19-btn');
+            const resArea = document.getElementById('tactical-response');
+            btn.innerHTML = 'INITIALIZING...';
+
+            const prompt = `You are a legendary Olympic coach. Target Race: May 31st 5K. Goal: Sub-19 minutes.
+            Athlete Profile: Weight ${inbodyWeight}kg, VDOT ${aiVdot}, VO2Max ${aiVo2Max}.
+            Current local weather is ${currentTemp}°C.
+            Write a 5-stage race execution master briefing. Format as a strict military/tactical protocol.
+            Give exact pacing targets for each kilometer to achieve < 18:59 without blowing up. Focus on lactate threshold management.`;
+
+            try {
+                let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    resArea.classList.remove('hidden');
+                    resArea.innerHTML = `<span class="text-red-400 font-bold tracking-widest uppercase text-sm">OPERATION SUB-19 MASTER BRIEFING</span><br><br>${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}`;
+                    btn.innerHTML = 'OPERATION LIVE';
+                    btn.classList.remove('animate-pulse');
+                }
+            } catch (e) { btn.innerHTML = 'Error'; }
+        }
+
+        async function analyzeEfficiency() {
+            const btn = document.getElementById('drift-btn');
+            const resArea = document.getElementById('drift-response');
+            const w = workouts[activeId];
+            if (!w.actualPaceData) return alert("Needs Strava Sync");
+
+            btn.innerHTML = 'Scanning...';
+            const prompt = `Elite physiology analysis. Athlete ran ${w.actualDistance}km in ${w.actualDuration}s.
+            Pace array (min/km): [${w.actualPaceData.slice(0, 20).map(n => n.toFixed(2)).join(',')}].
+            Check for pacing degradation. Tell them if they suffered from cardiac drift, hydration failure, or base endurance collapse. 2 sentences. Brutal honesty.`;
+
+            try {
+                let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    resArea.classList.remove('hidden');
+                    resArea.innerHTML = data.candidates[0].content.parts[0].text;
+                    btn.innerHTML = 'Scan Cardiac Drift';
+                }
+            } catch (e) { btn.innerHTML = 'Error'; }
+        }
+
+        async function generateRecoveryProtocol() {
+            const btn = document.getElementById('rec-btn');
+            const resArea = document.getElementById('rec-response');
+            const w = workouts[activeId];
+            let activeInjuries = jointsList.filter(j => jointState[j] > 0);
+
+            btn.innerHTML = 'Generating...';
+            const prompt = `Generate a strict post-workout physical recovery protocol.
+            Workout: ${w.title} (TSS: ${w.tss}).
+            Current biomechanical issues: ${activeInjuries.length > 0 ? activeInjuries.join(', ') : 'None'}.
+            Provide a 3-step evening routine focusing on tissue repair, stretching, and icing specifically targeting any injured areas. 3 concise bullet points.`;
+
+            try {
+                let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    resArea.classList.remove('hidden');
+                    resArea.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                    btn.innerHTML = 'Generate Routine';
+                }
+            } catch (e) { btn.innerHTML = 'Error'; }
+        }
+
+        async function fetchWeather() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    try {
+                        const lat = position.coords.latitude; const lon = position.coords.longitude;
+                        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m`);
+                        const data = await res.json();
+                        currentTemp = data.current.temperature_2m; currentHumidity = data.current.relative_humidity_2m;
+                        document.getElementById('weather-ui').innerHTML = `<i data-lucide="thermometer-sun" class="w-4 h-4 text-orange-400"></i> Local Weather: ${currentTemp}°C | ${currentHumidity}% Hum`;
+                        lucide.createIcons();
+                        if (activeId !== undefined) selectDay(activeId); // refresh pace warnings
+                    } catch (e) { document.getElementById('weather-ui').innerHTML = "Weather offline"; }
+                }, () => { document.getElementById('weather-ui').innerHTML = "GPS denied"; });
+            }
+        }
+
+        function renderBiomechanics() {
+            const grid = document.getElementById('biomechanics-grid');
+            grid.innerHTML = '';
+            jointsList.forEach(j => {
+                let val = jointState[j] || 0;
+                let colorClass = val === 0 ? 'bg-green-900/20 text-green-500 border-green-500/30 hover:bg-green-900/40' : (val === 1 ? 'bg-yellow-900/20 text-yellow-500 border-yellow-500/30 hover:bg-yellow-900/40' : 'bg-red-900/40 text-red-500 border-red-500/50 hover:bg-red-900/60 font-black animate-pulse');
+                let btn = document.createElement('button');
+                btn.className = `border rounded p-2 text-[10px] uppercase tracking-widest transition-colors ${colorClass}`;
+                btn.innerText = j;
+                btn.onclick = () => { jointState[j] = (val + 1) % 3; renderBiomechanics(); saveData(); selectDay(activeId); };
+                grid.appendChild(btn);
+            });
+        }
+
+        function initCharts() {
+            const masterCtx = document.getElementById('masterTrendsChart').getContext('2d');
+            pmcChart = new Chart(masterCtx, {
+                type: 'line',
+                data: {
+                    labels: workouts.map(w => w.date),
+                    datasets: [
+                        { label: 'Fitness', data: workouts.map((w, i) => 65 + i * 0.3), borderColor: '#0076c0', tension: 0.4, pointRadius: 4, pointBackgroundColor: '#0076c0' },
+                        { label: 'Form (Projected)', data: workouts.map((w, i) => (i < 18 ? -15 + i * 0.5 : 12)), borderColor: 'rgba(249, 177, 21, 0.4)', borderDash: [5, 5], tension: 0.4, pointRadius: 0 },
+                        { label: 'Form (Actual)', data: Array(26).fill(null), borderColor: '#f9b115', tension: 0.4, pointRadius: 6, pointBackgroundColor: '#f9b115', borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1500, easing: 'easeInOutQuart' },
+                    plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { ticks: { font: { size: 9 }, color: '#444' } } }
+                }
+            });
+
+            const paceCtx = document.getElementById('paceProfileChart').getContext('2d');
+            paceChart = new Chart(paceCtx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Planned Pace', data: [], borderColor: '#0076c0', backgroundColor: 'rgba(0,118,192,0.15)', fill: true, tension: 0.1, pointRadius: 0, borderWidth: 2 }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1000, easing: 'easeInOutCubic' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#151b23',
+                            borderColor: '#30363d',
+                            borderWidth: 1,
+                            titleColor: '#e6edf3',
+                            bodyColor: '#8b949e',
+                            padding: 12,
+                            displayColors: true,
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: { label: function (context) { let val = context.parsed.y; let m = Math.floor(val); let s = Math.round((val - m) * 60); return context.dataset.label + ': ' + m + ':' + (s < 10 ? '0' : '') + s + '/km'; } }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            reverse: true, min: 3.0, max: 6.5,
+                            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                            ticks: { font: { size: 10, family: 'JetBrains Mono' }, color: '#7a7a7a', callback: function (val) { let m = Math.floor(val); let s = Math.round((val - m) * 60); return m + ':' + (s < 10 ? '0' : '') + s; } }
+                        },
+                        x: { grid: { display: false }, ticks: { color: '#7a7a7a' } }
+                    }
+                }
+            });
+        }
+
+        function renderCalendar() {
+            const root = document.getElementById('calendar-root');
+            const labels = root.querySelectorAll('.p-3');
+            root.innerHTML = '';
+            labels.forEach(l => root.appendChild(l));
+            for (let i = 0; i < 2; i++) { const empty = document.createElement('div'); empty.className = 'ai-calendar-day bg-[var(--bg-white)]'; root.appendChild(empty); }
+
+            workouts.forEach((w, idx) => {
+                const day = document.createElement('div');
+                day.className = `ai-calendar-day ${activeId === idx ? 'active' : ''} ${completed.has(idx) ? 'completed' : ''}`;
+                day.onclick = () => selectDay(idx);
+
+                day.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-black" style="color: ${completed.has(idx) ? 'var(--success)' : 'var(--text-secondary)'}">${idx + 6}</span>
+                        ${completed.has(idx) ? '<i data-lucide="check-circle" class="w-4 h-4" style="color: var(--success);"></i>' : ''}
+                    </div>
+                    <div class="font-bold text-[10px] leading-tight uppercase mt-1" style="color: ${completed.has(idx) ? 'var(--text-muted)' : 'var(--text-primary)'}">${w.title}</div>
+                    <div class="flex justify-between items-end mt-2">
+                        <div class="workout-tag ${w.type === 'speed' ? 'tag-speed' : w.type === 'rest' ? 'tag-rest' : 'tag-run'} !mt-0">${w.type === 'rest' ? 'OFF' : w.tss + ' TSS'}</div>
+                        <span class="text-[9px] font-bold" style="color: var(--text-secondary);">${w.distance === "0.0" ? "" : w.distance + "km"}</span>
+                    </div>
+                `;
+                root.appendChild(day);
+            });
+            lucide.createIcons();
+        }
+
+        function selectDay(id) {
+            if (id === undefined || id === null) id = 0;
+            activeId = id;
+            const w = workouts[id];
+            if (!w) return;
+
+            // Basic Info
+            const titleEl = document.getElementById('active-title');
+            const dateEl = document.getElementById('active-date');
+            const tagEl = document.getElementById('active-tag');
+            const descEl = document.getElementById('active-desc');
+            const tssEl = document.getElementById('m-tss');
+            const distEl = document.getElementById('m-dist');
+            const durEl = document.getElementById('m-dur');
+            const insightEl = document.getElementById('ai-insight');
+
+            if (titleEl) titleEl.innerText = w.title;
+            if (dateEl) dateEl.innerText = w.date;
+            if (tagEl) {
+                tagEl.innerText = w.tag;
+                tagEl.className = `workout-tag ${w.type === 'speed' ? 'tag-speed' : w.type === 'rest' ? 'tag-rest' : 'tag-run'}`;
+            }
+            if (descEl) descEl.innerText = w.desc;
+            if (tssEl) tssEl.innerText = w.tss;
+            if (distEl) distEl.innerHTML = `${w.distance} <span class="text-sm" style="color: var(--text-secondary);">km</span>`;
+            if (durEl) durEl.innerText = w.duration;
+            if (insightEl) insightEl.innerText = `"${w.insight}"`;
+
+            // Actuals & War Room
+            const warRoom = document.getElementById('war-room-module');
+            const execRes = document.getElementById('exec-response');
+            const execBtn = document.getElementById('exec-btn');
+            const driftRes = document.getElementById('drift-response');
+            const recRes = document.getElementById('rec-response');
+
+            if (w.actualDistance) {
+                document.getElementById('m-dist-actual')?.classList.remove('hidden');
+                document.getElementById('m-dur-actual')?.classList.remove('hidden');
+                document.getElementById('m-tss-actual')?.classList.remove('hidden');
+
+                const distAVal = document.getElementById('m-dist-a-val');
+                if (distAVal) distAVal.innerHTML = `${w.actualDistance} <span class="text-xs opacity-50">km</span>`;
+
+                const durAVal = document.getElementById('m-dur-a-val');
+                if (durAVal) {
+                    let h = Math.floor(w.actualDuration / 3600);
+                    let m = Math.floor((w.actualDuration % 3600) / 60);
+                    let s = w.actualDuration % 60;
+                    durAVal.innerText = (h > 0 ? h + ':' : '') + (m < 10 && h > 0 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                }
+
+                const tssAVal = document.getElementById('m-tss-a-val');
+                if (tssAVal) {
+                    let actualTss = w.distance === "0.0" ? 0 : Math.round(w.tss * (parseFloat(w.actualDistance) / parseFloat(w.distance)) * (w.type === 'speed' ? 1.1 : 1.0));
+                    tssAVal.innerText = actualTss || '--';
+                }
+
+                if (warRoom) warRoom.classList.remove('hidden');
+                if (execRes) {
+                    if (w.executionScoreText) {
+                        execRes.classList.remove('hidden');
+                        execRes.innerHTML = w.executionScoreText;
+                        if (execBtn) execBtn.innerHTML = 'Regenerate Score';
+                    } else {
+                        execRes.classList.add('hidden');
+                        execRes.innerHTML = '';
+                        if (execBtn) execBtn.innerHTML = 'Generate Score';
+                    }
+                }
+                if (driftRes) driftRes.classList.add('hidden');
+                if (recRes) recRes.classList.add('hidden');
+            } else {
+                document.getElementById('m-dist-actual')?.classList.add('hidden');
+                document.getElementById('m-dur-actual')?.classList.add('hidden');
+                document.getElementById('m-tss-actual')?.classList.add('hidden');
+                if (warRoom) warRoom.classList.add('hidden');
+            }
+
+            // Chat & Fueling Reset
+            const chatInput = document.getElementById('chat-input');
+            const chatBtn = document.getElementById('chat-btn');
+            const chatInputArea = document.getElementById('chat-input-area');
+            const chatRes = document.getElementById('chat-response');
+            const fuelRes = document.getElementById('fueling-response');
+            const fuelBtn = document.getElementById('fuel-btn');
+
+            if (chatInput) { chatInput.value = ''; chatInput.disabled = false; }
+            if (chatBtn) chatBtn.disabled = false;
+            if (chatInputArea) chatInputArea.style.display = 'flex';
+            if (chatRes) { chatRes.classList.add('hidden'); chatRes.innerHTML = ''; }
+            if (fuelRes) { fuelRes.classList.add('hidden'); fuelRes.innerHTML = ''; }
+            if (fuelBtn) fuelBtn.innerHTML = 'Generate AI Plan';
+
+            // Warnings
+            const warningEl = document.getElementById('workout-warnings');
+            if (warningEl) {
+                let warningHTML = '';
+                let hasInjury = jointsList.some(j => jointState[j] === 2);
+                if (hasInjury && w.type === 'speed') {
+                    warningHTML += `<div class="border p-3 rounded mb-4 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="background: rgba(255, 68, 68, 0.05); border-color: rgba(255, 68, 68, 0.3); color: var(--error);"><i data-lucide="alert-triangle" class="w-4 h-4 animate-pulse"></i> SYSTEM OVERRIDE: INJURY RISK. Swap this speed session to Active Recovery.</div>`;
+                }
+                if (currentTemp && currentTemp > 22 && w.type !== 'rest') {
+                    let adj = parseFloat(w.paceData[0] || 5.0) + (currentTemp - 22) * 0.05;
+                    let m = Math.floor(adj); let s = Math.round((adj - m) * 60);
+                    warningHTML += `<div class="border p-3 rounded mb-4 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2" style="background: rgba(255, 107, 53, 0.05); border-color: rgba(255, 107, 53, 0.3); color: var(--accent);"><i data-lucide="thermometer-sun" class="w-4 h-4"></i> HEAT WARNING (${Math.round(currentTemp)}°C). Adjust pace to ${m}:${s < 10 ? '0' : ''}${s}/km.</div>`;
+                }
+                warningEl.innerHTML = warningHTML;
+            }
+
+            // Sync & Delete Button Status
+            const syncBtn = document.getElementById('sync-strava-btn');
+            const deleteBtn = document.getElementById('delete-sync-btn');
+            if (syncBtn) {
+                if (w.actualDistance) {
+                    syncBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Synced: ' + w.actualName;
+                    syncBtn.className = "w-full border py-3 rounded flex justify-center items-center gap-2 text-xs font-bold uppercase tracking-widest mb-1";
+                    syncBtn.style.cssText = "background: rgba(64, 181, 73, 0.05); color: var(--success); border-color: rgba(64, 181, 73, 0.3);";
+                    if (deleteBtn) deleteBtn.classList.remove('hidden');
+                } else {
+                    syncBtn.innerHTML = '<i data-lucide="activity" class="w-4 h-4"></i><span>Sync Run via Strava</span>';
+                    syncBtn.className = "w-full border py-3 rounded flex justify-center items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors mb-4 hover:opacity-80";
+                    syncBtn.style.cssText = "background: rgba(255, 107, 53, 0.05); color: var(--accent); border-color: rgba(255, 107, 53, 0.3);";
+                    if (deleteBtn) deleteBtn.classList.add('hidden');
+                }
+            }
+
+            // Pace Chart
+            if (paceChart) {
+                const data = w.paceData;
+                if (data.length === 0) {
+                    paceChart.data.labels = [];
+                    paceChart.data.datasets[0].data = [];
+                    if (paceChart.data.datasets.length > 1) paceChart.data.datasets.splice(1, 1);
+                    document.getElementById('pace-avg').innerText = "REST DAY";
+                } else {
+                    paceChart.data.labels = data.map((_, i) => i);
+                    paceChart.data.datasets[0].data = data;
+                    if (w.actualPaceData) {
+                        paceChart.data.datasets[1] = { label: 'Actual Strava Pace', data: w.actualPaceData, borderColor: '#40b549', backgroundColor: 'rgba(64, 181, 73, 0.1)', fill: true, tension: 0.2, borderWidth: 2, pointRadius: 0 };
+                    } else {
+                        if (paceChart.data.datasets.length > 1) paceChart.data.datasets.splice(1, 1);
+                    }
+                    let avg = data.reduce((a, b) => a + b, 0) / data.length;
+                    let m = Math.floor(avg); let s = Math.round((avg - m) * 60);
+                    document.getElementById('pace-avg').innerText = `Avg Session Pace: ${m}:${s < 10 ? '0' : ''}${s}/km`;
+                }
+                paceChart.update();
+            }
+
+            // Completion Button
+            const logBtn = document.getElementById('log-btn');
+            if (logBtn) {
+                if (completed.has(id)) {
+                    logBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i><span>SESSION COMPLETED</span>';
+                    logBtn.className = "w-full btn-completed py-4 rounded flex justify-center items-center gap-2";
+                } else {
+                    logBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i><span>MARK SESSION COMPLETED</span>';
+                    logBtn.className = "w-full btn-complete py-4 rounded flex justify-center items-center gap-2";
+                }
+            }
+            renderCalendar();
+            lucide.createIcons();
+            saveData();
+        }
+
+        function markComplete() {
+            if (completed.has(activeId)) {
+                completed.delete(activeId);
+                if (pmcChart && pmcChart.data.datasets[2]) {
+                    pmcChart.data.datasets[2].data[activeId] = null;
+                    pmcChart.update();
+                }
+            } else {
+                completed.add(activeId);
+                if (pmcChart && pmcChart.data.datasets[2] && pmcChart.data.datasets[1]) {
+                    let formActualData = pmcChart.data.datasets[2].data;
+                    let projectedData = pmcChart.data.datasets[1].data;
+                    formActualData[activeId] = projectedData[activeId];
+                    pmcChart.update();
+                }
+            }
+            saveData();
+
+            // Immediate UI update
+            const logBtn = document.getElementById('log-btn');
+            if (logBtn) {
+                if (completed.has(activeId)) {
+                    logBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i><span>SESSION COMPLETED</span>';
+                    logBtn.className = "w-full btn-completed py-4 rounded flex justify-center items-center gap-2";
+                } else {
+                    logBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i><span>MARK SESSION COMPLETED</span>';
+                    logBtn.className = "w-full btn-complete py-4 rounded flex justify-center items-center gap-2";
+                }
+                lucide.createIcons();
+            }
+
+            renderCalendar();
+        }
+
+        // --- CSV HANDLERS ---
+        function handleInbodyCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result; const rows = text.split('\n');
+                let w = null, f = null;
+                if (rows.length > 1) {
+                    const headers = rows[0].toLowerCase().split(','); const dataRow = rows[1].split(',');
+                    for (let i = 0; i < headers.length; i++) {
+                        if (headers[i].includes('weight') && dataRow[i]) w = parseFloat(dataRow[i]);
+                        if ((headers[i].includes('pbf') || headers[i].includes('fat')) && dataRow[i]) f = parseFloat(dataRow[i]);
+                    }
+                }
+                if (!w) { let m = text.match(/weight[^0-9]*([0-9]{2,3}\.?[0-9]*)/i); if (m) w = m[1]; }
+                if (!f) { let m = text.match(/(?:fat|pbf)[^0-9]*([0-9]{1,2}\.?[0-9]*)/i); if (m) f = m[1]; }
+                if (w || f) {
+                    inbodyWeight = w ? parseFloat(w).toFixed(1) : "Unknown"; inbodyFat = f ? parseFloat(f).toFixed(1) : "Unknown";
+                    const lbl = document.getElementById('inbody-upload-label');
+                    if (lbl) {
+                        lbl.innerHTML = `<i data-lucide="check" class="w-3 h-3 inline mr-1"></i> ${inbodyWeight}kg | ${inbodyFat}% Fat`;
+                        lbl.className = "cursor-default bg-green-900/40 text-green-500 border border-green-500/50 px-3 py-2 mt-1 rounded text-xs font-bold uppercase tracking-widest inline-block text-center";
+                    }
+                    lucide.createIcons();
+                    saveData();
+                } else { alert("Could not automatically find Weight or Body Fat in this CSV."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function handleStravaCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                let rows = []; let currentRow = ''; let insideQuotes = false;
+                for (let i = 0; i < text.length; i++) {
+                    let char = text[i];
+                    if (char === '"') insideQuotes = !insideQuotes;
+                    if (char === '\n' && !insideQuotes) { rows.push(currentRow); currentRow = ''; }
+                    else { currentRow += char; }
+                }
+                if (currentRow) rows.push(currentRow);
+                if (rows.length < 2) return alert("Empty CSV.");
+
+                let headers = []; let currentCol = ''; insideQuotes = false;
+                for (let i = 0; i < rows[0].length; i++) {
+                    let char = rows[0][i];
+                    if (char === '"') insideQuotes = !insideQuotes;
+                    else if (char === ',' && !insideQuotes) { headers.push(currentCol); currentCol = ''; }
+                    else { currentCol += char; }
+                }
+                headers.push(currentCol);
+
+                let distIdx = headers.findIndex(h => h.trim() === 'Distance');
+                let typeIdx = headers.findIndex(h => h.trim() === 'Activity Type');
+                let timeIdx = headers.findIndex(h => h.trim() === 'Moving Time');
+                let dateIdx = headers.findIndex(h => h.trim() === 'Activity Date');
+
+                let parsed = [];
+                for (let i = 1; i < rows.length; i++) {
+                    if (!rows[i]) continue;
+                    let cols = []; let col = ''; insideQuotes = false;
+                    for (let j = 0; j < rows[i].length; j++) {
+                        let char = rows[i][j];
+                        if (char === '"') insideQuotes = !insideQuotes;
+                        else if (char === ',' && !insideQuotes) { cols.push(col); col = ''; }
+                        else { col += char; }
+                    }
+                    cols.push(col);
+                    if (cols.length < Math.max(distIdx, typeIdx, timeIdx, dateIdx)) continue;
+                    let type = cols[typeIdx] ? cols[typeIdx].replace(/"/g, '') : '';
+                    if (type === 'Run') {
+                        let name = cols[2] ? cols[2].replace(/"/g, '') : 'Run';
+                        let dist = parseFloat(cols[distIdx] || 0);
+                        let time = parseFloat(cols[timeIdx] || 0);
+                        let date = cols[dateIdx] ? cols[dateIdx].replace(/"/g, '') : '';
+                        if (dist > 0 && time > 0) parsed.push({ date, name, dist, time });
+                    }
+                }
+                stravaArchive = parsed;
+                updateArchiveLabel();
+                saveData();
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = async () => {
+            console.log("Stride Rite | Initialization Started");
+            // 1. Strava OAuth first
+            try {
+                await handleStravaOAuthCallback();
+            } catch (e) {
+                console.error('Strava Auth Error:', e);
+            }
+
+            // 2. Charts MUST init before loadData
+            try {
+                initCharts();
+                console.log("Charts Initialized");
+            } catch (e) {
+                console.error('initCharts Error:', e);
+            }
+
+            // 3. Load saved state
+            try {
+                loadData();
+                console.log("Memory Loaded");
+            } catch (e) {
+                console.error('loadData Error:', e);
+            }
+
+            // 4. Render UI
+            try {
+                fetchWeather();
+                renderBiomechanics();
+                renderCalendar();
+                listModels();
+                // Ensure initial selection
+                selectDay(activeId || 0);
+                console.log("UI Rendered | Active ID:", activeId);
+            } catch (e) {
+                console.error('UI Render Error:', e);
+            }
+
+            lucide.createIcons();
+
+            // 5. Today's Mission Briefing & Notification
+            try {
+                initTodaysMission();
+                console.log("Today's Mission Initialized");
+            } catch (e) {
+                console.error('Mission Briefing Error:', e);
+            }
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'));
+        }
+        // Initialize Smoothness Features
+        function initSmoothness() {
+            // Ripple Effect
+            document.addEventListener('click', function (e) {
+                const target = e.target.closest('button, .btn, [role="button"]');
+                if (!target) return;
+
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                target.appendChild(ripple);
+
+                const rect = target.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+
+                ripple.style.width = ripple.style.height = `${size}px`;
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+
+                setTimeout(() => ripple.remove(), 600);
+            });
+
+            // Scroll Reveal Observer
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        }
+
+        // --- TODAY'S MISSION BRIEFING & NOTIFICATION ---
+        function getTodaysWorkoutId() {
+            const now = new Date();
+            const month = now.getMonth(); // 0-indexed (4 = May)
+            const day = now.getDate();
+            const months = { 0: 'JAN', 1: 'FEB', 2: 'MAR', 3: 'APR', 4: 'MAY', 5: 'JUN', 6: 'JUL', 7: 'AUG', 8: 'SEP', 9: 'OCT', 10: 'NOV', 11: 'DEC' };
+            const todayStr = months[month] + ' ' + (day < 10 ? '0' + day : day);
+
+            for (let i = 0; i < workouts.length; i++) {
+                if (workouts[i].date === todayStr) return i;
+            }
+            return -1; // No workout matches today
+        }
+
+        function initTodaysMission() {
+            const todayId = getTodaysWorkoutId();
+            const missionEl = document.getElementById('todays-mission');
+            if (!missionEl) return;
+
+            if (todayId === -1) {
+                // No workout today — hide the banner
+                missionEl.classList.add('hidden');
+                return;
+            }
+
+            const w = workouts[todayId];
+            const raceDayIdx = workouts.findIndex(wx => wx.title === 'THE 5K TT');
+            const daysToRace = raceDayIdx >= 0 ? raceDayIdx - todayId : null;
+
+            // Populate the banner
+            missionEl.classList.remove('hidden');
+            document.getElementById('mission-date').innerText = w.date;
+            document.getElementById('mission-title').innerText = w.title;
+            document.getElementById('mission-desc').innerText = w.desc;
+            document.getElementById('mission-dist').innerText = w.distance === '0.0' ? 'REST' : w.distance + 'km';
+            document.getElementById('mission-tss').innerText = w.tss || '0';
+
+            // Countdown to race
+            const countdownEl = document.getElementById('mission-countdown');
+            if (daysToRace !== null && daysToRace > 0) {
+                countdownEl.innerText = `• ${daysToRace} days to race`;
+            } else if (daysToRace === 0) {
+                countdownEl.innerHTML = '<span style="color: var(--error); animation: pulse 1s infinite;">• RACE DAY</span>';
+            } else {
+                countdownEl.innerText = '';
+            }
+
+            // Icon based on workout type
+            const iconEl = document.getElementById('mission-icon');
+            if (w.type === 'rest') iconEl.innerText = '😴';
+            else if (w.type === 'speed') iconEl.innerText = '⚡';
+            else if (w.title.includes('LONG')) iconEl.innerText = '🛤️';
+            else if (w.title.includes('TEMPO')) iconEl.innerText = '🔥';
+            else if (w.title.includes('RECOVERY')) iconEl.innerText = '🧊';
+            else if (w.title.includes('SHAKEOUT')) iconEl.innerText = '🎯';
+            else if (w.title.includes('5K TT')) iconEl.innerText = '🏁';
+            else iconEl.innerText = '🏃';
+
+            // Completed state
+            if (completed.has(todayId)) {
+                document.getElementById('mission-title').innerHTML = w.title + ' <span style="color: var(--success);">✓ DONE</span>';
+            }
+
+            // VIEW button auto-selects today's workout
+            document.getElementById('mission-go-btn').onclick = () => {
+                selectDay(todayId);
+                // Scroll to workout pane
+                const pane = document.getElementById('workout-pane');
+                if (pane) pane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+            // Auto-select today's workout on first load (if no saved state)
+            const savedMemory = localStorage.getItem('strideRiteMemory');
+            if (!savedMemory || !JSON.parse(savedMemory).lastActiveId) {
+                selectDay(todayId);
+            }
+
+            // --- iOS Web Notification ---
+            // Only auto-fire if already granted. Don't auto-request (iOS blocks that).
+            if ('Notification' in window && Notification.permission === 'granted') {
+                sendTodaysNotification(w, daysToRace);
+            }
+
+            // Update the bell button state
+            updateNotifButton();
+        }
+
+        function updateNotifButton() {
+            const btn = document.getElementById('notif-btn');
+            const btnText = document.getElementById('notif-btn-text');
+            if (!btn) return;
+
+            if (!('Notification' in window)) {
+                // Notifications not supported at all
+                btn.style.display = 'none';
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                btn.style.background = 'rgba(64, 181, 73, 0.15)';
+                btn.style.color = 'var(--success)';
+                btn.style.borderColor = 'rgba(64, 181, 73, 0.3)';
+                if (btnText) btnText.innerText = 'ON';
+                btn.title = 'Notifications enabled';
+                btn.onclick = null; // Already enabled
+            } else if (Notification.permission === 'denied') {
+                btn.style.background = 'rgba(255, 68, 68, 0.1)';
+                btn.style.color = 'var(--error)';
+                btn.style.borderColor = 'rgba(255, 68, 68, 0.3)';
+                if (btnText) btnText.innerText = 'BLOCKED';
+                btn.title = 'Notifications blocked. Enable in Settings > Safari > Notifications';
+                btn.onclick = () => alert('Notifications are blocked.\n\nTo fix: Go to Settings > Safari > Notifications and allow this site.');
+            }
+            lucide.createIcons();
+        }
+
+        function enableNotifications() {
+            if (!('Notification' in window)) {
+                alert('Notifications are not supported on this device/browser.\n\nTip: Add this site to your Home Screen first, then try again.');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                // Already granted — just fire today's
+                const todayId = getTodaysWorkoutId();
+                if (todayId >= 0) {
+                    const w = workouts[todayId];
+                    const raceDayIdx = workouts.findIndex(wx => wx.title === 'THE 5K TT');
+                    const daysToRace = raceDayIdx >= 0 ? raceDayIdx - todayId : null;
+                    localStorage.removeItem('strideRite_lastNotifDate'); // Force re-send
+                    sendTodaysNotification(w, daysToRace);
+                }
+                updateNotifButton();
+                return;
+            }
+
+            if (Notification.permission === 'denied') {
+                alert('Notifications are blocked.\n\nTo fix on iPhone:\n1. Open Settings\n2. Scroll to Safari (or this app name)\n3. Enable Notifications');
+                return;
+            }
+
+            // Permission is 'default' — request it (this works because it's from a user tap)
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') {
+                    const todayId = getTodaysWorkoutId();
+                    if (todayId >= 0) {
+                        const w = workouts[todayId];
+                        const raceDayIdx = workouts.findIndex(wx => wx.title === 'THE 5K TT');
+                        const daysToRace = raceDayIdx >= 0 ? raceDayIdx - todayId : null;
+                        sendTodaysNotification(w, daysToRace);
+                    }
+                }
+                updateNotifButton();
+            });
+        }
+
+        function sendTodaysNotification(w, daysToRace) {
+            if (!('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+
+            // Only notify once per day
+            const today = new Date().toDateString();
+            const lastNotif = localStorage.getItem('strideRite_lastNotifDate');
+            if (lastNotif === today) return;
+
+            fireNotification(w, daysToRace);
+        }
+
+        function fireNotification(w, daysToRace) {
+            const raceNote = daysToRace > 0 ? ` | ${daysToRace} days to race` : (daysToRace === 0 ? ' | 🏁 RACE DAY' : '');
+            const distNote = w.distance === '0.0' ? 'REST DAY' : `${w.distance}km | TSS ${w.tss}`;
+
+            try {
+                const notif = new Notification('STRIDE RITE — Today\'s Mission', {
+                    body: `${w.title}\n${distNote}${raceNote}`,
+                    icon: 'icon.jpg',
+                    badge: 'icon.jpg',
+                    tag: 'stride-rite-daily',
+                    renotify: false,
+                    silent: false
+                });
+
+                notif.onclick = () => {
+                    window.focus();
+                    notif.close();
+                };
+
+                localStorage.setItem('strideRite_lastNotifDate', new Date().toDateString());
+                console.log('Daily notification sent:', w.title);
+            } catch (e) {
+                // Fallback for iOS: use service worker registration
+                if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification('STRIDE RITE — Today\'s Mission', {
+                            body: `${w.title}\n${distNote}${raceNote}`,
+                            icon: 'icon.jpg',
+                            badge: 'icon.jpg',
+                            tag: 'stride-rite-daily'
+                        });
+                        localStorage.setItem('strideRite_lastNotifDate', new Date().toDateString());
+                    });
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initSmoothness();
+        });
+    </script>
+</body>
+
+</html>
