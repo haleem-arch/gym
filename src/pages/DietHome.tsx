@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useDiet } from '../hooks/useDiet';
 import { MacroProgressBar } from '../components/MacroProgressBar';
+import { MacroPlate } from '../components/MacroPlate';
 import { Plus, Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
@@ -117,19 +118,26 @@ const DietHome = () => {
                 COMPLETED
               </div>
             )}
-            <div className="flex flex-col gap-5">
-              <MacroProgressBar 
-                label="Calories" 
-                current={totals.kcal} 
-                target={targets.kcal} 
-                colorClass="bg-primary" 
-                unit="kcal" 
-              />
-              <div className="h-px bg-gray-800 w-full" />
-              <div className="flex flex-col gap-3">
-                <MacroProgressBar label="Protein" current={totals.protein} target={targets.protein} colorClass="bg-blue-500" />
-                <MacroProgressBar label="Carbs" current={totals.carbs} target={targets.carbs} colorClass="bg-green-500" />
-                <MacroProgressBar label="Fat" current={totals.fat} target={targets.fat} colorClass="bg-yellow-500" />
+            <div className="flex flex-col items-center">
+              <MacroPlate totals={totals} targets={targets} />
+              
+              {/* Optional Macro Legend Below the Plate */}
+              <div className="grid grid-cols-3 w-full gap-2 mt-4 text-center px-2">
+                <div className="flex flex-col items-center p-2 rounded-lg bg-gray-800/40">
+                  <span className="w-3 h-3 rounded-full bg-indigo-500 mb-1 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold">Protein</span>
+                  <span className="text-sm font-black text-white">{Math.round(totals.protein)}<span className="text-[10px] text-gray-500 font-normal">/{targets.protein}g</span></span>
+                </div>
+                <div className="flex flex-col items-center p-2 rounded-lg bg-gray-800/40">
+                  <span className="w-3 h-3 rounded-full bg-amber-500 mb-1 shadow-[0_0_8px_rgba(245,158,11,0.6)]"></span>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold">Carbs</span>
+                  <span className="text-sm font-black text-white">{Math.round(totals.carbs)}<span className="text-[10px] text-gray-500 font-normal">/{targets.carbs}g</span></span>
+                </div>
+                <div className="flex flex-col items-center p-2 rounded-lg bg-gray-800/40">
+                  <span className="w-3 h-3 rounded-full bg-red-500 mb-1 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold">Fats</span>
+                  <span className="text-sm font-black text-white">{Math.round(totals.fat)}<span className="text-[10px] text-gray-500 font-normal">/{targets.fat}g</span></span>
+                </div>
               </div>
             </div>
           </motion.div>
