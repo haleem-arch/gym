@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface SplashOverlayProps {
   show: boolean;
@@ -14,14 +14,53 @@ interface SplashOverlayProps {
  *   1.45s  Solid blue locks in
  *   1.50s  Dumbbell pops in               (0.5s)
  *   1.95s  Blue fades → black + blue glow (0.5s)
+ *   1.95s  Dumbbell shifts up, random phrase fades/slides up
  *   2.60s  Overlay fades to nothing       (0.4s)
  *   3.00s  onComplete() fires
  */
 export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
+  const [shiftUp, setShiftUp] = useState(false);
+  const [showText, setShowText] = useState(false);
+  const [randomPhrase, setRandomPhrase] = useState('');
+
+  const PHRASES = [
+    "GOOD JOB! ⚡",
+    "YOU NAILED IT! 🔥",
+    "SMASHED IT! 🚀",
+    "UNSTOPPABLE! 💪",
+    "WORK DONE! 🎯",
+    "EARNED, NOT GIVEN. 👑",
+    "ANOTHER ONE DOWN! 🏆",
+    "MAKING PROGRESS! 📈",
+    "PURE DEDICATION! 🔋",
+    "STRONGER TODAY! 🌟"
+  ];
+
   useEffect(() => {
-    if (!show) return;
-    const t = setTimeout(() => onComplete?.(), 3000);
-    return () => clearTimeout(t);
+    if (!show) {
+      setShiftUp(false);
+      setShowText(false);
+      return;
+    }
+
+    // Set a random congratulatory phrase from the array of 10 phrases
+    const randomIdx = Math.floor(Math.random() * PHRASES.length);
+    setRandomPhrase(PHRASES[randomIdx]);
+
+    // Lift the dumbbell and show the text at 1.95s (as the background fades to dark)
+    const shiftTimer = setTimeout(() => {
+      setShiftUp(true);
+      setShowText(true);
+    }, 1950);
+
+    const completeTimer = setTimeout(() => {
+      onComplete?.();
+    }, 3000);
+
+    return () => {
+      clearTimeout(shiftTimer);
+      clearTimeout(completeTimer);
+    };
   }, [show]);
 
   if (!show) return null;
@@ -65,20 +104,6 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
         }
         @keyframes splashFadeOut {
           to { opacity: 0; pointer-events: none; }
-        }
-        @keyframes slideLeftPlates {
-          0%   { transform: translateX(-50px); }
-          25%  { transform: translateX(0px);   }
-          50%  { transform: translateX(-50px); }
-          75%  { transform: translateX(0px);   }
-          100% { transform: translateX(-50px); }
-        }
-        @keyframes slideRightPlates {
-          0%   { transform: translateX(0px);  }
-          25%  { transform: translateX(50px); }
-          50%  { transform: translateX(0px);  }
-          75%  { transform: translateX(50px); }
-          100% { transform: translateX(0px);  }
         }
         @keyframes pulseGlow {
           0%   { transform: scale(0.9); opacity: 0.3; }
@@ -146,44 +171,91 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
         animation: 'ambientGlowPulse 0.8s ease-in-out 2.0s infinite',
       }} />
 
-      {/* ── Dumbbell logo ── */}
-      <div style={{
-        position: 'relative', zIndex: 4,
-        width: 140, height: 140,
-        opacity: 0,
-        transform: 'scale(0.5) translateY(20px)',
-        animation: 'popLogoIn 0.45s cubic-bezier(0.175,0.885,0.32,1.275) 1.5s forwards',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {/* Blue glow */}
+      {/* ── Vertical Flex layout holding the Dumbbell + Random Text ── */}
+      <div className="flex flex-col items-center justify-center p-6" style={{ position: 'relative', zIndex: 4 }}>
+        
+        {/* Logo pop-in wrapper (handles scale-pop on load, shifts up when shiftUp is true) */}
         <div style={{
-          position: 'absolute', inset: 0,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)',
-          filter: 'blur(16px)',
-          animation: 'pulseGlow 1.2s ease-in-out infinite',
-          zIndex: 2,
-        }} />
-        {/* SVG dumbbell */}
-        <svg viewBox="0 0 512 512" style={{
-          width: '100%', height: '100%',
-          position: 'relative', zIndex: 3, overflow: 'visible',
-          filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.95)) drop-shadow(0 4px 8px rgba(0,0,0,0.85))',
+          width: 140,
+          height: 140,
+          opacity: 0,
+          transform: 'scale(0.5) translateY(20px)',
+          animation: 'popLogoIn 0.45s cubic-bezier(0.175,0.885,0.32,1.275) 1.5s forwards',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
         }}>
-          <g transform="translate(256 256) rotate(-45)">
-            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
-            <g style={{ animation: 'slideLeftPlates 1.2s ease-in-out infinite' }}>
-              <rect x="-110" y="-60" width="30" height="120" rx="8"  fill="#3b82f6" />
-              <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-              <rect x="-170" y="-40" width="10" height="80"  rx="4"  fill="#60a5fa" />
-            </g>
-            <g style={{ animation: 'slideRightPlates 1.2s ease-in-out infinite' }}>
-              <rect x="80"  y="-60" width="30" height="120" rx="8"  fill="#3b82f6" />
-              <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-              <rect x="160" y="-40" width="10" height="80"  rx="4"  fill="#60a5fa" />
-            </g>
-          </g>
-        </svg>
+          {/* Shift transition wrapper */}
+          <div style={{
+            transform: `translateY(${shiftUp ? '-20px' : '0px'})`,
+            transition: 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)',
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {/* Blue glow */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)',
+              filter: 'blur(16px)',
+              animation: 'pulseGlow 1.2s ease-in-out infinite',
+              zIndex: 2,
+            }} />
+            
+            {/* SVG dumbbell (Steady, no piston slide wiggling, with high-contrast shadows) */}
+            <svg viewBox="0 0 512 512" style={{
+              width: '100%', height: '100%',
+              position: 'relative', zIndex: 3, overflow: 'visible',
+              filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.95)) drop-shadow(0 4px 8px rgba(0,0,0,0.85))',
+            }}>
+              <g transform="translate(256 256) rotate(-45)">
+                {/* Barbell handle */}
+                <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+                
+                {/* Left plates (steady/connected) */}
+                <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+                
+                {/* Right plates (steady/connected) */}
+                <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        {/* Text Container (slides and fades in below the dumbbell as it lifts) */}
+        <div style={{
+          height: 36,
+          marginTop: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          transform: `translateY(${shiftUp ? '-10px' : '0px'})`,
+          transition: 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)',
+        }}>
+          <div style={{
+            opacity: showText ? 1 : 0,
+            transform: `translateY(${showText ? '0px' : '15px'})`,
+            transition: 'opacity 0.55s ease-out, transform 0.55s cubic-bezier(0.25, 1, 0.5, 1)',
+            color: '#ffffff',
+            fontWeight: 900,
+            fontSize: '15px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.22em',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+          }}>
+            {randomPhrase}
+          </div>
+        </div>
       </div>
     </div>
   );
