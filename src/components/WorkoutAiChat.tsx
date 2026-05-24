@@ -35,7 +35,7 @@ interface WorkoutAiChatProps {
 
 export const WorkoutAiChat = ({ workout, exercises, onClose }: WorkoutAiChatProps) => {
   const storageKey = `workout_chat_${workout.id}`;
-  const { messages, isTyping, sendMessage, sendInvisibleMessage, initChat } = useAiAgent({ storageKey });
+  const { messages, isTyping, sendMessage, sendInvisibleMessage, initChat } = useAiAgent({ storageKey, mode: 'workout' });
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -57,10 +57,15 @@ export const WorkoutAiChat = ({ workout, exercises, onClose }: WorkoutAiChatProp
           }
         });
         
-        const prompt = `Analyze this specific gym session. Date: ${workout.date}, Type: ${workout.day_type}, Volume: ${workout.total_volume}kg.
-Exercises:
+        const prompt = `Perform a clinical-grade, highly analytical strength and conditioning analysis of this gym session:
+Date: ${workout.date}
+Session Type: ${workout.day_type}
+Total Volume Lifted: ${workout.total_volume}kg
+
+Exercise Log:
 ${exSummary}
-Review the sets and reps. Point out if I dropped weight significantly, if volume is good, or any other patterns. Be an engaging, motivating coach. Keep it concise.`;
+
+Deconstruct my performance. Specifically analyze set-to-set mechanical tension, rep drops, potential early peripheral fatigue, and load selection consistency. Provide serious physiological feedback and suggest scientific adjustments. Keep the explanation concise and professional.`;
 
         sendInvisibleMessage(prompt);
       }
@@ -84,7 +89,7 @@ Review the sets and reps. Point out if I dropped weight significantly, if volume
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
       transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background border-t border-gray-800 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] max-w-lg mx-auto"
+      className="fixed inset-x-0 bottom-0 z-[100] flex flex-col bg-background border-t border-gray-800 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] max-w-lg mx-auto"
       style={{ height: '85dvh' }}
     >
       {/* Header */}

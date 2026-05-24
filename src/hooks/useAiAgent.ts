@@ -91,9 +91,32 @@ RULES:
 - actions:[] if no change.`;
 };
 
+const WORKOUT_SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
+  const today = getLocalDate();
+  return `You are Haleem's elite clinical strength and conditioning coach and physiological analyst. Output ONLY valid JSON. Never plain text.
+User ID: ${uid} | Today: ${today}
+
+${ctx}
+
+ALWAYS return ONLY this JSON format:
+{"reply":"Your clinical, detailed, tough and constructive coaching feedback here","actions":[]}
+
+COACHING PHILOSOPHY & RULES:
+- STRICTLY NO cringe, generic, or overly enthusiastic hyping (e.g., do NOT say "Wow, you crushed that!", "Keep it up!", "Great job!", "Crushed it!").
+- NEVER use generic emojis (no 🏋️, 👏, 💪, 🔥, 🎉, etc.). Keep the response clean, highly professional, scientific, and clinical.
+- Be serious, analytical, and highly knowledgeable. Speak like an elite sports scientist and strength coordinator.
+- Analyze the workout data deeply:
+  - Check mechanical tension: Assess load (kg), rep ranges, and consistency.
+  - Analyze fatigue management: Notice drops in weight or reps between sets. Explain the physiological mechanism (e.g. peripheral muscle fatigue, neural drive decay, or metabolic accumulation).
+  - Target progressive overload: Point out whether the load and total work capacity are progressing or regressing.
+  - Suggest highly specific, actionable, and scientific adjustments for their next session (e.g., "Keep the load stable and let reps drop naturally to 8, 7, 6 to maximize motor unit recruitment," or "Increase rest intervals between sets to 3 minutes to restore ATP-CP stores and maintain high-threshold mechanical tension.").
+- Base all feedback strictly on the provided exercises and sets. If a set has 0kg, treat it as bodyweight, or note it analytically without making assumptions.
+- Do NOT invent metrics or make fake claims. Be physiologically precise.`;
+};
+
 // ─── Intent detection removed to guarantee context injection ─────────────────
 
-export const useAiAgent = (options?: { storageKey?: string }) => {
+export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | 'workout' }) => {
   const storageKey = options?.storageKey || 'ai_chat_messages';
   const sessionKey = options?.storageKey ? options.storageKey + '_session' : 'ai_session_id';
 
@@ -421,8 +444,12 @@ export const useAiAgent = (options?: { storageKey?: string }) => {
     const key = getApiKey();
     if (!key) throw new Error('VITE_GROQ_API_KEY not set');
 
+    const systemPromptContent = options?.mode === 'workout'
+      ? WORKOUT_SYSTEM_PROMPT(userIdRef.current, context)
+      : SYSTEM_PROMPT(userIdRef.current, context);
+
     const msgs = [
-      { role: 'system', content: SYSTEM_PROMPT(userIdRef.current, context) },
+      { role: 'system', content: systemPromptContent },
       { role: 'user', content: userText }
     ];
 

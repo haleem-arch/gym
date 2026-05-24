@@ -553,7 +553,7 @@ const WorkoutDetail = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsAiChatOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
             />
             <WorkoutAiChat 
               workout={workout}
