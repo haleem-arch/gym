@@ -27,6 +27,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
   const [weightData, setWeightData] = useState<any[]>([]);
   const [sleepData, setSleepData] = useState<any[]>([]);
   const [error, setError] = useState('');
+  const [isHaleem, setIsHaleem] = useState(false);
 
   useEffect(() => {
     fetchAnalytics();
@@ -35,6 +36,11 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
+      // Get current user session to check if they are Haleem
+      const { data: { session } } = await supabase.auth.getSession();
+      const isUserHaleem = !!session?.user?.email?.toLowerCase().startsWith('haleem');
+      setIsHaleem(isUserHaleem);
+
       // 1. Fetch Workouts (Volume & Runs)
       const { data: workouts, error: workoutErr } = await supabase
         .from('workouts')
@@ -93,25 +99,29 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
       }));
       setWeightData(wData);
 
-      // 3. Fetch Sleep data from athlete_biometrics
-      const { data: biometrics, error: biometricsErr } = await supabase
-        .from('athlete_biometrics')
-        .select('date, sleep_hours, deep_sleep_hours, rem_sleep_hours, light_sleep_hours')
-        .order('date', { ascending: true });
+      // 3. Fetch Sleep data from athlete_biometrics only if user is Haleem
+      if (isUserHaleem) {
+        const { data: biometrics, error: biometricsErr } = await supabase
+          .from('athlete_biometrics')
+          .select('date, sleep_hours, deep_sleep_hours, rem_sleep_hours, light_sleep_hours')
+          .order('date', { ascending: true });
 
-      if (biometricsErr) throw biometricsErr;
+        if (biometricsErr) throw biometricsErr;
 
-      // Process Sleep Data
-      const sData = (biometrics || [])
-        .filter(b => (b.sleep_hours || 0) > 0)
-        .map(b => ({
-          date: new Date(b.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-          total: parseFloat(Number(b.sleep_hours).toFixed(2)),
-          deep: parseFloat(Number(b.deep_sleep_hours || 0).toFixed(2)),
-          rem: parseFloat(Number(b.rem_sleep_hours || 0).toFixed(2)),
-          light: parseFloat(Number(b.light_sleep_hours || 0).toFixed(2))
-        }));
-      setSleepData(sData);
+        // Process Sleep Data
+        const sData = (biometrics || [])
+          .filter(b => (b.sleep_hours || 0) > 0)
+          .map(b => ({
+            date: new Date(b.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+            total: parseFloat(Number(b.sleep_hours).toFixed(2)),
+            deep: parseFloat(Number(b.deep_sleep_hours || 0).toFixed(2)),
+            rem: parseFloat(Number(b.rem_sleep_hours || 0).toFixed(2)),
+            light: parseFloat(Number(b.light_sleep_hours || 0).toFixed(2))
+          }));
+        setSleepData(sData);
+      } else {
+        setSleepData([]);
+      }
 
     } catch (err: any) {
       setError(err.message);

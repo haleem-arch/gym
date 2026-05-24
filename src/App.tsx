@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
+import Auth from './pages/Auth';
 import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
 import WorkoutBuilder from './pages/WorkoutBuilder';
@@ -207,31 +208,35 @@ function App() {
   const [session, setSession] = useState<any>(undefined);
 
   useEffect(() => {
+    // 1. Check current session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Session error:', error);
         setSession(null);
         return;
       }
-      if (!session) {
-        supabase.auth.signInWithPassword({
-          email: 'haleem@example.com',
-          password: 'athletepassword123'
-        }).then(({ data, error }) => {
-           if (error) console.error('Auth error:', error);
-           setSession(data?.session || null);
-        });
-      } else {
-        setSession(session);
-      }
+      setSession(session || null);
     }).catch(err => {
-      console.error('Unhandled auth error:', err);
+      console.error('Unhandled initial auth check error:', err);
       setSession(null);
     });
+
+    // 2. Listen to authentication state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (session === undefined) {
     return <DumbbellLoader fullScreen size={140} />;
+  }
+
+  if (!session) {
+    return <Auth onSessionConfigured={setSession} />;
   }
 
   return (

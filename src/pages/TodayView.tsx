@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles, Target } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles, Target, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -54,6 +54,38 @@ const RippleButton = ({ onClick, className, children }: { onClick: (e: React.Mou
 
 const TodayView = () => {
   const navigate = useNavigate();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      if (session?.user) {
+        setUserEmail(session.user.email || null);
+        setUserDisplayName(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Athlete');
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      if (session?.user) {
+        setUserEmail(session.user.email || null);
+        setUserDisplayName(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Athlete');
+      } else {
+        setUserEmail(null);
+        setUserDisplayName(null);
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const isHaleem = !!userEmail?.toLowerCase().startsWith('haleem');
+
   const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
   
@@ -646,15 +678,28 @@ const TodayView = () => {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-gray-400 mt-1">Haleem's HQ</p>
+          <p className="text-sm text-gray-400 mt-1">{isHaleem ? "Haleem's HQ" : `${userDisplayName || 'Athlete'}'s HQ`}</p>
         </div>
-        <button 
-          onClick={() => setShowExportModal(true)} 
-          className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-        >
-          <FileSpreadsheet size={14} className="text-primary" />
-          Export
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowExportModal(true)} 
+            className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+          >
+            <FileSpreadsheet size={14} className="text-primary" />
+            Export
+          </button>
+          <button 
+            onClick={() => {
+              if (window.confirm("Are you sure you want to sign out?")) {
+                supabase.auth.signOut();
+              }
+            }} 
+            className="flex items-center justify-center p-2 bg-surface hover:bg-red-950/20 border border-gray-800 hover:border-red-900/50 rounded-xl text-gray-400 hover:text-red-400 transition-all active:scale-95 cursor-pointer"
+            title="Log Out"
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
       </motion.div>
 
       {/* Date Navigation */}
@@ -898,97 +943,99 @@ const TodayView = () => {
         </div>
 
         {/* Daily Biometrics - Sleep Recovery Card */}
-        <div className="w-full animate-fade-in">
-          {/* Resting HR & Sleep Card */}
-          <motion.div 
-             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-             className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health & Sleep</span>
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
-            </div>
-            
-            {sleepHours > 0 ? (
-              <>
-                <div className="flex items-center gap-2 mt-2 mb-3">
-                  <Moon size={18} className="text-indigo-400" />
-                  {(() => {
-                    const totalMins = Math.floor(sleepHours * 60);
-                    const h = Math.floor(totalMins / 60);
-                    const m = totalMins % 60;
-                    return (
-                      <span className="text-2xl font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
-                    );
-                  })()}
-                </div>
-                
-                {/* Sleep Stages Breakdown */}
-                <div className="mt-2 border-t border-gray-800 pt-2">
-                  {(() => {
-                    const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
-                    const formatStage = (hrs: number) => {
-                      const totalMins = Math.round(hrs * 60);
-                      if (totalMins < 60) return `${totalMins}m`;
+        {isHaleem && (
+          <div className="w-full animate-fade-in">
+            {/* Resting HR & Sleep Card */}
+            <motion.div 
+               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+               className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health & Sleep</span>
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
+              </div>
+              
+              {sleepHours > 0 ? (
+                <>
+                  <div className="flex items-center gap-2 mt-2 mb-3">
+                    <Moon size={18} className="text-indigo-400" />
+                    {(() => {
+                      const totalMins = Math.floor(sleepHours * 60);
                       const h = Math.floor(totalMins / 60);
                       const m = totalMins % 60;
-                      return m > 0 ? `${h}h ${m}m` : `${h}h`;
-                    };
-                    return (
-                      <>
-                        <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                          <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
-                          <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
-                          <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2.5 text-gray-400 font-bold">
-                          <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                            <div className="flex items-center gap-1 mb-0.5">
-                              <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
-                              <span className="text-gray-500 font-semibold">Deep</span>
-                            </div>
-                            <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
+                      return (
+                        <span className="text-2xl font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
+                      );
+                    })()}
+                  </div>
+                  
+                  {/* Sleep Stages Breakdown */}
+                  <div className="mt-2 border-t border-gray-800 pt-2">
+                    {(() => {
+                      const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
+                      const formatStage = (hrs: number) => {
+                        const totalMins = Math.round(hrs * 60);
+                        if (totalMins < 60) return `${totalMins}m`;
+                        const h = Math.floor(totalMins / 60);
+                        const m = totalMins % 60;
+                        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                      };
+                      return (
+                        <>
+                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
+                            <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
+                            <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
+                            <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
                           </div>
-                          <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                            <div className="flex items-center gap-1 mb-0.5">
-                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
-                              <span className="text-gray-500 font-semibold">REM</span>
+                          <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2.5 text-gray-400 font-bold">
+                            <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
+                                <span className="text-gray-500 font-semibold">Deep</span>
+                              </div>
+                              <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
                             </div>
-                            <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
-                          </div>
-                          <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                            <div className="flex items-center gap-1 mb-0.5">
-                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
-                              <span className="text-gray-500 font-semibold">Light</span>
+                            <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
+                                <span className="text-gray-500 font-semibold">REM</span>
+                              </div>
+                              <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
                             </div>
-                            <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(lightSleepHours)}</span>
+                            <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
+                                <span className="text-gray-500 font-semibold">Light</span>
+                              </div>
+                              <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(lightSleepHours)}</span>
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    );
-                  })()}
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <div className="flex justify-center mt-3.5">
+                    <button
+                      onClick={analyzeSleepWithAi}
+                      className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all flex items-center gap-1.5 border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
+                    >
+                      <Sparkles size={11} className="text-indigo-400 animate-pulse" />
+                      <span>Analyze Sleep</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <Moon size={28} className="text-gray-650 mb-2 animate-pulse" />
+                  <span className="text-xs font-black text-gray-400 uppercase tracking-wider">No Sleep Telemetry</span>
+                  <p className="text-[9px] text-gray-550 max-w-[200px] mt-1 font-semibold leading-normal">
+                    No sleep stages or recovery metrics synced for this date.
+                  </p>
                 </div>
-                <div className="flex justify-center mt-3.5">
-                  <button
-                    onClick={analyzeSleepWithAi}
-                    className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all flex items-center gap-1.5 border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
-                  >
-                    <Sparkles size={11} className="text-indigo-400 animate-pulse" />
-                    <span>Analyze Sleep</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Moon size={28} className="text-gray-650 mb-2 animate-pulse" />
-                <span className="text-xs font-black text-gray-400 uppercase tracking-wider">No Sleep Telemetry</span>
-                <p className="text-[9px] text-gray-500 max-w-[200px] mt-1 font-semibold leading-normal">
-                  No sleep stages or recovery metrics synced for this date.
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
+              )}
+            </motion.div>
+          </div>
+        )}
 
         {/* Recovery Hub Card */}
         <motion.div
@@ -1099,59 +1146,61 @@ const TodayView = () => {
       <div className="w-full border-t border-white/10 my-1" />
 
       {/* SIDE-BY-SIDE METRICS GRID */}
-      <div className="grid grid-cols-2 gap-4 w-full animate-fade-in">
+      <div className={`${isHaleem ? 'grid grid-cols-2' : 'flex'} gap-4 w-full animate-fade-in`}>
         {/* READINESS INDEX CARD */}
-        <motion.div
-          onClick={() => setShowReadinessModal(true)}
-          whileTap={{ scale: 0.98 }}
-          className="bg-surface rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group min-h-[165px]"
-        >
-          {/* Glow */}
-          <div className={`absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 pointer-events-none`} />
+        {isHaleem && (
+          <motion.div
+            onClick={() => setShowReadinessModal(true)}
+            whileTap={{ scale: 0.98 }}
+            className="bg-surface rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group min-h-[165px]"
+          >
+            {/* Glow */}
+            <div className={`absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 pointer-events-none`} />
 
-          {/* Title */}
-          <div className="flex items-center gap-1 w-full justify-center">
-            <Sparkles size={11} style={{ color: readiness.color }} />
-            <span className="text-[10px] font-bold text-gray-550 uppercase tracking-widest">Readiness</span>
-          </div>
-
-          {/* SVG Ring (compact 90x90px) */}
-          <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0 z-10">
-            <svg width="90" height="90" viewBox="0 0 90 90" className="transform -rotate-90">
-              <circle
-                cx="45"
-                cy="45"
-                r="39"
-                stroke="#1e293b"
-                strokeWidth="6"
-                fill="transparent"
-              />
-              <motion.circle
-                cx="45"
-                cy="45"
-                r="39"
-                stroke={readiness.color}
-                strokeWidth="6"
-                fill="transparent"
-                strokeDasharray={245.0}
-                strokeDashoffset={245.0 - (245.0 * readiness.readinessScore) / 100}
-                strokeLinecap="round"
-                initial={{ strokeDashoffset: 245.0 }}
-                animate={{ strokeDashoffset: 245.0 - (245.0 * readiness.readinessScore) / 100 }}
-                transition={{ type: 'spring', damping: 20, stiffness: 80 }}
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-base font-extrabold text-white tracking-tight leading-none">{readiness.hasSleepData ? readiness.readinessScore : '--'}</span>
-              <span className="text-[6px] font-bold text-gray-500 uppercase tracking-widest mt-0.5 leading-none">Score</span>
+            {/* Title */}
+            <div className="flex items-center gap-1 w-full justify-center">
+              <Sparkles size={11} style={{ color: readiness.color }} />
+              <span className="text-[10px] font-bold text-gray-550 uppercase tracking-widest">Readiness</span>
             </div>
-          </div>
 
-          {/* Verdict label */}
-          <span className="text-[10px] font-black uppercase tracking-wider z-10 leading-none" style={{ color: readiness.color }}>
-            {readiness.verdict.split(' ')[0]}
-          </span>
-        </motion.div>
+            {/* SVG Ring (compact 90x90px) */}
+            <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0 z-10">
+              <svg width="90" height="90" viewBox="0 0 90 90" className="transform -rotate-90">
+                <circle
+                  cx="45"
+                  cy="45"
+                  r="39"
+                  stroke="#1e293b"
+                  strokeWidth="6"
+                  fill="transparent"
+                />
+                <motion.circle
+                  cx="45"
+                  cy="45"
+                  r="39"
+                  stroke={readiness.color}
+                  strokeWidth="6"
+                  fill="transparent"
+                  strokeDasharray={245.0}
+                  strokeDashoffset={245.0 - (245.0 * readiness.readinessScore) / 100}
+                  strokeLinecap="round"
+                  initial={{ strokeDashoffset: 245.0 }}
+                  animate={{ strokeDashoffset: 245.0 - (245.0 * readiness.readinessScore) / 100 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 80 }}
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                <span className="text-base font-extrabold text-white tracking-tight leading-none">{readiness.hasSleepData ? readiness.readinessScore : '--'}</span>
+                <span className="text-[6px] font-bold text-gray-550 uppercase tracking-widest mt-0.5 leading-none">Score</span>
+              </div>
+            </div>
+
+            {/* Verdict label */}
+            <span className="text-[10px] font-black uppercase tracking-wider z-10 leading-none" style={{ color: readiness.color }}>
+              {readiness.verdict.split(' ')[0]}
+            </span>
+          </motion.div>
+        )}
 
         {/* COMPACT CONCENTRIC TARGETS CARD */}
         <BioStatusRing 
@@ -1162,6 +1211,7 @@ const TodayView = () => {
           isRestDay={dayType === 'REST'}
           compact={true}
           onClick={() => setShowTargetsModal(true)}
+          showSleep={isHaleem}
         />
       </div>
       
@@ -1778,21 +1828,23 @@ const TodayView = () => {
                   </div>
 
                   {/* Sleep Progress */}
-                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#6366F1] uppercase tracking-widest mb-3 flex items-center justify-between">
-                      <span>💤 Sleep Recovery</span>
-                      <span>{Math.round((sleepHours / 8) * 100)}%</span>
-                    </h5>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
-                        <span>Time Asleep</span>
-                        <span className="text-white font-black">{sleepHours.toFixed(1)} / 8.0 hrs</span>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#6366F1] h-2 rounded-full" style={{ width: `${Math.min((sleepHours / 8) * 100, 100)}%` }}></div>
+                  {isHaleem && (
+                    <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                      <h5 className="text-[10px] font-black text-[#6366F1] uppercase tracking-widest mb-3 flex items-center justify-between">
+                        <span>💤 Sleep Recovery</span>
+                        <span>{Math.round((sleepHours / 8) * 100)}%</span>
+                      </h5>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
+                          <span>Time Asleep</span>
+                          <span className="text-white font-black">{sleepHours.toFixed(1)} / 8.0 hrs</span>
+                        </div>
+                        <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                          <div className="bg-[#6366F1] h-2 rounded-full" style={{ width: `${Math.min((sleepHours / 8) * 100, 100)}%` }}></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Close Button */}
