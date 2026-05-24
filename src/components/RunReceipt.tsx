@@ -70,19 +70,27 @@ export function RunReceipt({ stats, onClose }: RunReceiptProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.4 }}
-        className="fixed inset-0 z-[999999] flex items-center justify-center px-4"
-        style={{ background: 'radial-gradient(circle at center, rgba(59,130,246,0.15) 0%, rgba(6,6,16,0.98) 70%)' }}
+        transition={{ duration: 0.35 }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px 20px',
+          background: 'radial-gradient(circle at 50% 45%, rgba(59,130,246,0.18) 0%, rgba(6,6,16,0.97) 65%)',
+        }}
       >
         {/* Tap outside to close */}
-        <div className="absolute inset-0" onClick={onClose} />
+        <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
 
         <motion.div
-          initial={{ y: 80, opacity: 0, scale: 0.96 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 60, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.1 }}
-          className="relative w-full max-w-sm z-10"
+          initial={{ opacity: 0, scale: 0.88 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.92 }}
+          transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.05 }}
+          style={{ position: 'relative', width: '100%', maxWidth: 360, zIndex: 10 }}
           onClick={e => e.stopPropagation()}
         >
           {/* Receipt card */}

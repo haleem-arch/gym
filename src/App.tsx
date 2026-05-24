@@ -116,39 +116,47 @@ const AppContent = () => {
     prevIndex.current = currentIndex;
   }, [location.pathname]);
 
+  // Any active overlay = hide the bottom nav so it can't bleed through
+  const anyOverlayActive = showSplash || !!rewardStats || showGymSplash || !!gymRewardStats;
+
   return (
-    <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
-      {showIntro && <OpeningAnimation onComplete={() => setShowIntro(false)} />}
-      
-      <div className="flex-1 relative">
-        <AnimatePresence mode="wait" custom={direction}>
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition direction={direction}><TodayView /></PageTransition>} />
-            <Route path="/workout" element={<PageTransition direction={direction}><WorkoutHome /></PageTransition>} />
-            <Route path="/workout/active" element={<PageTransition direction={direction}><WorkoutTracker /></PageTransition>} />
-            <Route path="/workout/:id" element={<PageTransition direction={direction}><WorkoutDetail /></PageTransition>} />
-            <Route path="/diet" element={<PageTransition direction={direction}><DietHome /></PageTransition>} />
-            <Route path="/diet/meal/:id" element={<PageTransition direction={direction}><DietMealBuilder /></PageTransition>} />
-            <Route path="/diet/search" element={<PageTransition direction={direction}><DietSearch /></PageTransition>} />
-            <Route path="/diet/food/new" element={<PageTransition direction={direction}><FoodCreator /></PageTransition>} />
-            <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
-            <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
-            <Route path="/strava" element={<PageTransition direction={direction}><StravaAnalyzer /></PageTransition>} />
-            <Route path="/ai" element={<PageTransition direction={direction}><AiCoach /></PageTransition>} />
+    <>
+      {/* ── App shell (constrained width, clipped) ── */}
+      <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
+        {showIntro && <OpeningAnimation onComplete={() => setShowIntro(false)} />}
 
-            {/* Coach Routes */}
-            <Route path="/coach/dashboard" element={<PageTransition direction={direction}><DashboardPage /></PageTransition>} />
-            <Route path="/coach/clients" element={<PageTransition direction={direction}><ClientsListPage /></PageTransition>} />
-            <Route path="/coach/clients/new" element={<PageTransition direction={direction}><AddClientPage /></PageTransition>} />
-            <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
+        <div className="flex-1 relative">
+          <AnimatePresence mode="wait" custom={direction}>
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<PageTransition direction={direction}><TodayView /></PageTransition>} />
+              <Route path="/workout" element={<PageTransition direction={direction}><WorkoutHome /></PageTransition>} />
+              <Route path="/workout/active" element={<PageTransition direction={direction}><WorkoutTracker /></PageTransition>} />
+              <Route path="/workout/:id" element={<PageTransition direction={direction}><WorkoutDetail /></PageTransition>} />
+              <Route path="/diet" element={<PageTransition direction={direction}><DietHome /></PageTransition>} />
+              <Route path="/diet/meal/:id" element={<PageTransition direction={direction}><DietMealBuilder /></PageTransition>} />
+              <Route path="/diet/search" element={<PageTransition direction={direction}><DietSearch /></PageTransition>} />
+              <Route path="/diet/food/new" element={<PageTransition direction={direction}><FoodCreator /></PageTransition>} />
+              <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
+              <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
+              <Route path="/strava" element={<PageTransition direction={direction}><StravaAnalyzer /></PageTransition>} />
+              <Route path="/ai" element={<PageTransition direction={direction}><AiCoach /></PageTransition>} />
 
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </AnimatePresence>
+              {/* Coach Routes */}
+              <Route path="/coach/dashboard" element={<PageTransition direction={direction}><DashboardPage /></PageTransition>} />
+              <Route path="/coach/clients" element={<PageTransition direction={direction}><ClientsListPage /></PageTransition>} />
+              <Route path="/coach/clients/new" element={<PageTransition direction={direction}><AddClientPage /></PageTransition>} />
+              <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
+
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom nav — hidden while any full-screen overlay is active */}
+        {!anyOverlayActive && <BottomNav />}
       </div>
-      <BottomNav />
 
-      {/* Root-level overlays (sibling to BottomNav to guarantee perfect layering above navigation menus) */}
+      {/* ── Full-screen overlays rendered OUTSIDE the clipped shell ── */}
       <SplashOverlay
         show={showSplash}
         onComplete={() => {
@@ -188,7 +196,7 @@ const AppContent = () => {
           }}
         />
       )}
-    </div>
+    </>
   );
 };
 
