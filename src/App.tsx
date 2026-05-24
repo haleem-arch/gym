@@ -8,6 +8,7 @@ import WorkoutTracker from './pages/WorkoutTracker';
 import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
 import { OpeningAnimation } from './components/OpeningAnimation';
+import { DumbbellLoader } from './components/DumbbellLoader';
 
 import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
@@ -143,11 +144,7 @@ function App() {
   }, []);
 
   if (session === undefined) {
-    return (
-      <div className="bg-background h-[100dvh] flex items-center justify-center text-primary font-bold animate-pulse">
-        LOADING ATHLETE PROFILE...
-      </div>
-    );
+    return <DumbbellLoader fullScreen size={140} />;
   }
 
   return (
