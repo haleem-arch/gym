@@ -113,3 +113,49 @@ textarea {
   transform: translateY(20px);
   animation: slideUpFade 0.5s ease-out 0.7s forwards;
 }
+
+/* ─── Gym Reward Screen Animations ──────────────────────────── */
+@keyframes gymBadgePopIn {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(6deg); opacity: 1; }
+  80%  { transform: scale(0.95) rotate(-2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.gym-reward-badge {
+  transform: scale(0);
+  animation: gymBadgePopIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s forwards;
+}
+
+.gym-reward-title {
+  opacity: 0;
+  animation: slideUpFade 0.5s ease-out 0.9s forwards;
+}
+
+.gym-reward-subtitle {
+  opacity: 0;
+  animation: slideUpFade 0.5s ease-out 1.0s forwards;
+}
+
+.gym-reward-stat-1 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUpFade 0.5s ease-out 1.1s forwards;
+}
+
+.gym-reward-stat-2 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUpFade 0.5s ease-out 1.2s forwards;
+}
+
+.gym-reward-stat-3 {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUpFade 0.5s ease-out 1.3s forwards;
+}
+
+.gym-reward-btn {
+  opacity: 0;
+  animation: slideUpFade 0.5s ease-out 1.6s forwards;
+}
