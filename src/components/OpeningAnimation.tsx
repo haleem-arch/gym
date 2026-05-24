@@ -42,7 +42,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0a0a] overflow-hidden"
         >
-          <div className="relative flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center p-6">
             
             {/* Dumbbell Logo Container (Translates up once plates attach) */}
             <motion.div
@@ -51,13 +51,22 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                 duration: 0.65,
                 ease: [0.25, 1, 0.5, 1], // Smooth deceleration curve
               }}
-              style={{ width: 180, height: 180 }}
+              style={{ 
+                width: 260, 
+                height: 260,
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
+                WebkitTransform: 'translateZ(0)',
+              }}
               className="relative flex items-center justify-center select-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 512 512"
+                shapeRendering="geometricPrecision"
                 className="w-full h-full"
+                style={{ imageRendering: 'crisp-edges' }}
               >
                 <g transform="translate(256 256) rotate(-45)">
                   {/* Handle/Bar (Rod) */}
@@ -74,7 +83,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                   {/* Left Weights (Fly in along the rod from top-left) */}
                   <motion.g
                     id="left-weights"
-                    initial={{ x: -400, opacity: 0 }}
+                    initial={{ x: -450, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{
                       duration: 0.85,
@@ -90,7 +99,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                   {/* Right Weights (Fly in along the rod from bottom-right) */}
                   <motion.g
                     id="right-weights"
-                    initial={{ x: 400, opacity: 0 }}
+                    initial={{ x: 450, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{
                       duration: 0.85,
@@ -106,8 +115,8 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
               </svg>
             </motion.div>
 
-            {/* LIFE GYM Text (Fades in directly below center dumbbell) */}
-            <div className="absolute top-[58%] w-full flex justify-center">
+            {/* LIFE GYM Text (Fades in directly below center dumbbell in vertical layout) */}
+            <div className="h-10 mt-1 flex items-center justify-center">
               <motion.h1
                 initial={{ opacity: 0, y: 15 }}
                 animate={showText ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
@@ -129,7 +138,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                 duration: 0.75,
                 ease: 'easeOut',
               }}
-              className="absolute w-44 h-44 rounded-full border-2 border-primary/45 bg-primary/5 filter blur-[6px] pointer-events-none"
+              className="absolute w-56 h-56 rounded-full border-2 border-primary/45 bg-primary/5 filter blur-[6px] pointer-events-none"
             />
           </div>
         </motion.div>
