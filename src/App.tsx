@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import TodayView from './pages/TodayView';
@@ -11,6 +11,8 @@ import { OpeningAnimation } from './components/OpeningAnimation';
 import { DumbbellLoader } from './components/DumbbellLoader';
 import { SplashOverlay } from './components/SplashOverlay';
 import { RunReceipt } from './components/RunReceipt';
+import { GymSplashOverlay } from './components/GymSplashOverlay';
+import { GymReceipt } from './components/GymReceipt';
 
 import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
@@ -71,6 +73,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 const AppContent = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
   
@@ -83,14 +86,30 @@ const AppContent = () => {
   const [rewardStats, setRewardStats] = useState<any>(null);
   const [pendingRewardStats, setPendingRewardStats] = useState<any>(null);
 
+  const [showGymSplash, setShowGymSplash] = useState(false);
+  const [gymRewardStats, setGymRewardStats] = useState<any>(null);
+  const [pendingGymStats, setPendingGymStats] = useState<any>(null);
+
   useEffect(() => {
     const handleRunSaved = (e: Event) => {
       const customEvent = e as CustomEvent;
       setPendingRewardStats(customEvent.detail);
       setShowSplash(true);
     };
+
+    const handleGymSaved = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setPendingGymStats(customEvent.detail);
+      setShowGymSplash(true);
+    };
+
     window.addEventListener('trigger-run-saved', handleRunSaved);
-    return () => window.removeEventListener('trigger-run-saved', handleRunSaved);
+    window.addEventListener('trigger-gym-saved', handleGymSaved);
+
+    return () => {
+      window.removeEventListener('trigger-run-saved', handleRunSaved);
+      window.removeEventListener('trigger-gym-saved', handleGymSaved);
+    };
   }, []);
 
   useEffect(() => {
@@ -145,6 +164,28 @@ const AppContent = () => {
         <RunReceipt
           stats={rewardStats}
           onClose={() => setRewardStats(null)}
+        />
+      )}
+
+      <GymSplashOverlay
+        show={showGymSplash}
+        onComplete={() => {
+          setShowGymSplash(false);
+          if (pendingGymStats) {
+            setGymRewardStats(pendingGymStats);
+            setPendingGymStats(null);
+          }
+        }}
+      />
+
+      {gymRewardStats && (
+        <GymReceipt
+          stats={gymRewardStats}
+          onClose={() => {
+            const id = gymRewardStats.workoutId;
+            setGymRewardStats(null);
+            navigate(`/workout/${id}`, { replace: true });
+          }}
         />
       )}
     </div>

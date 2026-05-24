@@ -5,7 +5,6 @@ import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import type { WorkoutExercise } from '../hooks/useActiveWorkout';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { RestTimer } from '../components/RestTimer';
-import { GymRewardScreen } from '../components/GymRewardScreen';
 import { Check, ArrowLeft, Clock } from 'lucide-react';
 
 const WorkoutTracker = () => {
@@ -16,7 +15,7 @@ const WorkoutTracker = () => {
   const [restTimer, setRestTimer] = useState<{ active: boolean; time: number }>({ active: false, time: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [rewardStats, setRewardStats] = useState<{ duration: number; sets: number; volume: number; dayType: string; workoutId: string } | null>(null);
+
 
   useEffect(() => {
     if (state?.startNew && !workout && state.plan?.exercises?.length > 0) {
@@ -120,16 +119,37 @@ const WorkoutTracker = () => {
         ex.sets.forEach(set => { if (set.done) totalSets++; });
       });
 
+      // Find the heaviest lift as a PR highlight
+      let maxWeight = 0;
+      let bestExercise = '';
+      let bestReps = 0;
+      workout.exercises.forEach(ex => {
+        ex.sets.forEach(set => {
+          if (set.done && set.weight > maxWeight) {
+            maxWeight = set.weight;
+            bestExercise = ex.name;
+            bestReps = set.reps;
+          }
+        });
+      });
+      const prExercise = bestExercise ? `${bestExercise}: ${maxWeight}kg x ${bestReps} reps` : undefined;
+
       endWorkout();
 
-      // Show reward screen before navigating
-      setRewardStats({
-        duration,
-        sets: totalSets,
-        volume: totalVolume,
-        dayType: workout.dayType,
-        workoutId: workoutData.id,
-      });
+      // Dispatch custom window event to trigger root-level barbell plate stacker + premium receipt
+      window.dispatchEvent(new CustomEvent('trigger-gym-saved', {
+        detail: {
+          workoutName: `${workout.dayType} Day`,
+          totalVolume: totalVolume,
+          totalSets: totalSets,
+          durationMinutes: Math.floor(duration / 60) || 1,
+          prExercise: prExercise,
+          workoutId: workoutData.id,
+        }
+      }));
+
+      // Navigate back to history list (covered seamlessly by the root splash overlay)
+      navigate('/workout', { replace: true });
     } catch (e: any) {
       alert("Error saving workout: " + e.message);
     } finally {
@@ -234,14 +254,7 @@ const WorkoutTracker = () => {
         onClose={() => setRestTimer({ active: false, time: 0 })} 
       />
 
-      {/* Gym Reward Screen — shown after successful save */}
-      {rewardStats && (
-        <GymRewardScreen
-          stats={rewardStats}
-          onDone={() => navigate(`/workout/${rewardStats.workoutId}`, { replace: true })}
-          onBack={() => navigate('/workout', { replace: true })}
-        />
-      )}
+
     </div>
   );
 };
