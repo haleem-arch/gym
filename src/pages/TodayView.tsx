@@ -1766,6 +1766,7 @@ const TodayView = () => {
                     sleepPct={sleepHours / 8}
                     isRestDay={dayType === 'REST'}
                     compact={false}
+                    showSleep={isHaleem}
                   />
                   <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                     Overall Target Fulfillment
