@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { GymReceipt } from '../../components/GymReceipt';
 import {
   Lock, Dumbbell, ChevronLeft, ChevronRight, Trash2,
   LogOut, Search, X, Calendar, Sparkles, ArrowLeft,
@@ -69,6 +70,7 @@ export default function DashboardPage() {
   const [workoutPlans, setWorkoutPlans] = useState<any[]>([]);
   const [exerciseDb, setExerciseDb] = useState<any[]>([]);
   const [athleteDays, setAthleteDays] = useState<string[]>(['PUSH', 'PULL', 'LEGS', 'RUN', 'REST', 'REST + RUN']);
+  const [selectedReceiptWorkout, setSelectedReceiptWorkout] = useState<any>(null);
 
   // CSV Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -150,15 +152,28 @@ export default function DashboardPage() {
         setDayNutrition(tgt.day_nutrition || {});
       }
 
-      // Fetch user's workout plans to get dynamic day types
+      // Fetch user's workout plans
       const { data: plansData } = await supabase
         .from('user_workout_plans')
-        .select('plan_type')
+        .select('*')
         .eq('user_id', userId);
-      const planTypes = plansData ? plansData.map(p => p.plan_type.toUpperCase()) : [];
-      const defaultDays = ['PUSH', 'PULL', 'LEGS', 'RUN', 'REST', 'REST + RUN'];
-      const customPlans = planTypes.filter(t => !defaultDays.includes(t));
-      setAthleteDays([...defaultDays, ...customPlans]);
+      
+      let finalPlans = plansData || [];
+      if (!plansData || plansData.length === 0) {
+        const defaultInserts = ['PUSH', 'PULL', 'LEGS', 'RUN', 'REST', 'REST + RUN'].map(dt => ({
+          user_id: userId,
+          plan_type: dt,
+          exercises: []
+        }));
+        const { data: seeded } = await supabase.from('user_workout_plans').insert(defaultInserts).select();
+        if (seeded) {
+          finalPlans = seeded;
+        }
+      }
+      
+      setWorkoutPlans(finalPlans);
+      const planTypes = finalPlans.map(p => p.plan_type.toUpperCase());
+      setAthleteDays(planTypes);
 
       const { data: dLog } = await supabase.from('diet_logs').select('*').eq('user_id', userId).eq('date', dateStr).maybeSingle();
       setDietLog(dLog || null);
@@ -178,9 +193,6 @@ export default function DashboardPage() {
 
       const { data: inbodyScans } = await supabase.from('inbody_scans').select('*').eq('user_id', userId).order('date', { ascending: false });
       setScans(inbodyScans || []);
-
-      const { data: plans } = await supabase.from('user_workout_plans').select('*').eq('user_id', userId);
-      setWorkoutPlans(plans || []);
     } catch (err) {
       console.error(err);
       toast.error('Error loading client data');
@@ -243,6 +255,54 @@ export default function DashboardPage() {
     sessionStorage.removeItem('coach_hub_authed');
     setIsAuthed(false);
     setPasscode('');
+  };
+
+  const handleOpenReceipt = async (w: any) => {
+    try {
+      const { data: exData, error } = await supabase
+        .from('workout_exercises')
+        .select('sets, exercise_id')
+        .eq('workout_id', w.id);
+        
+      if (error) throw error;
+      
+      let totalSets = 0;
+      let maxWeight = 0;
+      let bestExercise = '';
+      let bestReps = 0;
+      
+      if (exData) {
+        exData.forEach((ex: any) => {
+          const setsArr = ex.sets || [];
+          setsArr.forEach((set: any) => {
+            if (set.done) {
+              totalSets++;
+              const wt = parseFloat(set.weight) || 0;
+              const rp = parseInt(set.reps) || 0;
+              if (wt > maxWeight) {
+                maxWeight = wt;
+                const dbEx = exerciseDb.find(e => e.id === ex.exercise_id);
+                bestExercise = dbEx ? dbEx.name : 'Lift';
+                bestReps = rp;
+              }
+            }
+          });
+        });
+      }
+      
+      const prExercise = bestExercise ? `${bestExercise}: ${maxWeight}kg x ${bestReps} reps` : undefined;
+      
+      setSelectedReceiptWorkout({
+        workoutName: `${w.day_type} Day`,
+        totalVolume: w.total_volume || 0,
+        totalSets: totalSets,
+        durationMinutes: Math.floor((w.duration || 0) / 60) || 1,
+        prExercise: prExercise,
+        workoutId: w.id
+      });
+    } catch (err: any) {
+      toast.error('Error loading receipt: ' + err.message);
+    }
   };
 
   // ─── HELPERS ─────────────────────────────────────────────
@@ -1098,7 +1158,15 @@ export default function DashboardPage() {
                 ) : (
                   <div className="divide-y divide-gray-800/60">
                     {workoutsList.map(w => (
-                      <div key={w.id} className="p-4 space-y-2.5">
+                      <div 
+                        key={w.id}
+                        onClick={() => w.status === 'completed' && handleOpenReceipt(w)}
+                        className={`p-4 space-y-2.5 transition-all ${
+                          w.status === 'completed' 
+                            ? 'hover:bg-gray-800/40 cursor-pointer border border-transparent hover:border-gray-800/80 rounded-xl' 
+                            : ''
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
@@ -1111,10 +1179,10 @@ export default function DashboardPage() {
                             <span className="text-xs font-bold text-white">{w.name || 'Workout'}</span>
                           </div>
                           <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${
-                            w.status === 'completed' ? 'bg-green-900/40 text-green-400' :
+                            w.status === 'completed' ? 'bg-green-900/40 text-green-400 animate-pulse' :
                             w.status === 'in_progress' ? 'bg-yellow-900/40 text-yellow-400' :
                             'bg-gray-800 text-gray-500'
-                          }`}>{w.status}</span>
+                          }`}>{w.status === 'completed' ? '✓ view receipt' : w.status}</span>
                         </div>
                         {w.exercises && w.exercises.length > 0 && (
                           <div className="space-y-1.5">
@@ -1164,7 +1232,7 @@ export default function DashboardPage() {
 
                 <div className="divide-y divide-gray-800/60">
                   {athleteDays.map(dt => {
-                    const plan = workoutPlans.find(p => p.plan_type === dt);
+                    const plan = workoutPlans.find(p => p.plan_type.toUpperCase() === dt.toUpperCase());
                     const isExp = activeSplitEditKey === dt;
                     return (
                       <div key={dt}>
@@ -1422,6 +1490,13 @@ export default function DashboardPage() {
             </div>
           )}
         </>
+      )}
+
+      {selectedReceiptWorkout && (
+        <GymReceipt
+          stats={selectedReceiptWorkout}
+          onClose={() => setSelectedReceiptWorkout(null)}
+        />
       )}
     </div>
   );
