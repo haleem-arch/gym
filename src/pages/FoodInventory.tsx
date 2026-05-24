@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Database, Globe } from 'lucide-react';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 const FoodInventory = () => {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ const FoodInventory = () => {
         </p>
 
         {loading ? (
-          <div className="text-center text-gray-500 py-8">Loading inventory...</div>
+          <DumbbellLoader label="Loading inventory..." size={100} />
         ) : foods.length === 0 ? (
           <div className="text-center text-gray-500 py-12 bg-surface border border-gray-800 rounded-xl border-dashed">
             You haven't added any custom foods yet.

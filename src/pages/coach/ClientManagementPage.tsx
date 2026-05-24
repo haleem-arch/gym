@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Card } from '../../components/Card';
+import { DumbbellLoader } from '../../components/DumbbellLoader';
 
 export default function ClientManagementPage() {
   const { clientId } = useParams();
@@ -80,7 +81,13 @@ export default function ClientManagementPage() {
     fetchClientProfile();
   };
 
-  if (loading) return <div className="p-4 text-gray-400">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <DumbbellLoader label="Loading client details..." size={100} />
+      </div>
+    );
+  }
   if (!client) return <div className="p-4 text-red-400">Client not found</div>;
 
   return (
@@ -390,7 +397,7 @@ function InBodyHistory({ clientId }: any) {
     fetchScans();
   }, [clientId]);
 
-  if (loading) return <p className="text-gray-400 animate-pulse">Loading scans...</p>;
+  if (loading) return <DumbbellLoader label="Loading scans..." size={60} />;
   if (scans.length === 0) return <p className="text-gray-500 italic">No scans yet.</p>;
 
   return (

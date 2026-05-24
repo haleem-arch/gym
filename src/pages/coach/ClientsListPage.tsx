@@ -1,6 +1,7 @@
 import { useCoachClients } from '../../hooks/useCoachClients';
 import { Card } from '../../components/Card';
 import { Link } from 'react-router-dom';
+import { DumbbellLoader } from '../../components/DumbbellLoader';
 
 export default function ClientsListPage() {
   const { clients, loading } = useCoachClients();
@@ -19,7 +20,7 @@ export default function ClientsListPage() {
 
       {loading ? (
         <div className="flex justify-center p-12">
-          <p className="text-gray-400 animate-pulse">Loading clients...</p>
+          <DumbbellLoader label="Loading clients..." size={100} />
         </div>
       ) : clients.length === 0 ? (
         <div className="text-center p-12 bg-gray-800 rounded-lg border border-dashed border-gray-700">

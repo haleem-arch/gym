@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { useDiet, type DietMeal, type DietMealItem } from '../hooks/useDiet';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 const DietMealBuilder = () => {
   const { id } = useParams();
@@ -51,7 +52,13 @@ const DietMealBuilder = () => {
     return totals;
   };
 
-  if (loading) return <div className="p-4 text-center text-gray-500">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <DumbbellLoader label="Loading meal details..." size={100} />
+      </div>
+    );
+  }
   if (!meal) return <div className="p-4 text-center text-danger">Meal not found.</div>;
 
   const macros = calculateMealMacros();

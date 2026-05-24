@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
 import { RewardScreen } from '../components/RewardScreen';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -659,7 +660,7 @@ const WorkoutHome = () => {
         </div>
 
         {loading ? (
-          <div className="text-center text-gray-500 py-4">Loading history...</div>
+          <DumbbellLoader label="Loading history..." size={80} />
         ) : pastWorkouts.length === 0 ? (
           <div className="text-center text-gray-500 py-4 bg-surface border border-gray-800 rounded-xl">No workouts logged yet.</div>
         ) : (

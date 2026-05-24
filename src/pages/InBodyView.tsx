@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 export default function InBodyView() {
   const [scans, setScans] = useState<any[]>([]);
@@ -260,7 +261,7 @@ export default function InBodyView() {
       </motion.div>
 
       {loading ? (
-        <div className="text-center text-gray-500 mt-10">Loading scans...</div>
+        <DumbbellLoader label="Loading scans..." size={100} />
       ) : scans.length === 0 ? (
         <div className="text-center p-10 bg-surface rounded-3xl border border-gray-800">
           <div className="bg-gray-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">

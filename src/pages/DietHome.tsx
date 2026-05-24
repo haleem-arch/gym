@@ -6,6 +6,7 @@ import { Plus, Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { supabase } from '../lib/supabase';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 const DietHome = () => {
   const navigate = useNavigate();
@@ -54,8 +55,8 @@ const DietHome = () => {
 
   if (loading) {
     return (
-      <div className="p-5 flex flex-col gap-6 min-h-full items-center justify-center text-gray-500">
-        Loading nutrition data...
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <DumbbellLoader label="Loading nutrition data..." size={100} />
       </div>
     );
   }

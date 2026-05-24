@@ -7,6 +7,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { WorkoutAiChat } from '../components/WorkoutAiChat';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 // Polyline decoder helper
 const decodePolyline = (encoded: string): [number, number][] => {
@@ -138,7 +139,13 @@ const WorkoutDetail = () => {
     fetchWorkout();
   }, [id]);
 
-  if (loading) return <div className="p-6 text-center text-gray-500">Loading receipt...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <DumbbellLoader label="Loading receipt..." size={100} />
+      </div>
+    );
+  }
   if (!workout) return <div className="p-6 text-center text-gray-500">Workout not found.</div>;
 
   const formatDate = (dateString: string) => {

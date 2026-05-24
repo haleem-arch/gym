@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Search, Plus, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DumbbellLoader } from '../components/DumbbellLoader';
 
 const DietSearch = () => {
   const navigate = useNavigate();
@@ -189,7 +190,7 @@ const DietSearch = () => {
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="p-4 text-center text-gray-500">Searching...</div>
+          <DumbbellLoader label="Searching foods..." size={80} />
         ) : query.trim() === '' ? (
           <div className="p-8 text-center flex flex-col items-center text-gray-500 gap-2 mt-10">
             <Search className="w-8 h-8 opacity-50" />

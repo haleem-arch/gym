@@ -1,6 +1,7 @@
 import { useCoachClients } from '../../hooks/useCoachClients';
 import { Card } from '../../components/Card';
 import { Link } from 'react-router-dom';
+import { DumbbellLoader } from '../../components/DumbbellLoader';
 
 export default function DashboardPage() {
   const { clients, loading } = useCoachClients();
@@ -32,7 +33,7 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400">Loading...</p>
+        <DumbbellLoader label="Loading dashboard..." size={80} />
       ) : clients.length === 0 ? (
         <p className="text-gray-400">No clients yet. <Link to="/coach/clients/new" className="text-blue-400 underline">Create one</Link></p>
       ) : (
