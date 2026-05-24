@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
+import WorkoutBuilder from './pages/WorkoutBuilder';
 import WorkoutTracker from './pages/WorkoutTracker';
 import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
@@ -131,6 +132,7 @@ const AppContent = () => {
               <Route path="/" element={<PageTransition direction={direction}><TodayView /></PageTransition>} />
               <Route path="/workout" element={<PageTransition direction={direction}><WorkoutHome /></PageTransition>} />
               <Route path="/workout/active" element={<PageTransition direction={direction}><WorkoutTracker /></PageTransition>} />
+              <Route path="/workout/builder" element={<PageTransition direction={direction}><WorkoutBuilder /></PageTransition>} />
               <Route path="/workout/:id" element={<PageTransition direction={direction}><WorkoutDetail /></PageTransition>} />
               <Route path="/diet" element={<PageTransition direction={direction}><DietHome /></PageTransition>} />
               <Route path="/diet/meal/:id" element={<PageTransition direction={direction}><DietMealBuilder /></PageTransition>} />

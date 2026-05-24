@@ -19,21 +19,27 @@ const WorkoutTracker = () => {
 
   useEffect(() => {
     if (state?.startNew && !workout && state.plan?.exercises?.length > 0) {
-      const realExercises: WorkoutExercise[] = state.plan.exercises.map((dbEx: any) => ({
-        id: dbEx.id,
-        name: dbEx.name,
-        muscle_group: dbEx.muscle_group,
-        tier: dbEx.tier || 'A',
-        cue: dbEx.cue || '',
-        rationale: dbEx.rationale || '',
-        restTime: 120,
-        notes: '',
-        sets: [
-          { setNum: 1, weight: 0, reps: 0, rpe: 8, done: false },
-          { setNum: 2, weight: 0, reps: 0, rpe: 8, done: false },
-          { setNum: 3, weight: 0, reps: 0, rpe: 8, done: false },
-        ]
-      }));
+      const realExercises: WorkoutExercise[] = state.plan.exercises.map((dbEx: any) => {
+        const numSets = dbEx.setsCount || dbEx.sets || 3;
+        const restTime = dbEx.restTime || dbEx.rest || 120;
+        return {
+          id: dbEx.id,
+          name: dbEx.name,
+          muscle_group: dbEx.muscle_group,
+          tier: dbEx.tier || 'A',
+          cue: dbEx.cue || '',
+          rationale: dbEx.rationale || '',
+          restTime: restTime,
+          notes: '',
+          sets: Array.from({ length: numSets }).map((_, sIdx) => ({
+            setNum: sIdx + 1,
+            weight: 0,
+            reps: 0,
+            rpe: 8,
+            done: false
+          }))
+        };
+      });
       
       startWorkout(state.plan.type, state.plan.title, realExercises, state.activeDateStr);
       window.history.replaceState({}, document.title);

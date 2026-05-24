@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useSchedule } from '../hooks/useSchedule';
-import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, BarChart2 } from 'lucide-react';
+import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, BarChart2, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
@@ -26,6 +26,7 @@ const WorkoutHome = () => {
     title: 'Workout Session',
     exercises: []
   });
+  const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showRunModal, setShowRunModal] = useState(false);
@@ -208,7 +209,7 @@ const WorkoutHome = () => {
           runDuration += (w.duration || 0) / 60;
           runElevation += parseInt(stats.elevation_m) || 0;
         } catch (e) {}
-      } else if (['PUSH', 'PULL', 'LEGS'].includes(w.day_type)) {
+      } else if (w.day_type !== 'RUN' && w.day_type !== 'REST') {
         hasGym = true;
         gymType = w.day_type;
         volumeLifted += w.total_volume || 0;
@@ -316,6 +317,12 @@ const WorkoutHome = () => {
         setInProgressWorkout(null);
       }
 
+      // 2.5 Fetch all custom and default workout plans for this user
+      const { data: plansData } = await supabase
+        .from('user_workout_plans')
+        .select('*')
+        .eq('user_id', session.user.id);
+
       // 3. Fetch real exercises based on day_type
       const planMap: Record<string, string[]> = {
         PUSH: [
@@ -344,31 +351,64 @@ const WorkoutHome = () => {
         ]
       };
 
+      let activePlans = plansData || [];
+      // Seed any missing default splits (PUSH/PULL/LEGS)
+      const existingTypes = activePlans.map((p: any) => p.plan_type);
+      const missingDefaults = ['PUSH', 'PULL', 'LEGS'].filter(t => !existingTypes.includes(t));
+      if (missingDefaults.length > 0) {
+        const defaultInserts = missingDefaults.map(split => ({
+          user_id: session.user.id,
+          plan_type: split,
+          exercises: planMap[split].map((name: string, i: number) => ({
+            id: `default-${split.toLowerCase()}-${i}`,
+            name,
+            sets: 3,
+            rest: 120
+          }))
+        }));
+        const { data: seededData } = await supabase
+          .from('user_workout_plans')
+          .insert(defaultInserts)
+          .select();
+        if (seededData) {
+          activePlans = [...activePlans, ...seededData];
+        }
+      }
+      setSavedTemplates(activePlans);
+
       if (dayType === 'REST' || dayType === 'RUN') {
         setTodayPlan((prev: any) => ({ ...prev, exercises: [] }));
       } else {
         const targetSplit = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
-        if (planMap[targetSplit]) {
-          const { data: customPlan } = await supabase
-            .from('user_workout_plans')
-            .select('exercises')
-            .eq('user_id', session.user.id)
-            .eq('plan_type', targetSplit)
-            .maybeSingle();
+        
+        // Find saved plan or fallback
+        const matchingPlan = activePlans.find(p => p.plan_type === targetSplit);
+        const targetItems = (matchingPlan?.exercises && matchingPlan.exercises.length > 0) 
+          ? matchingPlan.exercises 
+          : planMap[targetSplit] || [];
 
-          const targetNames = (customPlan?.exercises && customPlan.exercises.length > 0) 
-            ? customPlan.exercises 
-            : planMap[targetSplit];
+        const namesOnly = targetItems.map((e: any) => typeof e === 'string' ? e : e.name);
 
+        if (namesOnly.length > 0) {
           const { data: exData } = await supabase
             .from('exercises')
             .select('*')
-            .in('name', targetNames);
+            .in('name', namesOnly);
             
           if (exData && exData.length > 0) {
-            const sorted = [...exData].sort((a, b) => targetNames.indexOf(a.name) - targetNames.indexOf(b.name));
-            setTodayPlan((prev: any) => ({ ...prev, exercises: sorted, type: targetSplit }));
+            const sorted = [...exData].sort((a, b) => namesOnly.indexOf(a.name) - namesOnly.indexOf(b.name));
+            const richExercises = sorted.map(ex => {
+              const matched = targetItems.find((t: any) => (typeof t === 'string' ? t : t.name) === ex.name);
+              return {
+                ...ex,
+                setsCount: (matched && typeof matched !== 'string') ? matched.sets : 3,
+                restTime: (matched && typeof matched !== 'string') ? matched.rest : 120,
+              };
+            });
+            setTodayPlan((prev: any) => ({ ...prev, exercises: richExercises, type: targetSplit }));
           }
+        } else {
+          setTodayPlan((prev: any) => ({ ...prev, exercises: [], type: targetSplit }));
         }
       }
       
@@ -430,6 +470,7 @@ const WorkoutHome = () => {
     navigate('/workout/active', { state: { startNew: true, plan: todayPlan, activeDateStr: selectedDateStr } });
   };
 
+
   const handleDeleteSession = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this activity?")) {
       return;
@@ -451,10 +492,10 @@ const WorkoutHome = () => {
 
   const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString() && w.day_type === dayType);
   const hasCompletedRunToday = pastWorkouts.some(w => w.date === getLocalDateString() && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
-  const hasCompletedGymToday = pastWorkouts.some(w => w.date === getLocalDateString() && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+  const hasCompletedGymToday = pastWorkouts.some(w => w.date === getLocalDateString() && w.day_type !== 'RUN' && w.day_type !== 'REST');
 
   useEffect(() => {
-    const completedGym = pastWorkouts.find(w => w.date === getLocalDateString() && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+    const completedGym = pastWorkouts.find(w => w.date === getLocalDateString() && w.day_type !== 'RUN' && w.day_type !== 'REST');
     if (completedGym) {
       setHybridLiftingType(completedGym.day_type);
     }
@@ -464,20 +505,22 @@ const WorkoutHome = () => {
     <div className="p-5 flex flex-col gap-6 min-h-full max-w-lg mx-auto w-full overflow-x-hidden">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
-        <div className="flex bg-slate-800 p-1 rounded-lg">
-          <button 
-            onClick={() => setShowAnalytics(false)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${!showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
-          >
-            History
-          </button>
-          <button 
-            onClick={() => setShowAnalytics(true)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 cursor-pointer ${showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
-          >
-            <BarChart2 size={16} className={showAnalytics ? 'text-black' : ''} />
-            <span>Insights</span>
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-800 p-1 rounded-lg">
+            <button 
+              onClick={() => setShowAnalytics(false)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${!showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
+            >
+              History
+            </button>
+            <button 
+              onClick={() => setShowAnalytics(true)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 cursor-pointer ${showAnalytics ? 'bg-primary text-black' : 'text-slate-400'}`}
+            >
+              <BarChart2 size={16} className={showAnalytics ? 'text-black' : ''} />
+              <span>Insights</span>
+            </button>
+          </div>
         </div>
       </motion.div>
 
@@ -525,18 +568,21 @@ const WorkoutHome = () => {
             <p className="text-xs text-gray-400 mb-1 leading-relaxed">Complete both your cardio mileage and your lifting volume to fulfill today's rings.</p>
             
             {/* Gym split sub-selector */}
-            <div className="flex items-center gap-2 bg-gray-900/80 p-1.5 rounded-2xl border border-gray-800 w-full max-w-xs shadow-inner">
-              <span className="text-xs font-bold text-gray-400 px-3">Gym Split:</span>
-              {['PUSH', 'PULL', 'LEGS'].map(t => (
-                <button
-                  key={t}
-                  disabled={hasCompletedGymToday}
-                  onClick={() => setHybridLiftingType(t)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'} ${hasCompletedGymToday ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
-                >
-                  {t} {hasCompletedGymToday && hybridLiftingType === t ? '✓' : ''}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 bg-gray-900/80 p-1.5 rounded-2xl border border-gray-800 w-full max-w-xs shadow-inner overflow-x-auto scrollbar-none">
+              <span className="text-xs font-bold text-gray-400 px-3 shrink-0">Gym Split:</span>
+              {savedTemplates.map(tmpl => {
+                const t = tmpl.plan_type;
+                return (
+                  <button
+                    key={t}
+                    disabled={hasCompletedGymToday}
+                    onClick={() => setHybridLiftingType(t)}
+                    className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'} ${hasCompletedGymToday ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
+                  >
+                    {t} {hasCompletedGymToday && hybridLiftingType === t ? '✓' : ''}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex flex-col gap-3 w-full mt-2">
@@ -646,6 +692,25 @@ const WorkoutHome = () => {
             )}
           </div>
         )}
+      </motion.div>
+
+      {/* ── Workout Templates & Programs Section ── */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.15 }}
+        className="mt-2"
+      >
+        <button
+          onClick={() => navigate('/workout/builder')}
+          className="w-full py-4 bg-surface hover:bg-slate-800/80 text-white font-extrabold rounded-2xl flex items-center justify-between px-5 border border-gray-800 hover:border-gray-700 transition-all active:scale-[0.98] shadow-md cursor-pointer text-xs uppercase tracking-wider"
+        >
+          <div className="flex items-center gap-2.5">
+            <Layers size={15} className="text-primary animate-pulse" />
+            <span>Workout Templates &amp; Programs</span>
+          </div>
+          <ChevronRight size={16} className="text-gray-500" />
+        </button>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-2">

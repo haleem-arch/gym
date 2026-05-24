@@ -13,7 +13,6 @@ import { BioStatusRing } from '../components/BioStatusRing';
 import { useRecovery } from '../hooks/useRecovery';
 
 
-const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
 
 const RippleButton = ({ onClick, className, children }: { onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, className?: string, children: React.ReactNode }) => {
   const [ripples, setRipples] = useState<{x: number, y: number, id: number}[]>([]);
@@ -123,6 +122,7 @@ const TodayView = () => {
     muscle: number | string;
     score: number | string;
   } | null>(null);
+  const [workoutTemplates, setWorkoutTemplates] = useState<any[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -141,14 +141,14 @@ const TodayView = () => {
       if (completedWorkouts) {
         setCompletedWorkoutsList(completedWorkouts);
 
-        const completedGym = completedWorkouts.find((w: any) => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+        const completedGym = completedWorkouts.find((w: any) => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
         if (completedGym) {
           setHybridLiftingType(completedGym.day_type);
         }
 
         if (dayType === 'RUN + GYM') {
           const hasRun = completedWorkouts.some((w: any) => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
-          const hasGym = completedWorkouts.some((w: any) => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+          const hasGym = completedWorkouts.some((w: any) => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
           
           if (hasRun && hasGym) {
             if (isToday) {
@@ -273,6 +273,72 @@ const TodayView = () => {
   useEffect(() => {
     localStorage.setItem('athlete_dashboard_selected_date', activeDateStr);
   }, [activeDateStr]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchWorkoutTemplates = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data: plansData } = await supabase
+        .from('user_workout_plans')
+        .select('*')
+        .eq('user_id', session.user.id);
+        
+      if (!active) return;
+      
+      let activePlans = plansData || [];
+      // Seed any missing default splits (PUSH/PULL/LEGS)
+      const existingTypes = activePlans.map((p: any) => p.plan_type);
+      const defaultExercises: Record<string, string[]> = {
+        PUSH: ['Incline DB Bench Press (45°)', 'DB Shoulder Press (seated neutral)', 'Incline DB Y-Raise (20-30°)', 'Cable Chest Fly (low pulley)', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
+        PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
+        LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
+      };
+      const missingDefaults = ['PUSH', 'PULL', 'LEGS'].filter(t => !existingTypes.includes(t));
+      if (missingDefaults.length > 0) {
+        const defaultInserts = missingDefaults.map(split => ({
+          user_id: session.user.id,
+          plan_type: split,
+          exercises: defaultExercises[split].map((name: string, i: number) => ({
+            id: `default-${split.toLowerCase()}-${i}`,
+            name,
+            sets: 3,
+            rest: 120
+          }))
+        }));
+        const { data: seededData } = await supabase
+          .from('user_workout_plans')
+          .insert(defaultInserts)
+          .select();
+        if (seededData) {
+          activePlans = [...activePlans, ...seededData];
+        }
+      }
+      
+      setWorkoutTemplates(activePlans);
+      
+      // Update hybridLiftingType to a valid loaded template plan_type if the current one is PUSH but PUSH doesn't exist anymore
+      if (activePlans.length > 0) {
+        const types = activePlans.map(p => p.plan_type);
+        setHybridLiftingType(prev => {
+          if (types.includes(prev)) return prev;
+          const fallback = types.find(t => ['PUSH', 'PULL', 'LEGS'].includes(t)) || types[0];
+          return fallback;
+        });
+      }
+    };
+    
+    fetchWorkoutTemplates();
+    
+    const handlePlanUpdated = () => fetchWorkoutTemplates();
+    window.addEventListener('plan_updated', handlePlanUpdated);
+    
+    return () => {
+      active = false;
+      window.removeEventListener('plan_updated', handlePlanUpdated);
+    };
+  }, []);
 
   const analyzeSleepWithAi = () => {
     const total = sleepHours || 0;
@@ -418,18 +484,42 @@ const TodayView = () => {
   
   const dateDisplay = isToday ? 'Today' : activeDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  const generatePlan = (type: string) => {
-    switch(type) {
-      case 'PUSH': return { title: 'Push (Chest/Shoulders/Triceps)', exercises: ['Incline DB Press', 'Overhead Cable Extension', 'Lateral Raises', 'Machine Chest Press'] };
-      case 'PULL': return { title: 'Pull (Back/Biceps)', exercises: ['Pull-ups', 'Barbell Row', 'Face Pulls', 'Bicep Curls'] };
-      case 'LEGS': return { title: 'Legs (Quads/Hams/Calves)', exercises: ['Squats', 'Leg Extension', 'Hamstring Curls', 'Calf Raises'] };
-      case 'RUN': return { title: 'Cardio (Running Session)', exercises: ['Run smart', 'Control your pace', 'Focus on your breathing', 'Keep a steady rhythm'] };
-      case 'RUN + GYM': return { title: `Run + Gym (${hybridLiftingType})`, exercises: ['🏃‍♂️ Strava / Manual Run Session', `🏋️‍♂️ ${hybridLiftingType} Lifting Session`] };
-      case 'REST': return { title: 'Active Recovery', exercises: ['Focus on hydration', 'Get 8 hours of sleep', 'Light stretching if needed'] };
-      default: return { title: 'Workout', exercises: [] };
+  const getPlanDetails = () => {
+    if (dayType === 'REST') {
+      return { title: 'Active Recovery', exercises: ['Focus on hydration', 'Get 8 hours of sleep', 'Light stretching if needed'] };
     }
+    if (dayType === 'RUN') {
+      return { title: 'Cardio (Running Session)', exercises: ['Run smart', 'Control your pace', 'Focus on your breathing', 'Keep a steady rhythm'] };
+    }
+    if (dayType === 'RUN + GYM') {
+      // Find hybrid split template
+      let matched = workoutTemplates.find(t => t.plan_type === hybridLiftingType);
+      if (!matched && workoutTemplates.length > 0) {
+        matched = workoutTemplates.find(t => t.plan_type === 'PUSH') || workoutTemplates[0];
+      }
+      const exNames = matched?.exercises ? matched.exercises.map((e: any) => typeof e === 'string' ? e : e.name) : [];
+      return { 
+        title: `Run + Gym (${matched?.plan_type || hybridLiftingType})`, 
+        exercises: ['🏃‍♂️ Strava / Manual Run Session', ...exNames.map((name: string) => `🏋️‍♂️ ${name}`)] 
+      };
+    }
+    
+    // Custom split or PUSH/PULL/LEGS from templates
+    let matched = workoutTemplates.find(t => t.plan_type === dayType);
+    if (!matched && workoutTemplates.length > 0) {
+      matched = workoutTemplates.find(t => t.plan_type === 'PUSH') || workoutTemplates[0];
+    }
+    if (matched) {
+      const exNames = matched.exercises ? matched.exercises.map((e: any) => typeof e === 'string' ? e : e.name) : [];
+      return {
+        title: `${matched.plan_type} Session`,
+        exercises: exNames
+      };
+    }
+    
+    return { title: `${dayType} Session`, exercises: [] };
   };
-  const plan = generatePlan(dayType);
+  const plan = getPlanDetails();
 
   const macros = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0 };
   const waterTotalMl = waterLogs?.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0) || 0;
@@ -444,7 +534,7 @@ const TodayView = () => {
   const inbody = latestInbody;
 
   const hasCompletedRun = completedWorkoutsList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
-  const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+  const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
 
   const getReadinessData = () => {
     const total = sleepHours || 0;
@@ -483,12 +573,12 @@ const TodayView = () => {
 
     const completedList = completedWorkoutsList || [];
     const hasTodayRun = completedList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
-    const hasTodayGym = completedList.some(w => w.status === 'completed' && ['PUSH', 'PULL', 'LEGS'].includes(w.day_type));
+    const hasTodayGym = completedList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
 
     let workoutScore = 100;
     if (dayType === 'RUN') {
       workoutScore = hasTodayRun ? 100 : 0;
-    } else if (['PUSH', 'PULL', 'LEGS'].includes(dayType)) {
+    } else if (dayType !== 'RUN' && dayType !== 'REST' && dayType !== 'RUN + GYM') {
       workoutScore = hasTodayGym ? 100 : 0;
     } else if (dayType === 'RUN + GYM') {
       if (hasTodayRun && hasTodayGym) workoutScore = 100;
@@ -589,34 +679,39 @@ const TodayView = () => {
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-bold text-primary uppercase tracking-wider">Scheduled Plan</span>
           <select 
-            value={dayType} 
+            value={['REST', 'RUN', 'RUN + GYM', ...workoutTemplates.map(t => t.plan_type)].includes(dayType) ? dayType : (workoutTemplates.find(t => t.plan_type === 'PUSH')?.plan_type || workoutTemplates[0]?.plan_type || 'REST')}
             onChange={(e) => setDayType(e.target.value)}
             className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
           >
-            {DAY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+            {['REST', 'RUN', 'RUN + GYM', ...workoutTemplates.map(t => t.plan_type)].map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
         </div>
         <h2 className="text-xl font-extrabold text-white mb-4">{plan.title}</h2>
         
         {dayType === 'RUN + GYM' && (
-          <div className="flex items-center gap-2 mb-5 bg-gray-900/80 p-1.5 rounded-xl border border-gray-800">
-            <span className="text-xs font-bold text-gray-400 px-2">Select Gym Split:</span>
-            {['PUSH', 'PULL', 'LEGS'].map(t => (
-              <button
-                key={t}
-                disabled={hasCompletedGym}
-                onClick={() => setHybridLiftingType(t)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-extrabold transition-all ${hybridLiftingType === t ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-white'} ${hasCompletedGym ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
-              >
-                {t} {hasCompletedGym && hybridLiftingType === t ? '✓' : ''}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 mb-5 bg-gray-900/80 p-1.5 rounded-xl border border-gray-800 overflow-x-auto scrollbar-none">
+            <span className="text-xs font-bold text-gray-400 px-2 shrink-0">Select Gym Split:</span>
+            {workoutTemplates.map(tmpl => {
+              const t = tmpl.plan_type;
+              return (
+                <button
+                  key={t}
+                  disabled={hasCompletedGym}
+                  onClick={() => setHybridLiftingType(t)}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all shrink-0 ${hybridLiftingType === t ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-white'} ${hasCompletedGym ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
+                >
+                  {t} {hasCompletedGym && hybridLiftingType === t ? '✓' : ''}
+                </button>
+              );
+            })}
           </div>
         )}
 
         {dayType !== 'REST' && dayType !== 'RUN + GYM' && (
           <ul className="space-y-2 mb-6 text-sm text-gray-300">
-            {plan.exercises.map((ex, i) => (
+            {plan.exercises.map((ex: string, i: number) => (
               <li key={i} className="flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
                 <span className="text-sm font-semibold text-gray-200">{ex}</span>
