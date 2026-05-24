@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useAiAgent } from '../hooks/useAiAgent';
-import { Send, Bot, Loader2, Sparkles, X } from 'lucide-react';
+import { Bot, Loader2, Sparkles, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Basic markdown rendering
@@ -35,9 +35,7 @@ interface WorkoutAiChatProps {
 
 export const WorkoutAiChat = ({ workout, exercises, onClose }: WorkoutAiChatProps) => {
   const storageKey = `workout_chat_${workout.id}`;
-  const { messages, isTyping, sendMessage, sendInvisibleMessage, initChat } = useAiAgent({ storageKey, mode: 'workout' });
-  const [input, setInput] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { messages, isTyping, sendInvisibleMessage, initChat } = useAiAgent({ storageKey, mode: 'workout' });
 
   // Initialize and trigger analysis if empty
   useEffect(() => {
@@ -72,17 +70,6 @@ Deconstruct my performance. Specifically analyze set-to-set mechanical tension, 
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping) return;
-    sendMessage(input.trim());
-    setInput('');
-  };
-
   return (
     <motion.div
       initial={{ y: '100%' }}
@@ -108,10 +95,10 @@ Deconstruct my performance. Specifically analyze set-to-set mechanical tension, 
         </button>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
+      {/* Chat Area / Feedback Box */}
+      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3 no-scrollbar pb-10">
         {messages.length === 0 && isTyping && (
-           <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-3">
+           <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-3 py-20">
              <Bot size={40} className="text-gray-700" />
              <p className="text-xs font-bold uppercase tracking-wider animate-pulse">Analyzing your session...</p>
            </div>
@@ -119,59 +106,29 @@ Deconstruct my performance. Specifically analyze set-to-set mechanical tension, 
 
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`
-                  text-sm leading-relaxed break-words
-                  ${msg.role === 'user'
-                    ? 'max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5'
-                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
-                  }
-                `}
+            msg.role === 'model' && (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex w-full justify-start"
               >
-                {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
-              </div>
-            </motion.div>
+                <div className="w-full bg-surface border border-gray-800 text-gray-200 rounded-2xl px-5 py-4 leading-relaxed text-sm shadow-md">
+                  <MessageText text={msg.text} />
+                </div>
+              </motion.div>
+            )
           ))}
 
           {isTyping && messages.length > 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-              <div className="bg-surface border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2.5">
+              <div className="bg-surface border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-2.5">
                 <Loader2 size={14} className="animate-spin text-primary flex-shrink-0" />
-                <span className="text-xs text-gray-400">Typing...</span>
+                <span className="text-xs text-gray-400">Updating analysis...</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="p-3 bg-surface/90 backdrop-blur-md border-t border-gray-800 pb-safe">
-        <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
-          <textarea
-            value={input}
-            onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
-            placeholder="Ask about this session..."
-            rows={1}
-            className="flex-1 bg-background border border-gray-700 rounded-2xl py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none overflow-hidden"
-            style={{ minHeight: '46px', maxHeight: '120px' }}
-            disabled={isTyping}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isTyping}
-            className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white disabled:opacity-40 transition-all hover:scale-105"
-          >
-            <Send size={13} />
-          </button>
-        </form>
       </div>
     </motion.div>
   );
