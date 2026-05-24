@@ -282,7 +282,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
         </div>
       )}
       {/* SLEEP STAGES ANALYSIS */}
-      {sleepData.length > 0 && (
+      {isHaleem && sleepData.length > 0 && (
         <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800/50 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <Moon size={100} />
