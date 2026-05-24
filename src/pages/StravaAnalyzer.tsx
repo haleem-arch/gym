@@ -6,11 +6,14 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Exact credentials from user's latest screenshot
-const DEFAULT_CLIENT_ID = '203804';
-const DEFAULT_CLIENT_SECRET = '7f6fcdc003899cbb5f15a776edf1aaf10ca548a1';
-const DEFAULT_ACCESS_TOKEN = '87684dfa24b420b56af7503fa2a3c618944f16e3';
-const DEFAULT_REFRESH_TOKEN = '8465e14d7a451ce3c2c42caaa956777faab0cda9';
+// No shared default credentials — every user connects their own Strava account
+const DEFAULT_CLIENT_ID = '';
+const DEFAULT_CLIENT_SECRET = '';
+const DEFAULT_ACCESS_TOKEN = '';
+const DEFAULT_REFRESH_TOKEN = '';
+
+// Per-user localStorage key helpers so users never share cached tokens
+const lsKey = (uid: string | null, key: string) => uid ? `${key}_${uid}` : key;
 
 interface StravaActivity {
   id: number;
@@ -210,16 +213,16 @@ const StravaPaceTooltip = ({ active, payload, label }: any) => {
 };
 
 const StravaAnalyzer = () => {
-  const [accessToken, setAccessToken] = useState(() => localStorage.getItem('strava_access_token') || DEFAULT_ACCESS_TOKEN);
-  const [clientId, setClientId] = useState(() => localStorage.getItem('strava_client_id') || DEFAULT_CLIENT_ID);
-  const [clientSecret, setClientSecret] = useState(() => localStorage.getItem('strava_client_secret') || DEFAULT_CLIENT_SECRET);
-  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('strava_refresh_token') || DEFAULT_REFRESH_TOKEN);
-  const [redirectUri, setRedirectUri] = useState(() => localStorage.getItem('strava_redirect_uri') || `${window.location.origin}/strava`);
-  
-  const [activities, setActivities] = useState<StravaActivity[]>(() => {
-    const local = localStorage.getItem('strava_cached_runs');
-    return local ? JSON.parse(local) : [];
-  });
+  // userId is resolved on mount from Supabase session; used to namespace all localStorage keys
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [accessToken, setAccessToken] = useState('');
+  const [clientId, setClientId] = useState(DEFAULT_CLIENT_ID);
+  const [clientSecret, setClientSecret] = useState(DEFAULT_CLIENT_SECRET);
+  const [refreshToken, setRefreshToken] = useState('');
+  const [redirectUri, setRedirectUri] = useState(`${window.location.origin}/strava`);
+
+  const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -278,17 +281,34 @@ const StravaAnalyzer = () => {
 
   useEffect(() => {
     const init = async () => {
-      let activeClientId = clientId;
-      let activeClientSecret = clientSecret;
-      let activeRedirectUri = redirectUri;
+      let activeClientId = DEFAULT_CLIENT_ID;
+      let activeClientSecret = DEFAULT_CLIENT_SECRET;
+      let activeRedirectUri = `${window.location.origin}/strava`;
+      let uid: string | null = null;
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
+          uid = session.user.id;
+          setUserId(uid);
+
+          // Load per-user tokens from namespaced localStorage first (instant)
+          const lsAccess = localStorage.getItem(lsKey(uid, 'strava_access_token'));
+          const lsRefresh = localStorage.getItem(lsKey(uid, 'strava_refresh_token'));
+          const lsCid = localStorage.getItem(lsKey(uid, 'strava_client_id'));
+          const lsCsecret = localStorage.getItem(lsKey(uid, 'strava_client_secret'));
+          const lsRuri = localStorage.getItem(lsKey(uid, 'strava_redirect_uri'));
+          if (lsAccess) setAccessToken(lsAccess);
+          if (lsRefresh) setRefreshToken(lsRefresh);
+          if (lsCid) { setClientId(lsCid); activeClientId = lsCid; }
+          if (lsCsecret) { setClientSecret(lsCsecret); activeClientSecret = lsCsecret; }
+          if (lsRuri) { setRedirectUri(lsRuri); activeRedirectUri = lsRuri; }
+
+          // Then sync from Supabase profile targets (source of truth across devices)
           const { data } = await supabase
             .from('profiles')
             .select('targets')
-            .eq('id', session.user.id)
+            .eq('id', uid)
             .maybeSingle();
 
           if (data?.targets?.strava) {
@@ -296,25 +316,25 @@ const StravaAnalyzer = () => {
             if (strava.client_id) {
               activeClientId = strava.client_id;
               setClientId(strava.client_id);
-              localStorage.setItem('strava_client_id', strava.client_id);
+              localStorage.setItem(lsKey(uid, 'strava_client_id'), strava.client_id);
             }
             if (strava.client_secret) {
               activeClientSecret = strava.client_secret;
               setClientSecret(strava.client_secret);
-              localStorage.setItem('strava_client_secret', strava.client_secret);
+              localStorage.setItem(lsKey(uid, 'strava_client_secret'), strava.client_secret);
             }
             if (strava.access_token) {
               setAccessToken(strava.access_token);
-              localStorage.setItem('strava_access_token', strava.access_token);
+              localStorage.setItem(lsKey(uid, 'strava_access_token'), strava.access_token);
             }
             if (strava.refresh_token) {
               setRefreshToken(strava.refresh_token);
-              localStorage.setItem('strava_refresh_token', strava.refresh_token);
+              localStorage.setItem(lsKey(uid, 'strava_refresh_token'), strava.refresh_token);
             }
             if (strava.redirect_uri) {
               activeRedirectUri = strava.redirect_uri;
               setRedirectUri(strava.redirect_uri);
-              localStorage.setItem('strava_redirect_uri', strava.redirect_uri);
+              localStorage.setItem(lsKey(uid, 'strava_redirect_uri'), strava.redirect_uri);
             }
           }
         }
@@ -326,9 +346,9 @@ const StravaAnalyzer = () => {
       const code = params.get('code');
 
       if (code) {
-        handleOAuthCallback(code, activeClientId, activeClientSecret, activeRedirectUri);
+        handleOAuthCallback(code, activeClientId, activeClientSecret, activeRedirectUri, uid);
       } else {
-        loadCachedActivities();
+        loadCachedActivities(uid);
       }
     };
 
@@ -339,7 +359,8 @@ const StravaAnalyzer = () => {
     authCode: string,
     cid = clientId,
     csecret = clientSecret,
-    ruri = redirectUri
+    ruri = redirectUri,
+    uid: string | null = userId
   ) => {
     setLoading(true);
     setErrorMsg('');
@@ -368,8 +389,8 @@ const StravaAnalyzer = () => {
 
       setAccessToken(newAccess);
       setRefreshToken(newRefresh);
-      localStorage.setItem('strava_access_token', newAccess);
-      localStorage.setItem('strava_refresh_token', newRefresh);
+      localStorage.setItem(lsKey(uid, 'strava_access_token'), newAccess);
+      localStorage.setItem(lsKey(uid, 'strava_refresh_token'), newRefresh);
 
       await saveStravaConfigToSupabase(newAccess, newRefresh, cid, csecret, ruri);
 
@@ -392,12 +413,16 @@ const StravaAnalyzer = () => {
   };
 
   // Load activities fully from Supabase database including cached streams & splits for 100% offline availability
-  const loadCachedActivities = async () => {
-    const localSaved = localStorage.getItem('strava_cached_runs');
+  const loadCachedActivities = async (uid: string | null = userId) => {
+    if (!uid) return; // no session yet — wait for init to call us with the real uid
+
+    const cacheKey = lsKey(uid, 'strava_cached_runs');
+    const localSaved = localStorage.getItem(cacheKey);
 
     // Check if we ALREADY loaded from Supabase during this active session! E.g. when switching tabs back and forth.
-    if (sessionStorage.getItem('strava_db_loaded') === 'true' && localSaved) {
+    if (sessionStorage.getItem(`strava_db_loaded_${uid}`) === 'true' && localSaved) {
       // Do absolutely nothing! We are already fully loaded and rendered from localStorage! Zero latency, zero network calls!
+      setActivities(JSON.parse(localSaved));
       return;
     }
 
@@ -408,6 +433,7 @@ const StravaAnalyzer = () => {
       const { data, error } = await supabase
         .from('strava_activities')
         .select('*')
+        .eq('athlete_id', uid)
         .order('start_date', { ascending: false });
 
       if (!error && data && data.length > 0) {
@@ -433,8 +459,8 @@ const StravaAnalyzer = () => {
           detailed_fetched: !!d.cached_data?.stream_data
         }));
         setActivities(formatted);
-        localStorage.setItem('strava_cached_runs', JSON.stringify(formatted));
-        sessionStorage.setItem('strava_db_loaded', 'true');
+        localStorage.setItem(cacheKey, JSON.stringify(formatted));
+        sessionStorage.setItem(`strava_db_loaded_${uid}`, 'true');
       } else {
         if (localSaved) setActivities(JSON.parse(localSaved));
       }
@@ -486,22 +512,22 @@ const StravaAnalyzer = () => {
             if (strava.access_token) {
               currentAccess = strava.access_token;
               setAccessToken(currentAccess);
-              localStorage.setItem('strava_access_token', currentAccess);
+              localStorage.setItem(lsKey(userId, 'strava_access_token'), currentAccess);
             }
             if (strava.refresh_token) {
               currentRefresh = strava.refresh_token;
               setRefreshToken(currentRefresh);
-              localStorage.setItem('strava_refresh_token', currentRefresh);
+              localStorage.setItem(lsKey(userId, 'strava_refresh_token'), currentRefresh);
             }
             if (strava.client_id) {
               currentClientId = strava.client_id;
               setClientId(currentClientId);
-              localStorage.setItem('strava_client_id', currentClientId);
+              localStorage.setItem(lsKey(userId, 'strava_client_id'), currentClientId);
             }
             if (strava.client_secret) {
               currentClientSecret = strava.client_secret;
               setClientSecret(currentClientSecret);
-              localStorage.setItem('strava_client_secret', currentClientSecret);
+              localStorage.setItem(lsKey(userId, 'strava_client_secret'), currentClientSecret);
             }
           }
         }
@@ -540,11 +566,11 @@ const StravaAnalyzer = () => {
         const tokenData = await refreshRes.json();
         currentAccess = tokenData.access_token;
         setAccessToken(currentAccess);
-        localStorage.setItem('strava_access_token', currentAccess);
+        localStorage.setItem(lsKey(userId, 'strava_access_token'), currentAccess);
         if (tokenData.refresh_token) {
           currentRefresh = tokenData.refresh_token;
           setRefreshToken(currentRefresh);
-          localStorage.setItem('strava_refresh_token', currentRefresh);
+          localStorage.setItem(lsKey(userId, 'strava_refresh_token'), currentRefresh);
         }
 
         await saveStravaConfigToSupabase(currentAccess, currentRefresh, currentClientId, currentClientSecret);
@@ -562,9 +588,6 @@ const StravaAnalyzer = () => {
       const fetchedData: StravaActivity[] = await res.json();
 
       if (fetchedData && fetchedData.length > 0) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const userId = session?.user?.id;
-
         // Process new activities
         const newActivitiesTagged = fetchedData.map(act => ({
           ...act,
@@ -578,7 +601,7 @@ const StravaAnalyzer = () => {
         mergedActivities.sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
 
         setActivities(mergedActivities);
-        localStorage.setItem('strava_cached_runs', JSON.stringify(mergedActivities));
+        localStorage.setItem(lsKey(userId, 'strava_cached_runs'), JSON.stringify(mergedActivities));
 
         if (isFullInitialFetch) {
           setSuccessMsg(`Successfully loaded ${newActivitiesTagged.length} runs. Starting background stream caching for 100% offline availability...`);
