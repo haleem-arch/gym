@@ -46,7 +46,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
             
             {/* Dumbbell Logo Container (Translates up once plates attach) */}
             <motion.div
-              animate={{ y: shiftUp ? -35 : 0 }}
+              animate={{ y: shiftUp ? -48 : 0 }}
               transition={{
                 duration: 0.65,
                 ease: [0.25, 1, 0.5, 1], // Smooth deceleration curve
@@ -115,7 +115,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                   duration: 0.55,
                   ease: 'easeOut',
                 }}
-                className="text-white font-black text-2xl uppercase tracking-[0.25em] select-none text-center whitespace-nowrap"
+                className="text-white font-black text-xl uppercase tracking-[0.25em] select-none text-center whitespace-nowrap"
               >
                 LIFE GYM
               </motion.h1>
