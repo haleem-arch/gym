@@ -7,7 +7,7 @@ import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, B
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
-import { RewardScreen } from '../components/RewardScreen';
+import { RunReceipt } from '../components/RunReceipt';
 import { DumbbellLoader } from '../components/DumbbellLoader';
 import { SplashOverlay } from '../components/SplashOverlay';
 
@@ -35,9 +35,9 @@ const WorkoutHome = () => {
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
   const [isPullingStrava, setIsPullingStrava] = useState(false);
   
-  const [rewardStats, setRewardStats] = useState<{distance: string; pace: string; duration: string} | null>(null);
+  const [rewardStats, setRewardStats] = useState<{distance: string; pace: string; duration: string; elevation: string} | null>(null);
   const [showSplash, setShowSplash] = useState(false);
-  const [pendingRewardStats, setPendingRewardStats] = useState<{distance: string; pace: string; duration: string} | null>(null);
+  const [pendingRewardStats, setPendingRewardStats] = useState<{distance: string; pace: string; duration: string; elevation: string} | null>(null);
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -103,7 +103,8 @@ const WorkoutHome = () => {
       setPendingRewardStats({
         distance: statsToSave.distance,
         pace: statsToSave.pace,
-        duration: statsToSave.duration
+        duration: statsToSave.duration,
+        elevation: statsToSave.elevation,
       });
       setShowSplash(true);
       
@@ -987,9 +988,9 @@ const WorkoutHome = () => {
       />
 
       {rewardStats && (
-        <RewardScreen 
-          stats={rewardStats} 
-          onClose={() => setRewardStats(null)} 
+        <RunReceipt
+          stats={rewardStats}
+          onClose={() => setRewardStats(null)}
         />
       )}
     </div>
