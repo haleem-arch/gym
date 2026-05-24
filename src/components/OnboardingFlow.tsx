@@ -66,7 +66,8 @@ export default function OnboardingFlow({
   // Active user session state (Step 1 -> 2 transition)
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Step 1: Auth form states (SignUp only in Onboarding by default)
+  // Step 1: Auth form states — isSignUp toggles between Sign In and Create Account
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -231,6 +232,26 @@ export default function OnboardingFlow({
     }
   };
 
+  // Sign In handler — goes directly to the app, no onboarding
+  const handleSignInAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (data.session) {
+        localStorage.removeItem('is_new_signup'); // ensure no onboarding triggered
+        toast.success('Welcome back!');
+        onSessionConfigured?.(data.session);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Sign in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Sign up account creation handler
   const handleSignUpAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,6 +308,7 @@ export default function OnboardingFlow({
     setCurrentUser(null);
     onSessionConfigured?.(null);
     localStorage.removeItem('is_new_signup');
+    setIsSignUp(false);
     setStep(1);
   };
 
@@ -523,7 +545,7 @@ export default function OnboardingFlow({
           </span>
         </div>
 
-        {/* Skip button */}
+        {/* Skip button — only show on steps 2–4 */}
         {step > 1 && step < 5 && (
           <button 
             onClick={handleSkip} 
@@ -534,46 +556,48 @@ export default function OnboardingFlow({
         )}
       </div>
 
-      {/* Stepper Progress Bar */}
-      <div className="px-5 pt-5 pb-2 flex flex-col gap-2 z-20">
-        <div className="flex items-center justify-between relative px-2">
-          {/* Connector Line */}
-          <div className="absolute top-4 left-6 right-6 h-[2px] bg-gray-800 z-0">
-            <div 
-              className="h-full bg-blue-500 transition-all duration-300"
-              style={{ width: `${((step - 1) / (stepsInfo.length - 1)) * 100}%` }}
-            />
-          </div>
+      {/* Stepper Progress Bar — hidden on auth step 1 */}
+      {step > 1 && (
+        <div className="px-5 pt-5 pb-2 flex flex-col gap-2 z-20">
+          <div className="flex items-center justify-between relative px-2">
+            {/* Connector Line */}
+            <div className="absolute top-4 left-6 right-6 h-[2px] bg-gray-800 z-0">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${((step - 1) / (stepsInfo.length - 1)) * 100}%` }}
+              />
+            </div>
 
-          {stepsInfo.map((info, idx) => {
-            const isCompleted = step > idx + 1;
-            const isActive = step === idx + 1;
-            return (
-              <div key={idx} className="flex flex-col items-center gap-1.5 z-10 relative">
-                <button
-                  disabled={idx + 1 > step && !currentUser} 
-                  onClick={() => {
-                    setDirection(idx + 1 > step ? 1 : -1);
-                    setStep(idx + 1);
-                  }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
-                    isCompleted 
-                      ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                      : isActive 
-                        ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_12px_rgba(59,130,246,0.4)] scale-110'
-                        : 'bg-[#121620] border-gray-800 text-gray-500'
-                  }`}
-                >
-                  {isCompleted ? <Check size={14} strokeWidth={3} /> : info.icon}
-                </button>
-                <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-blue-400' : isCompleted ? 'text-emerald-400' : 'text-gray-500'}`}>
-                  {info.label}
-                </span>
-              </div>
-            );
-          })}
+            {stepsInfo.map((info, idx) => {
+              const isCompleted = step > idx + 1;
+              const isActive = step === idx + 1;
+              return (
+                <div key={idx} className="flex flex-col items-center gap-1.5 z-10 relative">
+                  <button
+                    disabled={idx + 1 > step && !currentUser} 
+                    onClick={() => {
+                      setDirection(idx + 1 > step ? 1 : -1);
+                      setStep(idx + 1);
+                    }}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
+                      isCompleted 
+                        ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                        : isActive 
+                          ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_12px_rgba(59,130,246,0.4)] scale-110'
+                          : 'bg-[#121620] border-gray-800 text-gray-500'
+                    }`}
+                  >
+                    {isCompleted ? <Check size={14} strokeWidth={3} /> : info.icon}
+                  </button>
+                  <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-blue-400' : isCompleted ? 'text-emerald-400' : 'text-gray-500'}`}>
+                    {info.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Animated Step Content */}
       <div className="flex-1 relative min-h-[440px] flex flex-col justify-center px-5 py-3 overflow-hidden z-20">
@@ -589,13 +613,17 @@ export default function OnboardingFlow({
             className="w-full flex flex-col gap-5"
           >
             
-            {/* ── STEP 1: ACCOUNT CREATION ── */}
+            {/* ── STEP 1: SIGN IN / SIGN UP ── */}
             {step === 1 && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="text-center">
-                  <BrandLogo className="w-16 h-16 mx-auto mb-2" />
-                  <h2 className="text-xl font-extrabold text-white tracking-tight">Create Your Account</h2>
-                  <p className="text-xs text-gray-500 mt-1">Join LIFE GYM and start pushing your limits</p>
+                  <BrandLogo className="w-20 h-20 mx-auto mb-3" />
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                    {isSignUp ? 'Create Account' : 'Welcome Back'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isSignUp ? 'Join LIFE GYM and start pushing your limits' : 'Sign in to continue your journey'}
+                  </p>
                 </div>
 
                 {currentUser ? (
@@ -622,7 +650,8 @@ export default function OnboardingFlow({
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : isSignUp ? (
+                  /* ── CREATE ACCOUNT FORM ── */
                   <form onSubmit={handleSignUpAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Full Name</label>
@@ -635,7 +664,6 @@ export default function OnboardingFlow({
                         />
                       </div>
                     </div>
-
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Email Address</label>
                       <div className="relative">
@@ -647,7 +675,6 @@ export default function OnboardingFlow({
                         />
                       </div>
                     </div>
-
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Password</label>
                       <div className="relative">
@@ -665,13 +692,70 @@ export default function OnboardingFlow({
                         </button>
                       </div>
                     </div>
-
                     <button 
                       type="submit" disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-98 shadow-blue-500/10 cursor-pointer mt-2"
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-2"
                     >
-                      {loading ? 'Registering...' : 'Create Account'}
+                      {loading ? 'Creating Account...' : 'Create Account'}
                     </button>
+                    <p className="text-center text-[11px] text-gray-500 pt-1">
+                      Already have an account?{' '}
+                      <button 
+                        type="button"
+                        onClick={() => { setIsSignUp(false); setEmail(''); setPassword(''); setDisplayName(''); }}
+                        className="text-blue-400 font-bold hover:text-blue-300 transition-colors cursor-pointer"
+                      >
+                        Sign In
+                      </button>
+                    </p>
+                  </form>
+                ) : (
+                  /* ── SIGN IN FORM ── */
+                  <form onSubmit={handleSignInAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Email Address</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <input 
+                          type="email" required value={email} onChange={e => setEmail(e.target.value)} 
+                          placeholder="name@example.com" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <input 
+                          type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} 
+                          placeholder="••••••••" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                        />
+                        <button 
+                          type="button" onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
+                        >
+                          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                    <button 
+                      type="submit" disabled={loading}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-2"
+                    >
+                      {loading ? 'Signing In...' : 'Sign In'}
+                    </button>
+                    <p className="text-center text-[11px] text-gray-500 pt-1">
+                      Don't have an account?{' '}
+                      <button 
+                        type="button"
+                        onClick={() => { setIsSignUp(true); setEmail(''); setPassword(''); }}
+                        className="text-blue-400 font-bold hover:text-blue-300 transition-colors cursor-pointer"
+                      >
+                        Create Account
+                      </button>
+                    </p>
                   </form>
                 )}
               </div>
@@ -1020,20 +1104,16 @@ export default function OnboardingFlow({
         </AnimatePresence>
       </div>
 
-      {/* Footer Navigation Buttons */}
-      <div className="p-5 border-t border-gray-850 bg-[#0a0a0f] flex items-center justify-between gap-3 z-30 sticky bottom-0">
-        {step > 1 ? (
+      {/* Footer Navigation Buttons — only shown on steps 2–4 */}
+      {step > 1 && (
+        <div className="p-5 border-t border-gray-850 bg-[#0a0a0f] flex items-center justify-between gap-3 z-30 sticky bottom-0">
           <button 
             onClick={handlePrev}
             className="flex items-center gap-1 px-4 py-3 rounded-xl border border-gray-800 hover:border-gray-600 bg-gray-900/50 text-gray-300 font-extrabold text-xs active:scale-95 transition-all cursor-pointer uppercase tracking-wider"
           >
             <ChevronLeft size={14} /> Back
           </button>
-        ) : (
-          <div /> 
-        )}
 
-        {step > 1 && (
           <button 
             onClick={handleNext}
             disabled={loading}
@@ -1045,8 +1125,8 @@ export default function OnboardingFlow({
               <>Next Step <ChevronRight size={14} /></>
             )}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Full-screen Strava Celebration Ribbon Splash Overlay */}
       <SplashOverlay 
