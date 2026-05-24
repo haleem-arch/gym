@@ -110,40 +110,36 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop — sits above BottomNav */}
+          {/* Full-screen overlay backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`${portalRoot ? 'absolute' : 'fixed'} inset-0 bg-black/70 backdrop-blur-sm z-[60] pointer-events-auto`}
+            className={`${portalRoot ? 'absolute' : 'fixed'} inset-0 bg-black/60 backdrop-blur-sm z-[60] pointer-events-auto`}
             onClick={onClose}
           />
 
-          {/* Sheet */}
+          {/* Full-screen sheet — slides up and fills entire container */}
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`${portalRoot ? 'absolute' : 'fixed'} bottom-0 left-0 right-0 z-[70] bg-[#111] rounded-t-3xl border-t border-gray-800 max-h-[92vh] flex flex-col overflow-hidden pointer-events-auto`}
+            transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+            className={`${portalRoot ? 'absolute' : 'fixed'} inset-0 z-[70] bg-[#0a0a10] flex flex-col overflow-hidden pointer-events-auto`}
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-gray-700 rounded-full" />
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
-              <div>
-                <h2 className="text-lg font-bold tracking-tight">Nutrition Targets</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Set calories & macros per training day</p>
-              </div>
+            {/* Full-page Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800/60 bg-[#0a0a10]">
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center active:scale-90 transition-transform"
+                className="w-10 h-10 rounded-xl bg-gray-900 border border-gray-800 flex items-center justify-center active:scale-90 transition-transform"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
+              <div className="text-center">
+                <h2 className="text-base font-bold tracking-tight">Nutrition Targets</h2>
+                <p className="text-[10px] text-gray-500">Calories &amp; macros per day type</p>
+              </div>
+              <div className="w-10" />
             </div>
 
             {/* Day Type Tabs — scrollable, shows ALL day types including custom */}

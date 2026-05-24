@@ -708,6 +708,21 @@ export default function OnboardingFlow({
                         Sign In
                       </button>
                     </p>
+                    {/* Hard reset cache button */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if ('caches' in window) {
+                          const keys = await caches.keys();
+                          await Promise.all(keys.map(k => caches.delete(k)));
+                        }
+                        window.location.reload();
+                      }}
+                      className="w-full mt-1 py-2 text-[10px] text-gray-600 hover:text-gray-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                      Clear cache &amp; hard refresh
+                    </button>
                   </form>
                 ) : (
                   /* ── SIGN IN FORM ── */
@@ -756,6 +771,21 @@ export default function OnboardingFlow({
                         Create Account
                       </button>
                     </p>
+                    {/* Hard reset cache button */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if ('caches' in window) {
+                          const keys = await caches.keys();
+                          await Promise.all(keys.map(k => caches.delete(k)));
+                        }
+                        window.location.reload();
+                      }}
+                      className="w-full mt-1 py-2 text-[10px] text-gray-600 hover:text-gray-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                      Clear cache &amp; hard refresh
+                    </button>
                   </form>
                 )}
               </div>
@@ -770,38 +800,38 @@ export default function OnboardingFlow({
                 </div>
 
                 {/* Splits list */}
-                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
                   {splits.map((item) => {
                     const isExpanded = activeSplitKey === item.key;
                     return (
                       <div 
                         key={item.key}
                         className="bg-[#121620]/60 border border-gray-800 rounded-2xl overflow-hidden transition-all flex flex-col shadow-md"
-                        style={{ borderLeft: `3px solid ${item.color}` }}
+                        style={{ borderLeft: `4px solid ${item.color}` }}
                       >
                         {/* Header Row */}
                         <div 
                           onClick={() => setActiveSplitKey(isExpanded ? null : item.key)}
-                          className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-white/5 active:bg-white/5 transition-colors"
+                          className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 active:bg-white/5 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="text-lg">{item.emoji}</span>
+                            <span className="text-xl">{item.emoji}</span>
                             <div>
-                              <p className="text-xs font-bold text-white uppercase tracking-wider">{item.label} Day</p>
-                              <p className="text-[10px] text-gray-400 font-semibold">{item.exercises.length} Exercises Scheduled</p>
+                              <p className="text-sm font-bold text-white uppercase tracking-wider">{item.label} Day</p>
+                              <p className="text-xs text-gray-400 font-semibold">{item.exercises.length} exercises</p>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-2">
                             <button 
                               onClick={(e) => { e.stopPropagation(); removeSplit(item.key); }} 
-                              className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                              className="text-gray-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
                               title="Delete Day"
                             >
-                              <Trash2 size={13} />
+                              <Trash2 size={16} />
                             </button>
-                            <span className="text-xs text-gray-500 font-bold bg-gray-900 border border-gray-850 px-2.5 py-0.5 rounded-full uppercase">
-                              {isExpanded ? 'Collapse' : 'Edit Exercises'}
+                            <span className="text-[11px] text-gray-400 font-bold bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-full uppercase">
+                              {isExpanded ? 'Close' : 'Edit'}
                             </span>
                           </div>
                         </div>
@@ -819,22 +849,25 @@ export default function OnboardingFlow({
                                 
                                 {/* Exercises rows */}
                                 {item.exercises.length === 0 ? (
-                                  <p className="text-[10px] text-gray-500 italic text-center py-2">No exercises added yet. Search below to add!</p>
+                                  <p className="text-xs text-gray-500 italic text-center py-4">No exercises yet. Use the search below to add.</p>
                                 ) : (
-                                  <div className="space-y-1.5">
+                                  <div className="space-y-2">
                                     {item.exercises.map((ex, idx) => (
-                                      <div key={ex.id} className="flex justify-between items-center bg-gray-900/50 p-2 rounded-xl border border-gray-850 text-xs">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <span className="text-[9px] font-extrabold text-blue-400 bg-blue-950/20 border border-blue-900/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">
+                                      <div key={ex.id} className="flex justify-between items-center bg-gray-900/60 p-3 rounded-xl border border-gray-800">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <span className="text-[10px] font-extrabold text-blue-400 bg-blue-950/30 border border-blue-900/30 w-6 h-6 rounded-full flex items-center justify-center shrink-0">
                                             {idx + 1}
                                           </span>
-                                          <span className="text-gray-200 font-semibold truncate">{ex.name}</span>
+                                          <div className="min-w-0">
+                                            <span className="text-sm text-gray-100 font-semibold truncate block">{ex.name}</span>
+                                            {ex.muscle_group && <span className="text-[10px] text-gray-500">{ex.muscle_group}</span>}
+                                          </div>
                                         </div>
                                         <button 
                                           onClick={() => removeExerciseFromSplit(item.key, ex.id)}
-                                          className="text-gray-500 hover:text-red-400 p-1 hover:bg-white/5 rounded transition-colors shrink-0"
+                                          className="text-gray-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-xl transition-colors shrink-0 ml-2"
                                         >
-                                          <X size={13} />
+                                          <X size={15} />
                                         </button>
                                       </div>
                                     ))}
@@ -842,27 +875,27 @@ export default function OnboardingFlow({
                                 )}
 
                                 {/* Search & Add exercises in Split */}
-                                <div className="space-y-2 border-t border-gray-850 pt-3 relative">
+                                <div className="border-t border-gray-800 pt-3 relative">
                                   <div className="relative">
-                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                                     <input 
                                       value={searchQuery}
                                       onChange={e => setSearchQuery(e.target.value)}
-                                      placeholder="Search and add exercises..."
-                                      className="w-full bg-[#121620] border border-gray-850 rounded-xl py-2 pl-8 pr-8 text-[11px] text-white outline-none focus:border-blue-600 transition-colors"
+                                      placeholder="Search exercises to add..."
+                                      className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-3 pl-10 pr-10 text-sm text-white outline-none focus:border-blue-500 transition-colors"
                                     />
                                     {searchQuery && (
-                                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
-                                        <X size={12} />
+                                      <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1">
+                                        <X size={14} />
                                       </button>
                                     )}
                                   </div>
 
-                                  {/* Filtered Search Results Dropdown */}
+                                  {/* Search Results */}
                                   {searchQuery && (
-                                    <div className="absolute top-[100%] left-0 right-0 mt-1 bg-surface border border-gray-800 rounded-xl overflow-hidden shadow-2xl z-50 flex flex-col max-h-[140px] overflow-y-auto">
+                                    <div className="mt-2 bg-[#0d1117] border border-gray-700 rounded-xl overflow-hidden shadow-2xl z-50 flex flex-col max-h-[180px] overflow-y-auto">
                                       {filteredCatalog.length === 0 ? (
-                                        <span className="p-2 text-[10px] text-gray-500 italic text-center">No matching exercises found</span>
+                                        <span className="p-3 text-xs text-gray-500 italic text-center">No exercises found</span>
                                       ) : (
                                         filteredCatalog.map(ex => (
                                           <button
@@ -871,10 +904,10 @@ export default function OnboardingFlow({
                                               addExerciseToSplit(item.key, ex);
                                               setSearchQuery('');
                                             }}
-                                            className="w-full p-2.5 text-left text-[11px] hover:bg-blue-600 hover:text-white flex items-center justify-between border-b border-gray-850/50"
+                                            className="w-full px-4 py-3 text-left text-sm hover:bg-blue-600 hover:text-white flex items-center justify-between border-b border-gray-800/60 transition-colors active:bg-blue-700"
                                           >
-                                            <span className="font-bold truncate">{ex.name}</span>
-                                            <span className="text-[8px] font-black uppercase bg-gray-900 border border-gray-800 text-gray-400 px-1.5 py-0.5 rounded shrink-0">{ex.muscle_group}</span>
+                                            <span className="font-semibold truncate">{ex.name}</span>
+                                            <span className="text-[10px] font-bold uppercase bg-gray-800 border border-gray-700 text-gray-400 px-2 py-1 rounded-lg shrink-0 ml-2">{ex.muscle_group}</span>
                                           </button>
                                         ))
                                       )}

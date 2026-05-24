@@ -236,7 +236,7 @@ export default function InBodyView() {
           </h1>
           <p className="text-sm text-gray-400">Body composition tracking</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <input 
             type="file" 
             accept=".csv" 
@@ -245,20 +245,35 @@ export default function InBodyView() {
             onChange={handleFileUpload} 
           />
           <button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isImporting}
-            className="bg-gray-800 hover:bg-gray-700 text-white p-2.5 rounded-xl shadow-lg transition-colors flex items-center justify-center disabled:opacity-50"
-            title="Upload CSV"
-          >
-            <Upload size={20} className={isImporting ? "animate-pulse text-blue-400" : ""} />
-          </button>
-          <button 
             onClick={() => setShowModal(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white p-2.5 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl shadow-lg transition-colors flex items-center gap-2 font-bold text-xs"
           >
-            <Plus size={20} />
+            <Plus size={16} /> Log Scan
           </button>
         </div>
+      </motion.div>
+
+      {/* CSV Upload Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gradient-to-r from-blue-950/60 to-[#0d1117] border border-blue-800/40 rounded-2xl p-4 flex items-center gap-4 shadow-lg"
+      >
+        <div className="w-11 h-11 bg-blue-600/20 border border-blue-500/30 rounded-xl flex items-center justify-center shrink-0">
+          <Upload size={20} className={isImporting ? 'animate-pulse text-blue-400' : 'text-blue-400'} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-white">Upload from InBody Machine</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Export your scan as CSV from the InBody website and upload it here to import all your history automatically.</p>
+        </div>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isImporting}
+          className="shrink-0 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+        >
+          {isImporting ? 'Importing...' : 'Upload CSV'}
+        </button>
       </motion.div>
 
       {loading ? (
