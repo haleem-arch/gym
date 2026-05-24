@@ -53,6 +53,7 @@ export const useDiet = () => {
   const [targets, setTargets] = useState<MacroTarget>(DEFAULT_DAY_NUTRITION['PUSH']);
   const [dayNutrition, setDayNutrition] = useState<Record<string, MacroTarget>>({});
   const [allDayTypes, setAllDayTypes] = useState<string[]>(['REST', 'RUN', 'RUN + GYM', 'PUSH', 'PULL', 'LEGS']);
+  const [waterGoalMl, setWaterGoalMl] = useState<number>(3500);
 
   const getDefaultTarget = (dt: string): MacroTarget => {
     const normalized = dt.replace(/\s+/g, '');
@@ -87,6 +88,8 @@ export const useDiet = () => {
     const userMap: Record<string, MacroTarget> = profile?.targets?.day_nutrition || {};
     const merged: Record<string, MacroTarget> = {};
     
+    setWaterGoalMl(profile?.targets?.water_goal_ml || 3500);
+
     finalTypes.forEach(dt => {
       const exactKey = userMap[dt] 
         ? dt 
@@ -348,6 +351,7 @@ export const useDiet = () => {
     resetWater,
     startDay,
     toggleDayCompletion,
+    waterGoalMl,
     reload: loadDateData
   };
 };

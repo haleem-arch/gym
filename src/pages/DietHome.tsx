@@ -11,11 +11,11 @@ import { DietNutritionSettings } from '../components/DietNutritionSettings';
 
 const DietHome = () => {
   const navigate = useNavigate();
-  const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, allDayTypes, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater } = useDiet();
+  const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, allDayTypes, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater, waterGoalMl } = useDiet();
   const [showSettings, setShowSettings] = useState(false);
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
-  const WATER_GOAL_ML = 3500; // 3.5 Liters
+  const WATER_GOAL_ML = waterGoalMl || 3500; // Dynamic Water Goal
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));

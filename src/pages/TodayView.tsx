@@ -87,7 +87,7 @@ const TodayView = () => {
   const isHaleem = !!userEmail?.toLowerCase().startsWith('haleem');
 
   const { workout, endWorkout } = useActiveWorkout();
-  const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate } = useDiet();
+  const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate, waterGoalMl } = useDiet();
   
   const getLocalDateString = (d: Date) => {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -556,7 +556,7 @@ const TodayView = () => {
   const macros = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0 };
   const waterTotalMl = waterLogs?.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0) || 0;
   const waterCurrent = waterTotalMl / 1000;
-  const waterTarget = 3.5;
+  const waterTarget = (waterGoalMl || 3500) / 1000;
 
   const lastWaterLog = waterLogs && waterLogs.length > 0 ? waterLogs[waterLogs.length - 1] : null;
   const lastLoggedTime = lastWaterLog && lastWaterLog.created_at
