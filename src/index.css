@@ -164,3 +164,9 @@ textarea {
   opacity: 0;
   animation: slideUpFade 0.5s ease-out 1.75s forwards;
 }
+
+/* Opening Intro Animation Motion Blur */
+.motion-blur-effect {
+  filter: blur(3.5px);
+  transition: filter 0.15s ease-out;
+}

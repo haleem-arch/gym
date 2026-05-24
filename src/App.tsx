@@ -7,6 +7,7 @@ import WorkoutHome from './pages/WorkoutHome';
 import WorkoutTracker from './pages/WorkoutTracker';
 import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
+import { OpeningAnimation } from './components/OpeningAnimation';
 
 import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
@@ -65,6 +66,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 };
 
 const AppContent = () => {
+  const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
@@ -80,6 +82,8 @@ const AppContent = () => {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
+      {showIntro && <OpeningAnimation onComplete={() => setShowIntro(false)} />}
+      
       <div className="flex-1 relative">
         <AnimatePresence mode="wait" custom={direction}>
           <Routes location={location} key={location.pathname}>
