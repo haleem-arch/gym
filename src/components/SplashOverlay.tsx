@@ -155,18 +155,11 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
         animation: 'popLogoIn 0.45s cubic-bezier(0.175,0.885,0.32,1.275) 1.5s forwards',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {/* Dark circle behind plates */}
-        <div style={{
-          position: 'absolute', inset: -20,
-          backgroundColor: '#0a0a0a',
-          borderRadius: '50%', zIndex: 1,
-          boxShadow: '0 0 0 1px rgba(59,130,246,0.2)',
-        }} />
         {/* Blue glow */}
         <div style={{
           position: 'absolute', inset: 0,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)',
           filter: 'blur(16px)',
           animation: 'pulseGlow 1.2s ease-in-out infinite',
           zIndex: 2,
@@ -175,6 +168,7 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
         <svg viewBox="0 0 512 512" style={{
           width: '100%', height: '100%',
           position: 'relative', zIndex: 3, overflow: 'visible',
+          filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.95)) drop-shadow(0 4px 8px rgba(0,0,0,0.85))',
         }}>
           <g transform="translate(256 256) rotate(-45)">
             <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />

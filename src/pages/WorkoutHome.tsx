@@ -431,6 +431,9 @@ const WorkoutHome = () => {
   };
 
   const handleDeleteSession = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this activity?")) {
+      return;
+    }
     setPastWorkouts(prev => prev.filter(w => w.id !== id));
     await supabase.from('workouts').delete().eq('id', id);
   };
