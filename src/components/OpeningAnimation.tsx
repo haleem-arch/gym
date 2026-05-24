@@ -6,33 +6,29 @@ interface OpeningAnimationProps {
 }
 
 export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
-  const [isSpinning, setIsSpinning] = useState(false);
+  const [shiftUp, setShiftUp] = useState(false);
+  const [showText, setShowText] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
     // Timing configuration:
-    // 0.0s - 0.2s: Delay before plates fly-in
-    // 0.2s - 1.0s: Plates fly-in from corner of the screen
-    // 0.9s: Core spin starts (slight overlap for seamless feel)
-    // 0.9s - 1.8s: Dumbbell performs two full spins (720deg)
-    // 1.8s - 2.0s: Settle and prepare fade-out
-    // 2.0s: Exit transition starts
+    // 0.0s - 0.2s: Brief dark screen delay.
+    // 0.2s - 1.05s: Plates slide perfectly along the rod and snap together (recreating icon.svg).
+    // 1.05s - 1.6s: Complete logo translates upward slightly while the white text "LIFE GYM" fades in below.
+    // 1.6s - 2.4s: Settle state for brand presentation.
+    // 2.4s: Exit transition starts (fades out and scales down overlay).
     
-    const spinStart = setTimeout(() => {
-      setIsSpinning(true);
-    }, 900);
-
-    const spinEnd = setTimeout(() => {
-      setIsSpinning(false);
-    }, 1800);
+    const textTimer = setTimeout(() => {
+      setShiftUp(true);
+      setShowText(true);
+    }, 1050);
 
     const animationEnd = setTimeout(() => {
       setIsDone(true);
-    }, 2100);
+    }, 2450);
 
     return () => {
-      clearTimeout(spinStart);
-      clearTimeout(spinEnd);
+      clearTimeout(textTimer);
       clearTimeout(animationEnd);
     };
   }, []);
@@ -44,25 +40,24 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.88 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0a0a] overflow-hidden"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0a0a] overflow-hidden"
         >
-          <div className="relative flex flex-col items-center">
+          <div className="relative flex flex-col items-center justify-center">
             
-            {/* Dumbbell Logo Container */}
+            {/* Dumbbell Logo Container (Translates up once plates attach) */}
             <motion.div
-              animate={isSpinning ? { rotate: 720 } : { rotate: 0 }}
+              animate={{ y: shiftUp ? -35 : 0 }}
               transition={{
-                duration: 1.0,
-                ease: [0.25, 0.8, 0.25, 1], // Custom smooth ease-in-out curve
-                delay: 0.9,
+                duration: 0.65,
+                ease: [0.25, 1, 0.5, 1], // Smooth deceleration curve
               }}
               style={{ width: 180, height: 180 }}
-              className={`relative flex items-center justify-center ${isSpinning ? 'motion-blur-effect' : ''}`}
+              className="relative flex items-center justify-center select-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 512 512"
-                className="w-full h-full select-none"
+                className="w-full h-full"
               >
                 <g transform="translate(256 256) rotate(-45)">
                   {/* Handle/Bar (Rod) */}
@@ -76,7 +71,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                     fill="#1f2937"
                   />
 
-                  {/* Left Weights (Fly in from top-left end of the rod) */}
+                  {/* Left Weights (Fly in along the rod from top-left) */}
                   <motion.g
                     id="left-weights"
                     initial={{ x: -400, opacity: 0 }}
@@ -92,7 +87,7 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                     <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
                   </motion.g>
 
-                  {/* Right Weights (Fly in from bottom-right end of the rod) */}
+                  {/* Right Weights (Fly in along the rod from bottom-right) */}
                   <motion.g
                     id="right-weights"
                     initial={{ x: 400, opacity: 0 }}
@@ -111,12 +106,26 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
               </svg>
             </motion.div>
 
-            {/* Glowing Accent Ring (Pulse effect upon impact) */}
+            {/* LIFE GYM Text (Fades in directly below center dumbbell) */}
+            <div className="absolute top-[58%] w-full flex justify-center">
+              <motion.h1
+                initial={{ opacity: 0, y: 15 }}
+                animate={showText ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                transition={{
+                  duration: 0.55,
+                  ease: 'easeOut',
+                }}
+                className="text-white font-black text-2xl uppercase tracking-[0.25em] select-none text-center whitespace-nowrap"
+              >
+                LIFE GYM
+              </motion.h1>
+            </div>
+
+            {/* Glowing Accent Ring (Soft pulse upon impact) */}
             <motion.div
               initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: [0.8, 1.25, 0.8], opacity: [0, 0.55, 0] }}
+              animate={showText ? { scale: [0.8, 1.25, 0.8], opacity: [0, 0.45, 0] } : {}}
               transition={{
-                delay: 1.5,
                 duration: 0.75,
                 ease: 'easeOut',
               }}
