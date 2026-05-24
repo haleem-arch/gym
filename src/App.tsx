@@ -177,6 +177,7 @@ const AppContent = () => {
 
       <GymSplashOverlay
         show={showGymSplash}
+        workoutName={pendingGymStats?.workoutName || ''}
         onComplete={() => {
           setShowGymSplash(false);
           if (pendingGymStats) {
