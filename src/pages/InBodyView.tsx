@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Brain, Upload } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { DumbbellLoader } from '../components/DumbbellLoader';
+import { SegmentalBodyMap } from '../components/SegmentalBodyMap';
 
 export default function InBodyView() {
   const [scans, setScans] = useState<any[]>([]);
@@ -391,56 +392,8 @@ export default function InBodyView() {
                             </div>
                           </div>
 
-                          {/* Segmental Lean Analysis */}
-                          <div>
-                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                              <Brain size={14} /> Segmental Lean Analysis
-                            </h4>
-                            <div className="bg-gray-800/30 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
-                              
-                              {/* Generated Silhouette Image */}
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                                <img src="/inbody-silhouette.png" alt="Body Silhouette" className="h-[250px] object-contain opacity-20 filter grayscale" />
-                              </div>
-
-                              {/* Arms */}
-                              <div className="flex justify-between w-full z-10">
-                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                  <p className="text-[10px] text-gray-500 mb-1">Left Arm</p>
-                                  <p className="text-sm font-bold text-white">{seg.laLean || 0}kg</p>
-                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.laLean, prevSeg.laLean)}</p>
-                                </div>
-                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                  <p className="text-[10px] text-gray-500 mb-1">Right Arm</p>
-                                  <p className="text-sm font-bold text-white">{seg.raLean || 0}kg</p>
-                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.raLean, prevSeg.raLean)}</p>
-                                </div>
-                              </div>
-                              
-                              {/* Trunk */}
-                              <div className="flex justify-center w-full z-10">
-                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                  <p className="text-[10px] text-gray-500 mb-1">Trunk</p>
-                                  <p className="text-sm font-bold text-white">{seg.trunkLean || 0}kg</p>
-                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.trunkLean, prevSeg.trunkLean)}</p>
-                                </div>
-                              </div>
-
-                              {/* Legs */}
-                              <div className="flex justify-between w-full z-10">
-                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                  <p className="text-[10px] text-gray-500 mb-1">Left Leg</p>
-                                  <p className="text-sm font-bold text-white">{seg.llLean || 0}kg</p>
-                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.llLean, prevSeg.llLean)}</p>
-                                </div>
-                                <div className="text-center bg-gray-900/80 p-2 rounded-xl backdrop-blur-sm border border-gray-700/50 w-24">
-                                  <p className="text-[10px] text-gray-500 mb-1">Right Leg</p>
-                                  <p className="text-sm font-bold text-white">{seg.rlLean || 0}kg</p>
-                                  <p className="text-[10px] text-gray-500">{prev && calculateDelta(seg.rlLean, prevSeg.rlLean)}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          {/* Segmental Lean Analysis – Interactive Body Map */}
+                          <SegmentalBodyMap scan={scan} allScans={scans} />
 
                         </div>
                       </motion.div>
