@@ -1,16 +1,18 @@
-
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDiet } from '../hooks/useDiet';
 import { MacroProgressBar } from '../components/MacroProgressBar';
-import { Plus, Utensils } from 'lucide-react';
+import { Plus, Utensils, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { supabase } from '../lib/supabase';
 import { DumbbellLoader } from '../components/DumbbellLoader';
+import { DietNutritionSettings } from '../components/DietNutritionSettings';
 
 const DietHome = () => {
   const navigate = useNavigate();
-  const { log, meals, waterLogs, loading, targets, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater } = useDiet();
+  const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater } = useDiet();
+  const [showSettings, setShowSettings] = useState(false);
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
   const WATER_GOAL_ML = 3500; // 3.5 Liters
@@ -64,27 +66,44 @@ const DietHome = () => {
   const totals = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
 
   return (
+    <>
     <div className="p-5 flex flex-col gap-6 min-h-full pb-20">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nutrition</h1>
           <span className="text-sm text-gray-400 font-semibold uppercase tracking-wider mt-1 block">Daily Dashboard</span>
         </div>
-        <button 
-          onClick={() => navigate('/diet/inventory')}
-          className="text-xs font-bold bg-surface border border-gray-700 text-gray-300 px-3 py-2 rounded-lg flex items-center gap-1.5 active:scale-95 transition-transform shadow-md"
-        >
-          <Utensils size={14} />
-          MY FOODS
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => navigate('/diet/inventory')}
+            className="text-xs font-bold bg-surface border border-gray-700 text-gray-300 px-3 py-2 rounded-lg flex items-center gap-1.5 active:scale-95 transition-transform shadow-md"
+          >
+            <Utensils size={14} />
+            MY FOODS
+          </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="w-9 h-9 bg-surface border border-gray-700 rounded-lg flex items-center justify-center text-gray-300 active:scale-95 transition-transform shadow-md"
+            title="Nutrition Targets"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+        </div>
       </motion.div>
 
-      {/* Date Navigation */}
+      {/* Date Navigation + Day Type Badge */}
       <div className="flex items-center justify-between bg-surface border border-gray-800 rounded-xl p-2">
         <button onClick={handlePrevDay} className="p-2 hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <span className="font-bold text-lg">{dateDisplay}</span>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="font-bold text-lg">{dateDisplay}</span>
+          {dayType && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
+              {dayType}
+            </span>
+          )}
+        </div>
         <button onClick={handleNextDay} className="p-2 hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
@@ -244,6 +263,16 @@ const DietHome = () => {
         </>
       )}
     </div>
+
+    {/* Nutrition Targets Settings Modal */}
+    <DietNutritionSettings
+      open={showSettings}
+      onClose={() => setShowSettings(false)}
+      currentDayType={dayType}
+      dayNutrition={dayNutrition}
+      onSave={async (map) => { await saveDayNutrition(map); }}
+    />
+    </>
   );
 };
 

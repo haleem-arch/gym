@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSchedule } from './useSchedule';
+import { DEFAULT_DAY_NUTRITION, DAY_TYPES } from '../components/DietNutritionSettings';
+import type { MacroTarget } from '../components/DietNutritionSettings';
 
 export interface DailyMacros {
   kcal: number;
@@ -48,42 +50,60 @@ export const useDiet = () => {
   const [meals, setMeals] = useState<DietMeal[]>([]);
   const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [targets, setTargets] = useState({
-    kcal: 2400,
-    protein: 160,
-    carbs: 240,
-    fat: 70
-  });
+  const [targets, setTargets] = useState<MacroTarget>(DEFAULT_DAY_NUTRITION['PUSH']);
+  const [dayNutrition, setDayNutrition] = useState<Record<string, MacroTarget>>({});
 
-  // Effect to update targets when dayType changes
+  // Load per-day targets from Supabase profile and apply for current dayType
   useEffect(() => {
     const fetchAndAdjustTargets = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      let baseTargets = { kcal: 2400, protein: 160, carbs: 240, fat: 70 };
-      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
-      
-      if (profile && profile.targets && profile.targets.kcal) {
-        baseTargets = profile.targets;
-      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', session.user.id)
+        .maybeSingle();
 
-      let adjustedTargets = { ...baseTargets };
-      
-      if (dayType === 'REST') {
-        adjustedTargets.kcal = 2100;
-        adjustedTargets.carbs = Math.round(baseTargets.carbs * 0.6); // ~140g
-        adjustedTargets.fat = Math.round(baseTargets.fat * 0.85); // ~60g
-      } else if (dayType === 'RUN') {
-        adjustedTargets.kcal = Math.round(baseTargets.kcal + 400); // 2800
-        adjustedTargets.carbs = Math.round(baseTargets.carbs + 100); // 340
-      }
+      // Build full day_nutrition map: user values take priority, defaults fill the rest
+      const userMap: Record<string, MacroTarget> = profile?.targets?.day_nutrition || {};
+      const merged: Record<string, MacroTarget> = {};
+      DAY_TYPES.forEach(dt => {
+        merged[dt] = userMap[dt] ? { ...userMap[dt] } : { ...DEFAULT_DAY_NUTRITION[dt] };
+      });
+      setDayNutrition(merged);
 
-      setTargets(adjustedTargets);
+      // Apply the matching target for today's day type
+      const dayKey = (DAY_TYPES as readonly string[]).includes(dayType) ? dayType : null;
+      const activeTarget = dayKey ? (merged[dayKey] || DEFAULT_DAY_NUTRITION[dayKey as keyof typeof DEFAULT_DAY_NUTRITION]) : DEFAULT_DAY_NUTRITION['PUSH'];
+      setTargets({ ...activeTarget });
     };
 
     fetchAndAdjustTargets();
   }, [dayType]);
+
+  // Save updated day_nutrition map to Supabase
+  const saveDayNutrition = async (map: Record<string, MacroTarget>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('targets')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    const currentTargets = profile?.targets || {};
+    await supabase
+      .from('profiles')
+      .update({ targets: { ...currentTargets, day_nutrition: map } })
+      .eq('id', session.user.id);
+
+    // Update local state immediately
+    setDayNutrition(map);
+    const dayKey = (DAY_TYPES as readonly string[]).includes(dayType) ? dayType : null;
+    if (dayKey && map[dayKey]) setTargets({ ...map[dayKey] });
+  };
 
   const loadDateData = useCallback(async () => {
     setLoading(true);
@@ -275,6 +295,9 @@ export const useDiet = () => {
     waterLogs,
     loading,
     targets,
+    dayType,
+    dayNutrition,
+    saveDayNutrition,
     activeDate,
     setActiveDate,
     createMeal,
