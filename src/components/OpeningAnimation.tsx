@@ -56,87 +56,58 @@ export const OpeningAnimation = ({ onComplete }: OpeningAnimationProps) => {
                 ease: [0.25, 0.8, 0.25, 1], // Custom smooth ease-in-out curve
                 delay: 0.9,
               }}
-              style={{ width: 150, height: 150 }}
+              style={{ width: 180, height: 180 }}
               className={`relative flex items-center justify-center ${isSpinning ? 'motion-blur-effect' : ''}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="150"
-                height="150"
-                viewBox="0 0 100 100"
+                viewBox="0 0 512 512"
                 className="w-full h-full select-none"
               >
-                {/* Bar (Rod) */}
-                <rect
-                  id="bar"
-                  x="46"
-                  y="12"
-                  width="8"
-                  height="76"
-                  rx="4"
-                  transform="rotate(45 50 50)"
-                  fill="#1e2738"
-                />
+                <g transform="translate(256 256) rotate(-45)">
+                  {/* Handle/Bar (Rod) */}
+                  <rect
+                    id="bar"
+                    x="-120"
+                    y="-16"
+                    width="240"
+                    height="32"
+                    rx="8"
+                    fill="#1f2937"
+                  />
 
-                {/* Top Plates (Fly in from top-left) */}
-                <motion.g
-                  id="top-plates"
-                  initial={{ x: -150, y: -150 }}
-                  animate={{ x: 0, y: 0 }}
-                  transition={{
-                    duration: 0.85,
-                    ease: [0.16, 1, 0.3, 1], // easeOutCubic
-                    delay: 0.2,
-                  }}
-                  fill="#3b82f6"
-                >
-                  <rect
-                    x="4"
-                    y="19"
-                    width="38"
-                    height="11"
-                    rx="5.5"
-                    transform="rotate(45 23 24.5)"
-                  />
-                  <rect
-                    x="10"
-                    y="14.5"
-                    width="32"
-                    height="9"
-                    rx="4.5"
-                    transform="rotate(45 26 19)"
-                  />
-                </motion.g>
+                  {/* Left Weights (Fly in from top-left end of the rod) */}
+                  <motion.g
+                    id="left-weights"
+                    initial={{ x: -400, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{
+                      duration: 0.85,
+                      ease: [0.16, 1, 0.3, 1], // easeOutCubic
+                      delay: 0.2,
+                    }}
+                  >
+                    <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                    <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                    <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+                  </motion.g>
 
-                {/* Bottom Plates (Fly in from bottom-right) */}
-                <motion.g
-                  id="bottom-plates"
-                  initial={{ x: 150, y: 150 }}
-                  animate={{ x: 0, y: 0 }}
-                  transition={{
-                    duration: 0.85,
-                    ease: [0.16, 1, 0.3, 1], // easeOutCubic
-                    delay: 0.2,
-                  }}
-                  fill="#3b82f6"
-                >
-                  <rect
-                    x="58"
-                    y="70"
-                    width="38"
-                    height="11"
-                    rx="5.5"
-                    transform="rotate(45 77 75.5)"
-                  />
-                  <rect
-                    x="58"
-                    y="76.5"
-                    width="32"
-                    height="9"
-                    rx="4.5"
-                    transform="rotate(45 74 81)"
-                  />
-                </motion.g>
+                  {/* Right Weights (Fly in from bottom-right end of the rod) */}
+                  <motion.g
+                    id="right-weights"
+                    initial={{ x: 400, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{
+                      duration: 0.85,
+                      ease: [0.16, 1, 0.3, 1], // easeOutCubic
+                      delay: 0.2,
+                    }}
+                  >
+                    <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                    <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                    <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+                  </motion.g>
+                </g>
               </svg>
             </motion.div>
 
