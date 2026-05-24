@@ -10,6 +10,7 @@ import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
+import { useRecovery } from '../hooks/useRecovery';
 
 
 const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'RUN', 'RUN + GYM'];
@@ -61,6 +62,21 @@ const TodayView = () => {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   };
   const activeDateStr = getLocalDateString(activeDate);
+
+  // Recovery state and hooks
+  const { recoveryLogs, loading: recoveryLoading, logRecoverySession, deleteRecoverySession } = useRecovery(activeDateStr);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [recoveryType, setRecoveryType] = useState<'sauna' | 'cold_plunge' | 'stretching' | 'walk'>('sauna');
+  const [recoveryDuration, setRecoveryDuration] = useState<string>('20');
+  const [recoveryNotes, setRecoveryNotes] = useState<string>('');
+  const [recoveryMetrics, setRecoveryMetrics] = useState<any>({ temp: 85 });
+
+  const resetRecoveryForm = () => {
+    setRecoveryType('sauna');
+    setRecoveryDuration('20');
+    setRecoveryNotes('');
+    setRecoveryMetrics({ temp: 85 });
+  };
   const { dayType, setDayType } = useSchedule(activeDateStr);
   const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [showTargetsModal, setShowTargetsModal] = useState(false);
@@ -879,6 +895,75 @@ const TodayView = () => {
           </motion.div>
         </div>
 
+        {/* Recovery Hub Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+          className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full flex flex-col"
+        >
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-lg">🧖‍♂️</span>
+              <span className="text-sm font-bold uppercase tracking-wider">Recovery Hub</span>
+            </div>
+            <button
+              onClick={() => setShowRecoveryModal(true)}
+              className="text-xs font-bold text-primary hover:text-blue-400 flex items-center gap-1 cursor-pointer bg-gray-800/40 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 px-3 py-1.5 rounded-lg transition-all"
+            >
+              + LOG
+            </button>
+          </div>
+
+          {recoveryLoading ? (
+            <div className="py-4 flex justify-center">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : recoveryLogs.length === 0 ? (
+            <div className="text-center py-5 bg-gray-900/40 rounded-xl border border-gray-800/50">
+              <p className="text-xs text-gray-500 font-semibold">No recovery sessions logged today.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {recoveryLogs.map((logVal) => (
+                <SwipeToDeleteRow key={logVal.id} onDelete={() => deleteRecoverySession(logVal.id)} backgroundRounded="rounded-xl">
+                  <div className="bg-gray-900/50 border border-gray-800/60 p-3 rounded-xl flex justify-between items-center w-full">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-xl">
+                        {logVal.type === 'sauna' ? '🧖‍♂️' : logVal.type === 'cold_plunge' ? '🥶' : logVal.type === 'stretching' ? '🧘' : '🚶'}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-white text-xs uppercase tracking-wide">
+                          {logVal.type === 'sauna' ? 'Sauna' : logVal.type === 'cold_plunge' ? 'Cold Plunge' : logVal.type === 'stretching' ? 'Stretching' : 'Recovery Walk'}
+                        </h4>
+                        {logVal.notes && (
+                          <p className="text-[10px] text-gray-500 font-medium mt-0.5 line-clamp-1 italic">
+                            "{logVal.notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-black text-white text-xs block">
+                        {logVal.duration} min
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold">
+                        {logVal.type === 'sauna' || logVal.type === 'cold_plunge' ? (
+                          `${logVal.metrics.temp}°C`
+                        ) : logVal.type === 'walk' ? (
+                          `${logVal.metrics.distance_km} km`
+                        ) : (
+                          logVal.metrics.focus_area || 'Full Body'
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </SwipeToDeleteRow>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
         {/* InBody Snapshot */}
         <motion.div 
            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
@@ -1624,6 +1709,183 @@ const TodayView = () => {
                 </button>
               </motion.div>
             </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Log Recovery Session Modal */}
+      <AnimatePresence>
+        {showRecoveryModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowRecoveryModal(false);
+                resetRecoveryForm();
+              }}
+              className="fixed inset-0 bg-black z-[100] backdrop-blur-sm"
+            />
+            {/* Modal Bottom Sheet */}
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-[101] flex flex-col gap-5 shadow-2xl pb-10"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-950 text-primary rounded-lg border border-blue-900">
+                    <span className="text-lg">🧖‍♂️</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">Log Recovery Session</h3>
+                    <p className="text-[10px] text-gray-400">CNS & Muscle Tissue Restoration</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowRecoveryModal(false);
+                    resetRecoveryForm();
+                  }}
+                  className="p-2 hover:bg-gray-800 rounded-xl transition-colors text-gray-400 hover:text-white cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Type Selectors */}
+              <div className="grid grid-cols-4 gap-2">
+                {(['sauna', 'cold_plunge', 'stretching', 'walk'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setRecoveryType(t);
+                      // Set default metrics based on type
+                      if (t === 'sauna') {
+                        setRecoveryMetrics({ temp: 85 });
+                      } else if (t === 'cold_plunge') {
+                        setRecoveryMetrics({ temp: 5 });
+                      } else if (t === 'stretching') {
+                        setRecoveryMetrics({ focus_area: 'Full Body' });
+                      } else if (t === 'walk') {
+                        setRecoveryMetrics({ distance_km: 3.0 });
+                      }
+                    }}
+                    className={`py-3 px-1 rounded-2xl flex flex-col items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      recoveryType === t
+                        ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/5'
+                        : 'bg-surface border-gray-800 text-gray-400 hover:border-gray-700'
+                    }`}
+                  >
+                    <span className="text-xl">
+                      {t === 'sauna' ? '🧖‍♂️' : t === 'cold_plunge' ? '🥶' : t === 'stretching' ? '🧘' : '🚶'}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                      {t === 'sauna' ? 'Sauna' : t === 'cold_plunge' ? 'Plunge' : t === 'stretching' ? 'Stretch' : 'Walk'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Form Inputs */}
+              <div className="space-y-4">
+                {/* Duration */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Duration (Minutes)</label>
+                  <input
+                    type="number"
+                    required
+                    value={recoveryDuration}
+                    onChange={(e) => setRecoveryDuration(e.target.value)}
+                    className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
+                    placeholder="20"
+                    min="1"
+                  />
+                </div>
+
+                {/* Conditional Metrics */}
+                {(recoveryType === 'sauna' || recoveryType === 'cold_plunge') && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Temperature (°C)</label>
+                    <input
+                      type="number"
+                      required
+                      value={recoveryMetrics.temp || ''}
+                      onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, temp: Number(e.target.value) })}
+                      className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
+                      placeholder={recoveryType === 'sauna' ? '85' : '5'}
+                    />
+                  </div>
+                )}
+
+                {recoveryType === 'stretching' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Focus Area</label>
+                    <input
+                      type="text"
+                      required
+                      value={recoveryMetrics.focus_area || ''}
+                      onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, focus_area: e.target.value })}
+                      className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
+                      placeholder="e.g. Full Body, Lower Body"
+                    />
+                  </div>
+                )}
+
+                {recoveryType === 'walk' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Distance (km)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={recoveryMetrics.distance_km || ''}
+                      onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, distance_km: Number(e.target.value) })}
+                      className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
+                      placeholder="3.2"
+                    />
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes (Optional)</label>
+                  <input
+                    type="text"
+                    value={recoveryNotes}
+                    onChange={(e) => setRecoveryNotes(e.target.value)}
+                    className="bg-gray-800 border border-gray-700 text-white font-semibold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
+                    placeholder="How did you feel?"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={async () => {
+                  if (!recoveryDuration || Number(recoveryDuration) <= 0) {
+                    alert("Please enter a valid duration.");
+                    return;
+                  }
+                  await logRecoverySession(
+                    recoveryType,
+                    Number(recoveryDuration),
+                    recoveryMetrics,
+                    recoveryNotes
+                  );
+                  setShowRecoveryModal(false);
+                  resetRecoveryForm();
+                }}
+                className="w-full bg-primary hover:bg-blue-600 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-white text-xs cursor-pointer mt-2"
+              >
+                SAVE RECOVERY SESSION
+              </button>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
