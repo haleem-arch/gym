@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
-import Auth from './pages/Auth';
 import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
 import WorkoutBuilder from './pages/WorkoutBuilder';
@@ -31,6 +30,7 @@ import DashboardPage from './pages/coach/DashboardPage';
 import ClientsListPage from './pages/coach/ClientsListPage';
 import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
+import OnboardingFlow from './components/OnboardingFlow';
 
 const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody', '/ai'];
 
@@ -209,6 +209,7 @@ const AppContent = () => {
 
 function App() {
   const [session, setSession] = useState<any>(undefined);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     // 1. Check current session
@@ -234,12 +235,57 @@ function App() {
     };
   }, []);
 
-  if (session === undefined) {
+  // Check onboarding status when session changes
+  useEffect(() => {
+    if (session === undefined) return;
+    if (session === null) {
+      setNeedsOnboarding(undefined);
+      return;
+    }
+
+    const checkOnboarding = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('targets')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profile?.targets?.onboarding_completed === true) {
+          setNeedsOnboarding(false);
+        } else {
+          setNeedsOnboarding(true);
+        }
+      } catch (err) {
+        console.error('Error checking onboarding status:', err);
+        setNeedsOnboarding(false); // fallback to bypass on error
+      }
+    };
+
+    checkOnboarding();
+  }, [session]);
+
+  if (session === undefined || (session !== null && needsOnboarding === undefined)) {
     return <DumbbellLoader fullScreen size={140} />;
   }
 
   if (!session) {
-    return <Auth onSessionConfigured={setSession} />;
+    return (
+      <OnboardingFlow 
+        initialStep={1} 
+        onSessionConfigured={setSession} 
+      />
+    );
+  }
+
+  if (needsOnboarding) {
+    return (
+      <OnboardingFlow 
+        initialStep={2} 
+        onSessionConfigured={setSession} 
+        onComplete={() => setNeedsOnboarding(false)} 
+      />
+    );
   }
 
   return (

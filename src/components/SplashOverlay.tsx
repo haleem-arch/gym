@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 interface SplashOverlayProps {
   show: boolean;
   onComplete?: () => void;
+  hideText?: boolean;
 }
 
 /**
@@ -18,7 +19,7 @@ interface SplashOverlayProps {
  *   2.60s  Overlay fades to nothing       (0.4s)
  *   3.00s  onComplete() fires
  */
-export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
+export function SplashOverlay({ show, onComplete, hideText = false }: SplashOverlayProps) {
   const [shiftUp, setShiftUp] = useState(false);
   const [showText, setShowText] = useState(false);
   const [randomPhrase, setRandomPhrase] = useState('');
@@ -188,7 +189,7 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
         }}>
           {/* Shift transition wrapper */}
           <div style={{
-            transform: `translateY(${shiftUp ? '-20px' : '0px'})`,
+            transform: `translateY(${shiftUp && !hideText ? '-20px' : '0px'})`,
             transition: 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)',
             position: 'absolute',
             inset: 0,
@@ -231,31 +232,33 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
         </div>
 
         {/* Text Container (slides and fades in below the dumbbell as it lifts) */}
-        <div style={{
-          height: 36,
-          marginTop: 12,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          transform: `translateY(${shiftUp ? '-10px' : '0px'})`,
-          transition: 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)',
-        }}>
+        {!hideText && (
           <div style={{
-            opacity: showText ? 1 : 0,
-            transform: `translateY(${showText ? '0px' : '15px'})`,
-            transition: 'opacity 0.55s ease-out, transform 0.55s cubic-bezier(0.25, 1, 0.5, 1)',
-            color: '#ffffff',
-            fontWeight: 900,
-            fontSize: '15px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.22em',
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
+            height: 36,
+            marginTop: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            transform: `translateY(${shiftUp ? '-10px' : '0px'})`,
+            transition: 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)',
           }}>
-            {randomPhrase}
+            <div style={{
+              opacity: showText ? 1 : 0,
+              transform: `translateY(${showText ? '0px' : '15px'})`,
+              transition: 'opacity 0.55s ease-out, transform 0.55s cubic-bezier(0.25, 1, 0.5, 1)',
+              color: '#ffffff',
+              fontWeight: 900,
+              fontSize: '15px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.22em',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+            }}>
+              {randomPhrase}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
