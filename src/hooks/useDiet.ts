@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSchedule } from './useSchedule';
-import { DEFAULT_DAY_NUTRITION, DAY_TYPES } from '../components/DietNutritionSettings';
+import { DEFAULT_DAY_NUTRITION } from '../components/DietNutritionSettings';
 import type { MacroTarget } from '../components/DietNutritionSettings';
 
 export interface DailyMacros {
@@ -52,35 +52,75 @@ export const useDiet = () => {
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState<MacroTarget>(DEFAULT_DAY_NUTRITION['PUSH']);
   const [dayNutrition, setDayNutrition] = useState<Record<string, MacroTarget>>({});
+  const [allDayTypes, setAllDayTypes] = useState<string[]>(['REST', 'RUN', 'RUN + GYM', 'PUSH', 'PULL', 'LEGS']);
 
-  // Load per-day targets from Supabase profile and apply for current dayType
-  useEffect(() => {
-    const fetchAndAdjustTargets = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  const getDefaultTarget = (dt: string): MacroTarget => {
+    const normalized = dt.replace(/\s+/g, '');
+    return DEFAULT_DAY_NUTRITION[dt] ?? DEFAULT_DAY_NUTRITION[normalized] ?? { kcal: 2400, protein: 170, carbs: 230, fat: 70 };
+  };
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('targets')
-        .eq('id', session.user.id)
-        .maybeSingle();
+  // Load per-day targets and dynamic day types
+  const fetchAndAdjustTargets = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
 
-      // Build full day_nutrition map: user values take priority, defaults fill the rest
-      const userMap: Record<string, MacroTarget> = profile?.targets?.day_nutrition || {};
-      const merged: Record<string, MacroTarget> = {};
-      DAY_TYPES.forEach(dt => {
-        merged[dt] = userMap[dt] ? { ...userMap[dt] } : { ...DEFAULT_DAY_NUTRITION[dt] };
-      });
-      setDayNutrition(merged);
+    // 1. Fetch user's workout plans to get dynamic day types
+    const { data: plansData } = await supabase
+      .from('user_workout_plans')
+      .select('plan_type')
+      .eq('user_id', session.user.id);
 
-      // Apply the matching target for today's day type
-      const dayKey = (DAY_TYPES as readonly string[]).includes(dayType) ? dayType : null;
-      const activeTarget = dayKey ? (merged[dayKey] || DEFAULT_DAY_NUTRITION[dayKey as keyof typeof DEFAULT_DAY_NUTRITION]) : DEFAULT_DAY_NUTRITION['PUSH'];
-      setTargets({ ...activeTarget });
-    };
+    const planTypes = plansData ? plansData.map(p => p.plan_type) : [];
+    const defaultPlans = ['PUSH', 'PULL', 'LEGS'];
+    const customPlans = planTypes.filter(t => !defaultPlans.includes(t));
+    const finalTypes = ['REST', 'RUN', 'RUN + GYM', ...defaultPlans, ...customPlans];
+    
+    setAllDayTypes(finalTypes);
 
-    fetchAndAdjustTargets();
+    // 2. Fetch profile targets
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('targets')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    const userMap: Record<string, MacroTarget> = profile?.targets?.day_nutrition || {};
+    const merged: Record<string, MacroTarget> = {};
+    
+    finalTypes.forEach(dt => {
+      const exactKey = userMap[dt] 
+        ? dt 
+        : (userMap[dt.replace(/\s+/g, '')] ? dt.replace(/\s+/g, '') : null);
+      merged[dt] = exactKey ? { ...userMap[exactKey] } : getDefaultTarget(dt);
+    });
+    setDayNutrition(merged);
+
+    // 3. Apply active targets for today's scheduled dayType
+    const matchedType = finalTypes.find(t => t.toLowerCase().replace(/\s+/g, '') === dayType.toLowerCase().replace(/\s+/g, ''));
+    const activeTarget = matchedType 
+      ? merged[matchedType] 
+      : (merged['PUSH'] || getDefaultTarget('PUSH'));
+      
+    setTargets({ ...activeTarget });
   }, [dayType]);
+
+  // Load targets on mount or when dayType changes
+  useEffect(() => {
+    fetchAndAdjustTargets();
+  }, [fetchAndAdjustTargets]);
+
+  // Listen to plan updates (Workout Builder) and schedule updates to reload instantly
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchAndAdjustTargets();
+    };
+    window.addEventListener('plan_updated', handleUpdate);
+    window.addEventListener('schedule_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('plan_updated', handleUpdate);
+      window.removeEventListener('schedule_updated', handleUpdate);
+    };
+  }, [fetchAndAdjustTargets]);
 
   // Save updated day_nutrition map to Supabase
   const saveDayNutrition = async (map: Record<string, MacroTarget>) => {
@@ -101,8 +141,10 @@ export const useDiet = () => {
 
     // Update local state immediately
     setDayNutrition(map);
-    const dayKey = (DAY_TYPES as readonly string[]).includes(dayType) ? dayType : null;
-    if (dayKey && map[dayKey]) setTargets({ ...map[dayKey] });
+    const matchedType = allDayTypes.find(t => t.toLowerCase().replace(/\s+/g, '') === dayType.toLowerCase().replace(/\s+/g, ''));
+    if (matchedType && map[matchedType]) {
+      setTargets({ ...map[matchedType] });
+    }
   };
 
   const loadDateData = useCallback(async () => {
@@ -297,6 +339,7 @@ export const useDiet = () => {
     targets,
     dayType,
     dayNutrition,
+    allDayTypes,
     saveDayNutrition,
     activeDate,
     setActiveDate,

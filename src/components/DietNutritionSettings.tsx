@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, RotateCcw } from 'lucide-react';
 
+export const FIXED_DAY_TYPES = ['REST', 'RUN', 'RUN+GYM'] as const;
+// kept for backwards compat in useDiet defaults
 export const DAY_TYPES = ['REST', 'RUN', 'PUSH', 'PULL', 'LEGS', 'RUN+GYM'] as const;
 export type DayTypeKey = typeof DAY_TYPES[number];
 
@@ -12,7 +15,7 @@ export interface MacroTarget {
   fat: number;
 }
 
-export const DEFAULT_DAY_NUTRITION: Record<DayTypeKey, MacroTarget> = {
+export const DEFAULT_DAY_NUTRITION: Record<string, MacroTarget> = {
   REST:      { kcal: 2100, protein: 155, carbs: 140, fat: 65 },
   RUN:       { kcal: 2600, protein: 155, carbs: 300, fat: 65 },
   PUSH:      { kcal: 2400, protein: 170, carbs: 230, fat: 70 },
@@ -21,7 +24,7 @@ export const DEFAULT_DAY_NUTRITION: Record<DayTypeKey, MacroTarget> = {
   'RUN+GYM': { kcal: 2800, protein: 180, carbs: 310, fat: 75 },
 };
 
-const DAY_META: Record<DayTypeKey, { icon: string; color: string; label: string }> = {
+const KNOWN_META: Record<string, { icon: string; color: string; label: string }> = {
   REST:      { icon: '🛌', color: '#6b7280', label: 'Rest Day' },
   RUN:       { icon: '🏃', color: '#f59e0b', label: 'Run Day' },
   PUSH:      { icon: '💪', color: '#3b82f6', label: 'Push Day' },
@@ -30,35 +33,48 @@ const DAY_META: Record<DayTypeKey, { icon: string; color: string; label: string 
   'RUN+GYM': { icon: '⚡', color: '#10b981', label: 'Run + Gym' },
 };
 
+const CUSTOM_COLORS = ['#f97316', '#06b6d4', '#a855f7', '#84cc16', '#f43f5e', '#14b8a6'];
+
+// Get meta for any day type including custom ones
+const getMeta = (dt: string, customIndex: number) => {
+  if (KNOWN_META[dt]) return KNOWN_META[dt];
+  return {
+    icon: '🏋️',
+    color: CUSTOM_COLORS[customIndex % CUSTOM_COLORS.length],
+    label: dt,
+  };
+};
+
+// Default targets for unknown day types (gym-style)
+const getDefaultTarget = (dt: string): MacroTarget =>
+  DEFAULT_DAY_NUTRITION[dt] ?? { kcal: 2400, protein: 170, carbs: 230, fat: 70 };
+
 interface Props {
   open: boolean;
   onClose: () => void;
   currentDayType: string;
+  allDayTypes: string[]; // full dynamic list from DB + fixed
   dayNutrition: Record<string, MacroTarget>;
   onSave: (map: Record<string, MacroTarget>) => Promise<void>;
 }
 
-export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrition, onSave }: Props) => {
-  const [activeTab, setActiveTab] = useState<DayTypeKey>(() => {
-    return DAY_TYPES.includes(currentDayType as DayTypeKey) ? (currentDayType as DayTypeKey) : 'REST';
-  });
+export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTypes, dayNutrition, onSave }: Props) => {
+  const [activeTab, setActiveTab] = useState<string>(currentDayType || 'REST');
   const [draft, setDraft] = useState<Record<string, MacroTarget>>({});
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
-  // Sync draft from prop when opening
+  // Sync draft from prop when opening or allDayTypes changes
   useEffect(() => {
-    if (open) {
+    if (open && allDayTypes.length > 0) {
       const merged: Record<string, MacroTarget> = {};
-      DAY_TYPES.forEach(dt => {
-        merged[dt] = dayNutrition[dt] ? { ...dayNutrition[dt] } : { ...DEFAULT_DAY_NUTRITION[dt] };
+      allDayTypes.forEach(dt => {
+        merged[dt] = dayNutrition[dt] ? { ...dayNutrition[dt] } : getDefaultTarget(dt);
       });
       setDraft(merged);
-      if (DAY_TYPES.includes(currentDayType as DayTypeKey)) {
-        setActiveTab(currentDayType as DayTypeKey);
-      }
+      setActiveTab(allDayTypes.includes(currentDayType) ? currentDayType : allDayTypes[0]);
     }
-  }, [open, dayNutrition, currentDayType]);
+  }, [open, dayNutrition, currentDayType, allDayTypes]);
 
   const updateField = (field: keyof MacroTarget, value: string) => {
     const num = parseInt(value, 10);
@@ -72,7 +88,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
   const resetTab = () => {
     setDraft(prev => ({
       ...prev,
-      [activeTab]: { ...DEFAULT_DAY_NUTRITION[activeTab] }
+      [activeTab]: getDefaultTarget(activeTab)
     }));
   };
 
@@ -84,19 +100,22 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
     setTimeout(() => setSavedFlash(false), 2000);
   };
 
-  const active = draft[activeTab] || DEFAULT_DAY_NUTRITION[activeTab];
-  const meta = DAY_META[activeTab];
+  const active = draft[activeTab] ?? getDefaultTarget(activeTab);
+  const customIdx = allDayTypes.indexOf(activeTab);
+  const meta = getMeta(activeTab, customIdx);
 
-  return (
+  const portalRoot = document.getElementById('modal-portal');
+
+  const content = (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — sits above BottomNav */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+            className={`${portalRoot ? 'absolute' : 'fixed'} inset-0 bg-black/70 backdrop-blur-sm z-[60] pointer-events-auto`}
             onClick={onClose}
           />
 
@@ -106,7 +125,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-[#111] rounded-t-3xl border-t border-gray-800 max-h-[92vh] flex flex-col overflow-hidden"
+            className={`${portalRoot ? 'absolute' : 'fixed'} bottom-0 left-0 right-0 z-[70] bg-[#111] rounded-t-3xl border-t border-gray-800 max-h-[92vh] flex flex-col overflow-hidden pointer-events-auto`}
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
@@ -127,10 +146,10 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
               </button>
             </div>
 
-            {/* Day Type Tabs */}
+            {/* Day Type Tabs — scrollable, shows ALL day types including custom */}
             <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
-              {DAY_TYPES.map(dt => {
-                const m = DAY_META[dt];
+              {allDayTypes.map((dt, idx) => {
+                const m = getMeta(dt, idx);
                 const isActive = dt === activeTab;
                 return (
                   <button
@@ -144,7 +163,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
                   >
                     <span className="text-base">{m.icon}</span>
                     <span
-                      className="text-[10px] font-bold uppercase tracking-wider"
+                      className="text-[10px] font-bold uppercase tracking-wider max-w-[60px] truncate"
                       style={{ color: isActive ? m.color : '#9ca3af' }}
                     >
                       {dt}
@@ -189,7 +208,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
 
                   {/* Macro Inputs */}
                   <div className="flex flex-col gap-3">
-                    {/* Calories — full width, prominent */}
+                    {/* Calories */}
                     <div
                       className="rounded-2xl p-4 border"
                       style={{ background: meta.color + '11', borderColor: meta.color + '44' }}
@@ -201,7 +220,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
                         type="number"
                         value={active.kcal}
                         onChange={e => updateField('kcal', e.target.value)}
-                        className="w-full bg-transparent text-3xl font-black text-white outline-none border-none"
+                        className="w-full bg-transparent text-3xl font-black outline-none border-none"
                         style={{ color: meta.color }}
                       />
                       <div className="h-1 rounded-full mt-3" style={{ background: meta.color + '33' }}>
@@ -212,17 +231,14 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
                       </div>
                     </div>
 
-                    {/* Macros — 3 columns */}
+                    {/* Macros */}
                     <div className="grid grid-cols-3 gap-3">
                       {([
                         { key: 'protein' as const, label: 'Protein', emoji: '🥩', color: '#3b82f6' },
                         { key: 'carbs'   as const, label: 'Carbs',   emoji: '🍚', color: '#22c55e' },
                         { key: 'fat'     as const, label: 'Fat',     emoji: '🥑', color: '#eab308' },
                       ]).map(({ key, label, emoji, color }) => (
-                        <div
-                          key={key}
-                          className="rounded-xl p-3 border border-gray-800 bg-[#1a1a1a] flex flex-col gap-1"
-                        >
+                        <div key={key} className="rounded-xl p-3 border border-gray-800 bg-[#1a1a1a] flex flex-col gap-1">
                           <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{emoji} {label}</span>
                           <input
                             type="number"
@@ -236,7 +252,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
                       ))}
                     </div>
 
-                    {/* Macro ratio preview */}
+                    {/* Calorie split preview */}
                     <div className="bg-[#1a1a1a] rounded-xl p-3 border border-gray-800">
                       <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Calorie split preview</p>
                       <div className="flex gap-1 h-2 rounded-full overflow-hidden">
@@ -255,7 +271,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
                           </span>
                         ))}
                         <span className="text-[10px] text-gray-500 ml-auto">
-                          {Math.round(active.protein * 4 + active.carbs * 4 + active.fat * 9)} kcal from macros
+                          {Math.round(active.protein * 4 + active.carbs * 4 + active.fat * 9)} kcal
                         </span>
                       </div>
                     </div>
@@ -287,4 +303,6 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, dayNutrit
       )}
     </AnimatePresence>
   );
+
+  return portalRoot ? createPortal(content, portalRoot) : content;
 };

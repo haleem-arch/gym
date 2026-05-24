@@ -11,7 +11,7 @@ import { DietNutritionSettings } from '../components/DietNutritionSettings';
 
 const DietHome = () => {
   const navigate = useNavigate();
-  const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater } = useDiet();
+  const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, allDayTypes, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater } = useDiet();
   const [showSettings, setShowSettings] = useState(false);
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
@@ -269,6 +269,7 @@ const DietHome = () => {
       open={showSettings}
       onClose={() => setShowSettings(false)}
       currentDayType={dayType}
+      allDayTypes={allDayTypes}
       dayNutrition={dayNutrition}
       onSave={async (map) => { await saveDayNutrition(map); }}
     />

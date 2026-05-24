@@ -155,6 +155,9 @@ const AppContent = () => {
           </AnimatePresence>
         </div>
 
+        {/* Portal for sheet overlays to sit above the page transition stacking context & BottomNav */}
+        <div id="modal-portal" className="absolute inset-0 pointer-events-none z-[90]" />
+
         {/* Bottom nav — hidden while any full-screen overlay is active */}
         {!anyOverlayActive && <BottomNav />}
       </div>
