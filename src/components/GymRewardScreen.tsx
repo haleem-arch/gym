@@ -9,9 +9,10 @@ interface GymRewardScreenProps {
     dayType: string;
   };
   onDone: () => void;
+  onBack: () => void;
 }
 
-export const GymRewardScreen = ({ stats, onDone }: GymRewardScreenProps) => {
+export const GymRewardScreen = ({ stats, onDone, onBack }: GymRewardScreenProps) => {
   const [displayVolume, setDisplayVolume] = useState(0);
   const targetVolume = stats.volume;
 
@@ -115,6 +116,14 @@ export const GymRewardScreen = ({ stats, onDone }: GymRewardScreenProps) => {
           className="gym-reward-btn w-full py-4 bg-primary hover:bg-blue-600 text-white font-extrabold rounded-2xl transition-all active:scale-[0.97] shadow-xl shadow-primary/30 text-sm tracking-wide uppercase"
         >
           View Session Receipt →
+        </button>
+
+        {/* Back Button */}
+        <button
+          onClick={onBack}
+          className="gym-reward-back-btn w-full mt-3 py-3.5 border border-gray-800 hover:bg-surface text-gray-400 font-bold rounded-2xl transition-all active:scale-[0.97] text-sm tracking-wide uppercase"
+        >
+          Back to Workouts
         </button>
       </div>
     </motion.div>

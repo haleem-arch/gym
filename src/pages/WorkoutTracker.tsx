@@ -239,6 +239,7 @@ const WorkoutTracker = () => {
         <GymRewardScreen
           stats={rewardStats}
           onDone={() => navigate(`/workout/${rewardStats.workoutId}`, { replace: true })}
+          onBack={() => navigate('/workout', { replace: true })}
         />
       )}
     </div>

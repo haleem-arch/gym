@@ -3,6 +3,12 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 const BottomNav = () => {
   const location = useLocation();
+  
+  // Hide bottom nav on the active workout tracker (and its reward screen overlay)
+  if (location.pathname === '/workout/active') {
+    return null;
+  }
+
   const navItems = [
     { to: '/', icon: <Home size={24} />, label: 'Today' },
     { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout' },
