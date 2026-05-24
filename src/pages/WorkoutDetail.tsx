@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Clock, CalendarDays, Zap, TrendingUp, Heart, Award, Sparkles, Activity, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Clock, CalendarDays, Zap, TrendingUp, Heart, Award, Sparkles, Activity, MapPin, Bot } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { WorkoutAiChat } from '../components/WorkoutAiChat';
 
 // Polyline decoder helper
 const decodePolyline = (encoded: string): [number, number][] => {
@@ -86,6 +87,7 @@ const WorkoutDetail = () => {
   const [exercises, setExercises] = useState<any[]>([]);
   const [stravaActivity, setStravaActivity] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
 
   useEffect(() => {
     const fetchWorkout = async () => {
@@ -452,7 +454,29 @@ const WorkoutDetail = () => {
         ) : (
           /* Gym Lifting Exercises */
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="flex flex-col gap-4 flex-shrink-0">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Exercises Logged</h3>
+            
+            <button 
+              onClick={() => setIsAiChatOpen(true)}
+              className="w-full bg-gradient-to-r from-primary to-blue-600 rounded-2xl p-4 flex items-center justify-between shadow-xl shadow-primary/20 border border-primary/50 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30">
+                  <Bot size={20} className="text-white" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-white font-extrabold text-sm tracking-tight flex items-center gap-1.5">
+                    Analyze Session <Sparkles size={14} className="text-yellow-300 animate-pulse" />
+                  </h4>
+                  <p className="text-blue-100 text-[10px] uppercase font-bold tracking-wider">AI Coach Feedback</p>
+                </div>
+              </div>
+              <div className="relative z-10 bg-white/10 p-2 rounded-full backdrop-blur-md">
+                <Zap size={16} className="text-white" />
+              </div>
+            </button>
+
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 mt-2">Exercises Logged</h3>
             
             {exercises.map((ex, i) => {
               const completedSets = ex.sets.filter((s:any) => s.done);
@@ -519,6 +543,26 @@ const WorkoutDetail = () => {
           </div>
         </div>
       )}
+
+      {/* AI Chat Modal Overlay */}
+      <AnimatePresence>
+        {isAiChatOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAiChatOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            <WorkoutAiChat 
+              workout={workout}
+              exercises={exercises}
+              onClose={() => setIsAiChatOpen(false)}
+            />
+          </>
+        )}
+      </AnimatePresence>
       
     </div>
   );

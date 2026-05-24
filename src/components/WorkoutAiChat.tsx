@@ -1,0 +1,173 @@
+import { useEffect, useRef, useState } from 'react';
+import { useAiAgent } from '../hooks/useAiAgent';
+import { Send, Bot, Loader2, Sparkles, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Basic markdown rendering
+const MessageText = ({ text }: { text: string }) => {
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-2" />;
+        const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+          p.startsWith('**') && p.endsWith('**')
+            ? <strong key={j} className="font-semibold text-white">{p.slice(2, -2)}</strong>
+            : p
+        );
+        const isBullet = /^[-•*]\s/.test(line);
+        return (
+          <div key={i} className={`flex ${isBullet ? 'gap-2' : ''}`}>
+            {isBullet && <span className="text-primary mt-0.5 flex-shrink-0">•</span>}
+            <span>{isBullet ? parts.map((p, _j) => typeof p === 'string' ? p.replace(/^[-•*]\s/, '') : p) : parts}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+interface WorkoutAiChatProps {
+  workout: any;
+  exercises: any[];
+  onClose: () => void;
+}
+
+export const WorkoutAiChat = ({ workout, exercises, onClose }: WorkoutAiChatProps) => {
+  const storageKey = `workout_chat_${workout.id}`;
+  const { messages, isTyping, sendMessage, sendInvisibleMessage, initChat } = useAiAgent({ storageKey });
+  const [input, setInput] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Initialize and trigger analysis if empty
+  useEffect(() => {
+    initChat().then(() => {
+      // If there are no messages in this isolated chat history, trigger the analysis automatically
+      const saved = localStorage.getItem(storageKey);
+      const parsed = saved ? JSON.parse(saved) : [];
+      if (parsed.length === 0) {
+        // Build the analysis prompt
+        let exSummary = '';
+        exercises.forEach(ex => {
+          const name = ex.exercises?.name || 'Unknown';
+          const completedSets = ex.sets.filter((s: any) => s.done);
+          if (completedSets.length > 0) {
+            const setStrs = completedSets.map((s: any) => `${s.weight}kg x ${s.reps}`).join(', ');
+            exSummary += `- ${name}: ${setStrs}\n`;
+          }
+        });
+        
+        const prompt = `Analyze this specific gym session. Date: ${workout.date}, Type: ${workout.day_type}, Volume: ${workout.total_volume}kg.
+Exercises:
+${exSummary}
+Review the sets and reps. Point out if I dropped weight significantly, if volume is good, or any other patterns. Be an engaging, motivating coach. Keep it concise.`;
+
+        sendInvisibleMessage(prompt);
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isTyping) return;
+    sendMessage(input.trim());
+    setInput('');
+  };
+
+  return (
+    <motion.div
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+      className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background border-t border-gray-800 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] max-w-lg mx-auto"
+      style={{ height: '85dvh' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-surface/50 rounded-t-3xl backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
+            <Sparkles size={16} className="text-primary animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-sm tracking-tight">Coach Analysis</h3>
+            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{workout.day_type} Session</p>
+          </div>
+        </div>
+        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full transition-colors">
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
+        {messages.length === 0 && isTyping && (
+           <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-3">
+             <Bot size={40} className="text-gray-700" />
+             <p className="text-xs font-bold uppercase tracking-wider animate-pulse">Analyzing your session...</p>
+           </div>
+        )}
+
+        <AnimatePresence initial={false}>
+          {messages.map((msg) => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`
+                  text-sm leading-relaxed break-words
+                  ${msg.role === 'user'
+                    ? 'max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5'
+                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
+                  }
+                `}
+              >
+                {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
+              </div>
+            </motion.div>
+          ))}
+
+          {isTyping && messages.length > 0 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+              <div className="bg-surface border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2.5">
+                <Loader2 size={14} className="animate-spin text-primary flex-shrink-0" />
+                <span className="text-xs text-gray-400">Typing...</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-3 bg-surface/90 backdrop-blur-md border-t border-gray-800 pb-safe">
+        <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
+          <textarea
+            value={input}
+            onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
+            placeholder="Ask about this session..."
+            rows={1}
+            className="flex-1 bg-background border border-gray-700 rounded-2xl py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none overflow-hidden"
+            style={{ minHeight: '46px', maxHeight: '120px' }}
+            disabled={isTyping}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || isTyping}
+            className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white disabled:opacity-40 transition-all hover:scale-105"
+          >
+            <Send size={13} />
+          </button>
+        </form>
+      </div>
+    </motion.div>
+  );
+};

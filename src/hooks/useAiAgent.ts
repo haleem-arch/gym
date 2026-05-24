@@ -93,21 +93,25 @@ RULES:
 
 // ─── Intent detection removed to guarantee context injection ─────────────────
 
-export const useAiAgent = () => {
+export const useAiAgent = (options?: { storageKey?: string }) => {
+  const storageKey = options?.storageKey || 'ai_chat_messages';
+  const sessionKey = options?.storageKey ? options.storageKey + '_session' : 'ai_session_id';
+
   const [messages, setMessages] = useState<AiMessage[]>(() => {
-    const saved = localStorage.getItem('ai_chat_messages');
+    const saved = localStorage.getItem(storageKey);
     return saved ? JSON.parse(saved) : [];
   });
   const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('ai_chat_messages', JSON.stringify(messages));
-  }, [messages]);
+    localStorage.setItem(storageKey, JSON.stringify(messages));
+  }, [messages, storageKey]);
+  
   const [sessionId, setSessionId] = useState<string>(() => {
-    const saved = localStorage.getItem('ai_session_id');
+    const saved = localStorage.getItem(sessionKey);
     if (saved) return saved;
     const newId = crypto.randomUUID();
-    localStorage.setItem('ai_session_id', newId);
+    localStorage.setItem(sessionKey, newId);
     return newId;
   });
   const navigate = useNavigate();
@@ -492,9 +496,8 @@ export const useAiAgent = () => {
       return;
     }
 
-    // Since we initialize from localStorage, we just ensure there's at least one message
     setMessages(prev => {
-      if (prev.length === 0) {
+      if (prev.length === 0 && !options?.storageKey) {
         return [{ id: '1', role: 'model', text: "Coach connected. What do you need?" }];
       }
       return prev;
@@ -503,9 +506,26 @@ export const useAiAgent = () => {
 
   const startNewChat = () => {
     const newId = crypto.randomUUID();
-    localStorage.setItem('ai_session_id', newId);
+    localStorage.setItem(sessionKey, newId);
     setSessionId(newId);
-    setMessages([{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
+    setMessages(options?.storageKey ? [] : [{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
+  };
+
+  const sendInvisibleMessage = async (text: string) => {
+    if (!initialized.current) await initChat();
+    if (!getApiKey()) return;
+    setIsTyping(true);
+    try {
+      const context = await loadContext();
+      // append the specific workout context to the prompt context directly
+      const aiRes = await callGroq(text, context + "\n\nADDITIONAL CONTEXT: " + text);
+      const modelMsgId = crypto.randomUUID();
+      setMessages(prev => [...prev, { id: modelMsgId, role: 'model', text: aiRes.reply }]);
+    } catch (e: any) {
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: `Error: ${e.message}` }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   // ─── Send ──────────────────────────────────────────────────────────────────
@@ -575,6 +595,7 @@ export const useAiAgent = () => {
     messages,
     isTyping,
     sendMessage,
+    sendInvisibleMessage,
     updateMessage,
     startNewChat,
     initChat,
