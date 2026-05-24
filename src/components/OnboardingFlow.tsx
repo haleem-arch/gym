@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { 
@@ -52,6 +52,17 @@ const BrandLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
   </div>
 );
 
+const CustomizeLaterNote = () => (
+  <div className="bg-blue-950/20 border border-blue-900/30 rounded-xl p-3 flex items-start gap-2.5 mt-3 select-none">
+    <span className="text-blue-400 text-sm leading-none mt-0.5">💡</span>
+    <div className="flex-1">
+      <p className="text-[10px] leading-relaxed text-blue-300/80 font-medium">
+        <strong>Note:</strong> You can always customize and edit these settings more specifically later inside your Settings menu.
+      </p>
+    </div>
+  </div>
+);
+
 export default function OnboardingFlow({ 
   initialStep = 1, 
   onSessionConfigured, 
@@ -62,6 +73,11 @@ export default function OnboardingFlow({
   const [direction, setDirection] = useState(1);
   const [showSplash, setShowSplash] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // CSV InBody Import refs & states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [csvScans, setCsvScans] = useState<any[]>([]);
 
   // Active user session state (Step 1 -> 2 transition)
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -205,6 +221,116 @@ export default function OnboardingFlow({
       setBfm('');
     }
   }, [weight, bfPercent]);
+
+  // Handle CSV file upload & parsing
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      if (!text) {
+        setIsImporting(false);
+        return;
+      }
+
+      // Simple CSV split
+      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length < 2) {
+        toast.error('Invalid CSV file or empty file.');
+        setIsImporting(false);
+        return;
+      }
+
+      // Parse headers
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const parsedScans = [];
+
+      // Parse rows
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(v => v.trim());
+        if (row.length < 5) continue; // Skip malformed rows
+
+        const getValue = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? parseFloat(row[idx]) : 0;
+        };
+        
+        const getString = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? row[idx] : '';
+        };
+
+        const dateRaw = getString('date'); // format: 20260506155832 or YYYY-MM-DD
+        if (!dateRaw) continue;
+
+        let dateStr = new Date().toISOString().split('T')[0];
+        if (dateRaw.includes('-')) {
+          dateStr = dateRaw.split(' ')[0]; // take just the date part if it has timestamp
+        } else if (dateRaw.length >= 8) {
+           dateStr = `${dateRaw.substring(0,4)}-${dateRaw.substring(4,6)}-${dateRaw.substring(6,8)}`;
+        }
+
+        const parsedWeight = getValue('weight(kg)') || getValue('weight') || 0;
+        const parsedSmm = getValue('skeletal muscle mass') || getValue('muscle') || getValue('smm') || 0;
+        const parsedBfm = getValue('body fat mass') || getValue('bfm') || 0;
+        const parsedBfPercent = getValue('percent body fat') || getValue('body fat %') || getValue('bf%') || getValue('percent body fat(%)') || 0;
+        const parsedBmr = getValue('basal metabolic rate') || getValue('bmr') || Math.round(10 * parsedWeight + 6.25 * 175 - 5 * 25 + 5);
+        const parsedScore = getValue('inbody score') || getValue('score') || 75;
+
+        const segmental = {
+          visceralFat: getValue('visceral fat level') || 6,
+          tbw: getValue('total body water') || Math.round(parsedWeight * 0.6),
+          protein: getValue('protein') || Math.round(parsedWeight * 0.18),
+          minerals: getValue('mineral') || Math.round(parsedWeight * 0.05),
+          raLean: getValue('right arm lean') || Math.round(parsedWeight * 0.05),
+          laLean: getValue('left arm lean') || Math.round(parsedWeight * 0.05),
+          trunkLean: getValue('trunk lean') || Math.round(parsedWeight * 0.28),
+          rlLean: getValue('right leg lean') || Math.round(parsedWeight * 0.12),
+          llLean: getValue('left leg lean') || Math.round(parsedWeight * 0.12),
+        };
+
+        if (parsedWeight > 0) {
+          parsedScans.push({
+            date: dateStr,
+            weight: parsedWeight,
+            smm: parsedSmm,
+            bfm: parsedBfm || ((parsedWeight * parsedBfPercent) / 100),
+            bf_percent: parsedBfPercent || (parsedWeight > 0 ? (parsedBfm / parsedWeight) * 100 : 0),
+            bmr: Math.round(parsedBmr),
+            score: Math.round(parsedScore),
+            segmental: segmental
+          });
+        }
+      }
+
+      if (parsedScans.length > 0) {
+        // Sort scans chronologically by date
+        parsedScans.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        // Save the parsed scans
+        setCsvScans(parsedScans);
+
+        // Find the latest scan to auto-fill the onboarding inputs!
+        const latestScan = parsedScans[parsedScans.length - 1];
+        setWeight(latestScan.weight ? latestScan.weight.toString() : '');
+        setBfPercent(latestScan.bf_percent ? latestScan.bf_percent.toFixed(1) : '');
+        setSmm(latestScan.smm ? latestScan.smm.toString() : '');
+        setInbodyScore(latestScan.score || 75);
+        setBfm(latestScan.bfm ? latestScan.bfm.toFixed(1) : '');
+
+        toast.success(`Loaded ${parsedScans.length} scans from CSV!`);
+      } else {
+        toast.error("No valid InBody data found in CSV.");
+      }
+
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
 
   // Navigation handlers
   const handleNext = () => {
@@ -445,34 +571,46 @@ export default function OnboardingFlow({
         .update({ targets: updatedTargets })
         .eq('id', user.id);
 
-      // 3. Save initial InBody composition scan if weight was entered
-      const weightVal = parseFloat(weight);
-      if (!isNaN(weightVal) && weightVal > 0) {
-        const bfVal = parseFloat(bfPercent) || 0;
-        const smmVal = parseFloat(smm) || 0;
-        const bfmVal = parseFloat(bfm) || 0;
+      // 3. Save initial InBody composition scan(s)
+      if (csvScans.length > 0) {
+        const scansToInsert = csvScans.map(scan => ({
+          ...scan,
+          user_id: user.id
+        }));
+        const { error } = await supabase.from('inbody_scans').insert(scansToInsert);
+        if (error) {
+          console.error("Error bulk inserting InBody scans from CSV:", error);
+          toast.error("Failed to save some InBody scans from CSV, but proceeding.");
+        }
+      } else {
+        const weightVal = parseFloat(weight);
+        if (!isNaN(weightVal) && weightVal > 0) {
+          const bfVal = parseFloat(bfPercent) || 0;
+          const smmVal = parseFloat(smm) || 0;
+          const bfmVal = parseFloat(bfm) || 0;
 
-        await supabase.from('inbody_scans').insert({
-          user_id: user.id,
-          date: new Date().toISOString().split('T')[0],
-          weight: weightVal,
-          smm: smmVal,
-          bfm: bfmVal,
-          bf_percent: bfVal,
-          bmr: Math.round(10 * weightVal + 6.25 * 175 - 5 * 25 + 5),
-          score: inbodyScore,
-          segmental: {
-            visceralFat: 6,
-            tbw: Math.round(weightVal * 0.6),
-            protein: Math.round(weightVal * 0.18),
-            minerals: Math.round(weightVal * 0.05),
-            raLean: Math.round(weightVal * 0.05),
-            laLean: Math.round(weightVal * 0.05),
-            trunkLean: Math.round(weightVal * 0.28),
-            rlLean: Math.round(weightVal * 0.12),
-            llLean: Math.round(weightVal * 0.12)
-          }
-        });
+          await supabase.from('inbody_scans').insert({
+            user_id: user.id,
+            date: new Date().toISOString().split('T')[0],
+            weight: weightVal,
+            smm: smmVal,
+            bfm: bfmVal,
+            bf_percent: bfVal,
+            bmr: Math.round(10 * weightVal + 6.25 * 175 - 5 * 25 + 5),
+            score: inbodyScore,
+            segmental: {
+              visceralFat: 6,
+              tbw: Math.round(weightVal * 0.6),
+              protein: Math.round(weightVal * 0.18),
+              minerals: Math.round(weightVal * 0.05),
+              raLean: Math.round(weightVal * 0.05),
+              laLean: Math.round(weightVal * 0.05),
+              trunkLean: Math.round(weightVal * 0.28),
+              rlLean: Math.round(weightVal * 0.12),
+              llLean: Math.round(weightVal * 0.12)
+            }
+          });
+        }
       }
 
       // Clear new signup flag so App.tsx loads AppContent normally
@@ -530,7 +668,7 @@ export default function OnboardingFlow({
   }).slice(0, 5); // display top 5 matches
 
   return (
-    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#060610] relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans">
+    <div className="w-full sm:max-w-[390px] mx-auto min-h-screen bg-[#060610] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">
       
       {/* Dynamic brand blue ribbon glow background */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
@@ -600,7 +738,7 @@ export default function OnboardingFlow({
       )}
 
       {/* Animated Step Content */}
-      <div className="flex-1 relative min-h-[440px] flex flex-col justify-center px-5 py-3 overflow-hidden z-20">
+      <div className="flex-1 relative min-h-[380px] flex flex-col justify-start px-5 py-4 overflow-visible z-20">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -660,7 +798,7 @@ export default function OnboardingFlow({
                         <input 
                           type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} 
                           placeholder="Your Name" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                       </div>
                     </div>
@@ -671,7 +809,7 @@ export default function OnboardingFlow({
                         <input 
                           type="email" required value={email} onChange={e => setEmail(e.target.value)} 
                           placeholder="name@example.com" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                       </div>
                     </div>
@@ -682,7 +820,7 @@ export default function OnboardingFlow({
                         <input 
                           type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} 
                           placeholder="••••••••" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                         <button 
                           type="button" onClick={() => setShowPassword(!showPassword)}
@@ -734,7 +872,7 @@ export default function OnboardingFlow({
                         <input 
                           type="email" required value={email} onChange={e => setEmail(e.target.value)} 
                           placeholder="name@example.com" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                       </div>
                     </div>
@@ -745,7 +883,7 @@ export default function OnboardingFlow({
                         <input 
                           type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} 
                           placeholder="••••••••" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                         <button 
                           type="button" onClick={() => setShowPassword(!showPassword)}
@@ -788,6 +926,7 @@ export default function OnboardingFlow({
                     </button>
                   </form>
                 )}
+                <CustomizeLaterNote />
               </div>
             )}
 
@@ -799,8 +938,8 @@ export default function OnboardingFlow({
                   <p className="text-xs text-gray-500 mt-1">Customize splits & exercises for each training day</p>
                 </div>
 
-                {/* Splits list */}
-                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
+                 {/* Splits list */}
+                <div className="space-y-3 max-h-[60vh] md:max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
                   {splits.map((item) => {
                     const isExpanded = activeSplitKey === item.key;
                     return (
@@ -882,7 +1021,7 @@ export default function OnboardingFlow({
                                       value={searchQuery}
                                       onChange={e => setSearchQuery(e.target.value)}
                                       placeholder="Search exercises to add..."
-                                      className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-3 pl-10 pr-10 text-sm text-white outline-none focus:border-blue-500 transition-colors"
+                                      className="w-full bg-[#0d1117] border border-gray-700 rounded-xl py-3 pl-10 pr-10 text-[16px] text-white outline-none focus:border-blue-500 transition-colors"
                                     />
                                     {searchQuery && (
                                       <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1">
@@ -930,7 +1069,7 @@ export default function OnboardingFlow({
                     value={newSplitName}
                     onChange={e => setNewSplitName(e.target.value)}
                     placeholder="Add dynamic day (e.g. Upper Body, Arms)..." 
-                    className="flex-1 bg-[#121620]/60 border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                    className="flex-1 bg-[#121620]/60 border border-gray-800 rounded-xl p-3 text-[16px] text-white outline-none focus:border-blue-500 transition-colors"
                     onKeyDown={e => { if (e.key === 'Enter') addSplit(); }}
                   />
                   <button 
@@ -940,12 +1079,14 @@ export default function OnboardingFlow({
                     <Plus size={14} /> Add Day
                   </button>
                 </div>
+
+                <CustomizeLaterNote />
               </div>
             )}
 
             {/* ── STEP 3: DIET ── */}
             {step === 3 && (
-              <div className="space-y-4 max-h-[360px] overflow-y-auto no-scrollbar pr-1 py-1">
+              <div className="space-y-4 max-h-[60vh] md:max-h-[480px] overflow-y-auto no-scrollbar pr-1 py-1">
                 <div className="text-center">
                   <h2 className="text-xl font-extrabold text-white tracking-tight">Diet & Nutrition targets</h2>
                   <p className="text-xs text-gray-500 mt-1">Set Calories and Hydration baselines</p>
@@ -962,29 +1103,29 @@ export default function OnboardingFlow({
                     <div>
                       <label className="text-[10px] text-gray-400 block mb-0.5">Calories (kcal)</label>
                       <input 
-                        type="number" value={kcal} onChange={e => setKcal(Math.max(1000, parseInt(e.target.value) || 0))}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        type="number" value={kcal} onChange={e => setKcal(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                     <div>
                       <label className="text-[10px] text-gray-400 block mb-0.5">Protein (g)</label>
                       <input 
-                        type="number" value={protein} onChange={e => setProtein(Math.max(50, parseInt(e.target.value) || 0))}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        type="number" value={protein} onChange={e => setProtein(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                     <div>
                       <label className="text-[10px] text-gray-400 block mb-0.5">Carbs (g)</label>
                       <input 
-                        type="number" value={carbs} onChange={e => setCarbs(Math.max(50, parseInt(e.target.value) || 0))}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        type="number" value={carbs} onChange={e => setCarbs(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                     <div>
                       <label className="text-[10px] text-gray-400 block mb-0.5">Fat (g)</label>
                       <input 
-                        type="number" value={fat} onChange={e => setFat(Math.max(20, parseInt(e.target.value) || 0))}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        type="number" value={fat} onChange={e => setFat(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                   </div>
@@ -1003,10 +1144,10 @@ export default function OnboardingFlow({
                       <input 
                         type="number" value={restKcal} 
                         onChange={e => {
-                          setRestKcal(Math.max(1000, parseInt(e.target.value) || 0));
+                          setRestKcal(Math.max(0, parseInt(e.target.value) || 0));
                           setIsRestOverridden(true);
                         }}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                     <div>
@@ -1014,10 +1155,10 @@ export default function OnboardingFlow({
                       <input 
                         type="number" value={restProtein} 
                         onChange={e => {
-                          setRestProtein(Math.max(50, parseInt(e.target.value) || 0));
+                          setRestProtein(Math.max(0, parseInt(e.target.value) || 0));
                           setIsRestOverridden(true);
                         }}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                     <div>
@@ -1025,10 +1166,10 @@ export default function OnboardingFlow({
                       <input 
                         type="number" value={restCarbs} 
                         onChange={e => {
-                          setRestCarbs(Math.max(50, parseInt(e.target.value) || 0));
+                          setRestCarbs(Math.max(0, parseInt(e.target.value) || 0));
                           setIsRestOverridden(true);
                         }}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                     <div>
@@ -1036,10 +1177,10 @@ export default function OnboardingFlow({
                       <input 
                         type="number" value={restFat} 
                         onChange={e => {
-                          setRestFat(Math.max(20, parseInt(e.target.value) || 0));
+                          setRestFat(Math.max(0, parseInt(e.target.value) || 0));
                           setIsRestOverridden(true);
                         }}
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-[16px] text-white outline-none" 
                       />
                     </div>
                   </div>
@@ -1075,6 +1216,8 @@ export default function OnboardingFlow({
                     </button>
                   </div>
                 </div>
+
+                <CustomizeLaterNote />
               </div>
             )}
 
@@ -1086,6 +1229,26 @@ export default function OnboardingFlow({
                   <p className="text-xs text-gray-500 mt-1">Log your starting InBody scan details</p>
                 </div>
 
+                {/* CSV File Upload Zone */}
+                <div className="bg-[#121620]/60 border border-dashed border-blue-500/30 hover:border-blue-500 p-4 rounded-2xl text-center space-y-2 cursor-pointer transition-all relative overflow-hidden group">
+                  <input 
+                    type="file" 
+                    accept=".csv" 
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                    ref={fileInputRef} 
+                    onChange={handleCSVUpload} 
+                  />
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📊</span>
+                    <p className="text-xs font-bold text-blue-400 group-hover:text-blue-300">
+                      {isImporting ? 'Importing Scans...' : 'Import from InBody CSV'}
+                    </p>
+                    <p className="text-[9px] text-gray-500 mt-1 max-w-[240px]">
+                      Upload your InBody export file to auto-populate the fields and import your full history.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl space-y-4 shadow-xl">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -1093,7 +1256,7 @@ export default function OnboardingFlow({
                       <input 
                         type="number" step="any" value={weight} onChange={e => setWeight(e.target.value)}
                         placeholder="e.g. 78.5"
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-[16px] text-white outline-none focus:border-blue-500 transition-colors" 
                       />
                     </div>
                     <div className="space-y-1">
@@ -1101,7 +1264,7 @@ export default function OnboardingFlow({
                       <input 
                         type="number" step="any" value={bfPercent} onChange={e => setBfPercent(e.target.value)}
                         placeholder="e.g. 14.8"
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-[16px] text-white outline-none focus:border-blue-500 transition-colors" 
                       />
                     </div>
                     <div className="space-y-1">
@@ -1109,7 +1272,7 @@ export default function OnboardingFlow({
                       <input 
                         type="number" step="any" value={smm} onChange={e => setSmm(e.target.value)}
                         placeholder="e.g. 36.5"
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-[16px] text-white outline-none focus:border-blue-500 transition-colors" 
                       />
                     </div>
                     <div className="space-y-1">
@@ -1117,7 +1280,7 @@ export default function OnboardingFlow({
                       <input 
                         type="number" value={inbodyScore} onChange={e => setInbodyScore(parseInt(e.target.value) || 0)}
                         placeholder="75"
-                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors" 
+                        className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-3 text-[16px] text-white outline-none focus:border-blue-500 transition-colors" 
                       />
                     </div>
                   </div>
@@ -1130,6 +1293,8 @@ export default function OnboardingFlow({
                     </div>
                   )}
                 </div>
+
+                <CustomizeLaterNote />
               </div>
             )}
 
