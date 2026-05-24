@@ -5,10 +5,10 @@ export interface RecoveryLog {
   id: string;
   user_id: string;
   date: string;
-  type: 'sauna' | 'cold_plunge' | 'stretching' | 'walk';
+  type: 'sauna' | 'cold_plunge' | 'stretching' | 'walk' | 'steam';
   duration: number; // in minutes
   metrics: {
-    temp?: number; // for sauna/cold plunge in °C
+    temp?: number; // for sauna/cold plunge/steam in °C
     distance_km?: number; // for walk
     focus_area?: string; // for stretching
   };
@@ -58,7 +58,7 @@ export const useRecovery = (activeDateStr: string) => {
   }, [activeDateStr]);
 
   const logRecoverySession = async (
-    type: 'sauna' | 'cold_plunge' | 'stretching' | 'walk',
+    type: 'sauna' | 'cold_plunge' | 'stretching' | 'walk' | 'steam',
     duration: number,
     metrics: RecoveryLog['metrics'],
     notes: string

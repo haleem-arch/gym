@@ -66,7 +66,7 @@ const TodayView = () => {
   // Recovery state and hooks
   const { recoveryLogs, loading: recoveryLoading, logRecoverySession, deleteRecoverySession } = useRecovery(activeDateStr);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
-  const [recoveryType, setRecoveryType] = useState<'sauna' | 'cold_plunge' | 'stretching' | 'walk'>('sauna');
+  const [recoveryType, setRecoveryType] = useState<'sauna' | 'cold_plunge' | 'stretching' | 'walk' | 'steam'>('sauna');
   const [recoveryDuration, setRecoveryDuration] = useState<string>('20');
   const [recoveryNotes, setRecoveryNotes] = useState<string>('');
   const [recoveryMetrics, setRecoveryMetrics] = useState<any>({ temp: 85 });
@@ -930,11 +930,11 @@ const TodayView = () => {
                   <div className="bg-gray-900/50 border border-gray-800/60 p-3 rounded-xl flex justify-between items-center w-full">
                     <div className="flex items-start gap-2.5">
                       <span className="text-xl">
-                        {logVal.type === 'sauna' ? '🧖‍♂️' : logVal.type === 'cold_plunge' ? '🥶' : logVal.type === 'stretching' ? '🧘' : '🚶'}
+                        {logVal.type === 'sauna' ? '🧖‍♂️' : logVal.type === 'cold_plunge' ? '🥶' : logVal.type === 'stretching' ? '🧘' : logVal.type === 'walk' ? '🚶' : '💨'}
                       </span>
                       <div>
                         <h4 className="font-bold text-white text-xs uppercase tracking-wide">
-                          {logVal.type === 'sauna' ? 'Sauna' : logVal.type === 'cold_plunge' ? 'Cold Plunge' : logVal.type === 'stretching' ? 'Stretching' : 'Recovery Walk'}
+                          {logVal.type === 'sauna' ? 'Sauna' : logVal.type === 'cold_plunge' ? 'Cold Plunge' : logVal.type === 'stretching' ? 'Stretching' : logVal.type === 'walk' ? 'Recovery Walk' : 'Steam Room'}
                         </h4>
                         {logVal.notes && (
                           <p className="text-[10px] text-gray-500 font-medium mt-0.5 line-clamp-1 italic">
@@ -948,7 +948,7 @@ const TodayView = () => {
                         {logVal.duration} min
                       </span>
                       <span className="text-[10px] text-gray-400 font-bold">
-                        {logVal.type === 'sauna' || logVal.type === 'cold_plunge' ? (
+                        {logVal.type === 'sauna' || logVal.type === 'cold_plunge' || logVal.type === 'steam' ? (
                           `${logVal.metrics.temp}°C`
                         ) : logVal.type === 'walk' ? (
                           `${logVal.metrics.distance_km} km`
@@ -1734,7 +1734,7 @@ const TodayView = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-[101] flex flex-col gap-5 shadow-2xl pb-10"
+              className="fixed bottom-24 left-4 right-4 max-w-[358px] mx-auto bg-surface border border-gray-800 rounded-3xl p-6 z-[101] flex flex-col gap-5 shadow-2xl pb-6"
             >
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -1758,8 +1758,8 @@ const TodayView = () => {
               </div>
 
               {/* Type Selectors */}
-              <div className="grid grid-cols-4 gap-2">
-                {(['sauna', 'cold_plunge', 'stretching', 'walk'] as const).map((t) => (
+              <div className="grid grid-cols-5 gap-1.5">
+                {(['sauna', 'cold_plunge', 'stretching', 'walk', 'steam'] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -1774,19 +1774,21 @@ const TodayView = () => {
                         setRecoveryMetrics({ focus_area: 'Full Body' });
                       } else if (t === 'walk') {
                         setRecoveryMetrics({ distance_km: 3.0 });
+                      } else if (t === 'steam') {
+                        setRecoveryMetrics({ temp: 45 });
                       }
                     }}
-                    className={`py-3 px-1 rounded-2xl flex flex-col items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                    className={`py-2 px-0.5 rounded-2xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
                       recoveryType === t
                         ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/5'
                         : 'bg-surface border-gray-800 text-gray-400 hover:border-gray-700'
                     }`}
                   >
                     <span className="text-xl">
-                      {t === 'sauna' ? '🧖‍♂️' : t === 'cold_plunge' ? '🥶' : t === 'stretching' ? '🧘' : '🚶'}
+                      {t === 'sauna' ? '🧖‍♂️' : t === 'cold_plunge' ? '🥶' : t === 'stretching' ? '🧘' : t === 'walk' ? '🚶' : '💨'}
                     </span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">
-                      {t === 'sauna' ? 'Sauna' : t === 'cold_plunge' ? 'Plunge' : t === 'stretching' ? 'Stretch' : 'Walk'}
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-center">
+                      {t === 'sauna' ? 'Sauna' : t === 'cold_plunge' ? 'Plunge' : t === 'stretching' ? 'Stretch' : t === 'walk' ? 'Walk' : 'Steam'}
                     </span>
                   </button>
                 ))}
@@ -1809,7 +1811,7 @@ const TodayView = () => {
                 </div>
 
                 {/* Conditional Metrics */}
-                {(recoveryType === 'sauna' || recoveryType === 'cold_plunge') && (
+                {(recoveryType === 'sauna' || recoveryType === 'cold_plunge' || recoveryType === 'steam') && (
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Temperature (°C)</label>
                     <input
@@ -1818,7 +1820,7 @@ const TodayView = () => {
                       value={recoveryMetrics.temp || ''}
                       onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, temp: Number(e.target.value) })}
                       className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
-                      placeholder={recoveryType === 'sauna' ? '85' : '5'}
+                      placeholder={recoveryType === 'sauna' ? '85' : recoveryType === 'cold_plunge' ? '5' : '45'}
                     />
                   </div>
                 )}
