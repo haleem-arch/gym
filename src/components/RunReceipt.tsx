@@ -71,8 +71,8 @@ export function RunReceipt({ stats, onClose }: RunReceiptProps) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.4 }}
-        className="fixed inset-0 z-[99998] flex items-end justify-center pb-6 px-4"
-        style={{ background: 'radial-gradient(ellipse at 50% 80%, rgba(59,130,246,0.12) 0%, rgba(6,6,16,0.97) 60%)' }}
+        className="fixed inset-0 z-[999999] flex items-center justify-center px-4"
+        style={{ background: 'radial-gradient(circle at center, rgba(59,130,246,0.15) 0%, rgba(6,6,16,0.98) 70%)' }}
       >
         {/* Tap outside to close */}
         <div className="absolute inset-0" onClick={onClose} />

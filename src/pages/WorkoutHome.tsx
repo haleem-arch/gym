@@ -7,9 +7,7 @@ import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, B
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
-import { RunReceipt } from '../components/RunReceipt';
 import { DumbbellLoader } from '../components/DumbbellLoader';
-import { SplashOverlay } from '../components/SplashOverlay';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -35,9 +33,7 @@ const WorkoutHome = () => {
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
   const [isPullingStrava, setIsPullingStrava] = useState(false);
   
-  const [rewardStats, setRewardStats] = useState<{distance: string; pace: string; duration: string; elevation: string} | null>(null);
-  const [showSplash, setShowSplash] = useState(false);
-  const [pendingRewardStats, setPendingRewardStats] = useState<{distance: string; pace: string; duration: string; elevation: string} | null>(null);
+
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -99,14 +95,15 @@ const WorkoutHome = () => {
       setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setShowRunModal(false);
       setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
-      // Stage the reward stats and fire the splash first
-      setPendingRewardStats({
-        distance: statsToSave.distance,
-        pace: statsToSave.pace,
-        duration: statsToSave.duration,
-        elevation: statsToSave.elevation,
-      });
-      setShowSplash(true);
+      // Dispatch custom window event to trigger root-level brand ribbon explosion + premium receipt
+      window.dispatchEvent(new CustomEvent('trigger-run-saved', {
+        detail: {
+          distance: statsToSave.distance,
+          pace: statsToSave.pace,
+          duration: statsToSave.duration,
+          elevation: statsToSave.elevation,
+        }
+      }));
       
     } catch (err) {
       console.error(err);
@@ -975,24 +972,6 @@ const WorkoutHome = () => {
       </>
       )}
       
-      {/* Brand ribbon explosion plays first, then reveals the reward card */}
-      <SplashOverlay
-        show={showSplash}
-        onComplete={() => {
-          setShowSplash(false);
-          if (pendingRewardStats) {
-            setRewardStats(pendingRewardStats);
-            setPendingRewardStats(null);
-          }
-        }}
-      />
-
-      {rewardStats && (
-        <RunReceipt
-          stats={rewardStats}
-          onClose={() => setRewardStats(null)}
-        />
-      )}
     </div>
   );
 };

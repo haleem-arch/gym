@@ -9,6 +9,8 @@ import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
 import { OpeningAnimation } from './components/OpeningAnimation';
 import { DumbbellLoader } from './components/DumbbellLoader';
+import { SplashOverlay } from './components/SplashOverlay';
+import { RunReceipt } from './components/RunReceipt';
 
 import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
@@ -77,6 +79,20 @@ const AppContent = () => {
   else if (currentIndex < prevIndex.current) direction = -1;
   else direction = 1;
 
+  const [showSplash, setShowSplash] = useState(false);
+  const [rewardStats, setRewardStats] = useState<any>(null);
+  const [pendingRewardStats, setPendingRewardStats] = useState<any>(null);
+
+  useEffect(() => {
+    const handleRunSaved = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setPendingRewardStats(customEvent.detail);
+      setShowSplash(true);
+    };
+    window.addEventListener('trigger-run-saved', handleRunSaved);
+    return () => window.removeEventListener('trigger-run-saved', handleRunSaved);
+  }, []);
+
   useEffect(() => {
     prevIndex.current = currentIndex;
   }, [location.pathname]);
@@ -112,6 +128,25 @@ const AppContent = () => {
         </AnimatePresence>
       </div>
       <BottomNav />
+
+      {/* Root-level overlays (sibling to BottomNav to guarantee perfect layering above navigation menus) */}
+      <SplashOverlay
+        show={showSplash}
+        onComplete={() => {
+          setShowSplash(false);
+          if (pendingRewardStats) {
+            setRewardStats(pendingRewardStats);
+            setPendingRewardStats(null);
+          }
+        }}
+      />
+
+      {rewardStats && (
+        <RunReceipt
+          stats={rewardStats}
+          onClose={() => setRewardStats(null)}
+        />
+      )}
     </div>
   );
 };
