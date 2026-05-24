@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { 
   User, Mail, Lock, Dumbbell, Apple, Check, 
-  ChevronLeft, ChevronRight, Plus, Trash2, Edit2, 
-  Scale, LogOut, ArrowRight, Eye, EyeOff
+  ChevronLeft, ChevronRight, Plus, Trash2, 
+  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SplashOverlay } from './SplashOverlay';
@@ -15,13 +15,42 @@ interface OnboardingFlowProps {
   onComplete?: () => void;
 }
 
+interface ExerciseItem {
+  id: string;
+  name: string;
+  muscle_group: string;
+  sets: number;
+  rest: number;
+}
+
 interface SplitItem {
   key: string;
   label: string;
   emoji: string;
   color: string;
   desc: string;
+  exercises: ExerciseItem[];
 }
+
+// Custom brand dumbbell logo component matching icon.svg / OpeningAnimation.tsx
+const BrandLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
+  <div className={`relative flex items-center justify-center select-none ${className}`}>
+    <svg viewBox="0 0 512 512" className="w-full h-full" style={{ imageRendering: 'crisp-edges' }}>
+      <g transform="translate(256 256) rotate(-45)">
+        {/* Rod */}
+        <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+        {/* Left weights */}
+        <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+        <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+        <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+        {/* Right weights */}
+        <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+        <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+        <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+      </g>
+    </svg>
+  </div>
+);
 
 export default function OnboardingFlow({ 
   initialStep = 1, 
@@ -37,22 +66,66 @@ export default function OnboardingFlow({
   // Active user session state (Step 1 -> 2 transition)
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Step 1: Auth form states
-  const [isSignUp, setIsSignUp] = useState(true);
+  // Step 1: Auth form states (SignUp only in Onboarding by default)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Step 2: Workouts split states
+  // Step 2: Workouts split states with embedded baseline exercises
   const [splits, setSplits] = useState<SplitItem[]>([
-    { key: 'PUSH', label: 'Push', emoji: '🔴', color: '#ef4444', desc: 'Chest · Shoulders · Triceps' },
-    { key: 'PULL', label: 'Pull', emoji: '🔵', color: '#3b82f6', desc: 'Back · Rear Delts · Biceps' },
-    { key: 'LEGS', label: 'Legs', emoji: '🟡', color: '#eab308', desc: 'Quads · Hams · Glutes · Calves' }
+    { 
+      key: 'PUSH', 
+      label: 'Push', 
+      emoji: '🔴', 
+      color: '#ef4444', 
+      desc: 'Chest · Shoulders · Triceps',
+      exercises: [
+        { id: 'onb-push-0', name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', sets: 3, rest: 120 },
+        { id: 'onb-push-1', name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
+        { id: 'onb-push-2', name: 'Incline DB Y-Raise (20-30°)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
+        { id: 'onb-push-3', name: 'Cable Chest Fly (low pulley)', muscle_group: 'Chest', sets: 3, rest: 120 },
+        { id: 'onb-push-4', name: 'Overhead Cable Extension (rope)', muscle_group: 'Triceps', sets: 3, rest: 120 },
+        { id: 'onb-push-5', name: 'DB Lateral Raise (elbow-lead)', muscle_group: 'Shoulders', sets: 3, rest: 120 }
+      ]
+    },
+    { 
+      key: 'PULL', 
+      label: 'Pull', 
+      emoji: '🔵', 
+      color: '#3b82f6', 
+      desc: 'Back · Rear Delts · Biceps',
+      exercises: [
+        { id: 'onb-pull-0', name: 'Lat Pulldown (wide grip)', muscle_group: 'Back', sets: 3, rest: 120 },
+        { id: 'onb-pull-1', name: 'Chest-Supported DB Row', muscle_group: 'Back', sets: 3, rest: 120 },
+        { id: 'onb-pull-2', name: 'Sideways One-Arm Rear Delt Fly', muscle_group: 'Rear Delts', sets: 3, rest: 120 },
+        { id: 'onb-pull-3', name: 'Face Pull (rope eye height)', muscle_group: 'Rear Delts', sets: 3, rest: 120 },
+        { id: 'onb-pull-4', name: 'Incline DB Curl - Bayesian', muscle_group: 'Biceps', sets: 3, rest: 120 },
+        { id: 'onb-pull-5', name: 'Zottman Curl', muscle_group: 'Biceps', sets: 3, rest: 120 }
+      ]
+    },
+    { 
+      key: 'LEGS', 
+      label: 'Legs', 
+      emoji: '🟡', 
+      color: '#eab308', 
+      desc: 'Quads · Hams · Glutes · Calves',
+      exercises: [
+        { id: 'onb-legs-0', name: 'Leg Press (feet high for glutes)', muscle_group: 'Glutes', sets: 3, rest: 120 },
+        { id: 'onb-legs-1', name: 'DB Romanian Deadlift', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'onb-legs-2', name: 'DB Bulgarian Split Squat', muscle_group: 'Quads', sets: 3, rest: 120 },
+        { id: 'onb-legs-3', name: 'Seated Leg Curl', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'onb-legs-4', name: '45° Back Extension (BW/DB)', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'onb-legs-5', name: 'Standing Calf Raise', muscle_group: 'Calves', sets: 3, rest: 120 }
+      ]
+    }
   ]);
   const [newSplitName, setNewSplitName] = useState('');
-  const [editingSplitKey, setEditingSplitKey] = useState<string | null>(null);
-  const [editingSplitVal, setEditingSplitVal] = useState('');
+  
+  // Exercise catalog search & edit state
+  const [exerciseDb, setExerciseDb] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSplitKey, setActiveSplitKey] = useState<string | null>(null);
 
   // Step 3: Diet / targets states
   const [kcal, setKcal] = useState(2400);
@@ -84,13 +157,22 @@ export default function OnboardingFlow({
       if (session?.user) {
         setCurrentUser(session.user);
         if (step === 1) {
-          // If already logged in, automatically advance to workouts
+          // If already logged in, advance to Step 2
           setStep(2);
         }
       }
     };
     fetchUser();
   }, [step]);
+
+  // Fetch full exercise catalog for catalog selection in workouts Step 2
+  useEffect(() => {
+    const fetchExercises = async () => {
+      const { data } = await supabase.from('exercises').select('*').order('name');
+      if (data) setExerciseDb(data);
+    };
+    fetchExercises();
+  }, []);
 
   // Handle baseline macros updating rest day defaults
   useEffect(() => {
@@ -129,7 +211,6 @@ export default function OnboardingFlow({
       setDirection(1);
       setStep(prev => prev + 1);
     } else {
-      // Step 4 (InBody) next -> Submit Onboarding
       handleSubmit();
     }
   };
@@ -150,52 +231,46 @@ export default function OnboardingFlow({
     }
   };
 
-  // Sign up or sign in authentication handler
-  const handleAuth = async (e: React.FormEvent) => {
+  // Sign up account creation handler
+  const handleSignUpAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        if (!displayName.trim()) throw new Error('Please enter your name.');
-        
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { display_name: displayName } }
-        });
+      if (!displayName.trim()) throw new Error('Please enter your name.');
+      
+      // Set the new sign-up flag so App.tsx knows to trigger onboarding
+      localStorage.setItem('is_new_signup', 'true');
 
-        if (error) throw error;
-        if (data.user) {
-          // Initialize user profile in Database
-          await supabase.from('profiles').insert({
-            id: data.user.id,
-            email,
-            display_name: displayName,
-            role: 'client',
-            targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70 }
-          });
-          
-          toast.success('Account created! Welcome to Stride Rite.');
-          if (data.session) {
-            onSessionConfigured?.(data.session);
-            setCurrentUser(data.user);
-            setDirection(1);
-            setStep(2);
-          } else {
-            toast.success('Please check your email for confirmation link.');
-            setIsSignUp(false);
-          }
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: displayName } }
+      });
+
+      if (error) {
+        localStorage.removeItem('is_new_signup');
+        throw error;
+      }
+
+      if (data.user) {
+        // Initialize user profile in Database
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          display_name: displayName,
+          role: 'client',
+          targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70 }
+        });
+        
+        toast.success('Account created! Welcome to LIFE GYM.');
         if (data.session) {
-          toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
           onSessionConfigured?.(data.session);
-          setCurrentUser(data.session.user);
+          setCurrentUser(data.user);
           setDirection(1);
           setStep(2);
+        } else {
+          toast.success('Please check your email for confirmation link.');
         }
       }
     } catch (err: any) {
@@ -206,11 +281,12 @@ export default function OnboardingFlow({
     }
   };
 
-  // Log out action (available on Step 1 if user is logged in already)
+  // Log out action
   const handleLogOut = async () => {
     await supabase.auth.signOut();
     setCurrentUser(null);
     onSessionConfigured?.(null);
+    localStorage.removeItem('is_new_signup');
     setStep(1);
   };
 
@@ -232,7 +308,8 @@ export default function OnboardingFlow({
         label: trimmed,
         emoji: '🏋️‍♂️',
         color: randomColor,
-        desc: 'Custom split day targets'
+        desc: 'Custom split day targets',
+        exercises: []
       }
     ]);
     setNewSplitName('');
@@ -245,23 +322,46 @@ export default function OnboardingFlow({
       return;
     }
     setSplits(prev => prev.filter(s => s.key !== key));
+    if (activeSplitKey === key) setActiveSplitKey(null);
   };
 
-  const startRenameSplit = (item: SplitItem) => {
-    setEditingSplitKey(item.key);
-    setEditingSplitVal(item.label);
-  };
-
-  const saveRenameSplit = () => {
-    const trimmed = editingSplitVal.trim();
-    if (!trimmed || !editingSplitKey) return;
+  // Exercises customization within splits
+  const removeExerciseFromSplit = (splitKey: string, exId: string) => {
     setSplits(prev => prev.map(s => {
-      if (s.key === editingSplitKey) {
-        return { ...s, label: trimmed, key: trimmed.toUpperCase() };
+      if (s.key === splitKey) {
+        return {
+          ...s,
+          exercises: s.exercises.filter(ex => ex.id !== exId)
+        };
       }
       return s;
     }));
-    setEditingSplitKey(null);
+  };
+
+  const addExerciseToSplit = (splitKey: string, ex: any) => {
+    setSplits(prev => prev.map(s => {
+      if (s.key === splitKey) {
+        if (s.exercises.some(e => e.name === ex.name)) {
+          toast.error(`${ex.name} is already in this workout.`);
+          return s;
+        }
+        return {
+          ...s,
+          exercises: [
+            ...s.exercises,
+            {
+              id: ex.id || `onb-custom-${Date.now()}`,
+              name: ex.name,
+              muscle_group: ex.muscle_group || '',
+              sets: 3,
+              rest: 120
+            }
+          ]
+        };
+      }
+      return s;
+    }));
+    toast.success(`Added ${ex.name}`);
   };
 
   // Submit onboarding details
@@ -271,48 +371,20 @@ export default function OnboardingFlow({
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user || currentUser;
       if (!user) {
-        toast.error('No active session. Please sign up or log in first.');
+        toast.error('No active session. Please sign up first.');
         setStep(1);
         setLoading(false);
         return;
       }
 
-      // 1. Save dynamic workout plans to user_workout_plans
-      // Fetch default exercise profiles for basic splits
-      const exerciseFallbacks: Record<string, string[]> = {
-        PUSH: [
-          'Incline DB Bench Press (45°)',
-          'DB Shoulder Press (seated neutral)',
-          'Incline DB Y-Raise (20-30°)',
-          'Cable Chest Fly (low pulley)',
-          'Overhead Cable Extension (rope)',
-          'DB Lateral Raise (elbow-lead)'
-        ],
-        PULL: [
-          'Lat Pulldown (wide grip)',
-          'Chest-Supported DB Row',
-          'Sideways One-Arm Rear Delt Fly',
-          'Face Pull (rope eye height)',
-          'Incline DB Curl - Bayesian',
-          'Zottman Curl'
-        ],
-        LEGS: [
-          'Leg Press (feet high for glutes)',
-          'DB Romanian Deadlift',
-          'DB Bulgarian Split Squat',
-          'Seated Leg Curl',
-          '45° Back Extension (BW/DB)',
-          'Standing Calf Raise'
-        ]
-      };
-
+      // 1. Save customized workout plans and dynamic exercises to user_workout_plans
       const planPromises = splits.map(split => {
-        const fallbackExs = exerciseFallbacks[split.key] || [];
-        const exercisesPayload = fallbackExs.map((name, i) => ({
-          id: `onboarding-${split.key.toLowerCase()}-${i}`,
-          name,
-          sets: 3,
-          rest: 120
+        const exercisesPayload = split.exercises.map((ex, i) => ({
+          id: ex.id || `onboarding-${split.key.toLowerCase()}-${i}`,
+          name: ex.name,
+          muscle_group: ex.muscle_group || '',
+          sets: ex.sets || 3,
+          rest: ex.rest || 120
         }));
         
         return supabase
@@ -365,7 +437,7 @@ export default function OnboardingFlow({
           smm: smmVal,
           bfm: bfmVal,
           bf_percent: bfVal,
-          bmr: Math.round(10 * weightVal + 6.25 * 175 - 5 * 25 + 5), // rough default BMR formula
+          bmr: Math.round(10 * weightVal + 6.25 * 175 - 5 * 25 + 5),
           score: inbodyScore,
           segmental: {
             visceralFat: 6,
@@ -380,6 +452,9 @@ export default function OnboardingFlow({
           }
         });
       }
+
+      // Clear new signup flag so App.tsx loads AppContent normally
+      localStorage.removeItem('is_new_signup');
 
       // Broadcast changes so active screens refresh values
       window.dispatchEvent(new Event('plan_updated'));
@@ -425,29 +500,34 @@ export default function OnboardingFlow({
     })
   };
 
+  // Filtering exercise DB for live catalog search inside split days
+  const filteredCatalog = exerciseDb.filter(ex => {
+    if (!searchQuery) return false;
+    return ex.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           ex.muscle_group?.toLowerCase().includes(searchQuery.toLowerCase());
+  }).slice(0, 5); // display top 5 matches
+
   return (
-    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#090b11] relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans">
+    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#060610] relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans">
       
-      {/* Dynamic ribbon background */}
-      <div className="absolute top-[-15%] left-[-15%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
+      {/* Dynamic brand blue ribbon glow background */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header Bar */}
-      <div className="p-5 flex items-center justify-between border-b border-gray-800 bg-[#090b11]/80 backdrop-blur-md z-30 sticky top-0">
+      <div className="p-5 flex items-center justify-between border-b border-gray-800 bg-[#060610]/80 backdrop-blur-md z-30 sticky top-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/10 border border-white/10">
-            <Dumbbell size={14} className="text-white" />
-          </div>
+          <BrandLogo className="w-8 h-8" />
           <span className="font-black text-sm tracking-widest uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            STRIDE RITE
+            LIFE GYM
           </span>
         </div>
 
-        {/* Skip button (only shown for Steps 2, 3, 4) */}
+        {/* Skip button */}
         {step > 1 && step < 5 && (
           <button 
             onClick={handleSkip} 
-            className="text-xs font-bold text-gray-500 hover:text-white px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900/50 transition-colors active:scale-95 cursor-pointer uppercase tracking-wider"
+            className="text-xs font-bold text-blue-400 hover:text-white px-3 py-1.5 rounded-lg border border-blue-900/30 bg-blue-950/20 transition-colors active:scale-95 cursor-pointer uppercase tracking-wider"
           >
             Skip
           </button>
@@ -460,7 +540,7 @@ export default function OnboardingFlow({
           {/* Connector Line */}
           <div className="absolute top-4 left-6 right-6 h-[2px] bg-gray-800 z-0">
             <div 
-              className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300"
+              className="h-full bg-blue-500 transition-all duration-300"
               style={{ width: `${((step - 1) / (stepsInfo.length - 1)) * 100}%` }}
             />
           </div>
@@ -471,16 +551,16 @@ export default function OnboardingFlow({
             return (
               <div key={idx} className="flex flex-col items-center gap-1.5 z-10 relative">
                 <button
-                  disabled={idx + 1 > step && !currentUser} // only click visited steps
+                  disabled={idx + 1 > step && !currentUser} 
                   onClick={() => {
                     setDirection(idx + 1 > step ? 1 : -1);
                     setStep(idx + 1);
                   }}
                   className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
                     isCompleted 
-                      ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                      ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
                       : isActive 
-                        ? 'bg-gradient-to-tr from-blue-600 to-purple-600 border-blue-400 text-white shadow-[0_0_12px_rgba(59,130,246,0.5)] scale-110'
+                        ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_12px_rgba(59,130,246,0.4)] scale-110'
                         : 'bg-[#121620] border-gray-800 text-gray-500'
                   }`}
                 >
@@ -496,7 +576,7 @@ export default function OnboardingFlow({
       </div>
 
       {/* Animated Step Content */}
-      <div className="flex-1 relative min-h-[420px] flex flex-col justify-center px-5 py-3 overflow-hidden z-20">
+      <div className="flex-1 relative min-h-[440px] flex flex-col justify-center px-5 py-3 overflow-hidden z-20">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -509,12 +589,13 @@ export default function OnboardingFlow({
             className="w-full flex flex-col gap-5"
           >
             
-            {/* ── STEP 1: ACCOUNT ── */}
+            {/* ── STEP 1: ACCOUNT CREATION ── */}
             {step === 1 && (
               <div className="space-y-4">
                 <div className="text-center">
+                  <BrandLogo className="w-16 h-16 mx-auto mb-2" />
                   <h2 className="text-xl font-extrabold text-white tracking-tight">Create Your Account</h2>
-                  <p className="text-xs text-gray-500 mt-1">Get started on your athletic performance journey</p>
+                  <p className="text-xs text-gray-500 mt-1">Join LIFE GYM and start pushing your limits</p>
                 </div>
 
                 {currentUser ? (
@@ -535,27 +616,25 @@ export default function OnboardingFlow({
                       </button>
                       <button 
                         onClick={handleNext} 
-                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-blue-500/10"
+                        className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-blue-500/10"
                       >
                         Proceed <ArrowRight size={13} />
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
-                    {isSignUp && (
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Full Name</label>
-                        <div className="relative">
-                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                          <input 
-                            type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} 
-                            placeholder="Alex Mercer" 
-                            className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
-                          />
-                        </div>
+                  <form onSubmit={handleSignUpAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Full Name</label>
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <input 
+                          type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} 
+                          placeholder="Your Name" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
+                        />
                       </div>
-                    )}
+                    </div>
 
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Email Address</label>
@@ -563,7 +642,7 @@ export default function OnboardingFlow({
                         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input 
                           type="email" required value={email} onChange={e => setEmail(e.target.value)} 
-                          placeholder="alex@performance.com" 
+                          placeholder="name@example.com" 
                           className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 transition-colors" 
                         />
                       </div>
@@ -589,95 +668,159 @@ export default function OnboardingFlow({
 
                     <button 
                       type="submit" disabled={loading}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-98 shadow-blue-500/10 cursor-pointer mt-2"
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-98 shadow-blue-500/10 cursor-pointer mt-2"
                     >
-                      {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
+                      {loading ? 'Registering...' : 'Create Account'}
                     </button>
-
-                    <p className="text-center text-[10px] text-gray-400 mt-2">
-                      {isSignUp ? 'Already have an account? ' : 'First time here? '}
-                      <button 
-                        type="button" onClick={() => setIsSignUp(!isSignUp)}
-                        className="text-blue-400 font-bold hover:underline"
-                      >
-                        {isSignUp ? 'Sign In' : 'Create Account'}
-                      </button>
-                    </p>
                   </form>
                 )}
               </div>
             )}
 
-            {/* ── STEP 2: WORKOUTS ── */}
+            {/* ── STEP 2: WORKOUTS (EXERCISE EDITOR) ── */}
             {step === 2 && (
               <div className="space-y-4">
                 <div className="text-center">
                   <h2 className="text-xl font-extrabold text-white tracking-tight">Your Training Program</h2>
-                  <p className="text-xs text-gray-500 mt-1">Configure your weekly training splits</p>
+                  <p className="text-xs text-gray-500 mt-1">Customize splits & exercises for each training day</p>
                 </div>
 
                 {/* Splits list */}
-                <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 no-scrollbar">
+                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
                   {splits.map((item) => {
-                    const isEditing = editingSplitKey === item.key;
+                    const isExpanded = activeSplitKey === item.key;
                     return (
                       <div 
                         key={item.key}
-                        className="p-3 bg-[#121620]/80 border border-gray-800 hover:border-gray-700/80 rounded-xl flex items-center justify-between transition-all"
+                        className="bg-[#121620]/60 border border-gray-800 rounded-2xl overflow-hidden transition-all flex flex-col shadow-md"
                         style={{ borderLeft: `3px solid ${item.color}` }}
                       >
-                        <div className="flex items-center gap-3 flex-1 min-w-0 mr-3">
-                          <span className="text-lg shrink-0">{item.emoji}</span>
-                          {isEditing ? (
-                            <input 
-                              autoFocus
-                              value={editingSplitVal}
-                              onChange={e => setEditingSplitVal(e.target.value)}
-                              className="bg-black/50 border border-gray-700 rounded px-2 py-0.5 text-xs text-white outline-none w-full"
-                              onKeyDown={e => { if (e.key === 'Enter') saveRenameSplit(); }}
-                              onBlur={saveRenameSplit}
-                            />
-                          ) : (
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-white truncate">{item.label}</p>
-                              <p className="text-[10px] text-gray-500 truncate">{item.desc}</p>
+                        {/* Header Row */}
+                        <div 
+                          onClick={() => setActiveSplitKey(isExpanded ? null : item.key)}
+                          className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-white/5 active:bg-white/5 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">{item.emoji}</span>
+                            <div>
+                              <p className="text-xs font-bold text-white uppercase tracking-wider">{item.label} Day</p>
+                              <p className="text-[10px] text-gray-400 font-semibold">{item.exercises.length} Exercises Scheduled</p>
                             </div>
-                          )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); removeSplit(item.key); }} 
+                              className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                              title="Delete Day"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                            <span className="text-xs text-gray-500 font-bold bg-gray-900 border border-gray-850 px-2.5 py-0.5 rounded-full uppercase">
+                              {isExpanded ? 'Collapse' : 'Edit Exercises'}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
-                          {isEditing ? (
-                            <button onClick={saveRenameSplit} className="text-emerald-400 p-1.5 hover:bg-white/5 rounded-lg">
-                              <Check size={13} />
-                            </button>
-                          ) : (
-                            <button onClick={() => startRenameSplit(item)} className="text-gray-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg transition-colors">
-                              <Edit2 size={13} />
-                            </button>
+                        {/* Expanded Exercises Editor */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden border-t border-gray-850 bg-black/30"
+                            >
+                              <div className="p-3.5 space-y-3.5">
+                                
+                                {/* Exercises rows */}
+                                {item.exercises.length === 0 ? (
+                                  <p className="text-[10px] text-gray-500 italic text-center py-2">No exercises added yet. Search below to add!</p>
+                                ) : (
+                                  <div className="space-y-1.5">
+                                    {item.exercises.map((ex, idx) => (
+                                      <div key={ex.id} className="flex justify-between items-center bg-gray-900/50 p-2 rounded-xl border border-gray-850 text-xs">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className="text-[9px] font-extrabold text-blue-400 bg-blue-950/20 border border-blue-900/20 w-5 h-5 rounded-full flex items-center justify-center shrink-0">
+                                            {idx + 1}
+                                          </span>
+                                          <span className="text-gray-200 font-semibold truncate">{ex.name}</span>
+                                        </div>
+                                        <button 
+                                          onClick={() => removeExerciseFromSplit(item.key, ex.id)}
+                                          className="text-gray-500 hover:text-red-400 p-1 hover:bg-white/5 rounded transition-colors shrink-0"
+                                        >
+                                          <X size={13} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Search & Add exercises in Split */}
+                                <div className="space-y-2 border-t border-gray-850 pt-3 relative">
+                                  <div className="relative">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                                    <input 
+                                      value={searchQuery}
+                                      onChange={e => setSearchQuery(e.target.value)}
+                                      placeholder="Search and add exercises..."
+                                      className="w-full bg-[#121620] border border-gray-850 rounded-xl py-2 pl-8 pr-8 text-[11px] text-white outline-none focus:border-blue-600 transition-colors"
+                                    />
+                                    {searchQuery && (
+                                      <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                                        <X size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Filtered Search Results Dropdown */}
+                                  {searchQuery && (
+                                    <div className="absolute top-[100%] left-0 right-0 mt-1 bg-surface border border-gray-800 rounded-xl overflow-hidden shadow-2xl z-50 flex flex-col max-h-[140px] overflow-y-auto">
+                                      {filteredCatalog.length === 0 ? (
+                                        <span className="p-2 text-[10px] text-gray-500 italic text-center">No matching exercises found</span>
+                                      ) : (
+                                        filteredCatalog.map(ex => (
+                                          <button
+                                            key={ex.id}
+                                            onClick={() => {
+                                              addExerciseToSplit(item.key, ex);
+                                              setSearchQuery('');
+                                            }}
+                                            className="w-full p-2.5 text-left text-[11px] hover:bg-blue-600 hover:text-white flex items-center justify-between border-b border-gray-850/50"
+                                          >
+                                            <span className="font-bold truncate">{ex.name}</span>
+                                            <span className="text-[8px] font-black uppercase bg-gray-900 border border-gray-800 text-gray-400 px-1.5 py-0.5 rounded shrink-0">{ex.muscle_group}</span>
+                                          </button>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                              </div>
+                            </motion.div>
                           )}
-                          <button onClick={() => removeSplit(item.key)} className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-lg transition-colors">
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                        </AnimatePresence>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Add dynamic split */}
-                <div className="flex gap-2">
+                {/* Add dynamic Day split split */}
+                <div className="flex gap-2 border-t border-gray-850 pt-4">
                   <input 
                     value={newSplitName}
                     onChange={e => setNewSplitName(e.target.value)}
-                    placeholder="Add day (e.g. Upper, Arms)..." 
+                    placeholder="Add dynamic day (e.g. Upper Body, Arms)..." 
                     className="flex-1 bg-[#121620]/60 border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors"
                     onKeyDown={e => { if (e.key === 'Enter') addSplit(); }}
                   />
                   <button 
                     onClick={addSplit}
-                    className="px-4 bg-gradient-to-tr from-blue-600 to-purple-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:shadow-lg active:scale-95 transition-all shadow-blue-500/10 cursor-pointer"
+                    className="px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition-all shadow-md shadow-blue-500/10 cursor-pointer"
                   >
-                    <Plus size={14} /> Add
+                    <Plus size={14} /> Add Day
                   </button>
                 </div>
               </div>
@@ -688,7 +831,7 @@ export default function OnboardingFlow({
               <div className="space-y-4 max-h-[360px] overflow-y-auto no-scrollbar pr-1 py-1">
                 <div className="text-center">
                   <h2 className="text-xl font-extrabold text-white tracking-tight">Diet & Nutrition targets</h2>
-                  <p className="text-xs text-gray-500 mt-1">Set calories and hydration baselines</p>
+                  <p className="text-xs text-gray-500 mt-1">Set Calories and Hydration baselines</p>
                 </div>
 
                 {/* Training Day Targets Card */}
@@ -731,7 +874,7 @@ export default function OnboardingFlow({
                 </div>
 
                 {/* Rest Day Targets Card */}
-                <div className="bg-[#121620]/60 border border-gray-800 p-4 rounded-2xl space-y-3 relative shadow-xl">
+                <div className="bg-[#121620]/60 border border-gray-850 p-4 rounded-2xl space-y-3 relative shadow-xl">
                   <div className="absolute top-3 right-3 bg-gray-800 text-gray-400 text-[8px] font-black tracking-widest px-2 py-0.5 rounded-full uppercase">
                     Rest Days
                   </div>
@@ -878,7 +1021,7 @@ export default function OnboardingFlow({
       </div>
 
       {/* Footer Navigation Buttons */}
-      <div className="p-5 border-t border-gray-850 bg-[#0c0f17] flex items-center justify-between gap-3 z-30 sticky bottom-0">
+      <div className="p-5 border-t border-gray-850 bg-[#0a0a0f] flex items-center justify-between gap-3 z-30 sticky bottom-0">
         {step > 1 ? (
           <button 
             onClick={handlePrev}
@@ -887,17 +1030,17 @@ export default function OnboardingFlow({
             <ChevronLeft size={14} /> Back
           </button>
         ) : (
-          <div /> // dummy empty space to keep layout alignment
+          <div /> 
         )}
 
         {step > 1 && (
           <button 
             onClick={handleNext}
             disabled={loading}
-            className="flex-1 max-w-[180px] flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-black text-xs active:scale-95 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer uppercase tracking-widest border border-white/5 disabled:opacity-50"
+            className="flex-1 max-w-[180px] flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs active:scale-95 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer uppercase tracking-widest border border-white/5 disabled:opacity-50"
           >
             {loading ? 'Saving...' : step === 4 ? (
-              <>Finish Onboarding <Check size={14} strokeWidth={2.5} /></>
+              <>Finish Setup <Check size={14} strokeWidth={2.5} /></>
             ) : (
               <>Next Step <ChevronRight size={14} /></>
             )}

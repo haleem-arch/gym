@@ -251,7 +251,8 @@ function App() {
           .eq('id', session.user.id)
           .maybeSingle();
 
-        if (profile?.targets?.onboarding_completed === true) {
+        const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
+        if (profile?.targets?.onboarding_completed === true || !isNewSignup) {
           setNeedsOnboarding(false);
         } else {
           setNeedsOnboarding(true);
