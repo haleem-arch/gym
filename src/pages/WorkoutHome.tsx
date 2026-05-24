@@ -9,6 +9,7 @@ import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
 import { RewardScreen } from '../components/RewardScreen';
 import { DumbbellLoader } from '../components/DumbbellLoader';
+import { SplashOverlay } from '../components/SplashOverlay';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ const WorkoutHome = () => {
   const [isPullingStrava, setIsPullingStrava] = useState(false);
   
   const [rewardStats, setRewardStats] = useState<{distance: string; pace: string; duration: string} | null>(null);
+  const [showSplash, setShowSplash] = useState(false);
+  const [pendingRewardStats, setPendingRewardStats] = useState<{distance: string; pace: string; duration: string} | null>(null);
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -95,12 +98,14 @@ const WorkoutHome = () => {
       
       setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setShowRunModal(false);
-      setRewardStats({
+      setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
+      // Stage the reward stats and fire the splash first
+      setPendingRewardStats({
         distance: statsToSave.distance,
         pace: statsToSave.pace,
         duration: statsToSave.duration
       });
-      setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
+      setShowSplash(true);
       
     } catch (err) {
       console.error(err);
@@ -969,6 +974,18 @@ const WorkoutHome = () => {
       </>
       )}
       
+      {/* Brand ribbon explosion plays first, then reveals the reward card */}
+      <SplashOverlay
+        show={showSplash}
+        onComplete={() => {
+          setShowSplash(false);
+          if (pendingRewardStats) {
+            setRewardStats(pendingRewardStats);
+            setPendingRewardStats(null);
+          }
+        }}
+      />
+
       {rewardStats && (
         <RewardScreen 
           stats={rewardStats} 
