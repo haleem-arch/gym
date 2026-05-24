@@ -1,56 +1,1228 @@
-import { useCoachClients } from '../../hooks/useCoachClients';
-import { Card } from '../../components/Card';
-import { Link } from 'react-router-dom';
-import { DumbbellLoader } from '../../components/DumbbellLoader';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+import { toast } from 'react-hot-toast';
+import {
+  Lock, Dumbbell, ChevronLeft, ChevronRight, Trash2,
+  LogOut, Search, X, Calendar, Sparkles, ArrowLeft,
+  Plus, CheckCircle2, Clock, Droplets,
+  ChevronDown, ChevronUp, Edit3, Save
+} from 'lucide-react';
+
+const DAY_TYPES = ['PUSH', 'PULL', 'LEGS', 'REST', 'CARDIO', 'UPPER', 'LOWER', 'FULL BODY'];
+
+function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-700"
+        style={{ width: `${pct}%`, backgroundColor: color }}
+      />
+    </div>
+  );
+}
+
+function StatCard({ label, value, max, unit, color, emoji }: {
+  label: string; value: number; max: number; unit: string; color: string; emoji: string;
+}) {
+  const pct = max > 0 ? Math.min(Math.round((value / max) * 100), 100) : 0;
+  return (
+    <div className="bg-[#111827] border border-gray-800/80 rounded-2xl p-3.5 flex flex-col gap-2">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{emoji} {label}</span>
+        <span className="text-[11px] font-black" style={{ color }}>{pct}%</span>
+      </div>
+      <ProgressBar value={value} max={max} color={color} />
+      <div className="flex justify-between text-[10px] text-gray-500 font-bold">
+        <span style={{ color }}>{value.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
+        <span>/ {max.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
-  const { clients, loading } = useCoachClients();
+  const navigate = useNavigate();
 
-  return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6 text-white">Coach Dashboard</h1>
-      
-      {/* Overview Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <Card>
-          <p className="text-gray-400 text-sm">Total Clients</p>
-          <p className="text-3xl font-bold text-blue-400">{clients.length}</p>
-        </Card>
-        <Card>
-          <p className="text-gray-400 text-sm">Active Plans</p>
-          <p className="text-3xl font-bold text-green-400">{clients.filter(c => c.has_active_plan).length}</p>
-        </Card>
-        <Card>
-          <p className="text-gray-400 text-sm">Adherence (Avg)</p>
-          <p className="text-3xl font-bold text-emerald-400">78%</p>
-        </Card>
-      </div>
+  // Auth
+  const [passcode, setPasscode] = useState('');
+  const [isAuthed, setIsAuthed] = useState(() => sessionStorage.getItem('coach_hub_authed') === 'true');
+  const [shake, setShake] = useState(false);
 
-      {/* Recent Clients */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-white">Recent Clients</h2>
-        <Link to="/coach/clients" className="text-blue-400 text-sm hover:underline">View All</Link>
-      </div>
+  // Data
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [activeDateStr, setActiveDateStr] = useState(() => new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody'>('overview');
 
-      {loading ? (
-        <DumbbellLoader label="Loading dashboard..." size={80} />
-      ) : clients.length === 0 ? (
-        <p className="text-gray-400">No clients yet. <Link to="/coach/clients/new" className="text-blue-400 underline">Create one</Link></p>
-      ) : (
-        <div className="space-y-2">
-          {clients.slice(0, 5).map(client => (
-            <Link key={client.id} to={`/coach/clients/${client.user?.id}`}>
-              <Card className="flex justify-between items-center p-4 hover:bg-gray-700 transition-colors mb-2">
-                <div>
-                  <p className="font-bold text-white">{client.user?.display_name || 'Unnamed Client'}</p>
-                  <p className="text-sm text-gray-400">{client.user?.email}</p>
-                </div>
-                <span className="text-blue-400 text-sm">View</span>
-              </Card>
-            </Link>
-          ))}
+  // Client data
+  const [profileTargets, setProfileTargets] = useState<any>(null);
+  const [dietLog, setDietLog] = useState<any>(null);
+  const [meals, setMeals] = useState<any[]>([]);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
+  const [workoutsList, setWorkoutsList] = useState<any[]>([]);
+  const [scans, setScans] = useState<any[]>([]);
+  const [workoutPlans, setWorkoutPlans] = useState<any[]>([]);
+  const [exerciseDb, setExerciseDb] = useState<any[]>([]);
+
+  // UI state
+  const [searchUserQuery, setSearchUserQuery] = useState('');
+  const [showUserPanel, setShowUserPanel] = useState(false);
+  const [searchExerciseQuery, setSearchExerciseQuery] = useState('');
+  const [activeSplitEditKey, setActiveSplitEditKey] = useState<string | null>(null);
+  const [showAddMealForm, setShowAddMealForm] = useState(false);
+  const [showAddScanForm, setShowAddScanForm] = useState(false);
+  const [showAddSplitForm, setShowAddSplitForm] = useState(false);
+  const [editingTargets, setEditingTargets] = useState(false);
+  const [editingDayType, setEditingDayType] = useState<string | null>(null);
+
+  // Target inputs
+  const [targetKcal, setTargetKcal] = useState(2400);
+  const [targetProtein, setTargetProtein] = useState(160);
+  const [targetCarbs, setTargetCarbs] = useState(240);
+  const [targetFat, setTargetFat] = useState(70);
+  const [targetWaterLiters, setTargetWaterLiters] = useState(3.5);
+
+  // Day-type nutrition inputs
+  const [dayNutrition, setDayNutrition] = useState<Record<string, { kcal: number; protein: number; carbs: number; fat: number }>>({});
+  const [editDayKcal, setEditDayKcal] = useState(0);
+  const [editDayProtein, setEditDayProtein] = useState(0);
+  const [editDayCarbs, setEditDayCarbs] = useState(0);
+  const [editDayFat, setEditDayFat] = useState(0);
+
+  // Meal form inputs
+  const [newMealName, setNewMealName] = useState('');
+  const [newMealKcal, setNewMealKcal] = useState(400);
+  const [newMealProtein, setNewMealProtein] = useState(30);
+  const [newMealCarbs, setNewMealCarbs] = useState(45);
+  const [newMealFat, setNewMealFat] = useState(10);
+
+  // Water inputs
+  const [newWaterAmount, setNewWaterAmount] = useState(500);
+
+  // Scan inputs
+  const [newScanDate, setNewScanDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newScanWeight, setNewScanWeight] = useState('');
+  const [newScanSmm, setNewScanSmm] = useState('');
+  const [newScanBfPercent, setNewScanBfPercent] = useState('');
+  const [newScanScore, setNewScanScore] = useState(75);
+
+  // Split inputs
+  const [newSplitDayName, setNewSplitDayName] = useState('');
+
+  // ─── BASE DATA FETCH ────────────────────────────────────
+  useEffect(() => {
+    if (!isAuthed) return;
+    const fetchBase = async () => {
+      const { data: userProfiles } = await supabase.from('profiles').select('*').order('display_name');
+      if (userProfiles) {
+        setProfiles(userProfiles);
+        if (userProfiles.length > 0 && !selectedUserId) setSelectedUserId(userProfiles[0].id);
+      }
+      const { data: exercises } = await supabase.from('exercises').select('*').order('name');
+      if (exercises) setExerciseDb(exercises);
+    };
+    fetchBase();
+  }, [isAuthed]);
+
+  // ─── CLIENT DATA FETCH ───────────────────────────────────
+  const fetchClientData = async (userId: string, dateStr: string) => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      const tgt = profile?.targets || null;
+      setProfileTargets(tgt);
+      if (tgt) {
+        setTargetKcal(tgt.kcal || 2400);
+        setTargetProtein(tgt.protein || 160);
+        setTargetCarbs(tgt.carbs || 240);
+        setTargetFat(tgt.fat || 70);
+        setTargetWaterLiters((tgt.water_goal_ml || 3500) / 1000);
+        setDayNutrition(tgt.day_nutrition || {});
+      }
+
+      const { data: dLog } = await supabase.from('diet_logs').select('*').eq('user_id', userId).eq('date', dateStr).maybeSingle();
+      setDietLog(dLog || null);
+
+      if (dLog) {
+        const { data: dMeals } = await supabase.from('diet_meals').select('*').eq('diet_log_id', dLog.id).order('created_at', { ascending: true });
+        setMeals(dMeals || []);
+      } else {
+        setMeals([]);
+      }
+
+      const { data: wLogs } = await supabase.from('water_logs').select('*').eq('user_id', userId).eq('date', dateStr).order('time', { ascending: true });
+      setWaterLogs(wLogs || []);
+
+      const { data: wList } = await supabase.from('workouts').select('*').eq('user_id', userId).eq('date', dateStr);
+      setWorkoutsList(wList || []);
+
+      const { data: inbodyScans } = await supabase.from('inbody_scans').select('*').eq('user_id', userId).order('date', { ascending: false });
+      setScans(inbodyScans || []);
+
+      const { data: plans } = await supabase.from('user_workout_plans').select('*').eq('user_id', userId);
+      setWorkoutPlans(plans || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error loading client data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedUserId) fetchClientData(selectedUserId, activeDateStr);
+  }, [selectedUserId, activeDateStr]);
+
+  // ─── AUTH ────────────────────────────────────────────────
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passcode === '425336') {
+      sessionStorage.setItem('coach_hub_authed', 'true');
+      setIsAuthed(true);
+      toast.success('Welcome Coach! 💪');
+    } else {
+      setShake(true);
+      toast.error('Wrong passcode');
+      setPasscode('');
+      setTimeout(() => setShake(false), 600);
+    }
+  };
+
+  const handleLogOut = () => {
+    sessionStorage.removeItem('coach_hub_authed');
+    setIsAuthed(false);
+    setPasscode('');
+  };
+
+  // ─── HELPERS ─────────────────────────────────────────────
+  const currentClient = profiles.find(p => p.id === selectedUserId);
+  const shiftDate = (days: number) => {
+    const d = new Date(activeDateStr);
+    d.setDate(d.getDate() + days);
+    setActiveDateStr(d.toISOString().split('T')[0]);
+  };
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })();
+
+  const consumedMacros = meals.reduce(
+    (acc, m) => {
+      m.items?.forEach((item: any) => {
+        acc.kcal += item.macros?.kcal || 0;
+        acc.protein += item.macros?.protein || 0;
+        acc.carbs += item.macros?.carbs || 0;
+        acc.fat += item.macros?.fat || 0;
+      });
+      return acc;
+    },
+    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+  const waterTotalMl = waterLogs.reduce((acc, log) => acc + (log.amount_ml || 0), 0);
+  const hasCompleted = workoutsList.some(w => w.status === 'completed');
+  const hasInProgress = workoutsList.some(w => w.status === 'in_progress');
+  const workoutStatus = hasCompleted ? 1.0 : hasInProgress ? 0.5 : 0;
+
+  const filteredProfiles = profiles.filter(p => {
+    if (!searchUserQuery) return true;
+    return p.display_name?.toLowerCase().includes(searchUserQuery.toLowerCase()) ||
+      p.email?.toLowerCase().includes(searchUserQuery.toLowerCase());
+  });
+  const filteredCatalog = exerciseDb.filter(ex => {
+    if (!searchExerciseQuery) return false;
+    return ex.name.toLowerCase().includes(searchExerciseQuery.toLowerCase()) ||
+      ex.muscle_group?.toLowerCase().includes(searchExerciseQuery.toLowerCase());
+  }).slice(0, 6);
+
+  // ─── SAVE DIET TARGETS ───────────────────────────────────
+  const handleSaveDietTargets = async () => {
+    try {
+      const upd = { ...profileTargets, kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
+      const { error } = await supabase.from('profiles').update({ targets: upd }).eq('id', selectedUserId);
+      if (error) throw error;
+      setProfileTargets(upd);
+      setEditingTargets(false);
+      toast.success('Targets saved!');
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  // ─── SAVE DAY-TYPE NUTRITION ────────────────────────────
+  const handleOpenDayEdit = (dt: string) => {
+    const existing = dayNutrition[dt];
+    setEditDayKcal(existing?.kcal ?? targetKcal);
+    setEditDayProtein(existing?.protein ?? targetProtein);
+    setEditDayCarbs(existing?.carbs ?? targetCarbs);
+    setEditDayFat(existing?.fat ?? targetFat);
+    setEditingDayType(dt);
+  };
+
+  const handleSaveDayNutrition = async () => {
+    try {
+      const updDN = { ...dayNutrition, [editingDayType!]: { kcal: editDayKcal, protein: editDayProtein, carbs: editDayCarbs, fat: editDayFat } };
+      const upd = { ...profileTargets, day_nutrition: updDN };
+      const { error } = await supabase.from('profiles').update({ targets: upd }).eq('id', selectedUserId);
+      if (error) throw error;
+      setDayNutrition(updDN);
+      setProfileTargets(upd);
+      setEditingDayType(null);
+      toast.success(`${editingDayType} day macros saved!`);
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  // ─── SAVE WATER GOAL ─────────────────────────────────────
+  const handleSaveWaterGoal = async () => {
+    try {
+      const upd = { ...profileTargets, water_goal_ml: Math.round(targetWaterLiters * 1000) };
+      const { error } = await supabase.from('profiles').update({ targets: upd }).eq('id', selectedUserId);
+      if (error) throw error;
+      setProfileTargets(upd);
+      toast.success('Water goal updated!');
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  // ─── ADD MEAL ────────────────────────────────────────────
+  const handleAddMealLog = async () => {
+    if (!newMealName.trim()) { toast.error('Enter a meal name'); return; }
+    try {
+      let logId = dietLog?.id;
+      if (!logId) {
+        const { data: newLog, error: le } = await supabase.from('diet_logs').insert({
+          user_id: selectedUserId, date: activeDateStr,
+          daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+        }).select().single();
+        if (le) throw le;
+        logId = newLog.id;
+      }
+      const item = { id: `ci-${Date.now()}`, food_id: 'custom', name: newMealName, grams: 100, macros: { kcal: newMealKcal, protein: newMealProtein, carbs: newMealCarbs, fat: newMealFat } };
+      const { data: nm, error: me } = await supabase.from('diet_meals').insert({
+        diet_log_id: logId, name: newMealName,
+        time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }),
+        items: [item]
+      }).select().single();
+      if (me) throw me;
+      const allMeals = [...meals, nm];
+      const totals = allMeals.reduce((t, m) => {
+        m.items?.forEach((i: any) => { t.kcal += i.macros.kcal || 0; t.protein += i.macros.protein || 0; t.carbs += i.macros.carbs || 0; t.fat += i.macros.fat || 0; });
+        return t;
+      }, { kcal: 0, protein: 0, carbs: 0, fat: 0, water: dietLog?.daily_totals?.water || 0, completed: false });
+      await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', logId);
+      toast.success('Meal logged!');
+      setNewMealName(''); setShowAddMealForm(false);
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  // ─── DELETE MEAL ─────────────────────────────────────────
+  const handleDeleteMeal = async (mealId: string) => {
+    try {
+      await supabase.from('diet_meals').delete().eq('id', mealId);
+      const remaining = meals.filter(m => m.id !== mealId);
+      const totals = remaining.reduce((t, m) => {
+        m.items?.forEach((i: any) => { t.kcal += i.macros.kcal || 0; t.protein += i.macros.protein || 0; t.carbs += i.macros.carbs || 0; t.fat += i.macros.fat || 0; });
+        return t;
+      }, { kcal: 0, protein: 0, carbs: 0, fat: 0, water: dietLog?.daily_totals?.water || 0, completed: false });
+      if (dietLog) await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', dietLog.id);
+      toast.success('Meal deleted');
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  // ─── WATER ───────────────────────────────────────────────
+  const handleAddWater = async () => {
+    try {
+      await supabase.from('water_logs').insert({
+        user_id: selectedUserId, date: activeDateStr,
+        time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }),
+        amount_ml: newWaterAmount
+      });
+      toast.success('Water logged!');
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+  const handleDeleteWater = async (id: string) => {
+    await supabase.from('water_logs').delete().eq('id', id);
+    toast.success('Entry removed');
+    fetchClientData(selectedUserId, activeDateStr);
+  };
+  const handleClearWater = async () => {
+    await supabase.from('water_logs').delete().eq('user_id', selectedUserId).eq('date', activeDateStr);
+    toast.success('Water logs cleared');
+    fetchClientData(selectedUserId, activeDateStr);
+  };
+
+  // ─── INBODY ──────────────────────────────────────────────
+  const handleAddInBodyScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const wt = parseFloat(newScanWeight);
+    if (isNaN(wt) || wt <= 0) { toast.error('Enter valid weight'); return; }
+    try {
+      const bfVal = parseFloat(newScanBfPercent) || 0;
+      const smmVal = parseFloat(newScanSmm) || 0;
+      await supabase.from('inbody_scans').insert({
+        user_id: selectedUserId, date: newScanDate, weight: wt, smm: smmVal,
+        bfm: parseFloat(((wt * bfVal) / 100).toFixed(1)), bf_percent: bfVal,
+        bmr: Math.round(10 * wt + 6.25 * 175 - 5 * 25 + 5), score: newScanScore,
+        segmental: { visceralFat: 6, tbw: Math.round(wt * 0.6), protein: Math.round(wt * 0.18), minerals: Math.round(wt * 0.05), raLean: Math.round(wt * 0.05), laLean: Math.round(wt * 0.05), trunkLean: Math.round(wt * 0.28), rlLean: Math.round(wt * 0.12), llLean: Math.round(wt * 0.12) }
+      });
+      toast.success('Scan saved!');
+      setNewScanWeight(''); setNewScanSmm(''); setNewScanBfPercent(''); setShowAddScanForm(false);
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+  const handleDeleteScan = async (id: string) => {
+    if (!window.confirm('Delete this scan?')) return;
+    await supabase.from('inbody_scans').delete().eq('id', id);
+    toast.success('Scan deleted');
+    fetchClientData(selectedUserId, activeDateStr);
+  };
+
+  // ─── SPLITS ──────────────────────────────────────────────
+  const handleAddExerciseToSplit = async (planType: string, exercise: any) => {
+    try {
+      const plan = workoutPlans.find(p => p.plan_type === planType);
+      const exs = plan ? [...plan.exercises] : [];
+      if (exs.some((e: any) => e.name === exercise.name)) { toast.error('Already in split'); return; }
+      exs.push({ id: exercise.id || `ce-${Date.now()}`, name: exercise.name, muscle_group: exercise.muscle_group || '', sets: 3, rest: 120 });
+      const { error } = await supabase.from('user_workout_plans').upsert({ user_id: selectedUserId, plan_type: planType, exercises: exs }, { onConflict: 'user_id,plan_type' });
+      if (error) throw error;
+      toast.success(`Added to ${planType}`);
+      setSearchExerciseQuery('');
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+  const handleRemoveExerciseFromSplit = async (planType: string, exId: string) => {
+    try {
+      const plan = workoutPlans.find(p => p.plan_type === planType);
+      if (!plan) return;
+      const upd = plan.exercises.filter((e: any) => e.id !== exId);
+      await supabase.from('user_workout_plans').upsert({ user_id: selectedUserId, plan_type: planType, exercises: upd }, { onConflict: 'user_id,plan_type' });
+      toast.success('Exercise removed');
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+  const handleCreateSplitDay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newSplitDayName.trim().toUpperCase();
+    if (!name) return;
+    if (workoutPlans.some(p => p.plan_type === name)) { toast.error('Already exists'); return; }
+    try {
+      await supabase.from('user_workout_plans').insert({ user_id: selectedUserId, plan_type: name, exercises: [] });
+      toast.success(`${name} day created!`);
+      setNewSplitDayName(''); setShowAddSplitForm(false);
+      fetchClientData(selectedUserId, activeDateStr);
+    } catch (err: any) { toast.error(err.message); }
+  };
+  const handleDeleteSplitDay = async (id: string) => {
+    if (!window.confirm('Delete this split day?')) return;
+    await supabase.from('user_workout_plans').delete().eq('id', id);
+    toast.success('Split deleted');
+    fetchClientData(selectedUserId, activeDateStr);
+  };
+
+  // ─── LOCK SCREEN ─────────────────────────────────────────
+  if (!isAuthed) {
+    return (
+      <div className="fixed inset-0 bg-[#060a14] flex items-center justify-center p-5 z-50">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-0 w-72 h-72 bg-indigo-600/8 rounded-full blur-[80px]" />
         </div>
-      )}
+        <div className={`w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-8 space-y-7 text-center relative z-10 shadow-2xl transition-all duration-300 ${shake ? 'scale-95 border-red-800' : ''}`}>
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center">
+              <Dumbbell className="text-blue-400" size={28} />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-white tracking-tight">Coach Hub</h2>
+            <p className="text-xs text-gray-500 mt-1.5">Enter your passcode to access the dashboard</p>
+          </div>
+          <form onSubmit={handleUnlock} className="space-y-3">
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+              <input
+                type="password" required value={passcode} onChange={e => setPasscode(e.target.value)}
+                placeholder="••••••" autoFocus
+                className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-4 pl-11 pr-4 text-white text-center text-lg tracking-[0.4em] outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white py-4 rounded-2xl font-black text-sm tracking-wider uppercase transition-all shadow-lg shadow-blue-500/20 cursor-pointer">
+              Unlock
+            </button>
+          </form>
+          <button onClick={() => navigate(-1)} className="text-xs text-gray-600 hover:text-gray-400 transition-colors cursor-pointer">
+            ← Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── MAIN DASHBOARD ──────────────────────────────────────
+  return (
+    <div className="fixed inset-0 bg-[#060a14] text-gray-100 overflow-hidden flex flex-col z-50">
+      {/* Background glows */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/6 rounded-full blur-[80px] pointer-events-none" />
+      <div className="absolute bottom-20 left-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-[80px] pointer-events-none" />
+
+      {/* ── TOP HEADER ── */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-safe pt-4 pb-3 border-b border-gray-800/80 bg-[#060a14]/90 backdrop-blur-sm relative z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors cursor-pointer text-gray-400 hover:text-white active:scale-95">
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-1.5">
+              <Sparkles size={14} className="text-blue-400" /> Coach Hub
+            </h1>
+            <p className="text-[10px] text-gray-500 font-mono">{currentClient?.display_name || 'Select athlete'}</p>
+          </div>
+        </div>
+        <button onClick={handleLogOut} className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-red-400 border border-gray-800 hover:border-red-900/50 bg-gray-900 px-3 py-2 rounded-xl transition-all active:scale-95 cursor-pointer uppercase">
+          <LogOut size={12} /> Lock
+        </button>
+      </div>
+
+      {/* ── SCROLLABLE BODY ── */}
+      <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="px-4 py-4 space-y-4 pb-12">
+
+          {/* ── ATHLETE SELECTOR ── */}
+          <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setShowUserPanel(!showUserPanel)}
+              className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/20 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-600/15 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">
+                  {currentClient?.display_name?.charAt(0) || '?'}
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-black text-white">{currentClient?.display_name || 'No athlete selected'}</p>
+                  <p className="text-[10px] text-gray-500">{currentClient?.email}</p>
+                </div>
+              </div>
+              {showUserPanel ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+            </button>
+
+            {showUserPanel && (
+              <div className="border-t border-gray-800 p-3 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  <input
+                    value={searchUserQuery} onChange={e => setSearchUserQuery(e.target.value)}
+                    placeholder="Search athletes..."
+                    className="w-full bg-[#131b2e] border border-gray-700 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto space-y-1">
+                  {filteredProfiles.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setSelectedUserId(p.id); setShowUserPanel(false); setSearchUserQuery(''); }}
+                      className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer ${selectedUserId === p.id ? 'bg-blue-600/20 border border-blue-500/30' : 'hover:bg-gray-800/40'}`}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-black text-gray-300">
+                        {p.display_name?.charAt(0) || '?'}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white">{p.display_name || 'No name'}</p>
+                        <p className="text-[10px] text-gray-500">{p.email}</p>
+                      </div>
+                      {selectedUserId === p.id && <CheckCircle2 size={14} className="text-blue-400 ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── DATE NAVIGATOR ── */}
+          <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-3 flex items-center justify-between gap-2">
+            <button onClick={() => shiftDate(-1)} className="p-3 hover:bg-gray-800 rounded-xl transition-colors active:scale-95 cursor-pointer text-gray-400 hover:text-white">
+              <ChevronLeft size={16} />
+            </button>
+            <div className="flex-1 flex items-center justify-center gap-2">
+              <Calendar size={13} className="text-blue-400" />
+              <input
+                type="date" value={activeDateStr} onChange={e => setActiveDateStr(e.target.value)}
+                className="bg-transparent text-white text-sm font-bold outline-none cursor-pointer"
+              />
+            </div>
+            <button onClick={() => shiftDate(1)} className="p-3 hover:bg-gray-800 rounded-xl transition-colors active:scale-95 cursor-pointer text-gray-400 hover:text-white">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Date presets */}
+          <div className="flex gap-2">
+            {[{ label: 'Today', val: todayStr }, { label: 'Yesterday', val: yesterdayStr }].map(({ label, val }) => (
+              <button
+                key={val}
+                onClick={() => setActiveDateStr(val)}
+                className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer ${activeDateStr === val ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-[#0d1220] border border-gray-800 text-gray-400'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Dumbbell className="animate-spin text-blue-500" size={28} />
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Loading client data...</p>
+            </div>
+          ) : !selectedUserId ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-2 text-gray-500">
+              <p className="text-sm font-bold">No athlete selected</p>
+            </div>
+          ) : (
+            <>
+              {/* ── COMPLIANCE OVERVIEW ── */}
+              <div className="space-y-3">
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Daily Compliance</h2>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {/* Calories */}
+                  <div className="bg-[#0d1220] border border-orange-900/30 rounded-2xl p-3.5 flex flex-col gap-2">
+                    <div className="text-lg">🔥</div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Calories</p>
+                      <p className="text-base font-black text-white mt-0.5">{Math.round(consumedMacros.kcal)}</p>
+                      <p className="text-[10px] text-orange-400 font-bold">/ {targetKcal}</p>
+                    </div>
+                    <ProgressBar value={consumedMacros.kcal} max={targetKcal} color="#f97316" />
+                  </div>
+                  {/* Water */}
+                  <div className="bg-[#0d1220] border border-sky-900/30 rounded-2xl p-3.5 flex flex-col gap-2">
+                    <div className="text-lg">💧</div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Water</p>
+                      <p className="text-base font-black text-white mt-0.5">{(waterTotalMl / 1000).toFixed(1)}L</p>
+                      <p className="text-[10px] text-sky-400 font-bold">/ {targetWaterLiters}L</p>
+                    </div>
+                    <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#38bdf8" />
+                  </div>
+                  {/* Training */}
+                  <div className="bg-[#0d1220] border border-violet-900/30 rounded-2xl p-3.5 flex flex-col gap-2">
+                    <div className="text-lg">🏋️</div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Training</p>
+                      <p className={`text-base font-black mt-0.5 ${workoutStatus === 1.0 ? 'text-green-400' : workoutStatus === 0.5 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                        {workoutStatus === 1.0 ? '✓ Done' : workoutStatus === 0.5 ? '⚡ Active' : 'Pending'}
+                      </p>
+                      <p className="text-[10px] text-violet-400 font-bold">{workoutsList.length} session{workoutsList.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <ProgressBar value={workoutStatus} max={1} color="#a78bfa" />
+                  </div>
+                </div>
+
+                {/* Macros row */}
+                <div className="grid grid-cols-3 gap-2">
+                  <StatCard label="Protein" value={Math.round(consumedMacros.protein)} max={targetProtein} unit="g" color="#60a5fa" emoji="🍳" />
+                  <StatCard label="Carbs" value={Math.round(consumedMacros.carbs)} max={targetCarbs} unit="g" color="#fbbf24" emoji="🍯" />
+                  <StatCard label="Fat" value={Math.round(consumedMacros.fat)} max={targetFat} unit="g" color="#f87171" emoji="🥑" />
+                </div>
+              </div>
+
+              {/* ── TABS ── */}
+              <div className="grid grid-cols-5 bg-[#0d1220] border border-gray-800 rounded-2xl p-1 gap-1">
+                {([
+                  { id: 'overview', label: 'Plan', emoji: '📋' },
+                  { id: 'diet', label: 'Diet', emoji: '🍎' },
+                  { id: 'water', label: 'Water', emoji: '💧' },
+                  { id: 'workouts', label: 'Gym', emoji: '🏋️' },
+                  { id: 'inbody', label: 'InBody', emoji: '📊' },
+                ] as const).map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2.5 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer text-center ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500'}`}
+                  >
+                    <span className="block text-sm mb-0.5">{tab.emoji}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── TAB: PLAN / DAY-TYPE NUTRITION ── */}
+              {activeTab === 'overview' && (
+                <div className="space-y-4">
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📋 Day-Type Nutrition</h3>
+                      <p className="text-[10px] text-gray-500">Tap a day to edit macros</p>
+                    </div>
+                    <div className="space-y-2">
+                      {DAY_TYPES.map(dt => {
+                        const dn = dayNutrition[dt];
+                        const isEditing = editingDayType === dt;
+                        return (
+                          <div key={dt} className="bg-[#111827] border border-gray-800/80 rounded-xl overflow-hidden">
+                            <button
+                              onClick={() => isEditing ? setEditingDayType(null) : handleOpenDayEdit(dt)}
+                              className="w-full flex items-center justify-between p-3.5 cursor-pointer hover:bg-gray-800/20 transition-colors"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+                                  dt === 'PUSH' ? 'bg-blue-900/40 text-blue-400' :
+                                  dt === 'PULL' ? 'bg-purple-900/40 text-purple-400' :
+                                  dt === 'LEGS' ? 'bg-green-900/40 text-green-400' :
+                                  dt === 'REST' ? 'bg-gray-800 text-gray-400' :
+                                  dt === 'CARDIO' ? 'bg-orange-900/40 text-orange-400' :
+                                  'bg-indigo-900/40 text-indigo-400'
+                                }`}>{dt}</span>
+                                {dn ? (
+                                  <span className="text-[10px] text-gray-400 font-bold">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
+                                ) : (
+                                  <span className="text-[10px] text-gray-600 italic">Uses default targets</span>
+                                )}
+                              </div>
+                              <Edit3 size={13} className="text-gray-500 shrink-0" />
+                            </button>
+
+                            {isEditing && (
+                              <div className="border-t border-gray-800 p-3.5 space-y-3 bg-[#0a0f1a]">
+                                <div className="grid grid-cols-2 gap-2.5">
+                                  {[
+                                    { label: 'Calories', val: editDayKcal, set: setEditDayKcal },
+                                    { label: 'Protein (g)', val: editDayProtein, set: setEditDayProtein },
+                                    { label: 'Carbs (g)', val: editDayCarbs, set: setEditDayCarbs },
+                                    { label: 'Fat (g)', val: editDayFat, set: setEditDayFat },
+                                  ].map(({ label, val, set }) => (
+                                    <div key={label}>
+                                      <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">{label}</label>
+                                      <input
+                                        type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
+                                        className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-sm text-white outline-none focus:border-blue-500 text-center font-bold"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="flex gap-2">
+                                  <button onClick={handleSaveDayNutrition} className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl active:scale-95 transition-all cursor-pointer">
+                                    <Save size={13} /> Save {dt}
+                                  </button>
+                                  <button onClick={() => setEditingDayType(null)} className="px-4 bg-gray-800 hover:bg-gray-700 text-gray-400 font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer">
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Latest InBody quick view */}
+                  {scans.length > 0 && (
+                    <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📊 Latest Body Composition</h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: 'Weight', val: `${scans[0].weight} kg`, color: 'text-white' },
+                          { label: 'Muscle', val: `${scans[0].smm} kg`, color: 'text-blue-400' },
+                          { label: 'Body Fat', val: `${scans[0].bf_percent}%`, color: 'text-red-400' },
+                        ].map(({ label, val, color }) => (
+                          <div key={label} className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">{label}</p>
+                            <p className={`text-sm font-black ${color}`}>{val}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-600 text-center">
+                        Scan from {new Date(scans[0].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} · Score {scans[0].score}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── TAB: DIET ── */}
+              {activeTab === 'diet' && (
+                <div className="space-y-4">
+                  {/* Edit Global Targets */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                    <button
+                      onClick={() => setEditingTargets(!editingTargets)}
+                      className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/20 transition-colors"
+                    >
+                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">🎯 Edit Default Targets</h3>
+                      {editingTargets ? <ChevronUp size={15} className="text-gray-400" /> : <ChevronDown size={15} className="text-gray-400" />}
+                    </button>
+                    {editingTargets && (
+                      <div className="border-t border-gray-800 p-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {[
+                            { label: 'Calories', val: targetKcal, set: setTargetKcal },
+                            { label: 'Protein (g)', val: targetProtein, set: setTargetProtein },
+                            { label: 'Carbs (g)', val: targetCarbs, set: setTargetCarbs },
+                            { label: 'Fat (g)', val: targetFat, set: setTargetFat },
+                          ].map(({ label, val, set }) => (
+                            <div key={label}>
+                              <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">{label}</label>
+                              <input
+                                type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
+                                className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-sm text-white outline-none focus:border-blue-500 text-center font-bold"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <button onClick={handleSaveDietTargets} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl active:scale-95 transition-all shadow-md cursor-pointer">
+                          <Save size={13} /> Save Targets
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Meals */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">
+                        Meals <span className="text-gray-600">({meals.length})</span>
+                      </h3>
+                      <button onClick={() => setShowAddMealForm(!showAddMealForm)} className="text-xs font-black text-blue-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                        <Plus size={13} /> {showAddMealForm ? 'Cancel' : 'Add Meal'}
+                      </button>
+                    </div>
+
+                    {showAddMealForm && (
+                      <div className="border-b border-gray-800 p-4 space-y-3 bg-[#0a0f1a]">
+                        <input
+                          type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
+                          placeholder="Meal name (e.g. Chicken & Rice)"
+                          className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                        />
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { label: 'kcal', val: newMealKcal, set: setNewMealKcal },
+                            { label: 'Protein', val: newMealProtein, set: setNewMealProtein },
+                            { label: 'Carbs', val: newMealCarbs, set: setNewMealCarbs },
+                            { label: 'Fat', val: newMealFat, set: setNewMealFat },
+                          ].map(({ label, val, set }) => (
+                            <div key={label}>
+                              <p className="text-[9px] text-gray-500 font-bold text-center mb-1">{label}</p>
+                              <input type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
+                                className="w-full bg-[#0d1220] border border-gray-800 rounded-xl p-2 text-xs text-white text-center outline-none font-bold" />
+                            </div>
+                          ))}
+                        </div>
+                        <button onClick={handleAddMealLog} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl active:scale-95 transition-all cursor-pointer">
+                          Log Meal
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="divide-y divide-gray-800/60">
+                      {meals.length === 0 ? (
+                        <p className="text-xs text-gray-600 italic text-center py-8">No meals logged for this date</p>
+                      ) : meals.map(meal => {
+                        const mm = meal.items?.reduce((t: any, i: any) => ({
+                          kcal: t.kcal + (i.macros?.kcal || 0),
+                          protein: t.protein + (i.macros?.protein || 0),
+                          carbs: t.carbs + (i.macros?.carbs || 0),
+                          fat: t.fat + (i.macros?.fat || 0),
+                        }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+                        return (
+                          <div key={meal.id} className="flex items-center justify-between p-3.5 gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{meal.name}</p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">
+                                🔥{Math.round(mm?.kcal || 0)} · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
+                              </p>
+                            </div>
+                            <button onClick={() => handleDeleteMeal(meal.id)} className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-xl transition-colors shrink-0 cursor-pointer active:scale-95">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB: WATER ── */}
+              {activeTab === 'water' && (
+                <div className="space-y-4">
+                  {/* Goal editor */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+                    <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider flex items-center gap-2">
+                      <Droplets size={14} /> Daily Water Goal
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number" step="0.25" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
+                        className="flex-1 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-lg font-black text-white outline-none focus:border-blue-500 text-center"
+                      />
+                      <span className="text-sm font-bold text-gray-400">L</span>
+                      <button onClick={handleSaveWaterGoal} className="px-5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl active:scale-95 transition-all cursor-pointer">
+                        Save
+                      </button>
+                    </div>
+                    {/* Progress */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-bold">
+                        <span className="text-sky-400">{(waterTotalMl / 1000).toFixed(2)}L consumed</span>
+                        <span className="text-gray-500">{Math.round((waterTotalMl / (targetWaterLiters * 1000)) * 100)}%</span>
+                      </div>
+                      <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#38bdf8" />
+                    </div>
+                  </div>
+
+                  {/* Add water */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">Log Water</h3>
+                      {waterLogs.length > 0 && (
+                        <button onClick={handleClearWater} className="text-[10px] font-bold text-red-400 hover:text-red-300 cursor-pointer">Clear All</button>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[250, 330, 500, 750, 1000].map(ml => (
+                          <button key={ml} onClick={() => setNewWaterAmount(ml)}
+                            className={`px-3 py-2 text-[10px] font-black rounded-xl transition-all cursor-pointer ${newWaterAmount === ml ? 'bg-sky-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
+                            {ml}ml
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number" step="50" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
+                        className="flex-1 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-sm font-bold text-white outline-none focus:border-sky-500 text-center"
+                      />
+                      <span className="self-center text-sm font-bold text-gray-500">ml</span>
+                      <button onClick={handleAddWater} className="px-5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-all cursor-pointer">
+                        + Add
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Water log list */}
+                  {waterLogs.length > 0 && (
+                    <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                      <div className="divide-y divide-gray-800/60">
+                        {waterLogs.map(log => (
+                          <div key={log.id} className="flex items-center justify-between p-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-sky-900/30 border border-sky-800/30 flex items-center justify-center text-sm">💧</div>
+                              <div>
+                                <p className="text-sm font-black text-white">{log.amount_ml}ml</p>
+                                <p className="text-[10px] text-gray-500 flex items-center gap-1"><Clock size={9} /> {log.time}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => handleDeleteWater(log.id)} className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer active:scale-95">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── TAB: WORKOUTS ── */}
+              {activeTab === 'workouts' && (
+                <div className="space-y-4">
+                  {/* Completed sessions for the day */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div className="p-4 border-b border-gray-800">
+                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">
+                        Sessions on {activeDateStr} <span className="text-gray-600">({workoutsList.length})</span>
+                      </h3>
+                    </div>
+                    {workoutsList.length === 0 ? (
+                      <p className="text-xs text-gray-600 italic text-center py-8">No workouts logged on this date</p>
+                    ) : (
+                      <div className="divide-y divide-gray-800/60">
+                        {workoutsList.map(w => (
+                          <div key={w.id} className="p-4 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+                                  w.day_type === 'PUSH' ? 'bg-blue-900/40 text-blue-400' :
+                                  w.day_type === 'PULL' ? 'bg-purple-900/40 text-purple-400' :
+                                  w.day_type === 'LEGS' ? 'bg-green-900/40 text-green-400' :
+                                  'bg-gray-800 text-gray-400'
+                                }`}>{w.day_type}</span>
+                                <span className="text-xs font-bold text-white">{w.name || 'Workout'}</span>
+                              </div>
+                              <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${
+                                w.status === 'completed' ? 'bg-green-900/40 text-green-400' :
+                                w.status === 'in_progress' ? 'bg-yellow-900/40 text-yellow-400' :
+                                'bg-gray-800 text-gray-500'
+                              }`}>{w.status}</span>
+                            </div>
+                            {w.exercises && w.exercises.length > 0 && (
+                              <div className="space-y-1.5">
+                                {w.exercises.map((ex: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between items-center text-xs bg-[#111827] rounded-xl px-3 py-2.5 border border-gray-800/60">
+                                    <span className="text-gray-200 font-semibold">{ex.name}</span>
+                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] font-mono font-bold">
+                                      {ex.completed_sets?.length > 0 ? (
+                                        <span className="text-green-400">{ex.completed_sets.length} sets logged</span>
+                                      ) : (
+                                        <span>{ex.sets} sets planned</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Split Plans Manager */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">
+                        Split Routines <span className="text-gray-600">({workoutPlans.length})</span>
+                      </h3>
+                      <button onClick={() => setShowAddSplitForm(!showAddSplitForm)} className="text-xs font-black text-blue-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                        <Plus size={13} /> {showAddSplitForm ? 'Cancel' : 'New Day'}
+                      </button>
+                    </div>
+
+                    {showAddSplitForm && (
+                      <div className="border-b border-gray-800 p-4 bg-[#0a0f1a]">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Quick add:</p>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {DAY_TYPES.filter(dt => !workoutPlans.some(p => p.plan_type === dt)).map(dt => (
+                            <button key={dt} onClick={async () => {
+                              try {
+                                await supabase.from('user_workout_plans').insert({ user_id: selectedUserId, plan_type: dt, exercises: [] });
+                                toast.success(`${dt} day created!`);
+                                fetchClientData(selectedUserId, activeDateStr);
+                                setShowAddSplitForm(false);
+                              } catch (err: any) { toast.error(err.message); }
+                            }}
+                              className="px-3 py-2 text-[10px] font-black bg-gray-800 hover:bg-blue-700 text-gray-300 hover:text-white rounded-xl transition-all cursor-pointer uppercase active:scale-95">
+                              + {dt}
+                            </button>
+                          ))}
+                        </div>
+                        <form onSubmit={handleCreateSplitDay} className="flex gap-2">
+                          <input
+                            type="text" value={newSplitDayName} onChange={e => setNewSplitDayName(e.target.value)}
+                            placeholder="Custom name (e.g. BOULDERING)"
+                            className="flex-1 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 uppercase font-black"
+                          />
+                          <button type="submit" className="px-4 bg-blue-600 text-white rounded-xl font-bold text-xs active:scale-95 cursor-pointer">Create</button>
+                        </form>
+                      </div>
+                    )}
+
+                    <div className="divide-y divide-gray-800/60">
+                      {workoutPlans.length === 0 ? (
+                        <p className="text-xs text-gray-600 italic text-center py-8">No split routines. Add PUSH / PULL / LEGS to start.</p>
+                      ) : workoutPlans.map(plan => {
+                        const isExp = activeSplitEditKey === plan.plan_type;
+                        return (
+                          <div key={plan.id}>
+                            <button
+                              onClick={() => setActiveSplitEditKey(isExp ? null : plan.plan_type)}
+                              className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/10 transition-colors"
+                            >
+                              <div className="flex items-center gap-2.5 text-left">
+                                <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+                                  plan.plan_type === 'PUSH' ? 'bg-blue-900/40 text-blue-400' :
+                                  plan.plan_type === 'PULL' ? 'bg-purple-900/40 text-purple-400' :
+                                  plan.plan_type === 'LEGS' ? 'bg-green-900/40 text-green-400' :
+                                  plan.plan_type === 'REST' ? 'bg-gray-800 text-gray-400' :
+                                  plan.plan_type === 'CARDIO' ? 'bg-orange-900/40 text-orange-400' :
+                                  'bg-indigo-900/40 text-indigo-400'
+                                }`}>{plan.plan_type}</span>
+                                <span className="text-[11px] text-gray-400 font-bold">{plan.exercises?.length || 0} exercises</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={e => { e.stopPropagation(); handleDeleteSplitDay(plan.id); }}
+                                  className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                                {isExp ? <ChevronUp size={15} className="text-gray-400" /> : <ChevronDown size={15} className="text-gray-400" />}
+                              </div>
+                            </button>
+
+                            {isExp && (
+                              <div className="border-t border-gray-800 bg-[#080d18] p-4 space-y-3">
+                                {/* Exercises list */}
+                                {plan.exercises?.length === 0 ? (
+                                  <p className="text-[10px] text-gray-600 italic text-center py-2">No exercises yet. Search below to add.</p>
+                                ) : (
+                                  <div className="space-y-1.5">
+                                    {plan.exercises.map((ex: any, idx: number) => (
+                                      <div key={ex.id || idx} className="flex items-center justify-between bg-[#0d1220] border border-gray-800 rounded-xl px-3.5 py-2.5">
+                                        <div>
+                                          <p className="text-xs font-bold text-gray-200">{ex.name}</p>
+                                          <p className="text-[9px] text-gray-600 uppercase font-bold">{ex.muscle_group}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[9px] font-mono text-gray-500">{ex.sets}×{ex.rest}s</span>
+                                          <button onClick={() => handleRemoveExerciseFromSplit(plan.plan_type, ex.id)}
+                                            className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer">
+                                            <X size={12} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Exercise search */}
+                                <div className="relative">
+                                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                                  <input
+                                    value={searchExerciseQuery} onChange={e => setSearchExerciseQuery(e.target.value)}
+                                    placeholder="Search exercises to add..."
+                                    className="w-full bg-[#131b2e] border border-gray-700 rounded-xl py-2.5 pl-9 pr-9 text-xs text-white outline-none focus:border-blue-500"
+                                  />
+                                  {searchExerciseQuery && (
+                                    <button onClick={() => setSearchExerciseQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer">
+                                      <X size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                                {searchExerciseQuery && (
+                                  <div className="bg-[#0d1220] border border-gray-700 rounded-xl overflow-hidden shadow-2xl">
+                                    {filteredCatalog.length === 0 ? (
+                                      <p className="text-[10px] text-gray-500 italic text-center p-3">No exercises found</p>
+                                    ) : filteredCatalog.map(ex => (
+                                      <button key={ex.id} onClick={() => handleAddExerciseToSplit(plan.plan_type, ex)}
+                                        className="w-full text-left px-4 py-3 text-xs hover:bg-blue-600/20 flex items-center justify-between border-b border-gray-800/60 last:border-0 transition-colors cursor-pointer active:bg-blue-600/30">
+                                        <span className="font-semibold text-gray-200">{ex.name}</span>
+                                        <span className="text-[9px] font-black uppercase bg-gray-800 border border-gray-700 text-gray-400 px-2 py-0.5 rounded">{ex.muscle_group}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB: INBODY ── */}
+              {activeTab === 'inbody' && (
+                <div className="space-y-4">
+                  {/* Add scan */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📊 Log InBody Scan</h3>
+                      <button onClick={() => setShowAddScanForm(!showAddScanForm)} className="text-xs font-black text-blue-400 hover:text-white cursor-pointer flex items-center gap-1">
+                        <Plus size={13} /> {showAddScanForm ? 'Cancel' : 'New Scan'}
+                      </button>
+                    </div>
+                    {showAddScanForm && (
+                      <form onSubmit={handleAddInBodyScan} className="p-4 space-y-3 bg-[#0a0f1a]">
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Scan Date</label>
+                            <input type="date" value={newScanDate} onChange={e => setNewScanDate(e.target.value)} required className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">InBody Score</label>
+                            <input type="number" value={newScanScore} onChange={e => setNewScanScore(parseInt(e.target.value) || 0)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white text-center font-bold outline-none focus:border-blue-500" />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Weight (kg)</label>
+                            <input type="number" step="any" required placeholder="e.g. 78.5" value={newScanWeight} onChange={e => setNewScanWeight(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Body Fat %</label>
+                            <input type="number" step="any" placeholder="e.g. 14.8" value={newScanBfPercent} onChange={e => setNewScanBfPercent(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Muscle Mass SMM (kg)</label>
+                            <input type="number" step="any" placeholder="e.g. 36.5" value={newScanSmm} onChange={e => setNewScanSmm(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                          </div>
+                        </div>
+                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl active:scale-95 transition-all cursor-pointer">
+                          Save Composition Record
+                        </button>
+                      </form>
+                    )}
+                  </div>
+
+                  {/* Scan History */}
+                  <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                    <div className="p-4 border-b border-gray-800">
+                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">History <span className="text-gray-600">({scans.length} scans)</span></h3>
+                    </div>
+                    {scans.length === 0 ? (
+                      <p className="text-xs text-gray-600 italic text-center py-8">No scans recorded for this athlete</p>
+                    ) : (
+                      <div className="divide-y divide-gray-800/60">
+                        {scans.map((scan, idx) => (
+                          <div key={scan.id} className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-black text-white">{new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                  Score: <span className="text-emerald-400 font-black">{scan.score || 75}</span>
+                                  {idx === 0 && <span className="ml-2 bg-blue-900/40 text-blue-400 text-[9px] font-black px-1.5 py-0.5 rounded">LATEST</span>}
+                                </p>
+                              </div>
+                              <button onClick={() => handleDeleteScan(scan.id)} className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer active:scale-95">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Weight</p>
+                                <p className="text-sm font-black text-white">{scan.weight} kg</p>
+                              </div>
+                              <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Muscle</p>
+                                <p className="text-sm font-black text-blue-400">{scan.smm} kg</p>
+                              </div>
+                              <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Body Fat</p>
+                                <p className="text-sm font-black text-red-400">{scan.bf_percent}%</p>
+                              </div>
+                            </div>
+                            {/* Trend vs previous */}
+                            {idx < scans.length - 1 && (
+                              <div className="flex gap-2 text-[10px] font-bold">
+                                {(() => {
+                                  const prev = scans[idx + 1];
+                                  const wDiff = (scan.weight - prev.weight).toFixed(1);
+                                  const mDiff = (scan.smm - prev.smm).toFixed(1);
+                                  const bDiff = (scan.bf_percent - prev.bf_percent).toFixed(1);
+                                  return (
+                                    <>
+                                      <span className={parseFloat(wDiff) < 0 ? 'text-green-400' : 'text-gray-400'}>W: {parseFloat(wDiff) > 0 ? '+' : ''}{wDiff}kg</span>
+                                      <span className={parseFloat(mDiff) > 0 ? 'text-blue-400' : 'text-gray-400'}>M: {parseFloat(mDiff) > 0 ? '+' : ''}{mDiff}kg</span>
+                                      <span className={parseFloat(bDiff) < 0 ? 'text-green-400' : 'text-red-400'}>BF: {parseFloat(bDiff) > 0 ? '+' : ''}{bDiff}%</span>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

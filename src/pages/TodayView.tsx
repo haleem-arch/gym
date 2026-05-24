@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles, Target, LogOut } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles, Target, LogOut, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -688,6 +688,15 @@ const TodayView = () => {
             <FileSpreadsheet size={14} className="text-primary" />
             Export
           </button>
+          {isHaleem && (
+            <button 
+              onClick={() => navigate('/coach/dashboard')} 
+              className="flex items-center gap-1.5 bg-blue-950/40 hover:bg-blue-900/50 border border-blue-800/60 text-[10px] font-bold px-3 py-2 rounded-xl text-blue-400 hover:text-blue-300 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+            >
+              <Shield size={14} />
+              Coach
+            </button>
+          )}
           <button 
             onClick={() => {
               if (window.confirm("Are you sure you want to sign out?")) {
