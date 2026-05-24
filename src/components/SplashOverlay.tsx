@@ -55,7 +55,7 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
 
     const completeTimer = setTimeout(() => {
       onComplete?.();
-    }, 3000);
+    }, 3800);
 
     return () => {
       clearTimeout(shiftTimer);
@@ -75,7 +75,7 @@ export function SplashOverlay({ show, onComplete }: SplashOverlayProps) {
       justifyContent: 'center',
       overflow: 'hidden',
       backgroundColor: '#0a0a0a',
-      animation: 'splashFadeOut 0.4s ease-in 2.6s forwards',
+      animation: 'splashFadeOut 0.4s ease-in 3.4s forwards',
     }}>
       <style>{`
         @keyframes swoopThrough {

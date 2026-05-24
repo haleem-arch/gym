@@ -735,7 +735,7 @@ const WorkoutHome = () => {
               type="button"
               onClick={handlePullFromStrava}
               disabled={isPullingStrava}
-              className="w-full mb-5 py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-xl hover:shadow-orange-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wider uppercase border border-orange-500/30 disabled:opacity-50 cursor-pointer"
+              className="w-full mb-5 py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-xl hover:shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wider uppercase border border-blue-500/30 disabled:opacity-50 cursor-pointer"
             >
               {isPullingStrava ? (
                 <>
