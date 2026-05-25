@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { GymReceipt } from '../../components/GymReceipt';
+import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Lock, Dumbbell, ChevronLeft, ChevronRight, Trash2,
   LogOut, Search, X, Calendar, Sparkles, ArrowLeft,
   Plus, CheckCircle2, Clock, Droplets,
-  ChevronDown, ChevronUp, Edit3, Save, FileText, RefreshCw
+  ChevronDown, ChevronUp, Edit3, Save, FileText, RefreshCw,
+  Activity, Droplet, Flame
 } from 'lucide-react';
 
 const getLocalDateString = (d: Date = new Date()) => {
@@ -98,6 +101,7 @@ export default function DashboardPage() {
   const [activeSplitEditKey, setActiveSplitEditKey] = useState<string | null>(null);
   const [showAddMealForm, setShowAddMealForm] = useState(false);
   const [showAddScanForm, setShowAddScanForm] = useState(false);
+  const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
   const [showAddSplitForm, setShowAddSplitForm] = useState(false);
   const [editingDayType, setEditingDayType] = useState<string | null>(null);
 
@@ -267,51 +271,20 @@ export default function DashboardPage() {
   };
 
   const handleOpenReceipt = async (w: any) => {
-    try {
-      const { data: exData, error } = await db
-        .from('workout_exercises')
-        .select('sets, exercise_id')
-        .eq('workout_id', w.id);
+    navigate(`/workout/${w.id}`);
+  };
 
-      if (error) throw error;
-
-      let totalSets = 0;
-      let maxWeight = 0;
-      let bestExercise = '';
-      let bestReps = 0;
-
-      if (exData) {
-        exData.forEach((ex: any) => {
-          const setsArr = ex.sets || [];
-          setsArr.forEach((set: any) => {
-            if (set.done) {
-              totalSets++;
-              const wt = parseFloat(set.weight) || 0;
-              const rp = parseInt(set.reps) || 0;
-              if (wt > maxWeight) {
-                maxWeight = wt;
-                const dbEx = exerciseDb.find(e => e.id === ex.exercise_id);
-                bestExercise = dbEx ? dbEx.name : 'Lift';
-                bestReps = rp;
-              }
-            }
-          });
-        });
-      }
-
-      const prExercise = bestExercise ? `${bestExercise}: ${maxWeight}kg x ${bestReps} reps` : undefined;
-
-      setSelectedReceiptWorkout({
-        workoutName: `${w.day_type} Day`,
-        totalVolume: w.total_volume || 0,
-        totalSets: totalSets,
-        durationMinutes: Math.floor((w.duration || 0) / 60) || 1,
-        prExercise: prExercise,
-        workoutId: w.id
-      });
-    } catch (err: any) {
-      toast.error('Error loading receipt: ' + err.message);
-    }
+  const calculateInBodyDelta = (current: number, previous: number, invertColors = false) => {
+    if (previous === undefined || previous === null || previous === 0) return null;
+    const diff = current - previous;
+    if (diff === 0) return <span className="text-gray-500 text-[10px] ml-1">(-)</span>;
+    const isPositive = diff > 0;
+    const isGood = invertColors ? !isPositive : isPositive;
+    return (
+      <span className={`text-[10px] ml-1 font-bold ${isGood ? 'text-emerald-400' : 'text-red-400'}`}>
+        ({isPositive ? '+' : ''}{diff.toFixed(1)})
+      </span>
+    );
   };
 
   // ─── HELPERS ─────────────────────────────────────────────
@@ -1083,10 +1056,10 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <input
                     type="number" step="0.25" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                    className="flex-1 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-lg font-black text-white outline-none focus:border-blue-500 text-center"
+                    className="flex-1 min-w-0 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-lg font-black text-white outline-none focus:border-blue-500 text-center"
                   />
-                  <span className="text-sm font-bold text-gray-400">L</span>
-                  <button onClick={handleSaveWaterGoal} className="px-5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl active:scale-95 transition-all cursor-pointer">
+                  <span className="shrink-0 text-sm font-bold text-gray-400">L</span>
+                  <button onClick={handleSaveWaterGoal} className="shrink-0 px-5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl active:scale-95 transition-all cursor-pointer">
                     Save
                   </button>
                 </div>
@@ -1447,53 +1420,142 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-600 italic text-center py-8">No scans recorded for this athlete</p>
                 ) : (
                   <div className="divide-y divide-gray-800/60">
-                    {scans.map((scan, idx) => (
-                      <div key={scan.id} className="p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-black text-white">{new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">
-                              Score: <span className="text-emerald-400 font-black">{scan.score || 75}</span>
-                              {idx === 0 && <span className="ml-2 bg-blue-900/40 text-blue-400 text-[9px] font-black px-1.5 py-0.5 rounded">LATEST</span>}
-                            </p>
+                    {scans.map((scan, idx) => {
+                      const isExpanded = expandedScanId === scan.id;
+                      const prev = idx + 1 < scans.length ? scans[idx + 1] : null;
+                      const seg = scan.segmental || {};
+                      const prevSeg = prev?.segmental || {};
+
+                      return (
+                        <div key={scan.id} className="p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div 
+                              className="flex-1 cursor-pointer" 
+                              onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}
+                            >
+                              <p className="text-sm font-black text-white flex items-center gap-1.5">
+                                {new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {isExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
+                              </p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">
+                                Score: <span className="text-emerald-400 font-black">{scan.score || 75}</span>
+                                {idx === 0 && <span className="ml-2 bg-blue-900/40 text-blue-400 text-[9px] font-black px-1.5 py-0.5 rounded">LATEST</span>}
+                              </p>
+                            </div>
+                            <button onClick={() => handleDeleteScan(scan.id)} className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer active:scale-95">
+                              <Trash2 size={14} />
+                            </button>
                           </div>
-                          <button onClick={() => handleDeleteScan(scan.id)} className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer active:scale-95">
-                            <Trash2 size={14} />
-                          </button>
+                          <div 
+                            className="grid grid-cols-3 gap-2 cursor-pointer"
+                            onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}
+                          >
+                            <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                              <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Weight</p>
+                              <p className="text-sm font-black text-white">
+                                {scan.weight} kg
+                                {prev && calculateInBodyDelta(scan.weight, prev.weight, true)}
+                              </p>
+                            </div>
+                            <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                              <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Muscle</p>
+                              <p className="text-sm font-black text-blue-400">
+                                {scan.smm} kg
+                                {prev && calculateInBodyDelta(scan.smm, prev.smm)}
+                              </p>
+                            </div>
+                            <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
+                              <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Body Fat</p>
+                              <p className="text-sm font-black text-red-400">
+                                {scan.bf_percent}%
+                                {prev && calculateInBodyDelta(scan.bf_percent, prev.bf_percent, true)}
+                              </p>
+                            </div>
+                          </div>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden border-t border-gray-800/50 mt-3 pt-3"
+                              >
+                                <div className="space-y-5 bg-[#080d1a]/50 p-3 rounded-2xl border border-gray-800/80">
+                                  {/* Muscle-Fat Analysis */}
+                                  <div>
+                                    <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                      <Activity size={12} /> Muscle-Fat Analysis
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                      <div className="bg-[#111827] p-2.5 rounded-xl border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 uppercase font-bold">Skeletal Muscle Mass</p>
+                                        <p className="text-xs text-white font-black">
+                                          {scan.smm} <span className="text-[9px] text-gray-500 font-bold">kg</span>
+                                          {prev && calculateInBodyDelta(scan.smm, prev.smm)}
+                                        </p>
+                                      </div>
+                                      <div className="bg-[#111827] p-2.5 rounded-xl border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 uppercase font-bold">Body Fat Mass</p>
+                                        <p className="text-xs text-white font-black">
+                                          {scan.bfm} <span className="text-[9px] text-gray-500 font-bold">kg</span>
+                                          {prev && calculateInBodyDelta(scan.bfm, prev.bfm, true)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Body Composition Analysis */}
+                                  <div>
+                                    <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                      <Droplet size={12} /> Body Composition
+                                    </h4>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div className="bg-[#111827] p-2 rounded-xl text-center border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 mb-0.5 uppercase font-bold">Total Water</p>
+                                        <p className="text-[10px] text-white font-black">{seg.tbw || 0}L</p>
+                                      </div>
+                                      <div className="bg-[#111827] p-2 rounded-xl text-center border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 mb-0.5 uppercase font-bold">Protein</p>
+                                        <p className="text-[10px] text-white font-black">{seg.protein || 0}kg</p>
+                                      </div>
+                                      <div className="bg-[#111827] p-2 rounded-xl text-center border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 mb-0.5 uppercase font-bold">Minerals</p>
+                                        <p className="text-[10px] text-white font-black">{seg.minerals || 0}kg</p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Obesity Evaluation */}
+                                  <div>
+                                    <h4 className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                      <Flame size={12} /> Obesity Evaluation
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                      <div className="bg-[#111827] p-2.5 rounded-xl border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 uppercase font-bold">Visceral Fat Level</p>
+                                        <p className="text-xs text-white font-black">
+                                          {seg.visceralFat || 0}
+                                          {prev && calculateInBodyDelta(seg.visceralFat, prevSeg.visceralFat, true)}
+                                        </p>
+                                      </div>
+                                      <div className="bg-[#111827] p-2.5 rounded-xl border border-gray-800/80">
+                                        <p className="text-[8px] text-gray-500 uppercase font-bold">Basal Metabolic Rate</p>
+                                        <p className="text-xs text-white font-black">{scan.bmr} <span className="text-[9px] text-gray-500 font-bold">kcal</span></p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Segmental Lean Analysis – Interactive Body Map */}
+                                  <div className="border-t border-gray-800/50 pt-3">
+                                    <SegmentalBodyMap scan={scan} allScans={scans} />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Weight</p>
-                            <p className="text-sm font-black text-white">{scan.weight} kg</p>
-                          </div>
-                          <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Muscle</p>
-                            <p className="text-sm font-black text-blue-400">{scan.smm} kg</p>
-                          </div>
-                          <div className="bg-[#111827] border border-gray-800 rounded-xl p-3 text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Body Fat</p>
-                            <p className="text-sm font-black text-red-400">{scan.bf_percent}%</p>
-                          </div>
-                        </div>
-                        {idx < scans.length - 1 && (
-                          <div className="flex gap-2 text-[10px] font-bold">
-                            {(() => {
-                              const prev = scans[idx + 1];
-                              const wDiff = (scan.weight - prev.weight).toFixed(1);
-                              const mDiff = (scan.smm - prev.smm).toFixed(1);
-                              const bDiff = (scan.bf_percent - prev.bf_percent).toFixed(1);
-                              return (
-                                <>
-                                  <span className={parseFloat(wDiff) < 0 ? 'text-green-400' : 'text-gray-400'}>W: {parseFloat(wDiff) > 0 ? '+' : ''}{wDiff}kg</span>
-                                  <span className={parseFloat(mDiff) > 0 ? 'text-blue-400' : 'text-gray-400'}>M: {parseFloat(mDiff) > 0 ? '+' : ''}{mDiff}kg</span>
-                                  <span className={parseFloat(bDiff) < 0 ? 'text-green-400' : 'text-red-400'}>BF: {parseFloat(bDiff) > 0 ? '+' : ''}{bDiff}%</span>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

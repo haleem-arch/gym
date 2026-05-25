@@ -103,6 +103,7 @@ const WorkoutHome = () => {
           pace: statsToSave.pace,
           duration: statsToSave.duration,
           elevation: statsToSave.elevation,
+          workoutId: data.id
         }
       }));
       

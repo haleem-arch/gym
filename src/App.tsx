@@ -11,9 +11,7 @@ import BottomNav from './components/BottomNav';
 import { OpeningAnimation } from './components/OpeningAnimation';
 import { DumbbellLoader } from './components/DumbbellLoader';
 import { SplashOverlay } from './components/SplashOverlay';
-import { RunReceipt } from './components/RunReceipt';
 import { GymSplashOverlay } from './components/GymSplashOverlay';
-import { GymReceipt } from './components/GymReceipt';
 
 import DietHome from './pages/DietHome';
 import DietMealBuilder from './pages/DietMealBuilder';
@@ -85,11 +83,9 @@ const AppContent = () => {
   else direction = 1;
 
   const [showSplash, setShowSplash] = useState(false);
-  const [rewardStats, setRewardStats] = useState<any>(null);
   const [pendingRewardStats, setPendingRewardStats] = useState<any>(null);
 
   const [showGymSplash, setShowGymSplash] = useState(false);
-  const [gymRewardStats, setGymRewardStats] = useState<any>(null);
   const [pendingGymStats, setPendingGymStats] = useState<any>(null);
 
   useEffect(() => {
@@ -119,7 +115,7 @@ const AppContent = () => {
   }, [location.pathname]);
 
   // Any active overlay = hide the bottom nav so it can't bleed through
-  const anyOverlayActive = showSplash || !!rewardStats || showGymSplash || !!gymRewardStats;
+  const anyOverlayActive = showSplash || showGymSplash;
 
   return (
     <>
@@ -168,18 +164,14 @@ const AppContent = () => {
         onComplete={() => {
           setShowSplash(false);
           if (pendingRewardStats) {
-            setRewardStats(pendingRewardStats);
+            const id = pendingRewardStats.workoutId;
             setPendingRewardStats(null);
+            if (id) {
+              navigate(`/workout/${id}`, { replace: true });
+            }
           }
         }}
       />
-
-      {rewardStats && (
-        <RunReceipt
-          stats={rewardStats}
-          onClose={() => setRewardStats(null)}
-        />
-      )}
 
       <GymSplashOverlay
         show={showGymSplash}
@@ -187,22 +179,14 @@ const AppContent = () => {
         onComplete={() => {
           setShowGymSplash(false);
           if (pendingGymStats) {
-            setGymRewardStats(pendingGymStats);
+            const id = pendingGymStats.workoutId;
             setPendingGymStats(null);
+            if (id) {
+              navigate(`/workout/${id}`, { replace: true });
+            }
           }
         }}
       />
-
-      {gymRewardStats && (
-        <GymReceipt
-          stats={gymRewardStats}
-          onClose={() => {
-            const id = gymRewardStats.workoutId;
-            setGymRewardStats(null);
-            navigate(`/workout/${id}`, { replace: true });
-          }}
-        />
-      )}
     </>
   );
 };
