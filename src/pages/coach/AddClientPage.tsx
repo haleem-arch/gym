@@ -455,8 +455,7 @@ export default function AddClientPage() {
       if (csvScans.length > 0) {
         const scansToInsert = csvScans.map(scan => ({
           ...scan,
-          user_id: clientUserId,
-          coach_id: coachUser.id
+          user_id: clientUserId
         }));
         await supabaseAdmin.from('inbody_scans').insert(scansToInsert);
       } else {
@@ -468,7 +467,6 @@ export default function AddClientPage() {
 
           await supabaseAdmin.from('inbody_scans').insert({
             user_id: clientUserId,
-            coach_id: coachUser.id,
             date: new Date().toISOString().split('T')[0],
             weight: weightVal,
             smm: smmVal,
