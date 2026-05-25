@@ -10,7 +10,7 @@ import {
   LogOut, Search, X, Calendar, Sparkles, ArrowLeft,
   Plus, CheckCircle2, Clock, Droplets,
   ChevronDown, ChevronUp, Edit3, Save, FileText, RefreshCw,
-  Activity, Droplet, Flame
+  Activity, Droplet, Flame, Users
 } from 'lucide-react';
 
 const getLocalDateString = (d: Date = new Date()) => {
@@ -718,6 +718,12 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           {refreshing && <RefreshCw size={13} className="text-blue-400 animate-spin" />}
+          <button 
+            onClick={() => navigate('/coach/clients')} 
+            className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400 hover:text-blue-300 border border-blue-900/40 hover:border-blue-800 bg-blue-950/20 px-3 py-2 rounded-xl transition-all active:scale-95 cursor-pointer uppercase"
+          >
+            <Users size={12} /> Clients
+          </button>
           <button onClick={handleLogOut} className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-red-400 border border-gray-800 hover:border-red-900/50 bg-gray-900 px-3 py-2 rounded-xl transition-all active:scale-95 cursor-pointer uppercase">
             <LogOut size={12} /> Lock
           </button>
@@ -743,7 +749,7 @@ export default function DashboardPage() {
         </button>
 
         {showUserPanel && (
-          <div className="border-t border-gray-800 p-3 space-y-2">
+          <div className="border-t border-gray-800 p-3 space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
               <input
@@ -751,6 +757,23 @@ export default function DashboardPage() {
                 placeholder="Search athletes..."
                 className="w-full bg-[#131b2e] border border-gray-700 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
               />
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={() => navigate('/coach/clients')} 
+                className="flex-1 bg-[#131b2e] hover:bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-650 py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Users size={13} className="text-gray-400" />
+                Manage Clients
+              </button>
+              <button 
+                onClick={() => navigate('/coach/clients/new')} 
+                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Plus size={13} />
+                Add Client
+              </button>
             </div>
             <div className="max-h-52 overflow-y-auto space-y-1" style={{ touchAction: 'pan-y' }}>
               {filteredProfiles.map(p => (
