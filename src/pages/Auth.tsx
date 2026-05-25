@@ -22,61 +22,17 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
     setErrorMsg(null);
 
     try {
-      if (isSignUp) {
-        // Sign Up flow
-        if (!displayName.trim()) {
-          throw new Error('Please enter your name.');
-        }
+      const finalEmail = email.includes('@') ? email : `${email.trim().toLowerCase()}@stride.fit`;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: finalEmail,
+        password,
+      });
 
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              display_name: displayName,
-            }
-          }
-        });
+      if (error) throw error;
 
-        if (error) throw error;
-
-        if (data.user) {
-          // Create user profile in public.profiles table
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: data.user.id,
-            email,
-            display_name: displayName,
-            role: 'client',
-            targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70 }
-          });
-
-          if (profileError) {
-            console.error("Error creating profile row:", profileError);
-            // We won't block the user if the profile insert fails, as they are signed up in auth
-          }
-
-          toast.success('Account created successfully! Welcome aboard.');
-          if (data.session) {
-            onSessionConfigured(data.session);
-          } else {
-            // Sometimes email confirmation is required, but if automatic session is returned, use it
-            toast.success('Check your email for confirmation or try logging in.');
-            setIsSignUp(false);
-          }
-        }
-      } else {
-        // Login flow
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-
-        if (data.session) {
-          toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
-          onSessionConfigured(data.session);
-        }
+      if (data.session) {
+        toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
+        onSessionConfigured(data.session);
       }
     } catch (err: any) {
       console.error(err);

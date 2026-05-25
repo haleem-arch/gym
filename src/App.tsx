@@ -194,6 +194,8 @@ const AppContent = () => {
 function App() {
   const [session, setSession] = useState<any>(undefined);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | undefined>(undefined);
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState(false);
+  const [welcomeName, setWelcomeName] = useState('');
 
   useEffect(() => {
     // 1. Check current session
@@ -231,11 +233,25 @@ function App() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('targets')
+          .select('display_name, targets')
           .eq('id', session.user.id)
           .maybeSingle();
 
         const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
+
+        if (profile?.targets?.show_welcome_animation === true) {
+          setWelcomeName(profile.display_name || '');
+          setShowWelcomeSplash(true);
+
+          const cleanTargets = { ...profile.targets };
+          delete cleanTargets.show_welcome_animation;
+
+          await supabase
+            .from('profiles')
+            .update({ targets: cleanTargets })
+            .eq('id', session.user.id);
+        }
+
         if (profile?.targets?.onboarding_completed === true || !isNewSignup) {
           setNeedsOnboarding(false);
         } else {
@@ -276,6 +292,13 @@ function App() {
   return (
     <Router>
       <AppContent />
+      {showWelcomeSplash && (
+        <SplashOverlay
+          show={showWelcomeSplash}
+          welcomeName={welcomeName}
+          onComplete={() => setShowWelcomeSplash(false)}
+        />
+      )}
     </Router>
   );
 }

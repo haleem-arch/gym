@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { 
-  User, Mail, Lock, Dumbbell, Apple, Check, 
+  User, Lock, Dumbbell, Apple, Check, 
   ChevronLeft, ChevronRight, Plus, Trash2, 
   Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X
 } from 'lucide-react';
@@ -82,11 +82,9 @@ export default function OnboardingFlow({
   // Active user session state (Step 1 -> 2 transition)
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Step 1: Auth form states — isSignUp toggles between Sign In and Create Account
-  const [isSignUp, setIsSignUp] = useState(false);
+  // Step 1: Auth form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Step 2: Workouts split states with embedded baseline exercises
@@ -363,7 +361,8 @@ export default function OnboardingFlow({
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const finalEmail = email.includes('@') ? email : `${email.trim().toLowerCase()}@stride.fit`;
+      const { data, error } = await supabase.auth.signInWithPassword({ email: finalEmail, password });
       if (error) throw error;
       if (data.session) {
         localStorage.removeItem('is_new_signup'); // ensure no onboarding triggered
@@ -378,55 +377,7 @@ export default function OnboardingFlow({
     }
   };
 
-  // Sign up account creation handler
-  const handleSignUpAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
 
-    try {
-      if (!displayName.trim()) throw new Error('Please enter your name.');
-      
-      // Set the new sign-up flag so App.tsx knows to trigger onboarding
-      localStorage.setItem('is_new_signup', 'true');
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { display_name: displayName } }
-      });
-
-      if (error) {
-        localStorage.removeItem('is_new_signup');
-        throw error;
-      }
-
-      if (data.user) {
-        // Initialize user profile in Database
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          email,
-          display_name: displayName,
-          role: 'client',
-          targets: { kcal: 2400, protein: 160, carbs: 240, fat: 70 }
-        });
-        
-        toast.success('Account created! Welcome to LIFE GYM.');
-        if (data.session) {
-          onSessionConfigured?.(data.session);
-          setCurrentUser(data.user);
-          setDirection(1);
-          setStep(2);
-        } else {
-          toast.success('Please check your email for confirmation link.');
-        }
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Authentication failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Log out action
   const handleLogOut = async () => {
@@ -434,7 +385,6 @@ export default function OnboardingFlow({
     setCurrentUser(null);
     onSessionConfigured?.(null);
     localStorage.removeItem('is_new_signup');
-    setIsSignUp(false);
     setStep(1);
   };
 
@@ -751,16 +701,16 @@ export default function OnboardingFlow({
             className="w-full flex flex-col gap-5"
           >
             
-            {/* ── STEP 1: SIGN IN / SIGN UP ── */}
+            {/* ── STEP 1: SIGN IN ── */}
             {step === 1 && (
               <div className="space-y-5">
                 <div className="text-center">
                   <BrandLogo className="w-20 h-20 mx-auto mb-3" />
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">
-                    {isSignUp ? 'Create Account' : 'Welcome Back'}
+                    Welcome Back
                   </h2>
                   <p className="text-xs text-gray-500 mt-1">
-                    {isSignUp ? 'Join LIFE GYM and start pushing your limits' : 'Sign in to continue your journey'}
+                    Sign in to continue your training journey
                   </p>
                 </div>
 
@@ -770,7 +720,7 @@ export default function OnboardingFlow({
                       <Check size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-white">Account Created Successfully</p>
+                      <p className="text-sm font-bold text-white">Signed In Successfully</p>
                       <p className="text-xs text-gray-400 mt-1">{currentUser.email}</p>
                     </div>
                     <div className="flex gap-2 pt-2">
@@ -788,90 +738,16 @@ export default function OnboardingFlow({
                       </button>
                     </div>
                   </div>
-                ) : isSignUp ? (
-                  /* ── CREATE ACCOUNT FORM ── */
-                  <form onSubmit={handleSignUpAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Full Name</label>
-                      <div className="relative">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                        <input 
-                          type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} 
-                          placeholder="Your Name" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Email Address</label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                        <input 
-                          type="email" required value={email} onChange={e => setEmail(e.target.value)} 
-                          placeholder="name@example.com" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                        <input 
-                          type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} 
-                          placeholder="••••••••" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
-                        />
-                        <button 
-                          type="button" onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
-                        >
-                          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                      </div>
-                    </div>
-                    <button 
-                      type="submit" disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-2"
-                    >
-                      {loading ? 'Creating Account...' : 'Create Account'}
-                    </button>
-                    <p className="text-center text-[11px] text-gray-500 pt-1">
-                      Already have an account?{' '}
-                      <button 
-                        type="button"
-                        onClick={() => { setIsSignUp(false); setEmail(''); setPassword(''); setDisplayName(''); }}
-                        className="text-blue-400 font-bold hover:text-blue-300 transition-colors cursor-pointer"
-                      >
-                        Sign In
-                      </button>
-                    </p>
-                    {/* Hard reset cache button */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if ('caches' in window) {
-                          const keys = await caches.keys();
-                          await Promise.all(keys.map(k => caches.delete(k)));
-                        }
-                        window.location.reload();
-                      }}
-                      className="w-full mt-1 py-2 text-[10px] text-gray-600 hover:text-gray-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                      Clear cache &amp; hard refresh
-                    </button>
-                  </form>
                 ) : (
                   /* ── SIGN IN FORM ── */
                   <form onSubmit={handleSignInAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Email Address</label>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Username</label>
                       <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input 
-                          type="email" required value={email} onChange={e => setEmail(e.target.value)} 
-                          placeholder="name@example.com" 
+                          type="text" required value={email} onChange={e => setEmail(e.target.value)} 
+                          placeholder="e.g. ahmed" 
                           className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                       </div>
@@ -899,16 +775,6 @@ export default function OnboardingFlow({
                     >
                       {loading ? 'Signing In...' : 'Sign In'}
                     </button>
-                    <p className="text-center text-[11px] text-gray-500 pt-1">
-                      Don't have an account?{' '}
-                      <button 
-                        type="button"
-                        onClick={() => { setIsSignUp(true); setEmail(''); setPassword(''); }}
-                        className="text-blue-400 font-bold hover:text-blue-300 transition-colors cursor-pointer"
-                      >
-                        Create Account
-                      </button>
-                    </p>
                     {/* Hard reset cache button */}
                     <button
                       type="button"
