@@ -15,5 +15,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Admin client that bypasses Row Level Security – used ONLY by the coach hub
 // for writing data on behalf of athletes (water logs, meals, etc.)
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: { 
+    persistSession: false, 
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storage: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {}
+    }
+  }
 })

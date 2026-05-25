@@ -14,7 +14,7 @@ export const useCoachClients = () => {
         .from('client_profiles')
         .select(`
           *,
-          user:profiles(id, username, email, display_name, created_at)
+          user:profiles(id, username, email, display_name, targets, created_at)
         `)
         .eq('coach_id', user.id)
         .order('created_at', { ascending: false });

@@ -32,6 +32,13 @@ export default function AddClientPage() {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isDeployed, setIsDeployed] = useState(false);
+  const [deployedData, setDeployedData] = useState({
+    displayName: '',
+    username: '',
+    password: '',
+    clientCode: 0
+  });
 
   // Exercise catalog search
   const [exerciseDb, setExerciseDb] = useState<any[]>([]);
@@ -383,6 +390,24 @@ export default function AddClientPage() {
       const { data: { user: coachUser } } = await supabase.auth.getUser();
       if (!coachUser) throw new Error('COACH AUTH REQUIRED');
 
+      // Calculate next client code
+      const { data: existingProfiles } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('role', 'client');
+      
+      let nextClientCode = 101;
+      if (existingProfiles && existingProfiles.length > 0) {
+        const codes = existingProfiles
+          .map(p => p.targets?.client_code)
+          .filter(c => typeof c === 'number');
+        if (codes.length > 0) {
+          nextClientCode = Math.max(...codes) + 1;
+        } else {
+          nextClientCode = 101 + existingProfiles.length;
+        }
+      }
+
       const virtualEmail = `${formData.username.trim().toLowerCase()}@stride.fit`;
 
       // 1. Provision new Supabase Auth Client
@@ -420,7 +445,8 @@ export default function AddClientPage() {
         kcal,
         protein,
         carbs,
-        fat
+        fat,
+        client_code: nextClientCode
       };
 
       // 3. Insert public.profiles
@@ -530,8 +556,14 @@ export default function AddClientPage() {
       });
       await Promise.all(dayPromises);
 
+      setDeployedData({
+        displayName: formData.displayName,
+        username: formData.username.trim().toLowerCase(),
+        password: formData.password,
+        clientCode: nextClientCode
+      });
+      setIsDeployed(true);
       toast.success(`Athlete deployed successfully! Handle: @${formData.username}`);
-      navigate('/coach/clients');
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || 'Deployment protocol failed.');
@@ -567,6 +599,69 @@ export default function AddClientPage() {
     return ex.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
            ex.muscle_group?.toLowerCase().includes(searchQuery.toLowerCase());
   }).slice(0, 5);
+
+  if (isDeployed) {
+    return (
+      <div className="w-full sm:max-w-[420px] mx-auto min-h-screen bg-[#060610] relative overflow-y-auto flex flex-col justify-center items-center text-gray-100 font-sans p-6 shadow-2xl sm:border-x sm:border-gray-800">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-sm bg-[#0d1220] border border-emerald-500/20 rounded-3xl p-6 text-center space-y-6 shadow-2xl relative">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <ShieldCheck size={36} />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-black text-white tracking-tight">Athlete Deployed!</h2>
+            <p className="text-xs text-gray-400 mt-1">Pass credentials to the athlete to log in</p>
+          </div>
+
+          <div className="space-y-3 bg-[#131b2e] border border-gray-800 rounded-2xl p-4 text-left">
+            <div>
+              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Client Code</span>
+              <p className="font-mono text-sm text-emerald-400 font-black">#{deployedData.clientCode}</p>
+            </div>
+            <div className="border-t border-gray-800/60 my-2" />
+            <div>
+              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Display Name</span>
+              <p className="text-sm text-white font-bold">{deployedData.displayName}</p>
+            </div>
+            <div className="border-t border-gray-800/60 my-2" />
+            <div>
+              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Username</span>
+              <p className="font-mono text-sm text-white">{deployedData.username}</p>
+            </div>
+            <div className="border-t border-gray-800/60 my-2" />
+            <div>
+              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Password</span>
+              <p className="font-mono text-sm text-blue-400 font-bold">{deployedData.password}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => {
+                const text = `Stride Fit Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nPassword: ${deployedData.password}`;
+                navigator.clipboard.writeText(text);
+                toast.success('Credentials copied to clipboard!');
+              }}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-emerald-500/10 cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+            >
+              <Check size={14} /> Copy Info
+            </button>
+            <button
+              onClick={() => navigate('/coach/clients')}
+              className="flex-1 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-850 py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all cursor-pointer active:scale-95 flex items-center justify-center"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full sm:max-w-[420px] mx-auto min-h-screen bg-[#060610] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">

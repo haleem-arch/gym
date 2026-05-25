@@ -37,7 +37,14 @@ export default function ClientsListPage() {
                     {client.user?.display_name?.charAt(0) || '?'}
                   </div>
                   <div>
-                    <p className="font-bold text-white">{client.user?.display_name || 'Unnamed Client'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-white">{client.user?.display_name || 'Unnamed Client'}</p>
+                      {client.user?.targets?.client_code && (
+                        <span className="text-[10px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black">
+                          #{client.user.targets.client_code}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-400">@{client.user?.username || 'no-username'}</p>
                   </div>
                 </div>
