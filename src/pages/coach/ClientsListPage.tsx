@@ -32,10 +32,15 @@ export default function ClientsListPage() {
     try {
       const uid = client.user_id;
 
-      // 1. Delete from auth account using admin client
+      // 1. Delete from auth account using admin client.
+      // If this fails, abort — don't delete DB rows or the client becomes a ghost account.
       const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
       if (authErr) {
-        console.warn('Auth user delete warning (user might already be deleted):', authErr);
+        // Only allow "user not found" to pass through (already deleted from auth)
+        if (!authErr.message?.toLowerCase().includes('not found') && !authErr.message?.toLowerCase().includes('not exist')) {
+          throw new Error(`Failed to delete auth account: ${authErr.message}`);
+        }
+        console.warn('Auth user already removed from auth, proceeding with DB cleanup:', authErr.message);
       }
 
       // 2. Cascade delete database records

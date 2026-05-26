@@ -238,9 +238,19 @@ function App() {
           .eq('id', session.user.id)
           .maybeSingle();
 
+        // If no profile exists for this auth user, the account was deleted.
+        // Sign them out immediately so they can't access the app.
+        if (!profile) {
+          console.warn('Authenticated user has no profile — account deleted. Signing out.');
+          await supabase.auth.signOut();
+          setSession(null);
+          setNeedsOnboarding(undefined);
+          return;
+        }
+
         const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
 
-        if (profile?.targets?.show_welcome_animation === true) {
+        if (profile.targets?.show_welcome_animation === true) {
           setWelcomeName(profile.display_name || '');
           setShowWelcomeSplash(true);
 
@@ -253,7 +263,7 @@ function App() {
             .eq('id', session.user.id);
         }
 
-        if (profile?.targets?.onboarding_completed === true || !isNewSignup) {
+        if (profile.targets?.onboarding_completed === true || !isNewSignup) {
           setNeedsOnboarding(false);
         } else {
           setNeedsOnboarding(true);

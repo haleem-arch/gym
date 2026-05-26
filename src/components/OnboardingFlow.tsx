@@ -34,7 +34,27 @@ interface SplitItem {
 }
 
 // Custom brand dumbbell logo component matching icon.svg / OpeningAnimation.tsx
-const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: string, errorMsg?: string | null }) => {
+const BrandLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
+  <div className={`relative flex items-center justify-center select-none ${className}`}>
+    <svg viewBox="0 0 512 512" className="w-full h-full" style={{ imageRendering: 'crisp-edges' }}>
+      <g transform="translate(256 256) rotate(-45)">
+        {/* Rod */}
+        <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+        {/* Left weights */}
+        <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+        <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+        <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+        {/* Right weights */}
+        <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+        <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+        <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+      </g>
+    </svg>
+  </div>
+);
+
+// Custom login morphing logo component
+const LoginLogo = ({ className = "w-20 h-20", errorMsg = null }: { className?: string, errorMsg?: string | null }) => {
   const getShortErrorMessage = (msg: string | null) => {
     if (!msg) return '';
     const lower = msg.toLowerCase();
@@ -50,31 +70,28 @@ const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: s
     return 'AUTH FAILED';
   };
 
-  const shakeVariants = {
-    normal: { x: 0 },
-    shake: {
-      x: [0, -10, 10, -10, 10, -5, 5, 0],
-      transition: { duration: 0.5, ease: 'easeInOut' as const }
-    }
-  };
 
   return (
     <div className={`relative flex items-center justify-center select-none ${className}`}>
+      {/* Outer div handles horizontal shake — key change re-triggers animation */}
       <motion.div
-        layout
-        variants={shakeVariants}
-        animate={errorMsg ? 'shake' : 'normal'}
-        transition={{ type: 'spring', stiffness: 120, damping: 15 }}
-        className={`relative bg-gradient-to-tr ${
-          errorMsg 
-            ? 'from-red-950/65 to-purple-950/65 border-red-500/35 shadow-red-500/10' 
-            : 'from-blue-600 to-purple-600 border-white/10 shadow-blue-500/20'
-        } border flex items-center justify-center shadow-lg`}
-        style={{
+        key={errorMsg ?? 'idle'}
+        animate={errorMsg ? { x: [0, -10, 10, -10, 10, -5, 5, 0] } : { x: 0 }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
+      >
+      {/* Inner div handles width/height morph */}
+      <motion.div
+        animate={{
           width: errorMsg ? 350 : 80,
           height: 80,
           borderRadius: errorMsg ? '16px' : '22px',
+          backgroundColor: errorMsg ? 'rgba(23, 15, 30, 0.65)' : 'rgba(59, 130, 246, 0)',
+          borderWidth: errorMsg ? 1 : 0,
+          borderColor: errorMsg ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0,0,0,0)',
         }}
+        transition={{ type: 'spring', stiffness: 120, damping: 15 }}
+        className="relative flex items-center justify-center"
+        style={{ borderStyle: 'solid' }}
       >
         {/* Background Breathing Glow when in error */}
         {errorMsg && (
@@ -107,7 +124,6 @@ const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: s
             >
               {/* Metal Rod / Handle */}
               <motion.rect
-                id="bar"
                 animate={{
                   x: errorMsg ? -220 : -120,
                   width: errorMsg ? 440 : 240,
@@ -123,7 +139,6 @@ const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: s
 
               {/* Left Weight Plates */}
               <motion.g
-                id="left-weights"
                 animate={{
                   x: errorMsg ? -100 : 0,
                 }}
@@ -168,7 +183,6 @@ const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: s
 
               {/* Right Weight Plates */}
               <motion.g
-                id="right-weights"
                 animate={{
                   x: errorMsg ? 100 : 0,
                 }}
@@ -231,6 +245,7 @@ const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: s
             </motion.g>
           </g>
         </svg>
+      </motion.div>
       </motion.div>
     </div>
   );
@@ -941,7 +956,7 @@ export default function OnboardingFlow({
             {step === 1 && (
               <div ref={cardRef} className="space-y-5 relative">
                 <div className="text-center">
-                  <BrandLogo className="mx-auto mb-3" errorMsg={errorMsg} />
+                  <LoginLogo className="mx-auto mb-3" errorMsg={errorMsg} />
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">
                     Welcome Back
                   </h2>
