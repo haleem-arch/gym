@@ -141,6 +141,68 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
   const userIdRef = useRef<string | null>(null);
   const initialized = useRef(false);
 
+  const [quotaLimit, setQuotaLimit] = useState(20);
+  const [usageCount, setUsageCount] = useState(0);
+
+  const refreshQuota = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
+    if (!uid) return { limit: 20, count: 0, exceeded: false };
+
+    const { data: profile } = await supabase.from('profiles').select('targets').eq('id', uid).maybeSingle();
+    if (!profile) return { limit: 20, count: 0, exceeded: false };
+
+    const targets = profile.targets || {};
+    const limit = typeof targets.ai_quota_limit === 'number' ? targets.ai_quota_limit : 20;
+    const usage = targets.ai_usage || { date: '', count: 0 };
+    const todayStr = getLocalDate();
+
+    let count = 0;
+    if (usage.date === todayStr) {
+      count = usage.count || 0;
+    }
+
+    setQuotaLimit(limit);
+    setUsageCount(count);
+    return { limit, count, exceeded: count >= limit };
+  };
+
+  useEffect(() => {
+    let channel: any = null;
+    const setupRealtime = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+
+      await refreshQuota();
+
+      channel = supabase
+        .channel(`quota-profile-${uid}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${uid}`
+        }, (payload: any) => {
+          const targets = payload.new?.targets || {};
+          const limit = typeof targets.ai_quota_limit === 'number' ? targets.ai_quota_limit : 20;
+          const usage = targets.ai_usage || { date: '', count: 0 };
+          const todayStr = getLocalDate();
+          const count = usage.date === todayStr ? (usage.count || 0) : 0;
+
+          setQuotaLimit(limit);
+          setUsageCount(count);
+        })
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
+
   // ─── Execute DB actions returned by AI ────────────────────────────────────
   const executeActions = async (actions: DbAction[]): Promise<{success: boolean, errorMsg?: string}> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -560,6 +622,21 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (!initialized.current) await initChat();
     if (!getApiKey()) return;
 
+    // Check quota limit
+    const { limit, count, exceeded } = await refreshQuota();
+    if (exceeded) {
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'user',
+        text
+      }, {
+        id: crypto.randomUUID(),
+        role: 'model',
+        text: `⚡ Daily limit reached (${limit}/${limit} messages). Please ask your coach to increase your daily AI limit!`
+      }]);
+      return;
+    }
+
     const userMsgId = crypto.randomUUID();
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', text }]);
     setIsTyping(true);
@@ -602,6 +679,23 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       };
       setMessages(prev => [...prev, modelMsg]);
 
+      // Successfully sent! Now increment DB counter
+      const todayStr = getLocalDate();
+      const newCount = count + 1;
+      setUsageCount(newCount);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+        if (profile) {
+          const updatedTargets = {
+            ...(profile.targets || {}),
+            ai_usage: { date: todayStr, count: newCount }
+          };
+          await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', session.user.id);
+        }
+      }
+
     } catch (e: any) {
       const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
       setMessages(prev => [...prev, {
@@ -626,6 +720,8 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     updateMessage,
     startNewChat,
     initChat,
-    sessionId
+    sessionId,
+    quotaLimit,
+    usageCount
   };
 };

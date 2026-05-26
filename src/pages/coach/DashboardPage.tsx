@@ -797,6 +797,43 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* ── AGGREGATE AI STATS ── */}
+      {(() => {
+        const todayDateStr = getLocalDateString();
+        const totalAiMessagesToday = profiles.reduce((acc, p) => {
+          const usage = p.targets?.ai_usage;
+          if (usage && usage.date === todayDateStr) {
+            return acc + (usage.count || 0);
+          }
+          return acc;
+        }, 0);
+
+        const activeAiUsersToday = profiles.filter(p => {
+          const usage = p.targets?.ai_usage;
+          return usage && usage.date === todayDateStr && usage.count > 0;
+        }).length;
+
+        return (
+          <div className="bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-900/20 rounded-2xl p-4 flex justify-between items-center text-xs">
+            <div className="flex items-center gap-3">
+              <span className="text-base select-none">🤖</span>
+              <div>
+                <p className="text-gray-500 font-bold uppercase tracking-wider text-[8px]">Total AI Messages Today</p>
+                <p className="text-white font-extrabold text-sm mt-0.5">{totalAiMessagesToday} msgs</p>
+              </div>
+            </div>
+            <div className="h-6 w-[1px] bg-gray-800/80" />
+            <div className="flex items-center gap-3">
+              <span className="text-base select-none">✨</span>
+              <div>
+                <p className="text-gray-500 font-bold uppercase tracking-wider text-[8px]">Active AI Athletes Today</p>
+                <p className="text-white font-extrabold text-sm mt-0.5">{activeAiUsersToday} / {profiles.length} active</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── DATE NAVIGATOR ── */}
       <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-3 flex items-center justify-between gap-2">
         <button onClick={() => shiftDate(-1)} className="p-3 hover:bg-gray-800 rounded-xl transition-colors active:scale-95 cursor-pointer text-gray-400 hover:text-white">
@@ -873,6 +910,34 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-violet-400 font-bold">{workoutsList.length} session{workoutsList.length !== 1 ? 's' : ''}</p>
                 </div>
                 <ProgressBar value={workoutStatus} max={1} color="#a78bfa" />
+              </div>
+            </div>
+
+            {/* AI Coach Usage Card */}
+            <div className="bg-[#0d1220] border border-blue-900/30 rounded-2xl p-3.5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-lg select-none">🤖</span>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">AI Coach Usage</p>
+                  {(() => {
+                    const limit = profileTargets?.ai_quota_limit ?? 20;
+                    const usage = profileTargets?.ai_usage || { date: '', count: 0 };
+                    const count = usage.date === activeDateStr ? usage.count : 0;
+                    return (
+                      <p className="text-base font-black text-white mt-0.5">
+                        {count} <span className="text-xs text-gray-500 font-bold">/ {limit} msgs</span>
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+              <div className="flex-1 max-w-[120px]">
+                {(() => {
+                  const limit = profileTargets?.ai_quota_limit ?? 20;
+                  const usage = profileTargets?.ai_usage || { date: '', count: 0 };
+                  const count = usage.date === activeDateStr ? usage.count : 0;
+                  return <ProgressBar value={count} max={limit} color="#3b82f6" />;
+                })()}
               </div>
             </div>
 

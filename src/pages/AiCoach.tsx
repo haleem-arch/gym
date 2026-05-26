@@ -121,7 +121,16 @@ const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplet
 };
 
 const AiCoach = () => {
-  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat } = useAiAgent();
+  const { 
+    messages, 
+    isTyping, 
+    sendMessage, 
+    updateMessage, 
+    initChat, 
+    startNewChat,
+    quotaLimit,
+    usageCount
+  } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -133,7 +142,7 @@ const AiCoach = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isTyping) return;
+    if (!input.trim() || isTyping || usageCount >= quotaLimit) return;
     sendMessage(input.trim());
     setInput('');
   };
@@ -151,7 +160,12 @@ const AiCoach = () => {
             <Sparkles size={15} className="text-primary" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-sm tracking-tight">AI Coach</h1>
+            <h1 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
+              AI Coach
+              <span className="text-[9px] bg-blue-500/15 border border-blue-500/30 text-blue-400 px-2 py-0.5 rounded-full font-black select-none tracking-normal">
+                ⚡ {usageCount}/{quotaLimit}
+              </span>
+            </h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">
               Session · {messages.length} msg{messages.length !== 1 && 's'}
             </p>
@@ -227,6 +241,12 @@ const AiCoach = () => {
         <div ref={bottomRef} />
       </div>
 
+      {usageCount >= quotaLimit && (
+        <div className="mx-4 my-2 p-3 bg-red-950/25 border border-red-900/30 text-red-300 rounded-xl text-center text-xs font-semibold leading-relaxed shadow-lg shadow-black/20 flex items-center justify-center gap-1.5">
+          🔒 Daily limit of {quotaLimit} messages reached. Ask your coach to raise your limit!
+        </div>
+      )}
+
       {/* Input — sticky at bottom */}
       <div className="p-3 bg-background border-t border-gray-800 sticky bottom-0 z-30 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
@@ -234,15 +254,15 @@ const AiCoach = () => {
             value={input}
             onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
             onKeyDown={handleKeyDown}
-            placeholder="Log a meal, ask about progress, change plan..."
+            placeholder={usageCount >= quotaLimit ? "Daily quota exceeded." : "Log a meal, ask about progress, change plan..."}
             rows={1}
-            className="flex-1 bg-surface border border-gray-700 rounded-2xl py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none overflow-hidden leading-relaxed"
+            className="flex-1 bg-surface border border-gray-700 rounded-2xl py-3 pl-4 pr-12 text-sm text-white focus:outline-none focus:border-primary transition-colors resize-none overflow-hidden leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ minHeight: '46px', maxHeight: '120px' }}
-            disabled={isTyping}
+            disabled={isTyping || usageCount >= quotaLimit}
           />
           <button
             type="submit"
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isTyping || usageCount >= quotaLimit}
             className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white disabled:opacity-40 disabled:bg-gray-700 transition-all hover:scale-105"
           >
             <Send size={13} />

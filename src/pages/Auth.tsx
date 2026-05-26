@@ -19,6 +19,40 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms' | 'cookies' | null>(null);
 
+  const [lockoutTimeLeft, setLockoutTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (lockoutTimeLeft <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutTimeLeft]);
+
+  useEffect(() => {
+    const checkLock = () => {
+      const lockKey = `auth_lock_${email.trim().toLowerCase()}`;
+      const saved = localStorage.getItem(lockKey);
+      if (saved) {
+        try {
+          const { lockedUntil } = JSON.parse(saved);
+          const diff = Math.ceil((lockedUntil - Date.now()) / 1000);
+          if (diff > 0) {
+            setLockoutTimeLeft(diff);
+            setErrorMsg(`TOO MANY FAILED ATTEMPTS. TRY AGAIN IN ${diff}s`);
+          }
+        } catch (e) {}
+      }
+    };
+    if (email) checkLock();
+  }, [email]);
+
   // Flying Arrow States & Refs
   const [showArrow, setShowArrow] = useState(false);
   const [arrowPoints, setArrowPoints] = useState<{
@@ -101,6 +135,24 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
       triggerPrivacyArrow();
       return;
     }
+
+    const lockKey = `auth_lock_${email.trim().toLowerCase()}`;
+    const saved = localStorage.getItem(lockKey);
+    let attempts = 0;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        attempts = parsed.failedAttempts || 0;
+        const diff = Math.ceil((parsed.lockedUntil - Date.now()) / 1000);
+        if (diff > 0) {
+          toast.error(`Too many failed attempts. Locked for ${diff}s.`);
+          setLockoutTimeLeft(diff);
+          setErrorMsg(`TOO MANY FAILED ATTEMPTS. TRY AGAIN IN ${diff}s`);
+          return;
+        }
+      } catch (e) {}
+    }
+
     setLoading(true);
     setErrorMsg(null);
 
@@ -114,13 +166,24 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
       if (error) throw error;
 
       if (data.session) {
+        localStorage.removeItem(lockKey);
         toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
         onSessionConfigured(data.session);
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'An error occurred during authentication.');
-      toast.error(err.message || 'Authentication failed.');
+      const newAttempts = attempts + 1;
+      if (newAttempts >= 5) {
+        const lockedUntil = Date.now() + 60000;
+        localStorage.setItem(lockKey, JSON.stringify({ failedAttempts: newAttempts, lockedUntil }));
+        setLockoutTimeLeft(60);
+        setErrorMsg(`TOO MANY FAILED ATTEMPTS. TRY AGAIN IN 60s`);
+        toast.error(`Too many failed attempts. Locked out for 60 seconds.`);
+      } else {
+        localStorage.setItem(lockKey, JSON.stringify({ failedAttempts: newAttempts, lockedUntil: 0 }));
+        setErrorMsg(err.message || 'An error occurred during authentication.');
+        toast.error(`${err.message || 'Authentication failed.'} (${5 - newAttempts} attempts left)`);
+      }
     } finally {
       setLoading(false);
     }
@@ -446,14 +509,16 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
             <button
               ref={loginButtonRef}
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2"
+              disabled={loading || lockoutTimeLeft > 0}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   Processing...
                 </>
+              ) : lockoutTimeLeft > 0 ? (
+                `Locked Out (${lockoutTimeLeft}s)`
               ) : (
                 isSignUp ? 'Create Account' : 'Sign In'
               )}
