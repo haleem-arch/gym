@@ -2,9 +2,55 @@ import { useCoachClients } from '../../hooks/useCoachClients';
 import { Card } from '../../components/Card';
 import { Link } from 'react-router-dom';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
+import { SwipeToDeleteRow } from '../../components/SwipeToDeleteRow';
+import { supabaseAdmin } from '../../lib/supabase';
+import { toast } from 'react-hot-toast';
 
 export default function ClientsListPage() {
-  const { clients, loading } = useCoachClients();
+  const { clients, loading, refetch } = useCoachClients();
+
+  const handleDeleteClient = async (client: any) => {
+    const clientCode = client.user?.targets?.client_code;
+    const displayName = client.user?.display_name || 'this client';
+    const input = window.prompt(
+      `To delete client "${displayName}", please enter their Client ID/Code (e.g. ${clientCode || '112'}):`
+    );
+
+    if (input !== String(clientCode)) {
+      if (input !== null) {
+        toast.error('Incorrect client code. Deletion cancelled.');
+      }
+      return;
+    }
+
+    const toastId = toast.loading(`Deleting ${displayName}...`);
+    try {
+      const uid = client.user_id;
+
+      // 1. Delete from auth account using admin client
+      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
+      if (authErr) {
+        console.warn('Auth user delete warning (user might already be deleted):', authErr);
+      }
+
+      // 2. Cascade delete database records
+      await supabaseAdmin.from('inbody_scans').delete().eq('user_id', uid);
+      await supabaseAdmin.from('client_workout_days').delete().eq('user_id', uid);
+      await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', uid);
+      await supabaseAdmin.from('progress_notes').delete().eq('user_id', uid);
+      await supabaseAdmin.from('water_logs').delete().eq('user_id', uid);
+      await supabaseAdmin.from('client_profiles').delete().eq('user_id', uid);
+      await supabaseAdmin.from('profiles').delete().eq('id', uid);
+
+      toast.success(`${displayName} deleted successfully`, { id: toastId });
+      
+      // Refetch clients list
+      refetch();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to delete client', { id: toastId });
+    }
+  };
 
   return (
     <div className="p-4">
@@ -30,30 +76,32 @@ export default function ClientsListPage() {
       ) : (
         <div className="grid gap-3">
           {clients.map(client => (
-            <Link key={client.id} to={`/coach/clients/${client.user?.id}`}>
-              <Card className="flex justify-between items-center p-4 hover:bg-gray-700 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center text-blue-200 font-bold">
-                    {client.user?.display_name?.charAt(0) || '?'}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-white">{client.user?.display_name || 'Unnamed Client'}</p>
-                      {client.user?.targets?.client_code && (
-                        <span className="text-[10px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black">
-                          #{client.user.targets.client_code}
-                        </span>
-                      )}
+            <SwipeToDeleteRow key={client.id} onDelete={() => handleDeleteClient(client)} backgroundRounded="rounded-xl">
+              <Link to={`/coach/clients/${client.user?.id}`}>
+                <Card className="flex justify-between items-center p-4 hover:bg-gray-700 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center text-blue-200 font-bold">
+                      {client.user?.display_name?.charAt(0) || '?'}
                     </div>
-                    <p className="text-sm text-gray-400">@{client.user?.username || 'no-username'}</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-white">{client.user?.display_name || 'Unnamed Client'}</p>
+                        {client.user?.targets?.client_code && (
+                          <span className="text-[10px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black">
+                            #{client.user.targets.client_code}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-400">@{client.user?.username || 'no-username'}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-500">Passcode</p>
-                  <p className="font-mono text-sm text-blue-400">{client.generated_passcode || 'N/A'}</p>
-                </div>
-              </Card>
-            </Link>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Passcode</p>
+                    <p className="font-mono text-sm text-blue-400">{client.generated_passcode || 'N/A'}</p>
+                  </div>
+                </Card>
+              </Link>
+            </SwipeToDeleteRow>
           ))}
         </div>
       )}

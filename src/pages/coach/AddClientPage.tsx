@@ -55,6 +55,7 @@ export default function AddClientPage() {
     displayName: '',
     username: '',
     password: '',
+    clientCode: '',
     age: '',
     height: '',
     experience_level: 'beginner',
@@ -391,20 +392,37 @@ export default function AddClientPage() {
       if (!coachUser) throw new Error('COACH AUTH REQUIRED');
 
       // Calculate next client code
-      const { data: existingProfiles } = await supabaseAdmin
-        .from('profiles')
-        .select('targets')
-        .eq('role', 'client');
+      let nextClientCode = parseInt(formData.clientCode);
       
-      let nextClientCode = 101;
-      if (existingProfiles && existingProfiles.length > 0) {
-        const codes = existingProfiles
-          .map(p => p.targets?.client_code)
-          .filter(c => typeof c === 'number');
-        if (codes.length > 0) {
-          nextClientCode = Math.max(...codes) + 1;
-        } else {
-          nextClientCode = 101 + existingProfiles.length;
+      if (isNaN(nextClientCode)) {
+        // Fall back to auto-calculation if not provided
+        const { data: existingProfiles } = await supabaseAdmin
+          .from('profiles')
+          .select('targets')
+          .eq('role', 'client');
+        
+        nextClientCode = 101;
+        if (existingProfiles && existingProfiles.length > 0) {
+          const codes = existingProfiles
+            .map(p => p.targets?.client_code)
+            .filter(c => typeof c === 'number');
+          if (codes.length > 0) {
+            nextClientCode = Math.max(...codes) + 1;
+          } else {
+            nextClientCode = 101 + existingProfiles.length;
+          }
+        }
+      } else {
+        // Verify custom code is unique
+        const { data: duplicateCheck } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('role', 'client')
+          .eq('targets->>client_code', String(nextClientCode))
+          .maybeSingle();
+
+        if (duplicateCheck) {
+          throw new Error(`Client Number #${nextClientCode} is already assigned to another user.`);
         }
       }
 
@@ -772,6 +790,18 @@ export default function AddClientPage() {
                         className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Client Number (Optional)</label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                    <input 
+                      type="number" name="clientCode" value={formData.clientCode} onChange={handleInputChange}
+                      placeholder="e.g. 112 (Leave blank to auto-generate)"
+                      className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                    />
                   </div>
                 </div>
 

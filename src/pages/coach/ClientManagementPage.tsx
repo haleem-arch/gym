@@ -18,7 +18,6 @@ export default function ClientManagementPage() {
   const [workoutDays, setWorkoutDays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [latestWeight, setLatestWeight] = useState<number | null>(null);
-  const [waterTotalMl, setWaterTotalMl] = useState(0);
 
   // Form States
   const [newPassword, setNewPassword] = useState('');
@@ -67,16 +66,7 @@ export default function ClientManagementPage() {
         setLatestWeight(null);
       }
 
-      // 3. Fetch today's logged water intake
-      const todayStr = new Date().toISOString().split('T')[0];
-      const { data: wLogs } = await supabaseAdmin
-        .from('water_logs')
-        .select('amount_ml')
-        .eq('user_id', clientId)
-        .eq('date', todayStr);
 
-      const waterTotal = wLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
-      setWaterTotalMl(waterTotal);
 
       // 4. Fetch workout day plans (read-only splits)
       const { data: days } = await supabaseAdmin
@@ -193,8 +183,7 @@ export default function ClientManagementPage() {
     );
   }
 
-  const waterGoal = (client.user?.targets?.water_goal_ml || 3500) / 1000;
-  const currentWater = waterTotalMl / 1000;
+
 
   return (
     <div className="min-h-screen bg-[#060610] text-gray-100 font-sans pb-20">
@@ -263,18 +252,22 @@ export default function ClientManagementPage() {
           <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
             <User className="text-blue-500 w-4 h-4" /> Deployed Biometrics
           </h2>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-[#181d29] p-3 rounded-xl border border-gray-850">
-              <p className="text-[10px] text-gray-500 uppercase font-bold flex justify-center items-center gap-1"><Scale size={11} /> Weight</p>
-              <p className="text-white font-extrabold text-sm mt-1">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
+          <div className="grid grid-cols-4 gap-2 text-center text-xs">
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><Scale size={10} /> Weight</p>
+              <p className="text-white font-extrabold text-xs mt-1">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
             </div>
-            <div className="bg-[#181d29] p-3 rounded-xl border border-gray-850">
-              <p className="text-[10px] text-gray-500 uppercase font-bold flex justify-center items-center gap-1"><Ruler size={11} /> Height</p>
-              <p className="text-white font-extrabold text-sm mt-1">{client.height ? `${client.height} cm` : 'N/A'}</p>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><Ruler size={10} /> Height</p>
+              <p className="text-white font-extrabold text-xs mt-1">{client.height ? `${client.height} cm` : 'N/A'}</p>
             </div>
-            <div className="bg-[#181d29] p-3 rounded-xl border border-gray-850">
-              <p className="text-[10px] text-gray-500 uppercase font-bold flex justify-center items-center gap-1"><User size={11} /> Age</p>
-              <p className="text-white font-extrabold text-sm mt-1">{client.age ? `${client.age} yrs` : 'N/A'}</p>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><User size={10} /> Age</p>
+              <p className="text-white font-extrabold text-xs mt-1">{client.age ? `${client.age} yrs` : 'N/A'}</p>
+            </div>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5">⚧ Gender</p>
+              <p className="text-white font-extrabold text-xs mt-1 capitalize">{client.user?.targets?.gender || 'N/A'}</p>
             </div>
           </div>
 
@@ -298,29 +291,22 @@ export default function ClientManagementPage() {
           </div>
         </Card>
 
-        {/* Water Intake Stats */}
-        <Card className="p-5 space-y-3.5">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
-            <Droplets className="text-sky-400 w-4 h-4" /> Daily Hydration
-          </h2>
-          <div className="flex justify-between items-center text-xs">
+        {/* Water Intake Goal Display */}
+        <Card className="p-5 flex items-center justify-between border border-gray-800/80 bg-[#121620]/60">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-xl flex items-center justify-center">
+              <Droplets className="w-5 h-5" />
+            </div>
             <div>
-              <p className="text-gray-500 font-semibold">Today's Intake</p>
-              <p className="text-white font-extrabold text-lg mt-0.5">{currentWater.toFixed(1)}L <span className="text-xs text-gray-500 font-normal">/ {waterGoal.toFixed(1)}L target</span></p>
+              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Water Intake Target</p>
+              <p className="text-white font-extrabold text-lg mt-0.5">
+                {((client.user?.targets?.water_goal_ml || 3500) / 1000).toFixed(1)} Liters
+              </p>
             </div>
-            <div className="bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg text-sky-400 font-black text-xs">
-              {waterGoal > 0 ? Math.round((currentWater / waterGoal) * 100) : 0}% Completed
-            </div>
-          </div>
-          <div className="w-full bg-[#181d29] border border-gray-850 h-2.5 rounded-full overflow-hidden">
-            <div 
-              className="bg-sky-500 h-full rounded-full transition-all duration-500 shadow-md shadow-sky-500/20"
-              style={{ width: `${Math.min(waterGoal > 0 ? (currentWater / waterGoal) * 100 : 0, 100)}%` }}
-            />
           </div>
         </Card>
 
-        {/* Workout Programsplits — READ ONLY */}
+        {/* Workout Program splits — READ ONLY */}
         <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
           <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
             <Dumbbell className="text-purple-400 w-4 h-4" /> Training Schedule
@@ -329,40 +315,70 @@ export default function ClientManagementPage() {
           {workoutDays.length === 0 ? (
             <p className="text-xs text-gray-500 italic text-center py-4">No workout splits assigned yet.</p>
           ) : (
-            <div className="space-y-3.5">
-              {workoutDays.map((day) => (
-                <div key={day.id} className="bg-[#181d29] p-4 rounded-xl border border-gray-850">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                      {day.day_name}
-                    </h3>
-                    <span className="text-[9px] bg-purple-950/60 border border-purple-800/30 text-purple-400 px-2 py-0.5 rounded font-black uppercase">
-                      DAY {day.day_number}
-                    </span>
-                  </div>
+            <div className="space-y-4">
+              {workoutDays.map((day) => {
+                // Extract split key to find day-specific macros
+                const splitKey = day.day_name.replace(' Day', '').toUpperCase();
+                const dayNutrition = client.user?.targets?.day_nutrition?.[splitKey] || {
+                  kcal: client.user?.targets?.kcal,
+                  protein: client.user?.targets?.protein,
+                  carbs: client.user?.targets?.carbs,
+                  fat: client.user?.targets?.fat
+                };
 
-                  <div className="space-y-2">
-                    {(!day.exercises || day.exercises.length === 0) ? (
-                      <p className="text-[10px] text-gray-500 italic">No exercises added to this split.</p>
-                    ) : (
-                      day.exercises.map((ex: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center text-xs bg-[#121620]/60 border border-gray-850/40 p-2.5 rounded-lg">
-                          <div>
-                            <p className="text-gray-200 font-bold">{ex.name}</p>
-                            {ex.muscle_group && (
-                              <p className="text-[9px] text-gray-500 font-medium mt-0.5 uppercase tracking-wide">{ex.muscle_group}</p>
-                            )}
-                          </div>
-                          <span className="font-mono text-gray-400 text-[10px] bg-gray-900 border border-gray-850 px-2 py-1 rounded">
-                            {ex.sets} sets × {ex.reps_min || 8}-{ex.reps_max || 12} reps
+                return (
+                  <div key={day.id} className="bg-[#181d29] p-4 rounded-xl border border-gray-850/80 shadow-inner">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-3 border-b border-gray-850/60 pb-3">
+                      <div>
+                        <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-purple-500" />
+                          {day.day_name}
+                        </h3>
+                        {/* Day Macros Display */}
+                        <div className="mt-1.5 flex flex-wrap gap-1.5 text-[9px] text-gray-400">
+                          <span className="bg-blue-950/40 border border-blue-900/30 px-1.5 py-0.5 rounded text-blue-300 font-bold">
+                            {dayNutrition.kcal || '—'} kcal
+                          </span>
+                          <span className="bg-emerald-950/40 border border-emerald-900/30 px-1.5 py-0.5 rounded text-emerald-300 font-bold">
+                            {dayNutrition.protein || '—'}g P
+                          </span>
+                          <span className="bg-amber-950/40 border border-amber-900/30 px-1.5 py-0.5 rounded text-amber-300 font-bold">
+                            {dayNutrition.carbs || '—'}g C
+                          </span>
+                          <span className="bg-red-950/40 border border-red-900/30 px-1.5 py-0.5 rounded text-red-300 font-bold">
+                            {dayNutrition.fat || '—'}g F
                           </span>
                         </div>
-                      ))
-                    )}
+                      </div>
+                      <span className="text-[9px] bg-purple-950/60 border border-purple-800/30 text-purple-400 px-2 py-0.5 rounded font-black uppercase shrink-0">
+                        DAY {day.day_number}
+                      </span>
+                    </div>
+
+                    {/* Exercises List */}
+                    <div className="space-y-2">
+                      {(!day.exercises || day.exercises.length === 0) ? (
+                        <p className="text-[10px] text-gray-500 italic">No exercises added to this split.</p>
+                      ) : (
+                        day.exercises.map((ex: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center text-xs bg-[#121620]/60 border border-gray-850/40 p-2.5 rounded-lg hover:border-gray-800 transition-colors">
+                            <div>
+                              <p className="text-gray-200 font-bold">{ex.name}</p>
+                              {ex.muscle_group && (
+                                <p className="text-[9px] text-gray-500 font-semibold mt-0.5 uppercase tracking-wide">{ex.muscle_group}</p>
+                              )}
+                            </div>
+                            <span className="font-mono text-gray-400 text-[10px] bg-gray-900 border border-gray-850 px-2 py-1 rounded">
+                              {ex.sets} sets × {ex.reps_min || 8}-{ex.reps_max || 12} reps
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
