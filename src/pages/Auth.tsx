@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Dumbbell, AlertCircle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import LegalModal from '../components/LegalModals';
 
 interface AuthProps {
   onSessionConfigured: (session: any) => void;
@@ -15,9 +16,15 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [modalType, setModalType] = useState<'privacy' | 'terms' | 'cookies' | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!legalAccepted) {
+      toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
+      return;
+    }
     setLoading(true);
     setErrorMsg(null);
 
@@ -162,10 +169,31 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
               )}
             </AnimatePresence>
 
+            {/* Legal Checkbox */}
+            <div className="flex items-start gap-2.5 pt-1.5 pb-1 select-none text-left">
+              <input 
+                type="checkbox" 
+                id="legal-accept-auth"
+                checked={legalAccepted} 
+                onChange={e => setLegalAccepted(e.target.checked)} 
+                className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
+              />
+              <label htmlFor="legal-accept-auth" className="text-[10px] text-gray-400 leading-normal">
+                I agree to the{' '}
+                <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                  Terms of Service
+                </button>{' '}
+                and{' '}
+                <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                  Privacy Policy
+                </button>
+              </label>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-2 text-sm flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -185,6 +213,17 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
           <p className="font-semibold text-gray-400 mt-1">haleem@example.com / athletepassword123</p>
         </div>
       </div>
+
+      {/* Render Legal Documents inside Modals */}
+      <AnimatePresence>
+        {modalType && (
+          <LegalModal
+            isOpen={!!modalType}
+            onClose={() => setModalType(null)}
+            type={modalType}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

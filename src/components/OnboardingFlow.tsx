@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SplashOverlay } from './SplashOverlay';
+import LegalModal from './LegalModals';
 
 interface OnboardingFlowProps {
   initialStep?: number;
@@ -86,6 +87,8 @@ export default function OnboardingFlow({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [modalType, setModalType] = useState<'privacy' | 'terms' | 'cookies' | null>(null);
 
   // Step 2: Workouts split states with embedded baseline exercises
   const [splits, setSplits] = useState<SplitItem[]>([
@@ -359,6 +362,10 @@ export default function OnboardingFlow({
   // Sign In handler — goes directly to the app, no onboarding
   const handleSignInAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!legalAccepted) {
+      toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
+      return;
+    }
     setLoading(true);
     try {
       const finalEmail = email.includes('@') ? email : `${email.trim().toLowerCase()}@stride.fit`;
@@ -769,9 +776,30 @@ export default function OnboardingFlow({
                         </button>
                       </div>
                     </div>
+                    {/* Legal Checkbox */}
+                    <div className="flex items-start gap-2.5 pt-1.5 pb-1 select-none">
+                      <input 
+                        type="checkbox" 
+                        id="legal-accept-onboarding"
+                        checked={legalAccepted} 
+                        onChange={e => setLegalAccepted(e.target.checked)} 
+                        className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
+                      />
+                      <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
+                        I agree to the{' '}
+                        <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                          Terms of Service
+                        </button>{' '}
+                        and{' '}
+                        <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                          Privacy Policy
+                        </button>
+                      </label>
+                    </div>
+
                     <button 
                       type="submit" disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-2"
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-1"
                     >
                       {loading ? 'Signing In...' : 'Sign In'}
                     </button>
@@ -1199,6 +1227,16 @@ export default function OnboardingFlow({
         hideText={true} 
       />
 
+      {/* Render Legal Documents inside Modals */}
+      <AnimatePresence>
+        {modalType && (
+          <LegalModal
+            isOpen={!!modalType}
+            onClose={() => setModalType(null)}
+            type={modalType}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

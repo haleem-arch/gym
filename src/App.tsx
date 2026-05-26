@@ -29,6 +29,7 @@ import ClientsListPage from './pages/coach/ClientsListPage';
 import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
 import OnboardingFlow from './components/OnboardingFlow';
+import CookieConsent from './components/CookieConsent';
 
 const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody', '/ai'];
 
@@ -272,25 +273,32 @@ function App() {
 
   if (!session) {
     return (
-      <OnboardingFlow 
-        initialStep={1} 
-        onSessionConfigured={setSession} 
-      />
+      <>
+        <CookieConsent />
+        <OnboardingFlow 
+          initialStep={1} 
+          onSessionConfigured={setSession} 
+        />
+      </>
     );
   }
 
   if (needsOnboarding) {
     return (
-      <OnboardingFlow 
-        initialStep={2} 
-        onSessionConfigured={setSession} 
-        onComplete={() => setNeedsOnboarding(false)} 
-      />
+      <>
+        <CookieConsent />
+        <OnboardingFlow 
+          initialStep={2} 
+          onSessionConfigured={setSession} 
+          onComplete={() => setNeedsOnboarding(false)} 
+        />
+      </>
     );
   }
 
   return (
     <Router>
+      <CookieConsent />
       <AppContent />
       {showWelcomeSplash && (
         <SplashOverlay
