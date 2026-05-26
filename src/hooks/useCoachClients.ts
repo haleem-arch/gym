@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useEffect, useState } from 'react';
 
 export const useCoachClients = () => {
@@ -7,7 +7,7 @@ export const useCoachClients = () => {
 
   const fetchClients = async () => {
     setLoading(true);
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('client_profiles')
       .select(`
         *,

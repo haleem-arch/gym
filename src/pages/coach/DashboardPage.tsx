@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { GymReceipt } from '../../components/GymReceipt';
 import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
@@ -17,8 +17,8 @@ const getLocalDateString = (d: Date = new Date()) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 };
 
-// Use admin client for coach writes (bypasses RLS for cross-user operations)
-const db = supabaseAdmin;
+// Use secure authenticated client for coach writes
+const db = supabase;
 
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;

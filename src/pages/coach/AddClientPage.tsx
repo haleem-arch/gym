@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -389,7 +389,8 @@ export default function AddClientPage() {
     setLoading(true);
 
     try {
-      const { data: { user: coachUser } } = await supabase.auth.getUser();
+      const { data: { session: coachSession } } = await supabase.auth.getSession();
+      const coachUser = coachSession?.user;
       if (!coachUser) throw new Error('COACH AUTH REQUIRED');
 
       // Calculate next client code
@@ -397,7 +398,7 @@ export default function AddClientPage() {
       
       if (isNaN(nextClientCode)) {
         // Fall back to auto-calculation if not provided
-        const { data: existingProfiles } = await supabaseAdmin
+        const { data: existingProfiles } = await supabase
           .from('profiles')
           .select('targets')
           .eq('role', 'client');
@@ -415,7 +416,7 @@ export default function AddClientPage() {
         }
       } else {
         // Verify custom code is unique
-        const { data: duplicateCheck } = await supabaseAdmin
+        const { data: duplicateCheck } = await supabase
           .from('profiles')
           .select('id')
           .eq('role', 'client')
@@ -429,21 +430,30 @@ export default function AddClientPage() {
 
       const virtualEmail = `${formData.username.trim().toLowerCase()}@stride.fit`;
 
-      // 1. Provision new Supabase Auth Client
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: virtualEmail,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
+      // 1. Provision new Supabase Auth Client via Vercel Secure API Endpoint
+      const createRes = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${coachSession.access_token}`
+        },
+        body: JSON.stringify({
+          email: virtualEmail,
+          password: formData.password,
           display_name: formData.displayName,
           gender: gender
-        }
+        })
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to generate user account');
+      if (!createRes.ok) {
+        const errData = await createRes.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to generate user account');
+      }
 
-      const clientUserId = authData.user.id;
+      const { user: createdAuthUser } = await createRes.json();
+      if (!createdAuthUser) throw new Error('Failed to generate user account');
+
+      const clientUserId = createdAuthUser.id;
 
       // 2. Build profile targets JSONB
       const dayNutritionMap: Record<string, any> = {};
@@ -470,7 +480,7 @@ export default function AddClientPage() {
       };
 
       // 3. Insert public.profiles
-      const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').insert({
         id: clientUserId,
         username: formData.username.trim().toLowerCase(),
         email: virtualEmail,
@@ -483,7 +493,7 @@ export default function AddClientPage() {
       if (profileError) throw profileError;
 
       // 4. Insert public.client_profiles
-      const { error: clientProfileError } = await supabaseAdmin.from('client_profiles').insert({
+      const { error: clientProfileError } = await supabase.from('client_profiles').insert({
         user_id: clientUserId,
         coach_id: coachUser.id,
         age: parseInt(formData.age) || null,
@@ -503,7 +513,7 @@ export default function AddClientPage() {
           ...scan,
           user_id: clientUserId
         }));
-        await supabaseAdmin.from('inbody_scans').insert(scansToInsert);
+        await supabase.from('inbody_scans').insert(scansToInsert);
       } else {
         const weightVal = parseFloat(weight);
         if (!isNaN(weightVal) && weightVal > 0) {
@@ -511,7 +521,7 @@ export default function AddClientPage() {
           const smmVal = parseFloat(smm) || 0;
           const bfmVal = parseFloat(bfm) || 0;
 
-          await supabaseAdmin.from('inbody_scans').insert({
+          await supabase.from('inbody_scans').insert({
             user_id: clientUserId,
             date: new Date().toISOString().split('T')[0],
             weight: weightVal,
@@ -545,7 +555,7 @@ export default function AddClientPage() {
           rest: ex.rest || 120
         }));
         
-        return supabaseAdmin
+        return supabase
           .from('user_workout_plans')
           .upsert({
             user_id: clientUserId,
@@ -565,7 +575,7 @@ export default function AddClientPage() {
           rest: ex.rest || 120
         }));
 
-        return supabaseAdmin
+        return supabase
           .from('client_workout_days')
           .insert({
             user_id: clientUserId,

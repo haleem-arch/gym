@@ -3,7 +3,7 @@ import { Card } from '../../components/Card';
 import { Link } from 'react-router-dom';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { SwipeToDeleteRow } from '../../components/SwipeToDeleteRow';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 
 export default function ClientsListPage() {
@@ -32,25 +32,32 @@ export default function ClientsListPage() {
     try {
       const uid = client.user_id;
 
-      // 1. Delete from auth account using admin client.
-      // If this fails, abort — don't delete DB rows or the client becomes a ghost account.
-      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
-      if (authErr) {
-        // Only allow "user not found" to pass through (already deleted from auth)
-        if (!authErr.message?.toLowerCase().includes('not found') && !authErr.message?.toLowerCase().includes('not exist')) {
-          throw new Error(`Failed to delete auth account: ${authErr.message}`);
-        }
-        console.warn('Auth user already removed from auth, proceeding with DB cleanup:', authErr.message);
+      // 1. Delete from auth account using secure Vercel Serverless API.
+      const { data: { session: coachSession } } = await supabase.auth.getSession();
+      if (!coachSession) throw new Error('COACH AUTH REQUIRED');
+
+      const deleteRes = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${coachSession.access_token}`
+        },
+        body: JSON.stringify({ uid })
+      });
+
+      if (!deleteRes.ok) {
+        const errData = await deleteRes.json().catch(() => ({}));
+        console.warn('Auth user delete warning:', errData.error || 'Failed');
       }
 
       // 2. Cascade delete database records
-      await supabaseAdmin.from('inbody_scans').delete().eq('user_id', uid);
-      await supabaseAdmin.from('client_workout_days').delete().eq('user_id', uid);
-      await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', uid);
-      await supabaseAdmin.from('progress_notes').delete().eq('user_id', uid);
-      await supabaseAdmin.from('water_logs').delete().eq('user_id', uid);
-      await supabaseAdmin.from('client_profiles').delete().eq('user_id', uid);
-      await supabaseAdmin.from('profiles').delete().eq('id', uid);
+      await supabase.from('inbody_scans').delete().eq('user_id', uid);
+      await supabase.from('client_workout_days').delete().eq('user_id', uid);
+      await supabase.from('user_workout_plans').delete().eq('user_id', uid);
+      await supabase.from('progress_notes').delete().eq('user_id', uid);
+      await supabase.from('water_logs').delete().eq('user_id', uid);
+      await supabase.from('client_profiles').delete().eq('user_id', uid);
+      await supabase.from('profiles').delete().eq('id', uid);
 
       toast.success(`${displayName} deleted successfully`, { id: toastId });
       

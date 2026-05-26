@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -75,7 +75,7 @@ export default function ClientManagementPage() {
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
-      const { data: clientProfile, error: profileErr } = await supabaseAdmin
+      const { data: clientProfile, error: profileErr } = await supabase
         .from('client_profiles')
         .select(`
           *,
@@ -99,7 +99,7 @@ export default function ClientManagementPage() {
       setAiQuotaInput(limit);
 
       // Fetch latest weight from scans
-      const { data: scans } = await supabaseAdmin
+      const { data: scans } = await supabase
         .from('inbody_scans')
         .select('weight')
         .eq('user_id', clientId)
@@ -113,7 +113,7 @@ export default function ClientManagementPage() {
       }
 
       // Fetch workout plans from user_workout_plans (written by DashboardPage / coach hub)
-      const { data: plans } = await supabaseAdmin
+      const { data: plans } = await supabase
         .from('user_workout_plans')
         .select('*')
         .eq('user_id', clientId)
@@ -150,13 +150,27 @@ export default function ClientManagementPage() {
 
     setUpdatingPassword(true);
     try {
-      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(
-        client.user_id,
-        { password: newPassword.trim() }
-      );
-      if (authErr) throw authErr;
+      const { data: { session: coachSession } } = await supabase.auth.getSession();
+      if (!coachSession) throw new Error('COACH AUTH REQUIRED');
 
-      const { error: dbErr } = await supabaseAdmin
+      const updateRes = await fetch('/api/update-user-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${coachSession.access_token}`
+        },
+        body: JSON.stringify({
+          uid: client.user_id,
+          password: newPassword.trim()
+        })
+      });
+
+      if (!updateRes.ok) {
+        const errData = await updateRes.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update client password');
+      }
+
+      const { error: dbErr } = await supabase
         .from('client_profiles')
         .update({ generated_passcode: newPassword.trim() })
         .eq('user_id', client.user_id);
@@ -187,7 +201,7 @@ export default function ClientManagementPage() {
         ai_quota_limit: aiQuotaInput
       };
 
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('profiles')
         .update({ targets: updatedTargets })
         .eq('id', client.user_id);
@@ -220,24 +234,37 @@ export default function ClientManagementPage() {
     try {
       const uid = client.user_id;
 
-      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
-      if (authErr) {
-        console.warn('Auth user delete warning:', authErr);
+      const { data: { session: coachSession } } = await supabase.auth.getSession();
+      if (!coachSession) throw new Error('COACH AUTH REQUIRED');
+
+      const deleteRes = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${coachSession.access_token}`
+        },
+        body: JSON.stringify({ uid })
+      });
+
+      if (!deleteRes.ok) {
+        const errData = await deleteRes.json().catch(() => ({}));
+        console.warn('Auth user delete warning:', errData.error || 'Failed');
       }
 
-      await supabaseAdmin.from('inbody_scans').delete().eq('user_id', uid);
-      await supabaseAdmin.from('client_workout_days').delete().eq('user_id', uid);
-      await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', uid);
-      await supabaseAdmin.from('progress_notes').delete().eq('user_id', uid);
-      await supabaseAdmin.from('water_logs').delete().eq('user_id', uid);
-      await supabaseAdmin.from('client_profiles').delete().eq('user_id', uid);
-      await supabaseAdmin.from('profiles').delete().eq('id', uid);
+      await supabase.from('inbody_scans').delete().eq('user_id', uid);
+      await supabase.from('client_workout_days').delete().eq('user_id', uid);
+      await supabase.from('user_workout_plans').delete().eq('user_id', uid);
+      await supabase.from('progress_notes').delete().eq('user_id', uid);
+      await supabase.from('water_logs').delete().eq('user_id', uid);
+      await supabase.from('client_profiles').delete().eq('user_id', uid);
+      await supabase.from('profiles').delete().eq('id', uid);
 
       toast.success('Client deleted successfully');
       navigate('/coach/clients');
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to delete client account');
+    } finally {
       setDeleting(false);
     }
   };
@@ -662,7 +689,7 @@ function InBodyHistory({ clientId }: any) {
 
   useEffect(() => {
     const fetchScans = async () => {
-      const { data } = await supabaseAdmin
+      const { data } = await supabase
         .from('inbody_scans')
         .select('*')
         .eq('user_id', clientId)
@@ -789,7 +816,7 @@ function ProgressNotes({ clientId, coachId }: any) {
 
   useEffect(() => {
     const fetchNotes = async () => {
-      const { data } = await supabaseAdmin
+      const { data } = await supabase
         .from('progress_notes')
         .select('*')
         .eq('user_id', clientId)
@@ -804,7 +831,7 @@ function ProgressNotes({ clientId, coachId }: any) {
     if (!newNote.trim()) return;
     setAdding(true);
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('progress_notes')
       .insert({
         user_id: clientId,
@@ -817,7 +844,7 @@ function ProgressNotes({ clientId, coachId }: any) {
     if (!error) {
       setNewNote('');
       toast.success('Progress note saved');
-      const { data } = await supabaseAdmin
+      const { data } = await supabase
         .from('progress_notes')
         .select('*')
         .eq('user_id', clientId)

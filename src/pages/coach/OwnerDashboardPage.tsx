@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import {
   Lock, ArrowLeft, RefreshCw, ShieldAlert, Sparkle
@@ -37,20 +37,20 @@ export default function OwnerDashboardPage() {
       }
 
       // Fetch Haleem's toggles
-      const { data: ownerProfile } = await supabaseAdmin.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       if (ownerProfile?.targets) {
         setDisableWorkoutTemplatesToggle(!!ownerProfile.targets.disable_workout_templates);
         setDisableNutritionTargetsToggle(!!ownerProfile.targets.disable_nutrition_targets);
       }
 
       // Fetch all client profiles (for ages)
-      const { data: cProfs } = await supabaseAdmin.from('client_profiles').select('*');
+      const { data: cProfs } = await supabase.from('client_profiles').select('*');
       if (cProfs) {
         setClientProfiles(cProfs);
       }
 
       // Fetch profiles
-      const { data: userProfiles } = await supabaseAdmin.from('profiles').select('*').order('display_name');
+      const { data: userProfiles } = await supabase.from('profiles').select('*').order('display_name');
       if (userProfiles) {
         setProfiles(userProfiles);
       }
@@ -85,12 +85,12 @@ export default function OwnerDashboardPage() {
 
   const handleToggleWorkoutTemplates = async (checked: boolean) => {
     try {
-      const { data: ownerProfile } = await supabaseAdmin.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       const updatedTargets = {
         ...(ownerProfile?.targets || {}),
         disable_workout_templates: checked
       };
-      const { error } = await supabaseAdmin.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+      const { error } = await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
       if (error) throw error;
       setDisableWorkoutTemplatesToggle(checked);
       toast.success(checked ? 'Workout templates hidden for clients!' : 'Workout templates enabled for clients!');
@@ -101,12 +101,12 @@ export default function OwnerDashboardPage() {
 
   const handleToggleNutritionTargets = async (checked: boolean) => {
     try {
-      const { data: ownerProfile } = await supabaseAdmin.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       const updatedTargets = {
         ...(ownerProfile?.targets || {}),
         disable_nutrition_targets: checked
       };
-      const { error } = await supabaseAdmin.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+      const { error } = await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
       if (error) throw error;
       setDisableNutritionTargetsToggle(checked);
       toast.success(checked ? 'Nutrition targets settings hidden for clients!' : 'Nutrition targets settings enabled for clients!');
