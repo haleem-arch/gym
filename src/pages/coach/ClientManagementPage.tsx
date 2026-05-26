@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -44,6 +44,31 @@ export default function ClientManagementPage() {
     }
   }, [clientId]);
 
+  // ─── REAL-TIME SUBSCRIPTION ───────────────────────────────
+  useEffect(() => {
+    if (!clientId) return;
+
+    const channel = supabase
+      .channel(`client-mgmt-${clientId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans', filter: `user_id=eq.${clientId}` }, () => {
+        fetchClientDetails();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${clientId}` }, () => {
+        fetchClientDetails();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_profiles', filter: `user_id=eq.${clientId}` }, () => {
+        fetchClientDetails();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inbody_scans', filter: `user_id=eq.${clientId}` }, () => {
+        fetchClientDetails();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clientId]);
+
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
@@ -79,14 +104,27 @@ export default function ClientManagementPage() {
         setLatestWeight(null);
       }
 
-      // Fetch workout day plans
-      const { data: days } = await supabaseAdmin
-        .from('client_workout_days')
+      // Fetch workout plans from user_workout_plans (written by DashboardPage / coach hub)
+      const { data: plans } = await supabaseAdmin
+        .from('user_workout_plans')
         .select('*')
         .eq('user_id', clientId)
-        .order('day_number', { ascending: true });
+        .order('created_at', { ascending: true });
 
-      setWorkoutDays(days || []);
+      // Normalise to the shape the UI expects
+      const normalisedDays = (plans || []).map((p: any, idx: number) => ({
+        id: p.id,
+        day_number: idx + 1,
+        day_name: p.plan_type + ' Day',
+        exercises: (p.exercises || []).map((ex: any) => ({
+          ...ex,
+          reps_min: ex.reps_min ?? 8,
+          reps_max: ex.reps_max ?? 12,
+        })),
+        nutrition: p.nutrition || null,
+      }));
+
+      setWorkoutDays(normalisedDays);
     } catch (err: any) {
       console.error(err);
       toast.error('Failed to load client information.');
