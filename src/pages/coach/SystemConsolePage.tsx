@@ -95,7 +95,7 @@ export default function SystemConsolePage() {
     } catch (err) {
       console.error(err);
       setDbHealthy(false);
-      toast.error('Error loading admin data');
+      toast.error('Unable to load console statistics. Please check your connection.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,7 +116,7 @@ export default function SystemConsolePage() {
       toast.success('Welcome Owner Haleem! 👑');
     } else {
       setShake(true);
-      toast.error('Wrong passcode');
+      toast.error('Access denied. Incorrect passcode.');
       setPasscode('');
       setTimeout(() => setShake(false), 600);
     }
@@ -134,7 +134,8 @@ export default function SystemConsolePage() {
       setDisableWorkoutTemplatesToggle(checked);
       toast.success(checked ? 'Workout templates hidden for clients!' : 'Workout templates enabled for clients!');
     } catch (err: any) {
-      toast.error('Failed to update: ' + err.message);
+      console.error(err);
+      toast.error('Unable to save changes. Please try again.');
     }
   };
 
@@ -150,7 +151,8 @@ export default function SystemConsolePage() {
       setDisableNutritionTargetsToggle(checked);
       toast.success(checked ? 'Nutrition targets settings hidden for clients!' : 'Nutrition targets settings enabled for clients!');
     } catch (err: any) {
-      toast.error('Failed to update: ' + err.message);
+      console.error(err);
+      toast.error('Unable to save changes. Please try again.');
     }
   };
 
@@ -201,7 +203,8 @@ export default function SystemConsolePage() {
       // Refresh list
       fetchBaseData();
     } catch (err: any) {
-      toast.error(err.message);
+      console.error(err);
+      toast.error('Failed to create coach account. Please verify username and details.');
     } finally {
       setIsCreatingCoach(false);
     }
@@ -261,7 +264,8 @@ export default function SystemConsolePage() {
       }
 
     } catch (err: any) {
-      toast.error(err.message);
+      console.error(err);
+      toast.error('Unable to update user status. Please try again.');
     }
   };
 
@@ -293,7 +297,8 @@ export default function SystemConsolePage() {
       toast.success('User password changed successfully!');
       setNewPasswordForSelected('');
     } catch (err: any) {
-      toast.error(err.message);
+      console.error(err);
+      toast.error('Failed to update password. Please check your connection.');
     } finally {
       setIsUpdatingPassword(false);
     }

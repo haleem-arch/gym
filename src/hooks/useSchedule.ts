@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
 
 // Helper to get Monday of the week for a given date
 const getWeekStart = (dateStr: string) => {
@@ -17,25 +18,37 @@ export const useSchedule = (activeDateStr: string) => {
   const loadSchedule = useCallback(async () => {
     if (!activeDateStr) return;
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
-    const weekStart = getWeekStart(activeDateStr);
+      const weekStart = getWeekStart(activeDateStr);
 
-    const { data } = await supabase
-      .from('schedules')
-      .select('days')
-      .eq('user_id', session.user.id)
-      .eq('week_start', weekStart)
-      .maybeSingle();
+      const { data, error } = await supabase
+        .from('schedules')
+        .select('days')
+        .eq('user_id', session.user.id)
+        .eq('week_start', weekStart)
+        .maybeSingle();
 
-    if (data && data.days && data.days[activeDateStr]) {
-      setDayType(data.days[activeDateStr]);
-    } else {
-      // Default fallback if nothing is scheduled
-      setDayType('PUSH'); 
+      if (error) throw error;
+
+      if (data && data.days && data.days[activeDateStr]) {
+        setDayType(data.days[activeDateStr]);
+      } else {
+        // Default fallback if nothing is scheduled
+        setDayType('PUSH'); 
+      }
+    } catch (err) {
+      console.error("Error loading schedule:", err);
+      toast.error('Unable to load schedule. Please check your connection.', { id: 'schedule-load-error' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [activeDateStr]);
 
   const updateDayType = async (newType: string) => {
@@ -44,29 +57,41 @@ export const useSchedule = (activeDateStr: string) => {
     // Broadcast event so other instances of useSchedule (like in useDiet) update instantly
     window.dispatchEvent(new CustomEvent('schedule_updated', { detail: newType }));
     
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const weekStart = getWeekStart(activeDateStr);
-
-    const { data } = await supabase
-      .from('schedules')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('week_start', weekStart)
-      .maybeSingle();
-
-    let newDays = data?.days || {};
-    newDays[activeDateStr] = newType;
-
-    if (data) {
-      await supabase.from('schedules').update({ days: newDays }).eq('id', data.id);
-    } else {
-      await supabase.from('schedules').insert({
-        user_id: session.user.id,
-        week_start: weekStart,
-        days: newDays
-      });
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session) return;
+ 
+      const weekStart = getWeekStart(activeDateStr);
+ 
+      const { data, error: selectError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('week_start', weekStart)
+        .maybeSingle();
+ 
+      if (selectError) throw selectError;
+ 
+      let newDays = data?.days || {};
+      newDays[activeDateStr] = newType;
+ 
+      let error;
+      if (data) {
+        const { error: updateError } = await supabase.from('schedules').update({ days: newDays }).eq('id', data.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase.from('schedules').insert({
+          user_id: session.user.id,
+          week_start: weekStart,
+          days: newDays
+        });
+        error = insertError;
+      }
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error updating schedule:", err);
+      toast.error('Unable to update schedule day type. Please try again.');
     }
   };
 

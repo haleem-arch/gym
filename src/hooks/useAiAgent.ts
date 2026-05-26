@@ -649,7 +649,8 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       const modelMsgId = crypto.randomUUID();
       setMessages(prev => [...prev, { id: modelMsgId, role: 'model', text: aiRes.reply }]);
     } catch (e: any) {
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: `Error: ${e.message}` }]);
+      console.error("AI Coach invisible query error:", e);
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: 'The AI Coach is temporarily offline for maintenance. Please check back shortly.' }]);
     } finally {
       setIsTyping(false);
     }
@@ -763,11 +764,21 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       }
 
     } catch (e: any) {
+      console.error("AI Coach query error:", e);
       const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
-      // Coaches see the real error; clients see a generic friendly message
-      const userFacingText = isRate
-        ? '⏱️ The AI is busy right now. Please wait a moment and try again.'
-        : (isCoachRef.current ? `Error: ${e.message}` : 'Something went wrong. Please try again later.');
+      const isQuotaOrKeyError = e.message?.includes('API_KEY') || e.message?.includes('key') || e.message?.includes('quota') || e.message?.includes('401') || e.message?.includes('403') || e.message?.includes('429');
+      
+      let userFacingText = 'The AI Coach is temporarily offline for maintenance. Please check back shortly!';
+      if (isRate) {
+        userFacingText = '⏱️ The AI is busy right now. Please wait a moment and try again.';
+      } else if (isQuotaOrKeyError) {
+        userFacingText = '🤖 The AI Coach has reached its daily training capacity. Please try again shortly or notify your coach!';
+      }
+      
+      if (isCoachRef.current) {
+        userFacingText = `🤖 AI Coach Status: Offline. (Reason: ${isRate ? 'Rate Limit' : (isQuotaOrKeyError ? 'API Quota Exceeded' : 'Service Connection Issue')})`;
+      }
+
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: 'model',

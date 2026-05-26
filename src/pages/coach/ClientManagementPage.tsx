@@ -181,7 +181,7 @@ export default function ClientManagementPage() {
       fetchClientDetails();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Failed to change client password');
+      toast.error('Unable to update client password. Please try again.');
     } finally {
       setUpdatingPassword(false);
     }
@@ -212,7 +212,7 @@ export default function ClientManagementPage() {
       fetchClientDetails();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Failed to update AI message quota.');
+      toast.error('Unable to update AI quota. Please try again.');
     } finally {
       setUpdatingQuota(false);
     }
@@ -263,7 +263,7 @@ export default function ClientManagementPage() {
       navigate('/coach/clients');
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Failed to delete client account');
+      toast.error('Unable to delete client account. Please check your connection.');
     } finally {
       setDeleting(false);
     }
@@ -851,7 +851,7 @@ function ProgressNotes({ clientId, coachId }: any) {
         .order('date', { ascending: false });
       setNotes(data || []);
     } else {
-      toast.error('Failed to save note');
+      toast.error('Unable to save coach note. Please try again.');
     }
     setAdding(false);
   };

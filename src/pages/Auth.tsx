@@ -181,8 +181,11 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
         toast.error(`Too many failed attempts. Locked out for 60 seconds.`);
       } else {
         localStorage.setItem(lockKey, JSON.stringify({ failedAttempts: newAttempts, lockedUntil: 0 }));
-        setErrorMsg(err.message || 'An error occurred during authentication.');
-        toast.error(`${err.message || 'Authentication failed.'} (${5 - newAttempts} attempts left)`);
+        const friendlyMsg = err.message?.toLowerCase().includes('credential') || err.message?.toLowerCase().includes('invalid')
+          ? 'Invalid email or password.'
+          : 'Unable to connect to service. Please try again.';
+        setErrorMsg(friendlyMsg);
+        toast.error(`${friendlyMsg} (${5 - newAttempts} attempts left)`);
       }
     } finally {
       setLoading(false);

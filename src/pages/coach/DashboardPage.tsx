@@ -213,7 +213,7 @@ export default function DashboardPage() {
       setScans(inbodyScans || []);
     } catch (err) {
       console.error(err);
-      toast.error('Error loading client data');
+      toast.error('Unable to load client data. Please check your connection.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -269,7 +269,7 @@ export default function DashboardPage() {
       toast.success('Welcome Coach! 💪');
     } else {
       setShake(true);
-      toast.error('Wrong passcode');
+      toast.error('Access denied. Incorrect passcode.');
       setPasscode('');
       setTimeout(() => setShake(false), 600);
     }
@@ -367,7 +367,10 @@ export default function DashboardPage() {
       setProfileTargets(upd);
       setEditingDayType(null);
       toast.success(`${editingDayType} day macros saved!`);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update targets. Please try again.');
+    }
   };
 
   // ─── SAVE WATER GOAL ─────────────────────────────────────
@@ -378,7 +381,10 @@ export default function DashboardPage() {
       if (error) throw error;
       setProfileTargets(upd);
       toast.success('Water goal updated!');
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update water goals. Please try again.');
+    }
   };
 
   // ─── ADD MEAL ────────────────────────────────────────────
@@ -415,7 +421,10 @@ export default function DashboardPage() {
       toast.success('Meal logged!');
       setNewMealName(''); setShowAddMealForm(false);
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error('Meal error: ' + err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to log meal. Please try again.');
+    }
   };
 
   // ─── DELETE MEAL ─────────────────────────────────────────
@@ -431,7 +440,10 @@ export default function DashboardPage() {
       if (dietLog) await db.from('diet_logs').update({ daily_totals: totals }).eq('id', dietLog.id);
       toast.success('Meal deleted');
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to remove meal. Please try again.');
+    }
   };
 
   // ─── WATER LOGS ──────────────────────────────────────────
@@ -448,19 +460,30 @@ export default function DashboardPage() {
       if (error) throw error;
       toast.success(`${newWaterAmount}ml logged for ${currentClient?.display_name}!`);
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error('Water error: ' + err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update water log. Please try again.');
+    }
   };
 
   const handleDeleteWater = async (id: string) => {
     const { error } = await db.from('water_logs').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      console.error(error);
+      toast.error('Unable to delete water log. Please try again.');
+      return;
+    }
     toast.success('Entry removed');
     fetchClientData(selectedUserId, activeDateStr, true);
   };
 
   const handleClearWater = async () => {
     const { error } = await db.from('water_logs').delete().eq('user_id', selectedUserId).eq('date', activeDateStr);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      console.error(error);
+      toast.error('Unable to clear water logs. Please try again.');
+      return;
+    }
     toast.success('Water logs cleared');
     fetchClientData(selectedUserId, activeDateStr, true);
   };
@@ -483,13 +506,20 @@ export default function DashboardPage() {
       toast.success('Scan saved!');
       setNewScanWeight(''); setNewScanSmm(''); setNewScanBfPercent(''); setShowAddScanForm(false);
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to save biometrics record. Please try again.');
+    }
   };
 
   const handleDeleteScan = async (id: string) => {
     if (!window.confirm('Delete this scan?')) return;
     const { error } = await db.from('inbody_scans').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      console.error(error);
+      toast.error('Unable to delete scan. Please try again.');
+      return;
+    }
     toast.success('Scan deleted');
     fetchClientData(selectedUserId, activeDateStr, true);
   };
@@ -595,7 +625,8 @@ export default function DashboardPage() {
       if (error) throw error;
       setWorkoutPlans(prev => prev.map(p => p.plan_type === planType ? { ...p, exercises: upd } : p));
     } catch (err: any) {
-      toast.error(err.message);
+      console.error(err);
+      toast.error('Unable to update exercise split. Please try again.');
     }
   };
 
@@ -614,7 +645,10 @@ export default function DashboardPage() {
       toast.success(`Added to ${planType}`);
       setSearchExerciseQuery('');
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to add exercise. Please try again.');
+    }
   };
 
   const handleRemoveExerciseFromSplit = async (planType: string, exId: string) => {
@@ -626,7 +660,10 @@ export default function DashboardPage() {
       if (error) throw error;
       toast.success('Exercise removed');
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to remove exercise. Please try again.');
+    }
   };
 
   const handleCreateSplitDay = async (e: React.FormEvent) => {
@@ -640,13 +677,20 @@ export default function DashboardPage() {
       toast.success(`${name} day created!`);
       setNewSplitDayName(''); setShowAddSplitForm(false);
       fetchClientData(selectedUserId, activeDateStr, true);
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to create split day. Please try again.');
+    }
   };
 
   const handleDeleteSplitDay = async (id: string) => {
     if (!window.confirm('Delete this split day? All exercises in it will be removed.')) return;
     const { error } = await db.from('user_workout_plans').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      console.error(error);
+      toast.error('Unable to delete split day. Please try again.');
+      return;
+    }
     toast.success('Split deleted');
     fetchClientData(selectedUserId, activeDateStr, true);
   };
@@ -664,7 +708,8 @@ export default function DashboardPage() {
       toast.success(`Renamed to ${newName}!`);
       fetchClientData(selectedUserId, activeDateStr, true);
     } catch (err: any) {
-      toast.error(err.message);
+      console.error(err);
+      toast.error('Unable to rename split day. Please try again.');
     }
   };
 

@@ -596,7 +596,7 @@ export default function AddClientPage() {
       toast.success(`Athlete deployed successfully! Handle: @${formData.username}`);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || 'Deployment protocol failed.');
+      toast.error('Unable to add client account. Please verify username is unique and try again.');
     } finally {
       setLoading(false);
     }

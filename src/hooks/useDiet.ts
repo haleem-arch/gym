@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
 import { useSchedule } from './useSchedule';
 import { DEFAULT_DAY_NUTRITION } from '../components/DietNutritionSettings';
 import type { MacroTarget } from '../components/DietNutritionSettings';
@@ -152,56 +153,65 @@ export const useDiet = () => {
 
   const loadDateData = useCallback(async () => {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setLoading(false);
-      return;
-    }
-
-    // 1. Fetch diet_log for active date
-    let { data: dietLog } = await supabase
-      .from('diet_logs')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('date', activeDateStr)
-      .maybeSingle();
-
-    if (dietLog) {
-      setLog(dietLog);
-      
-      // 2. Fetch meals for this log
-      const { data: mealsData, error: mealsError } = await supabase
-        .from('diet_meals')
-        .select('*')
-        .eq('diet_log_id', dietLog.id)
-        .order('created_at', { ascending: true });
-        
-      if (mealsError) console.error("Error fetching meals:", mealsError);
-      if (mealsData) {
-        setMeals(mealsData);
-        // We will now calculate water from waterLogs rather than dietLog.daily_totals.water
-        recalculateTotals(dietLog.id, mealsData, dietLog.daily_totals?.water || 0, dietLog.daily_totals?.completed);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session) {
+        setLoading(false);
+        return;
       }
-    } else {
-      setLog(null);
-      setMeals([]);
+
+      // 1. Fetch diet_log for active date
+      const { data: dietLog, error: dietError } = await supabase
+        .from('diet_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('date', activeDateStr)
+        .maybeSingle();
+
+      if (dietError) throw dietError;
+
+      if (dietLog) {
+        setLog(dietLog);
+        
+        // 2. Fetch meals for this log
+        const { data: mealsData, error: mealsError } = await supabase
+          .from('diet_meals')
+          .select('*')
+          .eq('diet_log_id', dietLog.id)
+          .order('created_at', { ascending: true });
+          
+        if (mealsError) throw mealsError;
+        if (mealsData) {
+          setMeals(mealsData);
+          recalculateTotals(dietLog.id, mealsData, dietLog.daily_totals?.water || 0, dietLog.daily_totals?.completed);
+        }
+      } else {
+        setLog(null);
+        setMeals([]);
+      }
+
+      // 3. Fetch water logs separately
+      const { data: waterData, error: waterError } = await supabase
+        .from('water_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('date', activeDateStr)
+        .order('time', { ascending: true });
+
+      if (waterError) throw waterError;
+
+      if (waterData) {
+        setWaterLogs(waterData);
+      } else {
+        setWaterLogs([]);
+      }
+    } catch (err) {
+      console.error("Error loading date data:", err);
+      toast.error('Unable to load nutrition data. Please check your connection.', { id: 'diet-load-error' });
+    } finally {
+      setLoading(false);
     }
-
-    // 3. Fetch water logs separately
-    const { data: waterData } = await supabase
-      .from('water_logs')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('date', activeDateStr)
-      .order('time', { ascending: true });
-
-    if (waterData) {
-      setWaterLogs(waterData);
-    } else {
-      setWaterLogs([]);
-    }
-
-    setLoading(false);
   }, [activeDateStr]);
 
   const startDay = async () => {

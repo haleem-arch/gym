@@ -65,7 +65,7 @@ export default function ClientsListPage() {
       refetch();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Failed to delete client', { id: toastId });
+      toast.error('Unable to delete client. Please check your connection.', { id: toastId });
     }
   };
 

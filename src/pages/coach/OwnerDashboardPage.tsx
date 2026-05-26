@@ -61,7 +61,7 @@ export default function OwnerDashboardPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error('Error loading admin data');
+      toast.error('Unable to load admin console details. Please check your connection.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -82,7 +82,7 @@ export default function OwnerDashboardPage() {
       toast.success('Welcome Owner Haleem! 👑');
     } else {
       setShake(true);
-      toast.error('Wrong passcode');
+      toast.error('Access denied. Incorrect passcode.');
       setPasscode('');
       setTimeout(() => setShake(false), 600);
     }
@@ -100,7 +100,8 @@ export default function OwnerDashboardPage() {
       setDisableWorkoutTemplatesToggle(checked);
       toast.success(checked ? 'Workout templates hidden for clients!' : 'Workout templates enabled for clients!');
     } catch (err: any) {
-      toast.error('Failed to update: ' + err.message);
+      console.error(err);
+      toast.error('Unable to save changes. Please try again.');
     }
   };
 
@@ -116,7 +117,8 @@ export default function OwnerDashboardPage() {
       setDisableNutritionTargetsToggle(checked);
       toast.success(checked ? 'Nutrition targets settings hidden for clients!' : 'Nutrition targets settings enabled for clients!');
     } catch (err: any) {
-      toast.error('Failed to update: ' + err.message);
+      console.error(err);
+      toast.error('Unable to save changes. Please try again.');
     }
   };
 
