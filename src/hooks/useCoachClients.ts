@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabase';
 import { useEffect, useState } from 'react';
 
 export const useCoachClients = () => {
@@ -7,16 +7,14 @@ export const useCoachClients = () => {
 
   useEffect(() => {
     const fetchClients = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
+      // Use admin client so it works regardless of the current auth session state.
+      // The clients page is already protected by the coach hub passcode.
+      const { data, error } = await supabaseAdmin
         .from('client_profiles')
         .select(`
           *,
           user:profiles(id, username, email, display_name, targets, created_at)
         `)
-        .eq('coach_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {

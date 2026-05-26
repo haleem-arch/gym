@@ -643,7 +643,7 @@ export default function AddClientPage() {
           <div className="flex gap-2 pt-2">
             <button
               onClick={() => {
-                const text = `Stride Fit Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nPassword: ${deployedData.password}`;
+                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nPassword: ${deployedData.password}`;
                 navigator.clipboard.writeText(text);
                 toast.success('Credentials copied to clipboard!');
               }}
