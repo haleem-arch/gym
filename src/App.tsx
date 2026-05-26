@@ -31,6 +31,24 @@ import ClientManagementPage from './pages/coach/ClientManagementPage';
 import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
 
+const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+
+const StravaGuard = ({ children }: { children: React.ReactNode }) => {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+      setChecking(false);
+    });
+  }, []);
+
+  if (checking) return null;
+  if (userId !== OWNER_ID) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
 const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody', '/ai'];
 
 const getTabIndex = (pathname: string) => {
@@ -138,7 +156,13 @@ const AppContent = () => {
               <Route path="/diet/food/new" element={<PageTransition direction={direction}><FoodCreator /></PageTransition>} />
               <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
               <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
-              <Route path="/strava" element={<PageTransition direction={direction}><StravaAnalyzer /></PageTransition>} />
+              <Route path="/strava" element={
+                <PageTransition direction={direction}>
+                  <StravaGuard>
+                    <StravaAnalyzer />
+                  </StravaGuard>
+                </PageTransition>
+              } />
               <Route path="/ai" element={<PageTransition direction={direction}><AiCoach /></PageTransition>} />
 
               {/* Coach Routes */}

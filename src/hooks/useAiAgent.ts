@@ -160,8 +160,15 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     const uid = session?.user?.id;
     if (!uid) return { limit: 20, count: 0, exceeded: false };
 
-    const { data: profile } = await supabase.from('profiles').select('targets').eq('id', uid).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('targets, role').eq('id', uid).maybeSingle();
     if (!profile) return { limit: 20, count: 0, exceeded: false };
+
+    // Coach bypasses AI limit
+    if (profile.role === 'coach') {
+      setQuotaLimit(Infinity);
+      setUsageCount(0);
+      return { limit: Infinity, count: 0, exceeded: false };
+    }
 
     const targets = profile.targets || {};
     const limit = typeof targets.ai_quota_limit === 'number' ? targets.ai_quota_limit : 20;
@@ -195,6 +202,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
           table: 'profiles',
           filter: `id=eq.${uid}`
         }, (payload: any) => {
+          const isCoach = payload.new?.role === 'coach';
+          if (isCoach) {
+            setQuotaLimit(Infinity);
+            setUsageCount(0);
+            return;
+          }
+
           const targets = payload.new?.targets || {};
           const limit = typeof targets.ai_quota_limit === 'number' ? targets.ai_quota_limit : 20;
           const usage = targets.ai_usage || { date: '', count: 0 };

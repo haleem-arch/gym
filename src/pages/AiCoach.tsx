@@ -163,7 +163,7 @@ const AiCoach = () => {
             <h1 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
               AI Coach
               <span className="text-[9px] bg-blue-500/15 border border-blue-500/30 text-blue-400 px-2 py-0.5 rounded-full font-black select-none tracking-normal">
-                ⚡ {usageCount}/{quotaLimit}
+                ⚡ {quotaLimit === Infinity ? '∞' : `${usageCount}/${quotaLimit}`}
               </span>
             </h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">

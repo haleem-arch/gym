@@ -13,6 +13,20 @@ const DietHome = () => {
   const navigate = useNavigate();
   const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, allDayTypes, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater, waterGoalMl } = useDiet();
   const [showSettings, setShowSettings] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [disableNutritionTargets, setDisableNutritionTargets] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle().then(({ data }) => {
+      if (data?.targets) {
+        setDisableNutritionTargets(!!data.targets.disable_nutrition_targets);
+      }
+    });
+  }, []);
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
   const WATER_GOAL_ML = waterGoalMl || 3500; // Dynamic Water Goal
@@ -81,13 +95,15 @@ const DietHome = () => {
             <Utensils size={14} />
             MY FOODS
           </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-9 h-9 bg-surface border border-gray-700 rounded-lg flex items-center justify-center text-gray-300 active:scale-95 transition-transform shadow-md"
-            title="Nutrition Targets"
-          >
-            <SlidersHorizontal size={16} />
-          </button>
+          {(userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-9 h-9 bg-surface border border-gray-700 rounded-lg flex items-center justify-center text-gray-300 active:scale-95 transition-transform shadow-md"
+              title="Nutrition Targets"
+            >
+              <SlidersHorizontal size={16} />
+            </button>
+          )}
         </div>
       </motion.div>
 

@@ -137,10 +137,35 @@ export default function DashboardPage() {
   // Split inputs
   const [newSplitDayName, setNewSplitDayName] = useState('');
 
+  // Owner dashboard state
+  const [coachUserId, setCoachUserId] = useState<string | null>(null);
+  const [clientProfiles, setClientProfiles] = useState<any[]>([]);
+  const [disableWorkoutTemplatesToggle, setDisableWorkoutTemplatesToggle] = useState(false);
+  const [disableNutritionTargetsToggle, setDisableNutritionTargetsToggle] = useState(false);
+
   // ─── BASE DATA FETCH ────────────────────────────────────
   useEffect(() => {
     if (!isAuthed) return;
     const fetchBase = async () => {
+      // Fetch coach's auth ID
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setCoachUserId(session.user.id);
+      }
+
+      // Fetch Haleem's toggles
+      const { data: ownerProfile } = await db.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      if (ownerProfile?.targets) {
+        setDisableWorkoutTemplatesToggle(!!ownerProfile.targets.disable_workout_templates);
+        setDisableNutritionTargetsToggle(!!ownerProfile.targets.disable_nutrition_targets);
+      }
+
+      // Fetch registered client profiles (for age parsing)
+      const { data: cProfs } = await db.from('client_profiles').select('*');
+      if (cProfs) {
+        setClientProfiles(cProfs);
+      }
+
       const { data: userProfiles } = await db.from('profiles').select('*').order('display_name');
       if (userProfiles) {
         setProfiles(userProfiles);
@@ -248,6 +273,39 @@ export default function DashboardPage() {
       supabase.removeChannel(channel);
     };
   }, [isAuthed, selectedUserId, activeDateStr]);
+
+  // ─── TOGGLE HANDLERS ─────────────────────────────────────
+  const handleToggleWorkoutTemplates = async (checked: boolean) => {
+    try {
+      const { data: ownerProfile } = await db.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const updatedTargets = {
+        ...(ownerProfile?.targets || {}),
+        disable_workout_templates: checked
+      };
+      const { error } = await db.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+      if (error) throw error;
+      setDisableWorkoutTemplatesToggle(checked);
+      toast.success(checked ? 'Workout templates hidden for clients!' : 'Workout templates enabled for clients!');
+    } catch (err: any) {
+      toast.error('Failed to update: ' + err.message);
+    }
+  };
+
+  const handleToggleNutritionTargets = async (checked: boolean) => {
+    try {
+      const { data: ownerProfile } = await db.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const updatedTargets = {
+        ...(ownerProfile?.targets || {}),
+        disable_nutrition_targets: checked
+      };
+      const { error } = await db.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+      if (error) throw error;
+      setDisableNutritionTargetsToggle(checked);
+      toast.success(checked ? 'Nutrition targets settings hidden for clients!' : 'Nutrition targets settings enabled for clients!');
+    } catch (err: any) {
+      toast.error('Failed to update: ' + err.message);
+    }
+  };
 
   // ─── AUTH ────────────────────────────────────────────────
   const handleUnlock = (e: React.FormEvent) => {
@@ -796,6 +854,140 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* ── OWNER PERSONAL DASHBOARD ── */}
+      {coachUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' && (
+        <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-5 shadow-2xl relative overflow-hidden">
+          {/* Glassmorphic border effect */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+          
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
+              👑 Owner Console <span className="text-gray-600 font-mono text-[9px]">(Haleem)</span>
+            </h2>
+            <span className="bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+              System Admin
+            </span>
+          </div>
+
+          {/* Metrics grid */}
+          {(() => {
+            // Count registered clients (exclude coach)
+            const clientUsers = profiles.filter(p => p.role === 'client');
+            const totalClients = clientUsers.length;
+
+            // Males vs Females
+            const males = clientUsers.filter(p => p.targets?.gender?.toLowerCase() === 'male');
+            const females = clientUsers.filter(p => p.targets?.gender?.toLowerCase() === 'female');
+
+            const maleIds = males.map(p => p.id);
+            const femaleIds = females.map(p => p.id);
+
+            // Fetch ages from clientProfiles state
+            const maleAges = clientProfiles.filter(cp => maleIds.includes(cp.user_id) && cp.age).map(cp => cp.age);
+            const femaleAges = clientProfiles.filter(cp => femaleIds.includes(cp.user_id) && cp.age).map(cp => cp.age);
+
+            const avgMaleAge = maleAges.length > 0 ? (maleAges.reduce((a, b) => a + b, 0) / maleAges.length).toFixed(1) : 'N/A';
+            const avgFemaleAge = femaleAges.length > 0 ? (femaleAges.reduce((a, b) => a + b, 0) / femaleAges.length).toFixed(1) : 'N/A';
+
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#11162a]/90 border border-gray-800/80 rounded-2xl p-3.5 flex flex-col gap-1 shadow-inner">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Total Clients</p>
+                    <p className="text-xl font-black text-white">{totalClients}</p>
+                  </div>
+                  <div className="bg-[#11162a]/90 border border-gray-800/80 rounded-2xl p-3.5 flex flex-col gap-1 shadow-inner">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Gender Ratio</p>
+                    <p className="text-xs font-extrabold text-white flex items-center gap-1.5 mt-1">
+                      <span>♂️ {males.length}</span>
+                      <span className="text-gray-700">|</span>
+                      <span>♀️ {females.length}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#11162a]/90 border border-gray-800/80 rounded-2xl p-3.5 flex flex-col gap-1 shadow-inner">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Avg Age (Male)</p>
+                    <p className="text-base font-black text-blue-400">{avgMaleAge} <span className="text-[9px] font-bold text-gray-500">yrs</span></p>
+                  </div>
+                  <div className="bg-[#11162a]/90 border border-gray-800/80 rounded-2xl p-3.5 flex flex-col gap-1 shadow-inner">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Avg Age (Female)</p>
+                    <p className="text-base font-black text-pink-400">{avgFemaleAge} <span className="text-[9px] font-bold text-gray-500">yrs</span></p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* AI quota and rate limits */}
+          <div className="bg-[#11162a]/90 border border-gray-800/80 rounded-2xl p-4 space-y-3 shadow-inner">
+            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              <span>🤖 API Quota (Free Tier Status)</span>
+              <span className="text-emerald-400 font-extrabold">Active</span>
+            </div>
+            
+            {/* Groq Limit Progress Indicator */}
+            {(() => {
+              const todayDateStr = getLocalDateString();
+              const totalUsedToday = profiles.reduce((acc, p) => {
+                const usage = p.targets?.ai_usage;
+                if (usage && usage.date === todayDateStr) return acc + (usage.count || 0);
+                return acc;
+              }, 0);
+              const totalLimit = 500; // Free API limit fallback indicator
+              const remaining = Math.max(0, totalLimit - totalUsedToday);
+              const pct = Math.min(100, (totalUsedToday / totalLimit) * 100);
+
+              return (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] text-gray-500 font-bold">
+                    <span>Daily Token Allowance ({totalUsedToday} msgs)</span>
+                    <span className="text-blue-400">{remaining} msgs left</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-gray-900 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Feature toggles */}
+          <div className="bg-[#11162a]/90 border border-gray-800/80 rounded-2xl p-4 space-y-4 shadow-inner">
+            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-800/60 pb-2">🎯 Feature Toggles (Global Controls)</p>
+            
+            {/* Toggle 1 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-white">Hide Workout Templates</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">Removes templates & programs button for clients</p>
+              </div>
+              <button
+                onClick={() => handleToggleWorkoutTemplates(!disableWorkoutTemplatesToggle)}
+                className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${disableWorkoutTemplatesToggle ? 'bg-red-500 justify-end' : 'bg-gray-800 justify-start'}`}
+              >
+                <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+              </button>
+            </div>
+
+            {/* Toggle 2 */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-white">Hide Nutrition Targets</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">Removes daily targets setup menu for clients</p>
+              </div>
+              <button
+                onClick={() => handleToggleNutritionTargets(!disableNutritionTargetsToggle)}
+                className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${disableNutritionTargetsToggle ? 'bg-red-500 justify-end' : 'bg-gray-800 justify-start'}`}
+              >
+                <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── AGGREGATE AI STATS ── */}
       {(() => {

@@ -278,6 +278,8 @@ const WorkoutHome = () => {
     setShowWorkoutModal(true);
   };
 
+  const [disableWorkoutTemplates, setDisableWorkoutTemplates] = useState(false);
+
   // Sync todayPlan type with dayType from schedule (handling RUN + GYM hybrid split)
   useEffect(() => {
     const targetType = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
@@ -289,6 +291,12 @@ const WorkoutHome = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       setCurrentUserId(session.user.id);
+
+      // Load Haleem's toggles
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      if (ownerProfile?.targets) {
+        setDisableWorkoutTemplates(!!ownerProfile.targets.disable_workout_templates);
+      }
 
       // 1. Fetch Past Workouts (completed only)
       const { data: workoutsData } = await supabase
@@ -696,23 +704,25 @@ const WorkoutHome = () => {
       </motion.div>
 
       {/* ── Workout Templates & Programs Section ── */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        transition={{ delay: 0.15 }}
-        className="mt-2"
-      >
-        <button
-          onClick={() => navigate('/workout/builder')}
-          className="w-full py-4 bg-surface hover:bg-slate-800/80 text-white font-extrabold rounded-2xl flex items-center justify-between px-5 border border-gray-800 hover:border-gray-700 transition-all active:scale-[0.98] shadow-md cursor-pointer text-xs uppercase tracking-wider"
+      {(currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableWorkoutTemplates) && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.15 }}
+          className="mt-2"
         >
-          <div className="flex items-center gap-2.5">
-            <Layers size={15} className="text-primary animate-pulse" />
-            <span>Workout Templates &amp; Programs</span>
-          </div>
-          <ChevronRight size={16} className="text-gray-500" />
-        </button>
-      </motion.div>
+          <button
+            onClick={() => navigate('/workout/builder')}
+            className="w-full py-4 bg-surface hover:bg-slate-800/80 text-white font-extrabold rounded-2xl flex items-center justify-between px-5 border border-gray-800 hover:border-gray-700 transition-all active:scale-[0.98] shadow-md cursor-pointer text-xs uppercase tracking-wider"
+          >
+            <div className="flex items-center gap-2.5">
+              <Layers size={15} className="text-primary animate-pulse" />
+              <span>Workout Templates &amp; Programs</span>
+            </div>
+            <ChevronRight size={16} className="text-gray-500" />
+          </button>
+        </motion.div>
+      )}
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-2">
         <div className="flex justify-between items-center mb-4">
@@ -797,24 +807,26 @@ const WorkoutHome = () => {
               <span>🏃</span> Log Run
             </h3>
 
-            <button
-              type="button"
-              onClick={handlePullFromStrava}
-              disabled={isPullingStrava}
-              className="w-full mb-5 py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-xl hover:shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wider uppercase border border-blue-500/30 disabled:opacity-50 cursor-pointer"
-            >
-              {isPullingStrava ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  <span>Pulling Last Run from Strava...</span>
-                </>
-              ) : (
-                <>
-                  <Activity size={16} />
-                  <span>Log from Strava (Auto-Fill Last Run)</span>
-                </>
-              )}
-            </button>
+            {currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' && (
+              <button
+                type="button"
+                onClick={handlePullFromStrava}
+                disabled={isPullingStrava}
+                className="w-full mb-5 py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-xl hover:shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wider uppercase border border-blue-500/30 disabled:opacity-50 cursor-pointer"
+              >
+                {isPullingStrava ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    <span>Pulling Last Run from Strava...</span>
+                  </>
+                ) : (
+                  <>
+                    <Activity size={16} />
+                    <span>Log from Strava (Auto-Fill Last Run)</span>
+                  </>
+                )}
+              </button>
+            )}
             
             <form onSubmit={handleLogRun} className="flex flex-col gap-4">
               <div>

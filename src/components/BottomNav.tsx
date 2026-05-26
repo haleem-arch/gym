@@ -1,22 +1,38 @@
 import { Home, Dumbbell, Apple, Activity, MessageSquare, MapPin } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const BottomNav = () => {
   const location = useLocation();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   
   // Hide bottom nav on the active workout tracker (and its reward screen overlay)
   if (location.pathname === '/workout/active') {
     return null;
   }
 
-  const navItems = [
+  const allNavItems = [
     { to: '/', icon: <Home size={24} />, label: 'Today' },
     { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout' },
     { to: '/diet', icon: <Apple size={24} />, label: 'Diet' },
-    { to: '/strava', icon: <MapPin size={24} />, label: 'Strava' },
+    { to: '/strava', icon: <MapPin size={24} />, label: 'Strava', restrict: true },
     { to: '/inbody', icon: <Activity size={24} />, label: 'InBody' },
     { to: '/ai', icon: <MessageSquare size={24} />, label: 'Coach' },
   ];
+
+  const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+  const navItems = allNavItems.filter(item => !item.restrict || userId === OWNER_ID);
 
   return (
     <nav 
