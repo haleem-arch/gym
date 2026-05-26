@@ -279,7 +279,6 @@ const WorkoutHome = () => {
   };
 
   const [disableWorkoutTemplates, setDisableWorkoutTemplates] = useState(false);
-  const [isCoachOrOwner, setIsCoachOrOwner] = useState(false);
 
   // Sync todayPlan type with dayType from schedule (handling RUN + GYM hybrid split)
   useEffect(() => {
@@ -292,18 +291,6 @@ const WorkoutHome = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       setCurrentUserId(session.user.id);
-
-      let hasAccess = session.user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-      if (!hasAccess && session.user.email?.toLowerCase().startsWith('haleem')) {
-        hasAccess = true;
-      }
-      if (!hasAccess) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
-        if (profile?.role === 'coach') {
-          hasAccess = true;
-        }
-      }
-      setIsCoachOrOwner(hasAccess);
 
       // Load Haleem's toggles
       const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
@@ -717,7 +704,7 @@ const WorkoutHome = () => {
       </motion.div>
 
       {/* ── Workout Templates & Programs Section ── */}
-      {!loading && (isCoachOrOwner || !disableWorkoutTemplates) && (
+      {!loading && (currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableWorkoutTemplates) && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }} 
           animate={{ opacity: 1, y: 0 }} 

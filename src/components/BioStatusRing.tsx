@@ -7,7 +7,6 @@ interface BioStatusRingProps {
   isRestDay?: boolean;
   compact?: boolean;
   onClick?: () => void;
-  disableNutrition?: boolean;
 }
 
 export const BioStatusRing = ({
@@ -16,8 +15,7 @@ export const BioStatusRing = ({
   workoutStatus,
   isRestDay = false,
   compact = false,
-  onClick,
-  disableNutrition = false
+  onClick
 }: BioStatusRingProps) => {
   // SVG Geometry Settings dynamically scaled
   const size = compact ? 90 : 100;
@@ -46,8 +44,8 @@ export const BioStatusRing = ({
   const effectiveWorkoutStatus = isRestDay ? 1.0 : workoutStatus;
 
   // Calculate today's dynamic average daily biometric completion score
-  const divisor = disableNutrition ? 2 : 3;
-  const sumPct = (disableNutrition ? 0 : Math.min(kcalPct, 1)) + Math.min(waterPct, 1) + effectiveWorkoutStatus;
+  const divisor = 3;
+  const sumPct = Math.min(kcalPct, 1) + Math.min(waterPct, 1) + effectiveWorkoutStatus;
   const dailyBioScore = Math.round((sumPct / divisor) * 100);
 
   return (
@@ -73,18 +71,14 @@ export const BioStatusRing = ({
       <div className={`relative flex items-center justify-center flex-shrink-0`} style={{ width: `${size}px`, height: `${size}px` }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
           {/* ─── Outer Ring: Nutrition (Orange) ─── */}
-          {!disableNutrition && (
-            <>
-              <circle cx={center} cy={center} r={rOuter} fill="transparent" stroke={trackNutrition} strokeWidth={strokeWidth} />
-              <motion.circle
-                cx={center} cy={center} r={rOuter} fill="transparent" stroke={colorNutrition} strokeWidth={strokeWidth}
-                strokeDasharray={circOuter} strokeLinecap="round"
-                initial={{ strokeDashoffset: circOuter }}
-                animate={{ strokeDashoffset: circOuter * (1 - Math.min(kcalPct, 1)) }}
-                transition={{ type: 'spring', damping: 22, stiffness: 95 }}
-              />
-            </>
-          )}
+          <circle cx={center} cy={center} r={rOuter} fill="transparent" stroke={trackNutrition} strokeWidth={strokeWidth} />
+          <motion.circle
+            cx={center} cy={center} r={rOuter} fill="transparent" stroke={colorNutrition} strokeWidth={strokeWidth}
+            strokeDasharray={circOuter} strokeLinecap="round"
+            initial={{ strokeDashoffset: circOuter }}
+            animate={{ strokeDashoffset: circOuter * (1 - Math.min(kcalPct, 1)) }}
+            transition={{ type: 'spring', damping: 22, stiffness: 95 }}
+          />
 
           {/* ─── Middle Ring: Hydration (Sky Blue) ─── */}
           <circle cx={center} cy={center} r={rMiddle} fill="transparent" stroke={trackHydration} strokeWidth={strokeWidth} />
@@ -123,14 +117,12 @@ export const BioStatusRing = ({
         /* Redesigned Legend: dynamic vertical look */
         <div className="flex-1 flex flex-col gap-2.5 justify-center pl-2">
           {/* Nutrition */}
-          {!disableNutrition && (
-            <div className="flex flex-col leading-none">
-              <span className="text-[9px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Nutrition</span>
-              <span className="text-xs font-black" style={{ color: colorNutrition }}>
-                {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Fueling' : 'Fuel Up'}
-              </span>
-            </div>
-          )}
+          <div className="flex flex-col leading-none">
+            <span className="text-[9px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Nutrition</span>
+            <span className="text-xs font-black" style={{ color: colorNutrition }}>
+              {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Fueling' : 'Fuel Up'}
+            </span>
+          </div>
 
           {/* Hydration */}
           <div className="flex flex-col leading-none">

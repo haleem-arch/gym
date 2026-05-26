@@ -5,39 +5,14 @@ import { supabase } from '../lib/supabase';
 
 const BottomNav = () => {
   const location = useLocation();
-  const [isCoachOrOwner, setIsCoachOrOwner] = useState(false);
-  const [disableNutritionTargets, setDisableNutritionTargets] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRoleAndToggles = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const uid = session?.user?.id || null;
-
-      if (uid) {
-        let hasAccess = uid === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-        if (!hasAccess && session?.user?.email?.toLowerCase().startsWith('haleem')) {
-          hasAccess = true;
-        }
-        if (!hasAccess) {
-          const { data: profile } = await supabase.from('profiles').select('role').eq('id', uid).maybeSingle();
-          if (profile?.role === 'coach') {
-            hasAccess = true;
-          }
-        }
-        setIsCoachOrOwner(hasAccess);
-      }
-
-      // Fetch owner toggles
-      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
-      if (ownerProfile?.targets) {
-        setDisableNutritionTargets(!!ownerProfile.targets.disable_nutrition_targets);
-      }
-    };
-
-    fetchRoleAndToggles();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchRoleAndToggles();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -56,11 +31,8 @@ const BottomNav = () => {
     { to: '/ai', icon: <MessageSquare size={24} />, label: 'Coach' },
   ];
 
-  const navItems = allNavItems.filter(item => {
-    if (item.restrict && !isCoachOrOwner) return false;
-    if (item.to === '/diet' && disableNutritionTargets && !isCoachOrOwner) return false;
-    return true;
-  });
+  const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+  const navItems = allNavItems.filter(item => !item.restrict || userId === OWNER_ID);
 
   return (
     <nav 

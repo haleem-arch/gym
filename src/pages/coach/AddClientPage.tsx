@@ -428,7 +428,34 @@ export default function AddClientPage() {
         }
       }
 
-      // 1. Build profile targets JSONB
+      const virtualEmail = `${formData.username.trim().toLowerCase()}@stride.fit`;
+
+      // 1. Provision new Supabase Auth Client via Vercel Secure API Endpoint
+      const createRes = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${coachSession.access_token}`
+        },
+        body: JSON.stringify({
+          email: virtualEmail,
+          password: formData.password,
+          display_name: formData.displayName,
+          gender: gender
+        })
+      });
+
+      if (!createRes.ok) {
+        const errData = await createRes.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to generate user account');
+      }
+
+      const { user: createdAuthUser } = await createRes.json();
+      if (!createdAuthUser) throw new Error('Failed to generate user account');
+
+      const clientUserId = createdAuthUser.id;
+
+      // 2. Build profile targets JSONB
       const dayNutritionMap: Record<string, any> = {};
       dayNutritionMap['REST'] = { kcal: restKcal, protein: restProtein, carbs: restCarbs, fat: restFat };
       dayNutritionMap['RUN'] = { kcal: kcal + 200, protein, carbs: carbs + 50, fat };
@@ -452,35 +479,18 @@ export default function AddClientPage() {
         phone_number: formData.phoneNumber.trim()
       };
 
-      const virtualEmail = `${formData.username.trim().toLowerCase()}@stride.fit`;
-
-      // 2. Provision new Supabase Auth Client via Vercel Secure API Endpoint
-      const createRes = await fetch('/api/create-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${coachSession.access_token}`
-        },
-        body: JSON.stringify({
-          email: virtualEmail,
-          password: formData.password,
-          display_name: formData.displayName,
-          gender: gender,
-          coach_id: coachUser.id,
-          targets: targets,
-          username: formData.username.trim().toLowerCase()
-        })
+      // 3. Insert public.profiles
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: clientUserId,
+        username: formData.username.trim().toLowerCase(),
+        email: virtualEmail,
+        display_name: formData.displayName,
+        role: 'client',
+        coach_id: coachUser.id,
+        targets: targets
       });
 
-      if (!createRes.ok) {
-        const errData = await createRes.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to generate user account');
-      }
-
-      const { user: createdAuthUser } = await createRes.json();
-      if (!createdAuthUser) throw new Error('Failed to generate user account');
-
-      const clientUserId = createdAuthUser.id;
+      if (profileError) throw profileError;
 
       // 4. Insert public.client_profiles
       const { error: clientProfileError } = await supabase.from('client_profiles').insert({
@@ -586,17 +596,7 @@ export default function AddClientPage() {
       toast.success(`Athlete deployed successfully! Handle: @${formData.username}`);
     } catch (error: any) {
       console.error(error);
-      let errorMessage = error.message || 'Unable to add client account. Please try again.';
-      if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint') || errorMessage.includes('already exists')) {
-         errorMessage = 'This username or client code is already taken. Please choose another one.';
-      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('Network')) {
-         errorMessage = 'Network connection issue. Please check your connection and try again.';
-      } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-         errorMessage = 'System is currently busy. Please try again later.';
-      } else if (errorMessage.includes('Database') || errorMessage.includes('relation')) {
-         errorMessage = 'An unexpected system error occurred. Please try again.';
-      }
-      toast.error(errorMessage);
+      toast.error('Unable to add client account. Please verify username is unique and try again.');
     } finally {
       setLoading(false);
     }
