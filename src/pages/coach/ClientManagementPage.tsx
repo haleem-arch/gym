@@ -696,6 +696,71 @@ export default function ClientManagementPage() {
               {updatingSuspension ? 'Updating...' : (client.user?.targets?.is_deactivated === true ? 'Reactivate Client' : 'Suspend Client')}
             </button>
           </div>
+
+          {/* Auto Suspend Date */}
+          <div className="border-t border-gray-800/60 pt-4 space-y-2">
+            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Auto-Suspend Date</label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={client.user?.targets?.auto_suspend_date || ''}
+                onChange={async (e) => {
+                  const newDate = e.target.value || null;
+                  try {
+                    const currentTargets = client.user?.targets || {};
+                    const updatedTargets = {
+                      ...currentTargets,
+                      auto_suspend_date: newDate
+                    };
+
+                    const { error } = await supabase
+                      .from('profiles')
+                      .update({ targets: updatedTargets })
+                      .eq('id', client.user_id);
+
+                    if (error) throw error;
+                    toast.success(newDate ? `Auto-suspend set for ${newDate}` : 'Auto-suspend date removed');
+                    fetchClientDetails();
+                  } catch (err: any) {
+                    console.error(err);
+                    toast.error('Failed to update auto-suspend date.');
+                  }
+                }}
+                className="flex-1 bg-[#181d29] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
+              />
+              {client.user?.targets?.auto_suspend_date && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const currentTargets = client.user?.targets || {};
+                      const updatedTargets = { ...currentTargets };
+                      delete updatedTargets.auto_suspend_date;
+
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ targets: updatedTargets })
+                        .eq('id', client.user_id);
+
+                      if (error) throw error;
+                      toast.success('Auto-suspend date cleared');
+                      fetchClientDetails();
+                    } catch (err: any) {
+                      console.error(err);
+                      toast.error('Failed to clear auto-suspend date.');
+                    }
+                  }}
+                  className="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {client.user?.targets?.auto_suspend_date && (
+              <p className="text-[10px] text-yellow-500 font-medium leading-relaxed">
+                ⚠️ Account will automatically suspend on {client.user.targets.auto_suspend_date} at local time 00:00.
+              </p>
+            )}
+          </div>
         </Card>
 
         {/* InBody Scan Records */}

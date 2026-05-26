@@ -279,9 +279,14 @@ function App() {
           return;
         }
 
-        // Check if account is suspended/deactivated via JSON targets
-        if (profile.targets?.is_deactivated === true) {
+        // Check if account is suspended/deactivated via JSON targets or auto-suspend date
+        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const autoSuspendDate = profile.targets?.auto_suspend_date;
+        const isDeactivated = profile.targets?.is_deactivated === true || (autoSuspendDate && todayStr >= autoSuspendDate);
+
+        if (isDeactivated) {
           setIsSuspended(true);
+          setNeedsOnboarding(false); // Bypass loader check to render suspended page immediately
           return;
         } else {
           setIsSuspended(false);
@@ -329,7 +334,10 @@ function App() {
         filter: `id=eq.${session.user.id}`
       }, (payload: any) => {
         const targets = payload.new?.targets || {};
-        if (targets.is_deactivated === true) {
+        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const autoSuspendDate = targets.auto_suspend_date;
+        const isDeactivated = targets.is_deactivated === true || (autoSuspendDate && todayStr >= autoSuspendDate);
+        if (isDeactivated) {
           setIsSuspended(true);
         } else {
           setIsSuspended(false);
