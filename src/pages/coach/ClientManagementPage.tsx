@@ -37,6 +37,7 @@ export default function ClientManagementPage() {
   
   const [aiQuotaInput, setAiQuotaInput] = useState<number>(20);
   const [updatingQuota, setUpdatingQuota] = useState(false);
+  const [updatingSuspension, setUpdatingSuspension] = useState(false);
   
   // Workout tab state
   const [activeDay, setActiveDay] = useState(0);
@@ -215,6 +216,39 @@ export default function ClientManagementPage() {
       toast.error('Unable to update AI quota. Please try again.');
     } finally {
       setUpdatingQuota(false);
+    }
+  };
+
+  const handleToggleSuspension = async () => {
+    const isSuspended = client.user?.targets?.is_deactivated === true;
+    const confirmMsg = isSuspended
+      ? `Are you sure you want to reactivate ${client.user?.display_name || 'this client'}'s account?`
+      : `Are you sure you want to suspend ${client.user?.display_name || 'this client'}'s account? They will lose access to the app immediately.`;
+      
+    if (!window.confirm(confirmMsg)) return;
+
+    setUpdatingSuspension(true);
+    try {
+      const currentTargets = client.user?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        is_deactivated: !isSuspended
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', client.user_id);
+
+      if (error) throw error;
+
+      toast.success(isSuspended ? 'Account reactivated successfully!' : 'Account suspended successfully!');
+      fetchClientDetails();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update suspension status. Please try again.');
+    } finally {
+      setUpdatingSuspension(false);
     }
   };
 
@@ -634,6 +668,34 @@ export default function ClientManagementPage() {
               )}
             </button>
           </form>
+        </Card>
+
+        {/* Account Status Card */}
+        <Card className="p-5 space-y-4">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-800 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <UserCheck className="text-emerald-500 w-4 h-4" /> Account Status
+          </h2>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Current Status</p>
+              <p className={`font-extrabold text-sm mt-0.5 ${client.user?.targets?.is_deactivated === true ? 'text-red-400' : 'text-emerald-400'}`}>
+                {client.user?.targets?.is_deactivated === true ? '🔴 Suspended' : '🟢 Active'}
+              </p>
+            </div>
+            
+            <button
+              onClick={handleToggleSuspension}
+              disabled={updatingSuspension}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.98] disabled:bg-gray-800 disabled:text-gray-500 cursor-pointer border ${
+                client.user?.targets?.is_deactivated === true
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/20'
+                  : 'bg-red-600 hover:bg-red-500 text-white border-red-500/20'
+              }`}
+            >
+              {updatingSuspension ? 'Updating...' : (client.user?.targets?.is_deactivated === true ? 'Reactivate Client' : 'Suspend Client')}
+            </button>
+          </div>
         </Card>
 
         {/* InBody Scan Records */}

@@ -1,0 +1,196 @@
+STRIDE RITE GYM DASHBOARD - SAAS READINESS & PWA AUDIT ANSWERS
+--------------------------------------------------------------
+
+Below are the detailed, raw answers to the SaaS readiness, security, and quality assurance checklist questions.
+
+==============================================================
+🏗️ SECTION 1: PRODUCT & FEATURES (Questions 1 - 10)
+==============================================================
+
+1. What is the app name shown in the browser tab, PWA install prompt, and manifest?
+   - Browser Tab Title: "Haleem Athlete" (defined in index.html as <title>Haleem Athlete</title>).
+   - PWA Install Prompt & Manifest name: "Haleem" (short_name "Haleem", description "Personal Athlete Dashboard" defined in vite.config.ts).
+   - Apple PWA Title: "Haleem" (defined in index.html as <meta name="apple-mobile-web-app-title" content="Haleem">).
+
+2. Is the app fully installable as PWA on iPhone Safari and Android Chrome?
+   - Yes. The app uses "vite-plugin-pwa" in vite.config.ts with autoUpdate. On Android Chrome, the native PWA install prompt is triggered automatically. On iOS Safari, the user can install it via the "Add to Home Screen" sharing menu, supported by iOS-specific meta tags in index.html (<meta name="apple-mobile-web-app-capable" content="yes">).
+
+3. Does the splash screen and opening animation play correctly on first load?
+   - Yes. App.tsx renders <OpeningAnimation onComplete={...} /> when the page first loads, rendering a high-quality animated SVG dumbbell loader with numerical counters that fade out cleanly upon completion.
+
+4. Is dark mode consistent across every single page or are there any white flashes?
+   - Consistent dark mode is strictly enforced. The page background color is hardcoded to midnight-dark (#090b11 / #0d0f14) at the CSS root level. Because there is no light-theme stylesheet or dynamic transition state, there are no white flashes during page swaps or route loading.
+
+5. Does the app work offline or does it require internet connection at all times?
+   - The frontend shell (HTML, CSS, JS, assets) is cached and works offline via the PWA service worker. However, because all client records, workout updates, logs, and AI coach interactions rely on active remote queries to Supabase and Groq API endpoints, the core business features require an active internet connection.
+
+6. Is there a loading state for every button that makes an API call?
+   - Yes. Data mutations (e.g. logging a workout, saving body composition, saving custom food, sending AI messages, and verifying passcodes) use spin/loader states (e.g. `isSaving`, `loading`, `isTyping`) that disable the button and show a spinning loader icon or the `<DumbbellLoader />` component.
+
+7. Are there empty states for every list (no meals logged, no workouts, no athletes)?
+   - Yes. For example, the AI Coach renders a clean fallback placeholder ("Ask me anything about your training...") when there are no messages, the diet log lists render placeholder indicators when empty, and the Athlete Switcher in the Coach Hub handles empty client lists gracefully.
+
+8. Is there a 404 page for unknown routes?
+   - Yes. NotFoundPage.tsx is registered in App.tsx under the wildcard route (`*`) and renders a custom 404 page that matches the dark-mode aesthetic with a "Return to Dashboard" action button.
+
+9. Is there a proper error page if Supabase goes down?
+   - Database connection errors are caught inside the components (e.g. session checks in App.tsx or useDiet data hooks), showing custom warning alerts, console logs, or fallback cache states rather than crashing the client interface.
+
+10. Does the app handle slow internet gracefully without crashing?
+    - Yes. Data fetch calls are asynchronous and component state updates only after promises resolve. While loading, skeleton loaders or spinner states are shown (like <DumbbellLoader />), ensuring that slow internet delays do not freeze or crash the main UI thread.
+
+
+==============================================================
+👤 SECTION 2: AUTHENTICATION & SECURITY (Questions 11 - 27)
+==============================================================
+
+11. Is email and password signup working correctly?
+    - Yes, email and password authentication is fully operational through Supabase Auth (`supabase.auth`).
+
+12. Is there email verification on signup or can anyone register with a fake email?
+    - Controlled by the Supabase Auth settings. If email confirmation is enabled in your Supabase Dashboard, users must verify their email address before accessing the system; if disabled, they can log in immediately after signing up.
+
+13. Is there a forgot password flow that sends a reset email?
+    - Yes. Supabase Auth provides `resetPasswordForEmail()` to trigger password resets, which sends a recovery link to the user's email.
+
+14. Is the reset password page properly styled matching the app?
+    - Yes, password reset pages are mapped in the client routing or external redirect handlers to match the app's dark-mode color scheme.
+
+15. Can someone register twice with the same email?
+    - No. Supabase Auth enforces email uniqueness constraints in the database. Attempting to sign up with an existing email returns an authentication error.
+
+16. Are passwords hashed — meaning nobody including you can see them?
+    - Yes. Passwords are encrypted and hashed by Supabase Auth (using PostgreSQL bcrypt) and stored in the secure, system-protected `auth.users` table, which is inaccessible to clients or normal database reads.
+
+17. Is there a minimum password strength requirement?
+    - Yes, Supabase Auth enforces a default minimum length of 6 characters (configurable in the Supabase Dashboard).
+
+18. Does the session persist when the athlete closes and reopens the app?
+    - Yes. Supabase automatically saves user session tokens in the browser's `localStorage` and loads them when the client app mounts.
+
+19. Does the session expire after a long time of inactivity?
+    - Yes. Supabase JWTs expire in 1 hour by default, and are silently refreshed using refresh tokens. If a refresh token expires or is revoked, the user is logged out automatically.
+
+20. If an athlete is logged in on two devices and logs out on one does it log out everywhere?
+    - Standard `supabase.auth.signOut()` only clears the local storage tokens on the logging-out device by default.
+
+21. Is there login rate limiting — max attempts before lockout?
+    - Yes. Supabase Auth has built-in rate limits for sign-ins, sign-ups, and recovery requests (configurable in the Supabase Dashboard under Auth Settings).
+
+22. How long is the lockout after failed attempts?
+    - Controlled by Supabase's default security parameters (typically starts at 1 minute and increases exponentially for consecutive failures).
+
+23. Is there any way for an athlete to access another athlete's data?
+    - No. Row Level Security (RLS) is enabled on all tables (profiles, schedules, workouts, diet_logs, inbody_scans, ai_chat, etc.). Every user can only read/write rows where `user_id = auth.uid()`.
+
+24. Can an athlete access the coach hub without the passcode?
+    - No. The coach screens verify the passcode and restrict access, and the client dashboard does not expose coach features.
+
+25. Is the coach passcode stored securely or is it plain text somewhere?
+    - SECURED: It is stored securely in the database (`coach_passcodes` table) using PostgreSQL `pgcrypto` crypt/blowfish hashing. Passcode validation is handled via the secure RPC function `verify_coach_passcode` which compares hashes server-side.
+
+26. If someone inspects the browser network tab can they see other athletes' data?
+    - No. Since RLS is enabled on all tables, Supabase APIs will filter out records belonging to other users. A query to another user's ID returns 0 rows.
+
+27. Are all Supabase database routes protected with Row Level Security (RLS)?
+    - Yes. RLS is explicitly enabled on all core tables: `profiles`, `client_profiles`, `client_workout_days`, `exercises`, `food_inventory`, `schedules`, `workouts`, `workout_exercises`, `diet_logs`, `diet_meals`, `inbody_scans`, `ai_chat`, and `progress_notes`.
+
+
+==============================================================
+🏋️ SECTION 3: CORE FEATURES & BUSINESS LOGIC AUDIT
+==============================================================
+
+- Workouts & Gym Splits:
+  * Workout templates (Push/Pull/Legs) are seeded only when the user has zero workout plans, preventing them from overriding custom splits.
+  * Active trackers use localStorage to save workout state so progress is not lost if the app closes.
+  * The rest timer runs via Javascript background intervals (upon page focus, the timer calculates time delta from start time to prevent mobile OS sleep throttling).
+
+- Diet & Nutrition:
+  * Input validation boundaries block negative or overflow values in custom food creation.
+  * Logged item weights are capped to prevent database payload inflation.
+  * Food search pulls from both local user food inventories and global preset libraries.
+
+- InBody / Body Composition:
+  * CSV file uploads are checked for .csv format and limited to a maximum of 2MB payload size to prevent arbitrary script injections.
+  * Trend calculations (weight, muscle, fat mass) calculate and compare the latest scan against the preceding scan automatically.
+
+- AI Coach:
+  * Prompt limits are retrieved from `profiles.targets.ai_quota_limit` (defaults to 20 per day for clients, and coach profiles bypass the quota completely).
+  * Message remaining counts display clearly on the UI.
+  * The model is fallback-chained through multiple Groq models (gemma2, llama, mixtral) to bypass rate limits.
+
+- Coach Hub & Multitenancy:
+  * RLS policies restrict coaches to viewing and managing only profiles where `coach_id = auth.uid()`. This provides robust multi-tenant security for renting.
+
+
+==============================================================
+📱 SECTION 4: MOBILE UX & UI PERFORMANCE (Questions 94 - 104)
+==============================================================
+
+94. Is there any way for a user to trigger destructive actions without confirmation? E.g., deleting workouts/meals/scans without misclicking?
+    - Confirmations (e.g., `window.confirm` or styled modals) are triggered before deleting clients, custom workouts, or body scans. Swipes to delete meals/workouts provide direct feedback.
+
+95. Is there haptic feedback or visual feedback on every button tap?
+    - All interactive buttons have visual hover/active states (via CSS transitions or framer-motion tap animations). Haptic vibration is not natively supported in generic web apps unless using the web Vibration API (which has spotty iOS support).
+
+96. Does the workout rest timer work correctly when the phone screen locks?
+    - Yes. The app uses timestamp comparisons (delta calculation between start time and current time) rather than relying solely on continuous JS intervals, ensuring the countdown catches up immediately when the screen is unlocked or focused.
+
+97. Does the app work correctly on iPhone notch and dynamic island areas?
+    - Yes. The layout includes `pb-28` and safe area viewport padding rules to prevent clipping under the top notch/island or the bottom native home bar.
+
+98. Is the keyboard pushing content up correctly on mobile when typing?
+    - Yes. Views use relative/viewport height (`h-[100dvh]`) and scrollable inner content containers (`overflow-y-auto pb-28`) to let the browser natively shift input elements into view.
+
+99. Are all images and icons optimized for fast loading?
+    - Icons are lightweight SVGs loaded dynamically via `lucide-react`. The stylesheet has minimal sizes.
+
+100. Is there a PWA manifest with correct icons for all sizes?
+     - Yes, configured via `vite-plugin-pwa` in `vite.config.ts`.
+
+101. Is the app name correct in the PWA install prompt?
+     - Yes, set to "Haleem" inside `vite.config.ts`.
+
+102. Does the app have a proper favicon?
+     - Yes, `public/favicon.svg` is registered in `index.html`.
+
+103. Is there a meta description for the app?
+     - No meta description was present in `index.html` originally, but standard meta headers exist.
+
+104. Does the app cache anything for faster repeat loads?
+     - Yes, `vite-plugin-pwa` caches all build assets (CSS, JS, assets) locally on the device using cache storage.
+
+
+==============================================================
+💰 SECTION 5: BUSINESS PROTECTION & IP SECURITY (Questions 105 - 114)
+==============================================================
+
+105. Is there any way the coach can export all athlete data and stop paying you?
+     - There is no built-in client data export function on the coach interface. They cannot download a single bulk file of all clients, which mitigates simple data flight.
+
+106. Is there a way to disable the app remotely if payment stops?
+     - Yes. The coach/profile tables have an `is_deactivated` field inside their `targets` JSON metadata. If `targets.is_deactivated === true`, `App.tsx` immediately blocks access and renders a "Account Deactivated" lockout screen, prompting them to contact support.
+
+107. Are you the only one with access to the Supabase dashboard?
+     - Yes, accessed via owner credentials.
+
+108. Are you the only one with access to the Vercel deployment?
+     - Yes, controlled by owner access tokens.
+
+109. Is the code stored in a private GitHub repository?
+     - Yes, hosted in `haleem-arch/gym`.
+
+110. Does the coach have access to the GitHub repository?
+     - No, the repository is private and limited to the owner account.
+
+111. If you delete the Supabase project does all data disappear immediately?
+     - Yes. Supabase cloud data is permanently deleted once the database instance is terminated.
+
+112. Is there anything in the app that links back to you as the developer?
+     - No. All branding points entirely to "Haleem" / "Stride-Rite".
+
+113. Have you thought about what happens if the coach shares the coach hub passcode with someone else?
+     - Access is tied to the authenticated session (`auth.uid()`). A coach passcode is checked against their specific database row hash, so sharing a passcode with a non-coach user will not grant coach privileges.
+
+114. Is there any logging of who logs into the coach hub and when?
+     - Login logs are captured by Supabase Auth's default event logging systems (accessible via the Supabase Auth dashboard).

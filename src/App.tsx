@@ -316,6 +316,32 @@ function App() {
     checkOnboarding();
   }, [session]);
 
+  // Listen to real-time updates to the profile (specifically for deactivation toggling)
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase
+      .channel(`self-profile-sync-${session.user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${session.user.id}`
+      }, (payload: any) => {
+        const targets = payload.new?.targets || {};
+        if (targets.is_deactivated === true) {
+          setIsSuspended(true);
+        } else {
+          setIsSuspended(false);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
+
   if (session === undefined || (session !== null && needsOnboarding === undefined)) {
     return <DumbbellLoader fullScreen size={140} />;
   }
@@ -326,9 +352,9 @@ function App() {
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" x2="15" y1="9" y2="15"/><line x1="15" x2="9" y1="9" y2="15"/></svg>
         </div>
-        <h1 className="text-xl font-black text-white">Account Deactivated</h1>
+        <h1 className="text-xl font-black text-white">Account Suspended</h1>
         <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
-          Your account is currently inactive. Please contact the administrator or your coach to resolve outstanding fees and reactivate your profile.
+          Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.
         </p>
         <button
           onClick={async () => {
