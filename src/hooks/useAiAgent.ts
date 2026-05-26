@@ -54,14 +54,15 @@ const getLocalTime = () => {
 };
 
 // ─── System prompt — explicit examples with correct schema ───────────────────
-const SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
+const SYSTEM_PROMPT = (clientName: string, uid: string | null, ctx: string) => {
   const today = getLocalDate();
   const time = getLocalTime();
-  const dietLogMatch = ctx.match(/TODAY_DIET_LOG_ID:\s*([a-f0-9-]+)/i);
+  // Support both key variants for diet log id
+  const dietLogMatch = ctx.match(/(?:SELECTED_DATE_DIET_LOG_ID|TODAY_DIET_LOG_ID):\s*([a-f0-9-]+)/i);
   const dietLogId = dietLogMatch ? dietLogMatch[1] : "INSERT_DIET_LOG_ID_HERE";
 
-  return `You are Haleem's fitness AI. Output ONLY valid JSON. Never plain text.
-Haleem: 18yo, 182cm, 79.7kg, 17% BF. Targets: 160g P/240g C/70g F/2400kcal.
+  return `You are ${clientName || 'Client'}'s nutrition and hydration AI coach. Output ONLY valid JSON. Never plain text.
+Client Name: ${clientName || 'Client'}
 User ID: ${uid} | Today: ${today}
 
 ${ctx}
@@ -70,18 +71,21 @@ ALWAYS return ONLY this JSON format:
 {"reply":"Your enthusiastic, engaging, and helpful response here","actions":[]}
 
 MEAL LOG EXAMPLE:
-{"reply":"Got it! I've logged your rice. That's a solid 28g of carbs to fuel your next session! 🍚🔥","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
+{"reply":"Got it! I've logged your rice. That's a solid 28g of carbs to fuel your day! 🍚🔥","actions":[{"type":"insert","table":"diet_meals","data":{"diet_log_id":"${dietLogId}","name":"Meal","time":"${time}","items":[{"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","food_id":"","name":"White rice","grams":100,"macros":{"kcal":130,"protein":2.7,"carbs":28,"fat":0.3}}]}}]}
 
 WATER LOG EXAMPLE:
 {"reply":"Logged 500ml water","actions":[{"type":"insert","table":"water_logs","data":{"date":"${today}","time":"${today}T${time}Z","amount_ml":500}}]}
 
+TOPIC RESTRICTION RULE:
+- You ONLY handle diet, nutrition, meals, calories, and water tracking.
+- If the user asks about workouts, weightlifting exercises, training splits, gym schedules, gym routines, cardio, running, or anything other than diet/nutrition/water, you MUST refuse and reply exactly: "Sorry, I'm only here for diet, water, and nutrition tracking." and do NOT return any actions.
+
+WATER LOGGING RULES:
+- If the user says they drank water but does NOT specify a quantity/amount (e.g. "I drank water", "water"), you MUST reply: "How much water did you drink?" and do NOT insert a water log action.
+- If the user specifies an amount with or without units (e.g. "I drank 290 water" or "I drank 290ml water"), assume the unit is milliliters (ml) and log that amount (e.g. 290ml).
+
 RULES:
 - Be an enthusiastic, engaging, and encouraging human-like fitness coach! Use emojis, be warm, and celebrate wins. Do NOT be cold or robotic.
-- You DO NOT track or analyze running data. If the user asks about a run, their running stats, or running feedback, you MUST reply: "I don't track running data! I only analyze your weightlifting sessions and nutrition."
-- When giving feedback on weightlifting workouts, ONLY mention the EXACT metrics provided in the text (weight, reps). Do NOT invent stats.
-- STRICT RULE: 'CURRENT_WORKOUT_PLANS' is just their *planned* schedule. 'RECENT_COMPLETED_WORKOUTS' contains what they *actually* did in reality. Base all performance feedback EXCLUSIVELY on 'RECENT_COMPLETED_WORKOUTS'.
-- If the user explicitly asks you to LOG a workout or CHANGE their schedule/plan, refuse and say: "I cannot log workouts or change your plans directly. Please use the app interface for that."
-- HOWEVER, if the user asks for FEEDBACK on past weightlifting workouts, you MUST provide it based on the RECENT_COMPLETED_WORKOUTS data.
 - Use EXACT TODAY_DIET_LOG_ID from context for meals.
 - Generate a unique UUID for item id.
 - Use your food knowledge. NEVER return 0 for macros unless it's genuinely 0.
@@ -91,9 +95,9 @@ RULES:
 - actions:[] if no change.`;
 };
 
-const WORKOUT_SYSTEM_PROMPT = (uid: string | null, ctx: string) => {
+const WORKOUT_SYSTEM_PROMPT = (clientName: string, uid: string | null, ctx: string) => {
   const today = getLocalDate();
-  return `You are Haleem's elite clinical strength and conditioning coach and physiological analyst. Output ONLY valid JSON. Never plain text.
+  return `You are ${clientName || 'Client'}'s elite clinical strength and conditioning coach and physiological analyst. Output ONLY valid JSON. Never plain text.
 User ID: ${uid} | Today: ${today}
 
 ${ctx}
@@ -139,7 +143,14 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
   });
   const navigate = useNavigate();
   const userIdRef = useRef<string | null>(null);
+  const clientNameRef = useRef<string>('Client');
+  const isCoachRef = useRef<boolean>(false);
   const initialized = useRef(false);
+
+  // ─── Per-minute rate limit: max 3 messages per 60 seconds ─────────────────
+  const perMinuteTimestamps = useRef<number[]>([]);
+  const PER_MINUTE_LIMIT = 3;
+  const PER_MINUTE_WINDOW_MS = 60 * 1000;
 
   const [quotaLimit, setQuotaLimit] = useState(20);
   const [usageCount, setUsageCount] = useState(0);
@@ -507,8 +518,8 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (!key) throw new Error('VITE_GROQ_API_KEY not set');
 
     const systemPromptContent = options?.mode === 'workout'
-      ? WORKOUT_SYSTEM_PROMPT(userIdRef.current, context)
-      : SYSTEM_PROMPT(userIdRef.current, context);
+      ? WORKOUT_SYSTEM_PROMPT(clientNameRef.current, userIdRef.current, context)
+      : SYSTEM_PROMPT(clientNameRef.current, userIdRef.current, context);
 
     const msgs = [
       { role: 'system', content: systemPromptContent },
@@ -580,6 +591,19 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     const { data: { session } } = await supabase.auth.getSession();
     userIdRef.current = session?.user?.id || null;
 
+    // Load client name and role
+    if (session?.user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (profile) {
+        clientNameRef.current = profile.full_name || 'Client';
+        isCoachRef.current = profile.role === 'coach';
+      }
+    }
+
     if (!getApiKey()) {
       setMessages([{ id: 'no-key', role: 'model', text: 'Add VITE_GROQ_API_KEY to Vercel environment variables.' }]);
       return;
@@ -587,7 +611,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
     setMessages(prev => {
       if (prev.length === 0 && !options?.storageKey) {
-        return [{ id: '1', role: 'model', text: "Coach connected. What do you need?" }];
+        return [{ id: '1', role: 'model', text: `Hey ${clientNameRef.current}! I'm your nutrition coach. What do you need?` }];
       }
       return prev;
     });
@@ -622,7 +646,23 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (!initialized.current) await initChat();
     if (!getApiKey()) return;
 
-    // Check quota limit
+    // ── Per-minute rolling window check (max 3 msgs / 60s) ──────────────────
+    const now = Date.now();
+    perMinuteTimestamps.current = perMinuteTimestamps.current.filter(
+      ts => now - ts < PER_MINUTE_WINDOW_MS
+    );
+    if (perMinuteTimestamps.current.length >= PER_MINUTE_LIMIT) {
+      const oldestTs = perMinuteTimestamps.current[0];
+      const waitSec = Math.ceil((PER_MINUTE_WINDOW_MS - (now - oldestTs)) / 1000);
+      setMessages(prev => [...prev,
+        { id: crypto.randomUUID(), role: 'user', text },
+        { id: crypto.randomUUID(), role: 'model',
+          text: `⏱️ You're sending messages too fast. Please wait ${waitSec} second${waitSec !== 1 ? 's' : ''} before trying again.` }
+      ]);
+      return;
+    }
+
+    // ── Daily quota check ────────────────────────────────────────────────────
     const { limit, count, exceeded } = await refreshQuota();
     if (exceeded) {
       setMessages(prev => [...prev, {
@@ -636,6 +676,9 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       }]);
       return;
     }
+
+    // Record this message timestamp BEFORE the API call
+    perMinuteTimestamps.current.push(now);
 
     const userMsgId = crypto.randomUUID();
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', text }]);
@@ -660,13 +703,19 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         });
       }
 
-      // Handle DB Actions
+      // Handle DB Actions — show role-appropriate status messages
       if (actionsToExecute.length > 0) {
         const { success, errorMsg } = await executeActions(actionsToExecute);
         if (success) {
-          aiText += "\n\n*(✓ Successfully saved to database)*";
+          // Coaches see full DB success message; clients see a clean tick
+          aiText += isCoachRef.current
+            ? "\n\n*(✓ Successfully saved to database)*"
+            : "\n\n*(✓ Saved successfully)*";
         } else {
-          aiText += `\n\n*(⚠ Failed to save to database. Error: ${errorMsg || 'Please try again'})*`;
+          // Coaches see the raw error; clients see a friendly message
+          aiText += isCoachRef.current
+            ? `\n\n*(⚠ Failed to save to database. Error: ${errorMsg || 'Please try again'})*`
+            : "\n\n*(⚠ Error while saving. Please try again)*";
         }
       }
 
@@ -698,10 +747,14 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
     } catch (e: any) {
       const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
+      // Coaches see the real error; clients see a generic friendly message
+      const userFacingText = isRate
+        ? '⏱️ The AI is busy right now. Please wait a moment and try again.'
+        : (isCoachRef.current ? `Error: ${e.message}` : 'Something went wrong. Please try again later.');
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: 'model',
-        text: isRate ? '⏱️ All 3 models rate-limited. Wait 60 seconds.' : `Error: ${e.message}`
+        text: userFacingText
       }]);
     } finally {
       setIsTyping(false);
