@@ -238,16 +238,14 @@ const TodayView = () => {
       if (!active) return;
       
       let activePlans = plansData || [];
-      // Seed any missing default splits (PUSH/PULL/LEGS)
-      const existingTypes = activePlans.map((p: any) => p.plan_type);
-      const defaultExercises: Record<string, string[]> = {
-        PUSH: ['Incline DB Bench Press (45°)', 'DB Shoulder Press (seated neutral)', 'Incline DB Y-Raise (20-30°)', 'Cable Chest Fly (low pulley)', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
-        PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
-        LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
-      };
-      const missingDefaults = ['PUSH', 'PULL', 'LEGS'].filter(t => !existingTypes.includes(t));
-      if (missingDefaults.length > 0) {
-        const defaultInserts = missingDefaults.map(split => ({
+      // Seed default splits (PUSH/PULL/LEGS) only if user has NO templates at all
+      if (activePlans.length === 0) {
+        const defaultExercises: Record<string, string[]> = {
+          PUSH: ['Incline DB Bench Press (45°)', 'DB Shoulder Press (seated neutral)', 'Incline DB Y-Raise (20-30°)', 'Cable Chest Fly (low pulley)', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
+          PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
+          LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
+        };
+        const defaultInserts = ['PUSH', 'PULL', 'LEGS'].map(split => ({
           user_id: session.user.id,
           plan_type: split,
           exercises: defaultExercises[split].map((name: string, i: number) => ({

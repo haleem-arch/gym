@@ -384,11 +384,9 @@ const WorkoutBuilder = () => {
         .eq('user_id', session.user.id);
 
       let activePlans = plansData || [];
-      // Seed any missing default splits (PUSH/PULL/LEGS)
-      const existingTypes = activePlans.map(p => p.plan_type);
-      const missingDefaults = ['PUSH', 'PULL', 'LEGS'].filter(t => !existingTypes.includes(t));
-      if (missingDefaults.length > 0) {
-        const defaultInserts = missingDefaults.map(split => ({
+      // Seed default splits (PUSH/PULL/LEGS) only if user has NO templates at all
+      if (activePlans.length === 0) {
+        const defaultInserts = ['PUSH', 'PULL', 'LEGS'].map(split => ({
           user_id: session.user.id,
           plan_type: split,
           exercises: DEFAULT_EXERCISES[split].map((name: string, i: number) => ({

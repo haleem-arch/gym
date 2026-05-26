@@ -344,8 +344,14 @@ export default function DashboardPage() {
       ex.muscle_group?.toLowerCase().includes(searchExerciseQuery.toLowerCase());
   }).slice(0, 6);
 
-  // Athlete day types from their actual plans (always including Rest, Run, Run + Gym defaults)
-  const athleteDayTypes = ['REST', 'RUN', 'RUN + GYM', ...workoutPlans.map(p => p.plan_type)];
+  // Get all unique day types (fixed types, actual workout plans, and any keys currently inside client's day_nutrition map)
+  const athleteDayTypes = Array.from(new Set([
+    'REST', 
+    'RUN', 
+    'RUN + GYM', 
+    ...workoutPlans.map(p => p.plan_type),
+    ...Object.keys(dayNutrition)
+  ])).filter(Boolean);
 
   // ─── SAVE DAY-TYPE NUTRITION ────────────────────────────
   const handleOpenDayEdit = (dt: string) => {
