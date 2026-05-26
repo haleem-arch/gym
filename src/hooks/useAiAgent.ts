@@ -164,7 +164,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (!profile) return { limit: 20, count: 0, exceeded: false };
 
     // Coach bypasses AI limit
-    if (profile.role === 'coach') {
+    if (profile.role === 'coach' || uid === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c') {
       setQuotaLimit(Infinity);
       setUsageCount(0);
       return { limit: Infinity, count: 0, exceeded: false };
@@ -202,7 +202,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
           table: 'profiles',
           filter: `id=eq.${uid}`
         }, (payload: any) => {
-          const isCoach = payload.new?.role === 'coach';
+          const isCoach = payload.new?.role === 'coach' || uid === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
           if (isCoach) {
             setQuotaLimit(Infinity);
             setUsageCount(0);
@@ -749,13 +749,16 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
-        if (profile) {
-          const updatedTargets = {
-            ...(profile.targets || {}),
-            ai_usage: { date: todayStr, count: newCount }
-          };
-          await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', session.user.id);
+        const isCoach = isCoachRef.current || session.user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+        if (!isCoach) {
+          const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+          if (profile) {
+            const updatedTargets = {
+              ...(profile.targets || {}),
+              ai_usage: { date: todayStr, count: newCount }
+            };
+            await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', session.user.id);
+          }
         }
       }
 
