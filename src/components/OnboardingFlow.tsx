@@ -34,35 +34,207 @@ interface SplitItem {
 }
 
 // Custom brand dumbbell logo component matching icon.svg / OpeningAnimation.tsx
-const BrandLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
-  <div className={`relative flex items-center justify-center select-none ${className}`}>
-    <svg viewBox="0 0 512 512" className="w-full h-full" style={{ imageRendering: 'crisp-edges' }}>
-      <g transform="translate(256 256) rotate(-45)">
-        {/* Rod */}
-        <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
-        {/* Left weights */}
-        <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
-        <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-        <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
-        {/* Right weights */}
-        <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
-        <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-        <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
-      </g>
-    </svg>
-  </div>
-);
+const BrandLogo = ({ className = "w-12 h-12", errorMsg = null }: { className?: string, errorMsg?: string | null }) => {
+  const getShortErrorMessage = (msg: string | null) => {
+    if (!msg) return '';
+    const lower = msg.toLowerCase();
+    if (lower.includes('credential') || lower.includes('invalid') || lower.includes('password') || lower.includes('email')) {
+      return 'WRONG PASSWORD / USERNAME';
+    }
+    if (lower.includes('network') || lower.includes('fetch')) {
+      return 'CONNECTION ERROR';
+    }
+    if (lower.includes('agree') || lower.includes('terms') || lower.includes('privacy')) {
+      return 'ACCEPT PRIVACY';
+    }
+    return 'AUTH FAILED';
+  };
 
-const CustomizeLaterNote = () => (
-  <div className="bg-blue-950/20 border border-blue-900/30 rounded-xl p-3 flex items-start gap-2.5 mt-3 select-none">
-    <span className="text-blue-400 text-sm leading-none mt-0.5">💡</span>
-    <div className="flex-1">
-      <p className="text-[10px] leading-relaxed text-blue-300/80 font-medium">
-        <strong>Note:</strong> You can always customize and edit these settings more specifically later inside your Settings menu.
-      </p>
+  const shakeVariants = {
+    normal: { x: 0 },
+    shake: {
+      x: [0, -10, 10, -10, 10, -5, 5, 0],
+      transition: { duration: 0.5, ease: 'easeInOut' as const }
+    }
+  };
+
+  return (
+    <div className={`relative flex items-center justify-center select-none ${className}`}>
+      <motion.div
+        layout
+        variants={shakeVariants}
+        animate={errorMsg ? 'shake' : 'normal'}
+        transition={{ type: 'spring', stiffness: 120, damping: 15 }}
+        className={`relative bg-gradient-to-tr ${
+          errorMsg 
+            ? 'from-red-950/65 to-purple-950/65 border-red-500/35 shadow-red-500/10' 
+            : 'from-blue-600 to-purple-600 border-white/10 shadow-blue-500/20'
+        } border flex items-center justify-center shadow-lg`}
+        style={{
+          width: errorMsg ? 350 : 80,
+          height: 80,
+          borderRadius: errorMsg ? '16px' : '22px',
+        }}
+      >
+        {/* Background Breathing Glow when in error */}
+        {errorMsg && (
+          <motion.div
+            animate={{
+              scale: [0.95, 1.05, 0.95],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 1.6,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            className="absolute inset-0 rounded-full bg-red-500/20 blur-xl pointer-events-none"
+          />
+        )}
+
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          shapeRendering="geometricPrecision"
+          className="w-full h-full overflow-visible relative z-10 p-4"
+        >
+          <g transform="translate(256 256)">
+            <motion.g
+              animate={{
+                rotate: errorMsg ? 0 : -45,
+              }}
+              transition={{ type: 'spring', stiffness: 100, damping: 12 }}
+            >
+              {/* Metal Rod / Handle */}
+              <motion.rect
+                id="bar"
+                animate={{
+                  x: errorMsg ? -220 : -120,
+                  width: errorMsg ? 440 : 240,
+                  height: errorMsg ? 36 : 32,
+                  y: errorMsg ? -18 : -16,
+                  fill: errorMsg ? '#0a0a0c' : '#ffffff',
+                  stroke: errorMsg ? '#ef4444' : 'transparent',
+                  strokeWidth: errorMsg ? 2 : 0,
+                }}
+                rx="8"
+                transition={{ type: 'spring', stiffness: 100, damping: 12 }}
+              />
+
+              {/* Left Weight Plates */}
+              <motion.g
+                id="left-weights"
+                animate={{
+                  x: errorMsg ? -100 : 0,
+                }}
+                transition={{ type: 'spring', stiffness: 100, damping: 12 }}
+              >
+                <motion.rect x="-110" y="-60" width="30" height="120" rx="8" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
+                <motion.rect x="-150" y="-80" width="30" height="160" rx="10" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
+                <motion.rect x="-170" y="-40" width="10" height="80" rx="4" animate={{ fill: errorMsg ? '#60a5fa' : '#ffffff' }} transition={{ duration: 0.3 }} />
+
+                {/* Extra weight plates that slide out in error state */}
+                <motion.rect
+                  x="-190"
+                  y="-70"
+                  width="20"
+                  height="140"
+                  rx="8"
+                  fill="#ef4444"
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{
+                    opacity: errorMsg ? 1 : 0,
+                    scaleX: errorMsg ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  style={{ transformOrigin: 'right' }}
+                />
+                <motion.rect
+                  x="-210"
+                  y="-50"
+                  width="15"
+                  height="100"
+                  rx="6"
+                  fill="#eab308"
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{
+                    opacity: errorMsg ? 1 : 0,
+                    scaleX: errorMsg ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.3, delay: 0.05 }}
+                  style={{ transformOrigin: 'right' }}
+                />
+              </motion.g>
+
+              {/* Right Weight Plates */}
+              <motion.g
+                id="right-weights"
+                animate={{
+                  x: errorMsg ? 100 : 0,
+                }}
+                transition={{ type: 'spring', stiffness: 100, damping: 12 }}
+              >
+                <motion.rect x="80" y="-60" width="30" height="120" rx="8" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
+                <motion.rect x="120" y="-80" width="30" height="160" rx="10" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
+                <motion.rect x="160" y="-40" width="10" height="80" rx="4" animate={{ fill: errorMsg ? '#60a5fa' : '#ffffff' }} transition={{ duration: 0.3 }} />
+
+                {/* Extra weight plates that slide out in error state */}
+                <motion.rect
+                  x="170"
+                  y="-70"
+                  width="20"
+                  height="140"
+                  rx="8"
+                  fill="#ef4444"
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{
+                    opacity: errorMsg ? 1 : 0,
+                    scaleX: errorMsg ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  style={{ transformOrigin: 'left' }}
+                />
+                <motion.rect
+                  x="195"
+                  y="-50"
+                  width="15"
+                  height="100"
+                  rx="6"
+                  fill="#eab308"
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{
+                    opacity: errorMsg ? 1 : 0,
+                    scaleX: errorMsg ? 1 : 0,
+                  }}
+                  transition={{ duration: 0.3, delay: 0.05 }}
+                  style={{ transformOrigin: 'left' }}
+                />
+              </motion.g>
+
+              {/* Warning Text */}
+              <motion.text
+                x="0"
+                y="0"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#ef4444"
+                className="font-mono select-none font-black"
+                style={{ fontSize: '15px', letterSpacing: '2px' }}
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: errorMsg ? 1 : 0,
+                }}
+                transition={{ duration: 0.3, delay: errorMsg ? 0.15 : 0 }}
+              >
+                {getShortErrorMessage(errorMsg)}
+              </motion.text>
+            </motion.g>
+          </g>
+        </svg>
+      </motion.div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function OnboardingFlow({ 
   initialStep = 1, 
@@ -86,9 +258,63 @@ export default function OnboardingFlow({
   // Step 1: Auth form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Flying Arrow States & Refs
+  const [showArrow, setShowArrow] = useState(false);
+  const [arrowPoints, setArrowPoints] = useState<{
+    startX: number;
+    startY: number;
+    controlX: number;
+    controlY: number;
+    endX: number;
+    endY: number;
+  } | null>(null);
+
+  const cardRef = useRef<HTMLDivElement>(null);
+  const privacyContainerRef = useRef<HTMLDivElement>(null);
+  const loginButtonRef = useRef<HTMLButtonElement>(null);
+
   const [showPassword, setShowPassword] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms' | 'cookies' | null>(null);
+
+  // Automatically fade out the flying arrow when legal terms are accepted
+  useEffect(() => {
+    if (legalAccepted) {
+      setShowArrow(false);
+    }
+  }, [legalAccepted]);
+
+  const triggerPrivacyArrow = () => {
+    setShowArrow(false);
+    // Allow state to reset, then recalculate and animate
+    setTimeout(() => {
+      const btnEl = loginButtonRef.current;
+      const cbEl = privacyContainerRef.current;
+      const cardEl = cardRef.current;
+      if (btnEl && cbEl && cardEl) {
+        const btnRect = btnEl.getBoundingClientRect();
+        const cbRect = cbEl.getBoundingClientRect();
+        const cardRect = cardEl.getBoundingClientRect();
+
+        // Start at the center of the login button relative to the card
+        const startX = btnRect.left - cardRect.left + btnRect.width / 2;
+        const startY = btnRect.top - cardRect.top + btnRect.height / 2;
+
+        // End at the checkbox relative to the card
+        const endX = cbRect.left - cardRect.left + 8;
+        const endY = cbRect.top - cardRect.top + cbRect.height / 2;
+
+        // Curved path swooping to the right
+        const controlX = Math.max(startX, endX) + 110;
+        const controlY = (startY + endY) / 2 + 10;
+
+        setArrowPoints({ startX, startY, controlX, controlY, endX, endY });
+        setShowArrow(true);
+      }
+    }, 40);
+  };
 
   // Step 2: Workouts split states with embedded baseline exercises
   const [splits, setSplits] = useState<SplitItem[]>([
@@ -364,9 +590,11 @@ export default function OnboardingFlow({
     e.preventDefault();
     if (!legalAccepted) {
       toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
+      triggerPrivacyArrow();
       return;
     }
     setLoading(true);
+    setErrorMsg(null);
     try {
       const finalEmail = email.includes('@') ? email : `${email.trim().toLowerCase()}@stride.fit`;
       const { data, error } = await supabase.auth.signInWithPassword({ email: finalEmail, password });
@@ -378,6 +606,7 @@ export default function OnboardingFlow({
       }
     } catch (err: any) {
       console.error(err);
+      setErrorMsg(err.message || 'Sign in failed.');
       toast.error(err.message || 'Sign in failed.');
     } finally {
       setLoading(false);
@@ -710,9 +939,9 @@ export default function OnboardingFlow({
             
             {/* ── STEP 1: SIGN IN ── */}
             {step === 1 && (
-              <div className="space-y-5">
+              <div ref={cardRef} className="space-y-5 relative">
                 <div className="text-center">
-                  <BrandLogo className="w-20 h-20 mx-auto mb-3" />
+                  <BrandLogo className="mx-auto mb-3" errorMsg={errorMsg} />
                   <h2 className="text-2xl font-extrabold text-white tracking-tight">
                     Welcome Back
                   </h2>
@@ -753,7 +982,7 @@ export default function OnboardingFlow({
                       <div className="relative">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input 
-                          type="text" required value={email} onChange={e => setEmail(e.target.value)} 
+                          type="text" required value={email} onChange={e => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }} 
                           placeholder="e.g. ahmed" 
                           className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
@@ -764,7 +993,7 @@ export default function OnboardingFlow({
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input 
-                          type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} 
+                          type={showPassword ? "text" : "password"} required value={password} onChange={e => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} 
                           placeholder="••••••••" 
                           className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
@@ -777,12 +1006,17 @@ export default function OnboardingFlow({
                       </div>
                     </div>
                     {/* Legal Checkbox */}
-                    <div className="flex items-start gap-2.5 pt-1.5 pb-1 select-none">
+                    <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1.5 pb-1 select-none relative">
                       <input 
                         type="checkbox" 
                         id="legal-accept-onboarding"
                         checked={legalAccepted} 
-                        onChange={e => setLegalAccepted(e.target.checked)} 
+                        onChange={e => {
+                          setLegalAccepted(e.target.checked);
+                          if (e.target.checked) {
+                            setShowArrow(false);
+                          }
+                        }} 
                         className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
                       />
                       <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
@@ -798,6 +1032,7 @@ export default function OnboardingFlow({
                     </div>
 
                     <button 
+                      ref={loginButtonRef}
                       type="submit" disabled={loading}
                       className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-1"
                     >
@@ -820,7 +1055,61 @@ export default function OnboardingFlow({
                     </button>
                   </form>
                 )}
-                <CustomizeLaterNote />
+
+                {/* Flying Arrow Overlay */}
+                <AnimatePresence>
+                  {showArrow && arrowPoints && (
+                    <motion.svg
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 pointer-events-none z-50 overflow-visible w-full h-full"
+                    >
+                      <defs>
+                        <linearGradient id="arrow-trail-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
+                          <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.4" />
+                          <stop offset="100%" stopColor="#60a5fa" stopOpacity="1" />
+                        </linearGradient>
+                        <marker id="flying-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                          <path d="M1,1 L7,4 L1,7 Z" fill="#60a5fa" />
+                        </marker>
+                      </defs>
+
+                      {/* Curved path */}
+                      <motion.path
+                        d={`M ${arrowPoints.startX} ${arrowPoints.startY} Q ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.endX} ${arrowPoints.endY}`}
+                        fill="none"
+                        stroke="url(#arrow-trail-grad)"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        markerEnd="url(#flying-arrowhead)"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{
+                          pathLength: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] },
+                        }}
+                      />
+
+                      {/* Glowing pulse at the destination */}
+                      <motion.circle
+                        cx={arrowPoints.endX}
+                        cy={arrowPoints.endY}
+                        r="10"
+                        className="fill-blue-500/20 stroke-blue-400"
+                        strokeWidth="1.5"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: [1, 2, 1], opacity: [0, 0.8, 0] }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 1.2,
+                          delay: 0.6,
+                        }}
+                      />
+                    </motion.svg>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
@@ -973,8 +1262,6 @@ export default function OnboardingFlow({
                     <Plus size={14} /> Add Day
                   </button>
                 </div>
-
-                <CustomizeLaterNote />
               </div>
             )}
 
@@ -1110,8 +1397,6 @@ export default function OnboardingFlow({
                     </button>
                   </div>
                 </div>
-
-                <CustomizeLaterNote />
               </div>
             )}
 
@@ -1187,8 +1472,6 @@ export default function OnboardingFlow({
                     </div>
                   )}
                 </div>
-
-                <CustomizeLaterNote />
               </div>
             )}
 
