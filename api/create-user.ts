@@ -81,6 +81,7 @@ export default async function handler(req: any, res: any) {
       email: email,
       display_name: display_name || email.split('@')[0],
       role: userRole,
+      coach_id: user.id,
       targets: { gender: gender || 'male' }
     });
 
