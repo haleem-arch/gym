@@ -704,7 +704,7 @@ const WorkoutHome = () => {
       </motion.div>
 
       {/* ── Workout Templates & Programs Section ── */}
-      {(currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableWorkoutTemplates) && (
+      {!loading && (currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableWorkoutTemplates) && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }} 
           animate={{ opacity: 1, y: 0 }} 

@@ -910,6 +910,15 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">AI Coach Usage</p>
                   {(() => {
+                    const selectedProfile = profiles.find(p => p.id === selectedUserId);
+                    const isCoachUser = selectedProfile?.role === 'coach' || selectedUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+                    if (isCoachUser) {
+                      return (
+                        <p className="text-base font-black text-white mt-0.5">
+                          Unlimited <span className="text-xs text-gray-500 font-bold">(Coach)</span>
+                        </p>
+                      );
+                    }
                     const limit = profileTargets?.ai_quota_limit ?? 20;
                     const usage = profileTargets?.ai_usage || { date: '', count: 0 };
                     const count = usage.date === activeDateStr ? usage.count : 0;
@@ -923,6 +932,11 @@ export default function DashboardPage() {
               </div>
               <div className="flex-1 max-w-[120px]">
                 {(() => {
+                  const selectedProfile = profiles.find(p => p.id === selectedUserId);
+                  const isCoachUser = selectedProfile?.role === 'coach' || selectedUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+                  if (isCoachUser) {
+                    return <ProgressBar value={0} max={1} color="#3b82f6" />;
+                  }
                   const limit = profileTargets?.ai_quota_limit ?? 20;
                   const usage = profileTargets?.ai_usage || { date: '', count: 0 };
                   const count = usage.date === activeDateStr ? usage.count : 0;
