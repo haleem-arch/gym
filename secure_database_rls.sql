@@ -1,5 +1,5 @@
 -- ==========================================
--- STRIDE RITE FITNESS DASHBOARD - SECURITY UPGRADE (v2 - BUGFIXED)
+-- STRIDE RITE FITNESS DASHBOARD - SECURITY UPGRADE (v3 - COMPREHENSIVE RESET)
 -- ==========================================
 -- This script re-enables Row Level Security (RLS) and sets up secure access rules.
 -- It securely permits a Coach (auth.uid()) to manage clients' workouts, logs, and scans
@@ -22,7 +22,8 @@ alter table public.ai_chat enable row level security;
 alter table public.progress_notes enable row level security;
 alter table public.water_logs enable row level security;
 
--- 2. RESET EXISTING POLICIES TO PREVENT DUPLICATES
+-- 2. RESET ALL POLICIES TO PREVENT DUPLICATES & ERRORS (COMPREHENSIVE RESET)
+-- Profiles
 drop policy if exists "Users can view own profile." on public.profiles;
 drop policy if exists "Users can update own profile." on public.profiles;
 drop policy if exists "Coaches can view their clients profiles." on public.profiles;
@@ -32,66 +33,80 @@ drop policy if exists "Update profiles." on public.profiles;
 drop policy if exists "Insert profiles." on public.profiles;
 drop policy if exists "Delete profiles." on public.profiles;
 
+-- Client Profiles
 drop policy if exists "Users can view own client profile." on public.client_profiles;
 drop policy if exists "Coaches can manage their clients profiles." on public.client_profiles;
 drop policy if exists "Coaches can view/manage client profiles" on public.client_profiles;
 drop policy if exists "View client profiles." on public.client_profiles;
 drop policy if exists "Manage client profiles." on public.client_profiles;
 
+-- Client Workout Days
 drop policy if exists "Users can view own workout days." on public.client_workout_days;
 drop policy if exists "Coaches can manage their clients workout days." on public.client_workout_days;
 drop policy if exists "View workout days." on public.client_workout_days;
 drop policy if exists "Manage workout days." on public.client_workout_days;
 
+-- User Workout Plans
 drop policy if exists "View user workout plans" on public.user_workout_plans;
 drop policy if exists "Manage user workout plans" on public.user_workout_plans;
 
+-- Schedules
 drop policy if exists "All schedules operations." on public.schedules;
 drop policy if exists "Users can view own schedules, and coaches can view client schedules in the last 180 days." on public.schedules;
 drop policy if exists "Coaches can manage client schedules." on public.schedules;
 drop policy if exists "Schedules select policy." on public.schedules;
 drop policy if exists "Schedules write policy." on public.schedules;
 
+-- Workouts
 drop policy if exists "All workouts operations." on public.workouts;
 drop policy if exists "Users can view own workouts, and coaches can view client workouts in the last 180 days." on public.workouts;
 drop policy if exists "Coaches can manage client workouts." on public.workouts;
 drop policy if exists "Workouts select policy." on public.workouts;
 drop policy if exists "Workouts write policy." on public.workouts;
 
+-- Workout Exercises
 drop policy if exists "All workout exercises." on public.workout_exercises;
 drop policy if exists "Workout exercises select policy." on public.workout_exercises;
 drop policy if exists "Workout exercises write policy." on public.workout_exercises;
 drop policy if exists "Workout exercises insert policy" on public.workout_exercises;
+drop policy if exists "Workout exercises delete policy" on public.workout_exercises;
 
+-- Diet Logs
 drop policy if exists "All diet logs operations." on public.diet_logs;
 drop policy if exists "Users can view own diet logs, and coaches can view client diet logs in the last 180 days." on public.diet_logs;
 drop policy if exists "Coaches can manage client diet logs." on public.diet_logs;
 drop policy if exists "Diet logs select policy." on public.diet_logs;
 drop policy if exists "Diet logs write policy." on public.diet_logs;
 
+-- Diet Meals
 drop policy if exists "All diet meals." on public.diet_meals;
 drop policy if exists "Diet meals select policy." on public.diet_meals;
 drop policy if exists "Diet meals write policy." on public.diet_meals;
 drop policy if exists "Diet meals insert policy" on public.diet_meals;
+drop policy if exists "Diet meals delete policy" on public.diet_meals;
 
+-- Inbody Scans
 drop policy if exists "All inbody operations." on public.inbody_scans;
 drop policy if exists "Users can view own scans, and coaches can view client scans in the last 180 days." on public.inbody_scans;
 drop policy if exists "Coaches can manage client scans." on public.inbody_scans;
 drop policy if exists "Inbody scans select policy." on public.inbody_scans;
 drop policy if exists "Inbody scans write policy." on public.inbody_scans;
 
+-- Progress Notes
 drop policy if exists "All progress notes operations." on public.progress_notes;
 drop policy if exists "Users can view own progress notes, and coaches can view client progress notes in the last 180 days." on public.progress_notes;
 drop policy if exists "Coaches can manage client progress notes." on public.progress_notes;
 drop policy if exists "Progress notes select policy." on public.progress_notes;
 drop policy if exists "Progress notes write policy." on public.progress_notes;
 
+-- Water Logs
 drop policy if exists "All water logs operations." on public.water_logs;
 drop policy if exists "Users can view own water logs, and coaches can view client water logs in the last 180 days." on public.water_logs;
 drop policy if exists "Coaches can manage client water logs." on public.water_logs;
 drop policy if exists "Water logs select policy." on public.water_logs;
 drop policy if exists "Water logs write policy." on public.water_logs;
 
+-- AI Chat
 drop policy if exists "All chat operations." on public.ai_chat;
 drop policy if exists "Chat select policy." on public.ai_chat;
 drop policy if exists "Chat write policy." on public.ai_chat;
@@ -146,7 +161,7 @@ create policy "Manage workout days." on public.client_workout_days for all using
 );
 
 
--- 5.1 USER WORKOUT PLANS POLICIES (Lifting Split Templates Mapping - BUG FIXED)
+-- 5.1 USER WORKOUT PLANS POLICIES (Lifting Split Templates Mapping)
 create policy "View user workout plans" on public.user_workout_plans for select using (
   auth.uid() = user_id 
   or exists (
@@ -209,7 +224,7 @@ create policy "Workouts write policy." on public.workouts for all using (
 );
 
 
--- 8. WORKOUT EXERCISES POLICIES (Explicit SQL security checks to allow smooth inserts & deletes - BUG FIXED)
+-- 8. WORKOUT EXERCISES POLICIES (Explicit SQL security checks to allow smooth inserts & deletes)
 create policy "Workout exercises select policy." on public.workout_exercises for select using (
   exists (
     select 1 from public.workouts w 
@@ -278,7 +293,7 @@ create policy "Diet logs write policy." on public.diet_logs for all using (
 );
 
 
--- 10. DIET MEALS POLICIES (Explicit SQL security checks to allow smooth inserts - BUG FIXED)
+-- 10. DIET MEALS POLICIES (Explicit SQL security checks to allow smooth inserts)
 create policy "Diet meals select policy." on public.diet_meals for select using (
   exists (
     select 1 from public.diet_logs l 
