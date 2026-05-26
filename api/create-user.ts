@@ -49,7 +49,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // 2. Perform Admin Action (Create User)
-  const { email, password, display_name, gender, role } = req.body;
+  const { email, password, display_name, gender, role, coach_id, targets, username } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing email or password' });
   }
@@ -72,17 +72,26 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: createError.message });
   }
 
-  // Set the user role in profiles table
+  // Set the user role and other details in profiles table
   const userRole = role || 'client';
+  const profilePayload: any = {
+    id: authData.user.id,
+    email: email,
+    display_name: display_name || email.split('@')[0],
+    role: userRole
+  };
+  
+  if (coach_id) profilePayload.coach_id = coach_id;
+  if (username) profilePayload.username = username;
+  if (targets) {
+    profilePayload.targets = targets;
+  } else {
+    profilePayload.targets = { gender: gender || 'male' };
+  }
+
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
-    .upsert({
-      id: authData.user.id,
-      email: email,
-      display_name: display_name || email.split('@')[0],
-      role: userRole,
-      targets: { gender: gender || 'male' }
-    });
+    .upsert(profilePayload);
 
   if (profileError) {
     console.error('Error setting profile role:', profileError);
