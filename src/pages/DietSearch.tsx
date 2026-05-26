@@ -71,7 +71,63 @@ const DietSearch = () => {
         }
       }
 
-      setResults(localResults);
+      // Sort results to prioritize simple staple items and exact name matches
+      const sortedResults = [...localResults].sort((a, b) => {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        const q = query.toLowerCase().trim();
+
+        const getScore = (item: any, name: string) => {
+          let score = 100;
+
+          // 1. Exact match
+          if (name === q) {
+            score -= 90;
+          }
+          // 2. Starts with query (e.g. "Rice Baladi")
+          else if (name.startsWith(q)) {
+            score -= 50;
+          }
+          // 3. Common prefixes before query (e.g. "White Rice", "Cooked Rice")
+          else if (
+            name.startsWith("white " + q) || 
+            name.startsWith("cooked " + q) || 
+            name.startsWith("raw " + q) || 
+            name.startsWith("brown " + q) || 
+            name.startsWith("basmati " + q) ||
+            name.startsWith("sliced " + q) ||
+            name.startsWith("whole " + q)
+          ) {
+            score -= 40;
+          }
+          // 4. Starts with the first word as query or contains it as a standalone word
+          else {
+            const firstWord = name.split(/[\s,()\-]+/)[0];
+            if (firstWord === q) {
+              score -= 30;
+            } else if (name.includes(" " + q)) {
+              score -= 15;
+            }
+          }
+
+          // 5. Category-based priority (Fitness Staples first, fast food last)
+          const cat = item.category || '';
+          if (cat.includes('Fitness')) {
+            score -= 25;
+          } else if (cat.includes('Restaurants') || cat.includes('Fast Food')) {
+            score += 30; // Demote complex restaurant dishes
+          }
+
+          // 6. Prefer simpler names (fewer characters / simpler ingredients)
+          score += name.length * 0.1;
+
+          return score;
+        };
+
+        return getScore(a, nameA) - getScore(b, nameB);
+      });
+
+      setResults(sortedResults);
       setLoading(false);
     };
 
