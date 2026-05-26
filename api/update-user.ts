@@ -22,7 +22,7 @@ export default async function handler(req: any, res: any) {
     return res.status(450).json({ error: 'Method not allowed' });
   }
 
-  // 1. Authorize Coach
+  // 1. Authorize (Only Owner can update roles and activation statuses)
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized: Missing token' });
@@ -36,57 +36,65 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 
-  // Verify role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const isCoach = profile?.role === 'coach' || user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-  if (!isCoach) {
-    return res.status(403).json({ error: 'Forbidden: Requires Coach role' });
+  // Verify they are the system owner
+  const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+  if (!isOwner) {
+    return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
   }
 
-  // 2. Perform Admin Action (Create User)
-  const { email, password, display_name, gender, role } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Missing email or password' });
+  // 2. Perform Admin Action (Update User)
+  const { uid, role, is_deactivated, password } = req.body;
+  if (!uid) {
+    return res.status(450).json({ error: 'Missing target uid' });
   }
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 
-  const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      display_name,
-      gender
-    }
-  });
+  // Fetch the current targets for this profile to merge them
+  const { data: currentProfile, error: fetchError } = await supabaseAdmin
+    .from('profiles')
+    .select('role, targets')
+    .eq('id', uid)
+    .maybeSingle();
 
-  if (createError) {
-    return res.status(400).json({ error: createError.message });
+  if (fetchError || !currentProfile) {
+    return res.status(404).json({ error: 'Profile not found' });
   }
 
-  // Set the user role in profiles table
-  const userRole = role || 'client';
+  const updatedTargets = {
+    ...(currentProfile.targets || {})
+  };
+
+  if (is_deactivated !== undefined) {
+    updatedTargets.is_deactivated = is_deactivated;
+  }
+
+  // Update profile
+  const updateData: any = {};
+  if (role !== undefined) updateData.role = role;
+  updateData.targets = updatedTargets;
+
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
-    .upsert({
-      id: authData.user.id,
-      email: email,
-      display_name: display_name || email.split('@')[0],
-      role: userRole,
-      targets: { gender: gender || 'male' }
-    });
+    .update(updateData)
+    .eq('id', uid);
 
   if (profileError) {
-    console.error('Error setting profile role:', profileError);
+    return res.status(500).json({ error: 'Failed to update profile: ' + profileError.message });
   }
 
-  return res.status(200).json({ user: authData.user });
+  // If password update was requested
+  if (password) {
+    const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+      uid,
+      { password }
+    );
+    if (passwordError) {
+      return res.status(500).json({ error: 'Profile updated, but password update failed: ' + passwordError.message });
+    }
+  }
+
+  return res.status(200).json({ success: true });
 }

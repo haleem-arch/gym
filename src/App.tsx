@@ -221,6 +221,7 @@ const AppContent = () => {
 function App() {
   const [session, setSession] = useState<any>(undefined);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | undefined>(undefined);
+  const [isSuspended, setIsSuspended] = useState<boolean>(false);
   const [showWelcomeSplash, setShowWelcomeSplash] = useState(false);
   const [welcomeName, setWelcomeName] = useState('');
 
@@ -253,6 +254,7 @@ function App() {
     if (session === undefined) return;
     if (session === null) {
       setNeedsOnboarding(undefined);
+      setIsSuspended(false);
       return;
     }
 
@@ -271,7 +273,16 @@ function App() {
           await supabase.auth.signOut();
           setSession(null);
           setNeedsOnboarding(undefined);
+          setIsSuspended(false);
           return;
+        }
+
+        // Check if account is suspended/deactivated via JSON targets
+        if (profile.targets?.is_deactivated === true) {
+          setIsSuspended(true);
+          return;
+        } else {
+          setIsSuspended(false);
         }
 
         const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
@@ -307,6 +318,30 @@ function App() {
     return <DumbbellLoader fullScreen size={140} />;
   }
 
+  if (isSuspended) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 min-h-[100dvh] bg-background text-center">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" x2="15" y1="9" y2="15"/><line x1="15" x2="9" y1="9" y2="15"/></svg>
+        </div>
+        <h1 className="text-xl font-black text-white">Account Deactivated</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+          Your account is currently inactive. Please contact the administrator or your coach to resolve outstanding fees and reactivate your profile.
+        </p>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            setSession(null);
+            setIsSuspended(false);
+          }}
+          className="mt-6 bg-gray-900 border border-gray-800 hover:bg-gray-800 text-white font-bold px-6 py-3 rounded-xl text-xs transition-all cursor-pointer"
+        >
+          Sign Out
+        </button>
+      </div>
+    );
+  }
+
   if (!session) {
     return (
       <>
@@ -314,7 +349,7 @@ function App() {
         <OnboardingFlow 
           initialStep={1} 
           onSessionConfigured={setSession} 
-        />
+          />
       </>
     );
   }
@@ -327,7 +362,7 @@ function App() {
           initialStep={2} 
           onSessionConfigured={setSession} 
           onComplete={() => setNeedsOnboarding(false)} 
-        />
+          />
       </>
     );
   }

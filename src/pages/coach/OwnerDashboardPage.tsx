@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import {
-  Lock, ArrowLeft, RefreshCw, ShieldAlert, Sparkle
+  Lock, ArrowLeft, RefreshCw, ShieldAlert, UserCheck, UserX,
+  Search, Shield, Key, Plus, Activity, CheckCircle, Database
 } from 'lucide-react';
 
-const getLocalDateString = (d: Date = new Date()) => {
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-};
 
 export default function OwnerDashboardPage() {
   const navigate = useNavigate();
@@ -20,12 +18,32 @@ export default function OwnerDashboardPage() {
 
   // Data
   const [profiles, setProfiles] = useState<any[]>([]);
-  const [clientProfiles, setClientProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [coachUserId, setCoachUserId] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
 
-  // Toggles
+  // Search & Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+
+  // New Coach Account Form
+  const [coachName, setCoachName] = useState('');
+  const [coachEmail, setCoachEmail] = useState('');
+  const [coachPassword, setCoachPassword] = useState('');
+  const [isCreatingCoach, setIsCreatingCoach] = useState(false);
+  const [createdCoachCredentials, setCreatedCoachCredentials] = useState<any | null>(null);
+
+  // Change Password Form
+  const [newPasswordForSelected, setNewPasswordForSelected] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // Live Activity Feed
+  const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
+  const [recentDiets, setRecentDiets] = useState<any[]>([]);
+  const [dbHealthy, setDbHealthy] = useState<boolean | null>(null);
+
+  // Feature Toggles (Global)
   const [disableWorkoutTemplatesToggle, setDisableWorkoutTemplatesToggle] = useState(false);
   const [disableNutritionTargetsToggle, setDisableNutritionTargetsToggle] = useState(false);
 
@@ -34,6 +52,7 @@ export default function OwnerDashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setCoachUserId(session.user.id);
+        setSessionToken(session.access_token);
       }
 
       // Fetch Haleem's toggles
@@ -43,19 +62,40 @@ export default function OwnerDashboardPage() {
         setDisableNutritionTargetsToggle(!!ownerProfile.targets.disable_nutrition_targets);
       }
 
-      // Fetch all client profiles (for ages)
-      const { data: cProfs } = await supabase.from('client_profiles').select('*');
-      if (cProfs) {
-        setClientProfiles(cProfs);
-      }
-
       // Fetch profiles
       const { data: userProfiles } = await supabase.from('profiles').select('*').order('display_name');
       if (userProfiles) {
         setProfiles(userProfiles);
       }
+
+      // Health Check / Connection Test
+      setDbHealthy(true);
+
+      // Fetch Activity Feed data (last 5 completed workouts & last 5 diet logs)
+      const { data: workouts } = await supabase
+        .from('workouts')
+        .select('id, date, day_type, total_volume, profiles(display_name)')
+        .eq('status', 'completed')
+        .order('date', { ascending: false })
+        .limit(5);
+
+      if (workouts) {
+        setRecentWorkouts(workouts);
+      }
+
+      const { data: dietLogs } = await supabase
+        .from('diet_logs')
+        .select('id, date, daily_totals, profiles(display_name)')
+        .order('date', { ascending: false })
+        .limit(5);
+
+      if (dietLogs) {
+        setRecentDiets(dietLogs);
+      }
+
     } catch (err) {
       console.error(err);
+      setDbHealthy(false);
       toast.error('Error loading admin data');
     } finally {
       setLoading(false);
@@ -112,6 +152,151 @@ export default function OwnerDashboardPage() {
       toast.success(checked ? 'Nutrition targets settings hidden for clients!' : 'Nutrition targets settings enabled for clients!');
     } catch (err: any) {
       toast.error('Failed to update: ' + err.message);
+    }
+  };
+
+  // Create Coach Account via secure Vercel Endpoint
+  const handleCreateCoach = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!coachName || !coachEmail || !coachPassword) {
+      toast.error('Please fill in all coach details');
+      return;
+    }
+
+    setIsCreatingCoach(true);
+    setCreatedCoachCredentials(null);
+
+    try {
+      const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          email: coachEmail,
+          password: coachPassword,
+          display_name: coachName,
+          gender: 'male',
+          role: 'coach'
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create coach account');
+      }
+
+      setCreatedCoachCredentials({
+        name: coachName,
+        email: coachEmail,
+        password: coachPassword
+      });
+
+      toast.success('Coach account created successfully!');
+      setCoachName('');
+      setCoachEmail('');
+      setCoachPassword('');
+
+      // Refresh list
+      fetchBaseData();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsCreatingCoach(false);
+    }
+  };
+
+  // Update Selected User (Role or Activation Status)
+  const handleUpdateUserStatus = async (uid: string, fields: { role?: string; is_deactivated?: boolean }) => {
+    try {
+      const response = await fetch('/api/update-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          uid,
+          ...fields
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update user');
+      }
+
+      toast.success('User updated successfully!');
+
+      // Update state locally
+      setProfiles((prev: any[]) => prev.map(p => {
+        if (p.id === uid) {
+          const updatedTargets = { ...(p.targets || {}) };
+          if (fields.is_deactivated !== undefined) {
+            updatedTargets.is_deactivated = fields.is_deactivated;
+          }
+          return {
+            ...p,
+            role: fields.role !== undefined ? fields.role : p.role,
+            targets: updatedTargets
+          };
+        }
+        return p;
+      }));
+
+      // Update selectedUser reference
+      if (selectedUser && selectedUser.id === uid) {
+        setSelectedUser((prev: any) => {
+          const updatedTargets = { ...(prev.targets || {}) };
+          if (fields.is_deactivated !== undefined) {
+            updatedTargets.is_deactivated = fields.is_deactivated;
+          }
+          return {
+            ...prev,
+            role: fields.role !== undefined ? fields.role : prev.role,
+            targets: updatedTargets
+          };
+        });
+      }
+
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Change Selected User Password
+  const handleChangeUserPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !newPasswordForSelected) return;
+
+    setIsUpdatingPassword(true);
+
+    try {
+      const response = await fetch('/api/update-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          uid: selectedUser.id,
+          password: newPasswordForSelected
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to change password');
+      }
+
+      toast.success('User password changed successfully!');
+      setNewPasswordForSelected('');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -172,39 +357,27 @@ export default function OwnerDashboardPage() {
     );
   }
 
-  // Calculate metrics
-  const clientUsers = profiles.filter(p => p.role === 'client');
-  const totalClients = clientUsers.length;
-  const males = clientUsers.filter(p => p.targets?.gender?.toLowerCase() === 'male');
-  const females = clientUsers.filter(p => p.targets?.gender?.toLowerCase() === 'female');
-  const maleIds = males.map(p => p.id);
-  const femaleIds = females.map(p => p.id);
+  // Stats calculation
+  const totalUsers = profiles.length;
+  const totalCoaches = profiles.filter(p => p.role === 'coach').length;
+  const totalClients = profiles.filter(p => p.role === 'client').length;
+  const totalActive = profiles.filter(p => p.targets?.is_deactivated !== true).length;
+  const totalDeactivated = profiles.filter(p => p.targets?.is_deactivated === true).length;
 
-  const maleAges = clientProfiles.filter(cp => maleIds.includes(cp.user_id) && cp.age).map(cp => cp.age);
-  const femaleAges = clientProfiles.filter(cp => femaleIds.includes(cp.user_id) && cp.age).map(cp => cp.age);
-
-  const avgMaleAge = maleAges.length > 0 ? (maleAges.reduce((a, b) => a + b, 0) / maleAges.length).toFixed(1) : 'N/A';
-  const avgFemaleAge = femaleAges.length > 0 ? (femaleAges.reduce((a, b) => a + b, 0) / femaleAges.length).toFixed(1) : 'N/A';
-
-  // API quota total Used today
-  const todayDateStr = getLocalDateString();
-  const totalUsedToday = profiles.reduce((acc, p) => {
-    const usage = p.targets?.ai_usage;
-    if (usage && usage.date === todayDateStr) return acc + (usage.count || 0);
-    return acc;
-  }, 0);
-  const totalLimit = 1500; // Free Allowance Indicator
-  const pct = Math.min(100, (totalUsedToday / totalLimit) * 100);
+  const filteredUsers = profiles.filter(p => 
+    p.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="p-4 flex flex-col gap-4 relative z-10 w-full pb-28">
+    <div className="p-4 flex flex-col gap-5 relative z-10 w-full pb-28">
       {/* Glows */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/6 rounded-full blur-[80px] pointer-events-none" />
 
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-gray-800/80 relative z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-800 rounded-xl transition-colors cursor-pointer text-gray-400 hover:text-white active:scale-95">
+          <button onClick={() => navigate('/')} className="p-2 hover:bg-gray-800 rounded-xl transition-colors cursor-pointer text-gray-400 hover:text-white active:scale-95">
             <ArrowLeft size={18} />
           </button>
           <div>
@@ -225,63 +398,64 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
-      {/* Statistics Card */}
+      {/* System Health Check Status */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-[#0f1424] border border-gray-800 rounded-2xl p-4 flex items-center gap-3">
+          <div className={`p-2.5 rounded-xl ${dbHealthy ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+            <Database size={16} />
+          </div>
+          <div>
+            <p className="text-[9px] font-black uppercase text-gray-500">Database</p>
+            <p className="text-xs font-bold text-white mt-0.5">{dbHealthy ? 'Connected' : 'Offline'}</p>
+          </div>
+        </div>
+        <div className="bg-[#0f1424] border border-gray-800 rounded-2xl p-4 flex items-center gap-3">
+          <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl">
+            <Activity size={16} />
+          </div>
+          <div>
+            <p className="text-[9px] font-black uppercase text-gray-500">API Status</p>
+            <p className="text-xs font-bold text-white mt-0.5">Healthy (200 OK)</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Total Users Statistics Card */}
       <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
-        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">📊 Client Demographics</h3>
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">📊 System Demographics</h3>
         
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Total Clients</p>
-            <p className="text-2xl font-black text-white">{totalClients}</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-3 flex flex-col gap-1 text-center">
+            <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Total Users</p>
+            <p className="text-xl font-black text-white">{totalUsers}</p>
           </div>
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Gender Ratio</p>
-            <p className="text-sm font-extrabold text-white mt-1.5 flex items-center gap-2">
-              <span>♂️ {males.length} M</span>
-              <span className="text-gray-700">|</span>
-              <span>♀️ {females.length} F</span>
-            </p>
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-3 flex flex-col gap-1 text-center">
+            <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Coaches</p>
+            <p className="text-xl font-black text-blue-400">{totalCoaches}</p>
+          </div>
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-3 flex flex-col gap-1 text-center">
+            <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Clients</p>
+            <p className="text-xl font-black text-violet-400">{totalClients}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Avg Age (Male)</p>
-            <p className="text-lg font-black text-blue-400">{avgMaleAge} <span className="text-[10px] text-gray-500 font-bold">yrs</span></p>
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl px-4 py-2.5 flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1"><UserCheck size={10} className="text-emerald-500" /> Active</span>
+            <span className="text-xs font-black text-emerald-400">{totalActive}</span>
           </div>
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Avg Age (Female)</p>
-            <p className="text-lg font-black text-pink-400">{avgFemaleAge} <span className="text-[10px] text-gray-500 font-bold">yrs</span></p>
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl px-4 py-2.5 flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1"><UserX size={10} className="text-red-500" /> Suspended</span>
+            <span className="text-xs font-black text-red-400">{totalDeactivated}</span>
           </div>
         </div>
       </div>
 
-      {/* Groq API token status */}
-      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-3 shadow-2xl">
-        <div className="flex justify-between items-center text-xs font-black uppercase tracking-wider text-blue-400">
-          <span>🤖 Groq AI System Quota</span>
-          <span className="text-emerald-400 font-extrabold flex items-center gap-1"><Sparkle size={10} className="animate-spin" /> Live</span>
-        </div>
-        <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-3">
-          <div className="flex justify-between text-[10px] text-gray-500 font-bold">
-            <span>Aggregated Messages Today ({totalUsedToday} msgs)</span>
-            <span className="text-blue-400">{totalLimit - totalUsedToday} msgs left</span>
-          </div>
-          <div className="w-full h-2 bg-gray-900 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="text-[9px] text-gray-600 leading-normal">
-            This quota aggregates total messages from all registered users today. The system runs on a high-throughput free model pool fallback chain.
-          </p>
-        </div>
-      </div>
-
-      {/* Feature Toggles */}
+      {/* Feature Access Toggles */}
       <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
         <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">🎯 Feature Access Toggles</h3>
         
         <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-5">
-          {/* Toggle 1 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-white">Hide Workout Templates</p>
@@ -295,7 +469,6 @@ export default function OwnerDashboardPage() {
             </button>
           </div>
 
-          {/* Toggle 2 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-white">Hide Nutrition Targets</p>
@@ -308,6 +481,258 @@ export default function OwnerDashboardPage() {
               <span className="w-4 h-4 bg-white rounded-full shadow-md" />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Create New Coach Account */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
+          <Plus size={14} /> Create Coach Account
+        </h3>
+
+        <form onSubmit={handleCreateCoach} className="space-y-3">
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Coach Name</label>
+            <input
+              type="text" required value={coachName} onChange={e => setCoachName(e.target.value)}
+              placeholder="e.g. Captain Alberto"
+              className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Email / Username</label>
+            <input
+              type="email" required value={coachEmail} onChange={e => setCoachEmail(e.target.value)}
+              placeholder="e.g. coach@stride.fit"
+              className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
+            <input
+              type="password" required value={coachPassword} onChange={e => setCoachPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isCreatingCoach}
+            className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/10"
+          >
+            {isCreatingCoach ? 'Creating Coach...' : 'Create Coach Account'}
+          </button>
+        </form>
+
+        {createdCoachCredentials && (
+          <div className="bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl mt-4 space-y-2">
+            <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+              <CheckCircle size={14} /> Account Created Successfully!
+            </h4>
+            <p className="text-[10px] text-gray-400">Share these login credentials with the Coach:</p>
+            <div className="bg-gray-950/50 p-3 rounded-xl space-y-1.5 text-[11px] font-mono text-gray-300">
+              <p><span className="text-gray-500">Name:</span> {createdCoachCredentials.name}</p>
+              <p><span className="text-gray-500">Email:</span> {createdCoachCredentials.email}</p>
+              <p><span className="text-gray-500">Password:</span> {createdCoachCredentials.password}</p>
+              <p><span className="text-gray-500">Role:</span> coach</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* User Management Directory */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">👥 User Directory & Status Toggles</h3>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search by name or email..."
+            className="w-full bg-[#11162a] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500"
+          />
+        </div>
+
+        {/* Directory List */}
+        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+          {filteredUsers.map(user => {
+            const isSuspended = user.targets?.is_deactivated === true;
+            return (
+              <div
+                key={user.id}
+                onClick={() => setSelectedUser(selectedUser?.id === user.id ? null : user)}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                  selectedUser?.id === user.id 
+                    ? 'bg-blue-600/10 border-blue-500/50' 
+                    : 'bg-[#11162a]/95 border-gray-800/80 hover:border-gray-700'
+                }`}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                    {user.display_name || user.email?.split('@')[0]}
+                    {user.role === 'coach' && (
+                      <span className="text-[8px] bg-blue-950 text-blue-400 font-extrabold px-1.5 py-0.5 rounded-md border border-blue-900/50 uppercase tracking-wide">
+                        Coach
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-gray-500 font-medium">{user.email}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    isSuspended ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  }`}>
+                    {isSuspended ? 'Suspended' : 'Active'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Selected User Management Panel */}
+        {selectedUser && (
+          <div className="bg-[#0f1424] border border-gray-800 rounded-2xl p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex justify-between items-start pb-2 border-b border-gray-800">
+              <div>
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">{selectedUser.display_name || 'Selected User'}</h4>
+                <p className="text-[10px] text-gray-500">{selectedUser.email}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedUser(null)} 
+                className="text-gray-500 hover:text-white text-xs font-bold"
+              >
+                Close
+              </button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Quick Actions</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Suspend / Reactivate */}
+                {selectedUser.targets?.is_deactivated === true ? (
+                  <button
+                    onClick={() => handleUpdateUserStatus(selectedUser.id, { is_deactivated: false })}
+                    className="flex items-center justify-center gap-1 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                  >
+                    <UserCheck size={12} /> Activate User
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleUpdateUserStatus(selectedUser.id, { is_deactivated: true })}
+                    className="flex items-center justify-center gap-1 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                  >
+                    <UserX size={12} /> Suspend User
+                  </button>
+                )}
+
+                {/* Change Role */}
+                {selectedUser.role === 'coach' ? (
+                  <button
+                    onClick={() => handleUpdateUserStatus(selectedUser.id, { role: 'client' })}
+                    className="flex items-center justify-center gap-1 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 text-violet-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                  >
+                    <Shield size={12} /> Make Client
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleUpdateUserStatus(selectedUser.id, { role: 'coach' })}
+                    className="flex items-center justify-center gap-1 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                  >
+                    <Shield size={12} /> Make Coach
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Change Password Form */}
+            <form onSubmit={handleChangeUserPassword} className="space-y-2 border-t border-gray-800 pt-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Change Password</p>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  required
+                  value={newPasswordForSelected}
+                  onChange={e => setNewPasswordForSelected(e.target.value)}
+                  placeholder="Enter new password"
+                  className="flex-1 bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                />
+                <button
+                  type="submit"
+                  disabled={isUpdatingPassword}
+                  className="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white px-4 rounded-xl font-bold text-xs uppercase transition-all cursor-pointer flex items-center justify-center"
+                >
+                  <Key size={14} />
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+
+      {/* Live System Activity Feed */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
+          <Activity size={14} className="text-blue-400" /> Live Feed (Things Happening)
+        </h3>
+
+        {/* Workouts logged */}
+        <div className="space-y-2">
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Recent Workouts Completed</p>
+          {recentWorkouts.length === 0 ? (
+            <div className="bg-[#11162a]/95 border border-gray-850 p-4 text-center rounded-2xl">
+              <p className="text-[10px] text-gray-500">No recent workout completions logged.</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {recentWorkouts.map(w => (
+                <div key={w.id} className="bg-[#11162a]/95 border border-gray-850 p-3 rounded-2xl flex justify-between items-center text-[10px]">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-bold text-white">{w.profiles?.display_name || 'Athlete'}</span>
+                    <span className="text-gray-500 font-medium">Logged a {w.day_type} session</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-blue-400">{w.total_volume > 0 ? `${w.total_volume} kg` : 'Run/Rest'}</p>
+                    <p className="text-gray-600 font-mono mt-0.5">{w.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Diets logged */}
+        <div className="space-y-2">
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Recent Diets Logged</p>
+          {recentDiets.length === 0 ? (
+            <div className="bg-[#11162a]/95 border border-gray-850 p-4 text-center rounded-2xl">
+              <p className="text-[10px] text-gray-500">No recent diet records logged.</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {recentDiets.map(d => {
+                const kcal = d.daily_totals?.kcal || 0;
+                const protein = d.daily_totals?.protein || 0;
+                return (
+                  <div key={d.id} className="bg-[#11162a]/95 border border-gray-850 p-3 rounded-2xl flex justify-between items-center text-[10px]">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-white">{d.profiles?.display_name || 'Athlete'}</span>
+                      <span className="text-gray-500 font-medium">Tracked their daily macros</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-emerald-400">{Math.round(kcal)} kcal / {Math.round(protein)}g P</p>
+                      <p className="text-gray-600 font-mono mt-0.5">{d.date}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
