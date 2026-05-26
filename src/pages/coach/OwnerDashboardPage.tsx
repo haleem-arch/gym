@@ -148,6 +148,16 @@ export default function OwnerDashboardPage() {
     );
   }
 
+  // Loading Screen
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-5 min-h-[80vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <p className="text-xs text-gray-400 mt-3 font-semibold">Loading console data...</p>
+      </div>
+    );
+  }
+
   // Force guard that only Haleem's logged in user can view this page content
   if (coachUserId && coachUserId !== 'ef685819-cdb3-4cd7-811d-4e6f7fff423c') {
     return (
