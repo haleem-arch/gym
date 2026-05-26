@@ -4,22 +4,18 @@ interface BioStatusRingProps {
   kcalPct: number;
   waterPct: number;
   workoutStatus: number; // 0.0 = not started, 0.5 = in progress, 1.0 = completed
-  sleepPct: number;      // 0.0 to 1.0
   isRestDay?: boolean;
   compact?: boolean;
   onClick?: () => void;
-  showSleep?: boolean;
 }
 
 export const BioStatusRing = ({
   kcalPct,
   waterPct,
   workoutStatus,
-  sleepPct,
   isRestDay = false,
   compact = false,
-  onClick,
-  showSleep = true
+  onClick
 }: BioStatusRingProps) => {
   // SVG Geometry Settings dynamically scaled
   const size = compact ? 90 : 100;
@@ -35,26 +31,21 @@ export const BioStatusRing = ({
   const rInner = compact ? 23 : 22;
   const circInner = 2 * Math.PI * rInner;
 
-  const rInnerInner = compact ? 15 : 12;
-  const circInnerInner = 2 * Math.PI * rInnerInner;
-
   // Colors
   const colorNutrition = '#F97316';
   const colorHydration = '#38BDF8';
   const colorTraining = '#A78BFA';
-  const colorSleep = '#6366F1'; // Indigo for sleep
 
   const trackNutrition = 'rgba(249, 115, 22, 0.15)';
   const trackHydration = 'rgba(56, 189, 248, 0.15)';
   const trackTraining = 'rgba(167, 139, 250, 0.15)';
-  const trackSleep = 'rgba(99, 102, 241, 0.15)';
 
   // On a REST day, training is completed by resting!
   const effectiveWorkoutStatus = isRestDay ? 1.0 : workoutStatus;
 
   // Calculate today's dynamic average daily biometric completion score
-  const divisor = showSleep ? 4 : 3;
-  const sumPct = Math.min(kcalPct, 1) + Math.min(waterPct, 1) + effectiveWorkoutStatus + (showSleep ? Math.min(sleepPct, 1) : 0);
+  const divisor = 3;
+  const sumPct = Math.min(kcalPct, 1) + Math.min(waterPct, 1) + effectiveWorkoutStatus;
   const dailyBioScore = Math.round((sumPct / divisor) * 100);
 
   return (
@@ -108,20 +99,6 @@ export const BioStatusRing = ({
             animate={{ strokeDashoffset: circInner * (1 - effectiveWorkoutStatus) }}
             transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.1 }}
           />
-
-          {/* ─── Inner-Inner Ring: Sleep (Indigo) ─── */}
-          {showSleep && (
-            <>
-              <circle cx={center} cy={center} r={rInnerInner} fill="transparent" stroke={trackSleep} strokeWidth={strokeWidth} />
-              <motion.circle
-                cx={center} cy={center} r={rInnerInner} fill="transparent" stroke={colorSleep} strokeWidth={strokeWidth}
-                strokeDasharray={circInnerInner} strokeLinecap="round"
-                initial={{ strokeDashoffset: circInnerInner }}
-                animate={{ strokeDashoffset: circInnerInner * (1 - Math.min(sleepPct, 1)) }}
-                transition={{ type: 'spring', damping: 22, stiffness: 95, delay: 0.15 }}
-              />
-            </>
-          )}
         </svg>
 
         {/* Small readable percentage inside the inner ring */}
@@ -137,11 +114,11 @@ export const BioStatusRing = ({
           {dailyBioScore}% Targets
         </span>
       ) : (
-        /* Redesigned Legend: dynamic look based on showSleep */
-        <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2 justify-center items-center">
+        /* Redesigned Legend: dynamic vertical look */
+        <div className="flex-1 flex flex-col gap-2.5 justify-center pl-2">
           {/* Nutrition */}
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Nutrition</span>
+            <span className="text-[9px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Nutrition</span>
             <span className="text-xs font-black" style={{ color: colorNutrition }}>
               {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Fueling' : 'Fuel Up'}
             </span>
@@ -149,7 +126,7 @@ export const BioStatusRing = ({
 
           {/* Hydration */}
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Hydration</span>
+            <span className="text-[9px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Hydration</span>
             <span className="text-xs font-black" style={{ color: colorHydration }}>
               {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Hydrating' : 'Hydrate'}
             </span>
@@ -157,21 +134,11 @@ export const BioStatusRing = ({
 
           {/* Training */}
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Training</span>
+            <span className="text-[9px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Training</span>
             <span className="text-xs font-black" style={{ color: colorTraining }}>
               {isRestDay ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
             </span>
           </div>
-
-          {/* Sleep */}
-          {showSleep && (
-            <div className="flex flex-col leading-none">
-              <span className="text-[10px] font-bold text-gray-550 uppercase tracking-wider mb-0.5">Sleep</span>
-              <span className="text-xs font-black" style={{ color: colorSleep }}>
-                {sleepPct >= 0.95 ? 'Fully Rested' : sleepPct >= 0.75 ? 'Rested' : sleepPct > 0 ? 'Charging' : 'Needs Sleep'}
-              </span>
-            </div>
-          )}
         </div>
       )}
     </motion.div>

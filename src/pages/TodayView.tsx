@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Moon, Sparkles, Target, LogOut, Shield } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -10,9 +10,6 @@ import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
-import { useRecovery } from '../hooks/useRecovery';
-
-
 
 const RippleButton = ({ onClick, className, children }: { onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, className?: string, children: React.ReactNode }) => {
   const [ripples, setRipples] = useState<{x: number, y: number, id: number}[]>([]);
@@ -54,49 +51,30 @@ const RippleButton = ({ onClick, className, children }: { onClick: (e: React.Mou
 
 const TodayView = () => {
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userDisplayName, setUserDisplayName] = useState('');
+  const [isHaleem, setIsHaleem] = useState(false);
 
   useEffect(() => {
-    let active = true;
-
-    const fetchUserRole = async (userId: string) => {
-      const { data } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
-      if (active && data) {
-        setUserRole(data.role || null);
+    const fetchProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        let isUserHaleem = session.user.email?.toLowerCase().startsWith('haleem') || false;
+        if (!isUserHaleem) {
+          const { data: profile } = await supabase.from('profiles').select('role, display_name').eq('id', session.user.id).maybeSingle();
+          if (profile?.role === 'coach') {
+            isUserHaleem = true;
+          }
+          if (profile?.display_name) {
+            setUserDisplayName(profile.display_name);
+          }
+        } else {
+          setUserDisplayName('Haleem');
+        }
+        setIsHaleem(isUserHaleem);
       }
     };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!active) return;
-      if (session?.user) {
-        setUserEmail(session.user.email || null);
-        setUserDisplayName(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Athlete');
-        fetchUserRole(session.user.id);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!active) return;
-      if (session?.user) {
-        setUserEmail(session.user.email || null);
-        setUserDisplayName(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Athlete');
-        fetchUserRole(session.user.id);
-      } else {
-        setUserEmail(null);
-        setUserDisplayName(null);
-        setUserRole(null);
-      }
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
+    fetchProfile();
   }, []);
-
-  const isHaleem = !!userEmail?.toLowerCase().startsWith('haleem') || userRole === 'coach';
 
   const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate, waterGoalMl } = useDiet();
@@ -106,34 +84,8 @@ const TodayView = () => {
   };
   const activeDateStr = getLocalDateString(activeDate);
 
-  // Recovery state and hooks
-  const { recoveryLogs, loading: recoveryLoading, logRecoverySession, deleteRecoverySession } = useRecovery(activeDateStr);
-  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
-  const [recoveryType, setRecoveryType] = useState<'sauna' | 'cold_plunge' | 'stretching' | 'walk' | 'steam'>('sauna');
-  const [recoveryDuration, setRecoveryDuration] = useState<string>('20');
-  const [recoveryNotes, setRecoveryNotes] = useState<string>('');
-  const [recoveryMetrics, setRecoveryMetrics] = useState<any>({ temp: 85 });
-
-  const resetRecoveryForm = () => {
-    setRecoveryType('sauna');
-    setRecoveryDuration('20');
-    setRecoveryNotes('');
-    setRecoveryMetrics({ temp: 85 });
-  };
   const { dayType, setDayType } = useSchedule(activeDateStr);
-  const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [showTargetsModal, setShowTargetsModal] = useState(false);
-  const [showSleepModal, setShowSleepModal] = useState(false);
-  const [sleepAnalysis, setSleepAnalysis] = useState<{
-    score: number;
-    verdict: string;
-    action: string;
-    advice: string;
-    deepStatus: 'optimal' | 'moderate' | 'low';
-    remStatus: 'optimal' | 'moderate' | 'low';
-    totalStatus: 'optimal' | 'moderate' | 'low';
-    tips: string[];
-  } | null>(null);
   const isToday = activeDate.toDateString() === new Date().toDateString();
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -149,15 +101,6 @@ const TodayView = () => {
   });
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
-  const [sleepHours, setSleepHours] = useState<number>(0);
-  const [todaySteps, setTodaySteps] = useState<number>(0);
-  // Keep background sync logic fully operational
-  if (todaySteps === -999) {
-    console.log(todaySteps);
-  }
-  const [deepSleepHours, setDeepSleepHours] = useState<number>(0);
-  const [remSleepHours, setRemSleepHours] = useState<number>(0);
-  const [lightSleepHours, setLightSleepHours] = useState<number>(0);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
   const [hybridLiftingType, setHybridLiftingType] = useState('PUSH');
   const [latestInbody, setLatestInbody] = useState<{
@@ -245,28 +188,6 @@ const TodayView = () => {
       }
     };
 
-    const fetchTodayBiometrics = async () => {
-      const { data } = await supabase
-        .from('athlete_biometrics')
-        .select('steps, resting_hr, sleep_hours, deep_sleep_hours, rem_sleep_hours, light_sleep_hours')
-        .eq('date', activeDateStr)
-        .single();
-      
-      if (data) {
-        setTodaySteps(data.steps || 0);
-        setSleepHours(data.sleep_hours || 0);
-        setDeepSleepHours(data.deep_sleep_hours || 0);
-        setRemSleepHours(data.rem_sleep_hours || 0);
-        setLightSleepHours(data.light_sleep_hours || 0);
-      } else {
-        setTodaySteps(0);
-        setSleepHours(0);
-        setDeepSleepHours(0);
-        setRemSleepHours(0);
-        setLightSleepHours(0);
-      }
-    };
-
     const fetchLatestInbody = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -293,24 +214,9 @@ const TodayView = () => {
 
     fetchWorkoutStatus();
     fetchLatestInbody();
-    fetchTodayBiometrics();
-    
-    // 🔄 Listen for Biometrics updates in Database
-    const dbBiometricsChannel = supabase.channel('db_biometrics')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'athlete_biometrics' }, (payload: any) => {
-        if (payload.new && payload.new.date === activeDateStr) {
-          setTodaySteps(payload.new.steps || 0);
-          setSleepHours(payload.new.sleep_hours || 0);
-          setDeepSleepHours(payload.new.deep_sleep_hours || 0);
-          setRemSleepHours(payload.new.rem_sleep_hours || 0);
-          setLightSleepHours(payload.new.light_sleep_hours || 0);
-        }
-      })
-      .subscribe();
 
     return () => { 
       active = false; 
-      supabase.removeChannel(dbBiometricsChannel);
     };
   }, [activeDateStr, workout, isToday, dayType]);
 
@@ -384,145 +290,6 @@ const TodayView = () => {
     };
   }, []);
 
-  const analyzeSleepWithAi = () => {
-    const total = sleepHours || 0;
-    const deep = deepSleepHours || 0;
-    const rem = remSleepHours || 0;
-    const light = lightSleepHours || 0;
-
-    if (total === 0) {
-      setSleepAnalysis({
-        score: 0,
-        totalStatus: 'low',
-        deepStatus: 'low',
-        remStatus: 'low',
-        verdict: "No Sleep Data Recorded",
-        advice: "Please sync or enter sleep data for today to get a detailed physiological recovery analysis.",
-        action: "Rest & Log Sleep",
-        tips: []
-      });
-      setShowSleepModal(true);
-      return;
-    }
-
-    // Calculate score
-    let durationPoints = 0;
-    if (total >= 8) durationPoints = 50;
-    else if (total >= 7) durationPoints = 42;
-    else if (total >= 6) durationPoints = 30;
-    else if (total >= 5) durationPoints = 15;
-    else durationPoints = 5;
-
-    const totalStaged = (deep + rem + light) || total;
-    const deepRatio = deep / totalStaged;
-    const remRatio = rem / totalStaged;
-
-    let deepPoints = 0;
-    if (deepRatio >= 0.20) deepPoints = 25;
-    else if (deepRatio >= 0.14) deepPoints = 18;
-    else if (deepRatio >= 0.08) deepPoints = 10;
-    else deepPoints = 2;
-
-    let remPoints = 0;
-    if (remRatio >= 0.22) remPoints = 25;
-    else if (remRatio >= 0.16) remPoints = 18;
-    else if (remRatio >= 0.10) remPoints = 10;
-    else remPoints = 2;
-
-    const score = Math.min(100, Math.round(durationPoints + deepPoints + remPoints));
-
-    // Status strings
-    const totalStatus = total >= 7.5 ? 'optimal' : total >= 6 ? 'moderate' : 'low';
-    const deepStatus = deepRatio >= 0.18 ? 'optimal' : deepRatio >= 0.10 ? 'moderate' : 'low';
-    const remStatus = remRatio >= 0.20 ? 'optimal' : remRatio >= 0.12 ? 'moderate' : 'low';
-
-    // Formulate Verdict
-    let verdict = "";
-    let advice = "";
-    let action = "";
-    const tips: string[] = [];
-
-    const formatHours = (hrs: number) => {
-      const totalMins = Math.round(hrs * 60);
-      if (totalMins < 60) return `${totalMins} min`;
-      const h = Math.floor(totalMins / 60);
-      const m = totalMins % 60;
-      return m > 0 ? `${h}h ${m}m` : `${h}h`;
-    };
-
-    const totalStr = formatHours(total);
-    const deepStr = formatHours(deep);
-    const remStr = formatHours(rem);
-
-    let durationAnalysis = "";
-    if (total >= 7.5 && total <= 9.2) {
-      durationAnalysis = `For your sleep on ${dateDisplay}, your sleep duration of ${totalStr} fell squarely within the healthy athletic window.`;
-    } else if (total > 9.2) {
-      durationAnalysis = `With ${totalStr} of sleep logged on ${dateDisplay}, you accumulated ample horizontal time to aid heavy systemic repair.`;
-    } else {
-      durationAnalysis = `For your sleep on ${dateDisplay}, at ${totalStr}, your total sleep volume was sub-optimal for maintaining intense physical training.`;
-    }
-
-    let deepAnalysis = "";
-    if (deepRatio >= 0.18 || deep >= 1.5) {
-      deepAnalysis = `The deep sleep phase was highly solid at ${deepStr}, providing robust muscle tissue repair, protein synthesis, and vital growth hormone secretion.`;
-    } else {
-      deepAnalysis = `However, deep sleep was restricted at ${deepStr}, which may compromise physical tissue repair, cellular restoration, and muscular adaptations.`;
-    }
-
-    let remAnalysis = "";
-    if (remRatio >= 0.18 || rem >= 1.5) {
-      remAnalysis = `Additionally, a healthy ${remStr} of REM sleep ensures your central nervous system (CNS), reaction times, and focus are fully restored.`;
-    } else {
-      remAnalysis = `Additionally, your REM sleep was cut short at ${remStr}. Since REM is the primary window for neurological recovery, you may notice a decrease in cognitive focus, reaction speed, and mental drive.`;
-    }
-
-    advice = `${durationAnalysis} ${deepAnalysis} ${remAnalysis}`;
-
-    // Add tailored tips for next time
-    if (remRatio < 0.18 || rem < 1.4) {
-      tips.push("Block blue light: Wear blue-light blocking glasses or avoid all screens for 60 minutes before bed to allow your natural melatonin to rise, stabilizing REM sleep.");
-      tips.push("Darken room completely: Cover any LED lights on appliances and use blackout curtains. REM sleep is highly sensitive to ambient light changes.");
-    }
-    if (deepRatio < 0.15 || deep < 1.3) {
-      tips.push("Lower bedroom temperature: Keep the room cool, around 18-20°C (64-68°F). Core body temperature must drop to trigger deep sleep entry.");
-      tips.push("Avoid late stimulation: Avoid heavy meals, caffeine, or high-intensity training within 3-4 hours of bed to prevent heart rate elevations during deep sleep cycles.");
-    }
-    if (total < 7.5) {
-      tips.push("Consistent bedtime: Go to bed and wake up at the exact same times. Circadian alignment is the single most powerful tool for sleep efficiency.");
-    }
-    if (tips.length === 0) {
-      tips.push("Keep current protocol: Your sleep architecture is fully optimized. Maintain your current sleep environment and pre-bed habits for peak performance.");
-    }
-
-    if (score >= 85) {
-      verdict = "CNS & Muscular Primed";
-      action = "💪 Full Green Light: Train heavy, smash PRs, or run a high-intensity session!";
-    } else if (score >= 70) {
-      verdict = "Sub-Optimal Rest; Recovery Moderate";
-      action = "🏋️‍♂️ Yellow Light: Moderate training. Push yourself, but avoid going to absolute failure on heavy compound movements.";
-    } else if (score >= 50) {
-      verdict = "Systemic Fatigue Warning";
-      action = "🏃‍♀️ Orange Light: Active Recovery. Focus on Zone 2 cardio, mobility work, or lower weight (60-70% 1RM) accessory lifts.";
-    } else {
-      verdict = "Severe Deficit: Rest Recommended";
-      action = "🛑 Red Light: Complete Rest Day. Hydrate, focus on nutrition, and go to bed early tonight.";
-    }
-
-    setSleepAnalysis({
-      score,
-      verdict,
-      advice,
-      action,
-      totalStatus,
-      deepStatus,
-      remStatus,
-      tips
-    });
-    setShowSleepModal(true);
-  };
-
-
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
   
@@ -530,7 +297,7 @@ const TodayView = () => {
 
   const getPlanDetails = () => {
     if (dayType === 'REST') {
-      return { title: 'Active Recovery', exercises: ['Focus on hydration', 'Get 8 hours of sleep', 'Light stretching if needed'] };
+      return { title: 'Rest Day', exercises: ['Focus on hydration', 'Ensure adequate rest', 'Light stretching if needed'] };
     }
     if (dayType === 'RUN') {
       return { title: 'Cardio (Running Session)', exercises: ['Run smart', 'Control your pace', 'Focus on your breathing', 'Keep a steady rhythm'] };
@@ -579,110 +346,6 @@ const TodayView = () => {
 
   const hasCompletedRun = completedWorkoutsList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
   const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
-
-  const getReadinessData = () => {
-    const total = sleepHours || 0;
-    const deep = deepSleepHours || 0;
-    const rem = remSleepHours || 0;
-    const light = lightSleepHours || 0;
-    
-    let sleepScore = 0;
-    const hasSleepData = total > 0;
-    if (hasSleepData) {
-      let durationPoints = 0;
-      if (total >= 8) durationPoints = 50;
-      else if (total >= 7) durationPoints = 42;
-      else if (total >= 6) durationPoints = 30;
-      else if (total >= 5) durationPoints = 15;
-      else durationPoints = 5;
-
-      const totalStaged = (deep + rem + light) || total;
-      const deepRatio = deep / totalStaged;
-      const remRatio = rem / totalStaged;
-
-      let deepPoints = 0;
-      if (deepRatio >= 0.20) deepPoints = 25;
-      else if (deepRatio >= 0.14) deepPoints = 18;
-      else if (deepRatio >= 0.08) deepPoints = 10;
-      else deepPoints = 2;
-
-      let remPoints = 0;
-      if (remRatio >= 0.22) remPoints = 25;
-      else if (remRatio >= 0.16) remPoints = 18;
-      else if (remRatio >= 0.10) remPoints = 10;
-      else remPoints = 2;
-
-      sleepScore = Math.min(100, Math.round(durationPoints + deepPoints + remPoints));
-    }
-
-    const completedList = completedWorkoutsList || [];
-    const hasTodayRun = completedList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
-    const hasTodayGym = completedList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
-
-    let workoutScore = 100;
-    if (dayType === 'RUN') {
-      workoutScore = hasTodayRun ? 100 : 0;
-    } else if (dayType !== 'RUN' && dayType !== 'REST' && dayType !== 'RUN + GYM') {
-      workoutScore = hasTodayGym ? 100 : 0;
-    } else if (dayType === 'RUN + GYM') {
-      if (hasTodayRun && hasTodayGym) workoutScore = 100;
-      else if (hasTodayRun || hasTodayGym) workoutScore = 50;
-      else workoutScore = 0;
-    } else if (dayType === 'REST') {
-      workoutScore = completedList.length > 0 ? 80 : 100;
-    }
-
-    let readinessScore = sleepScore;
-    
-    let recommendation = "";
-    let verdict = "";
-    let color = "";
-    let bgGradient = "";
-    
-    if (!hasSleepData) {
-      verdict = "No Sleep Data";
-      recommendation = "Please log sleep data for this day to analyze your physiological readiness score.";
-      color = "#64748b"; // Slate-500
-      bgGradient = "from-slate-800/10 to-slate-900/10";
-    } else if (readinessScore >= 85) {
-      verdict = "Optimal Readiness";
-      recommendation = "Central nervous system (CNS) and muscle tissue recovery are fully restored. Your body is in the prime adaptation zone for high-intensity load or progressive overload splits today. Push hard.";
-      color = "#6366f1"; // Indigo
-      bgGradient = "from-indigo-500/20 to-purple-500/20";
-    } else if (readinessScore >= 70) {
-      verdict = "Moderate Readiness";
-      recommendation = "Adequate systemic restoration. Fit for training, but keep special focus on a thorough warm-up split. Ensure hydration levels remain high.";
-      color = "#3b82f6"; // Blue
-      bgGradient = "from-blue-500/20 to-indigo-500/20";
-    } else if (readinessScore >= 50) {
-      verdict = "Accumulated Fatigue";
-      recommendation = "Sleep debt or deficit in REM/Deep stages is impacting your recovery index. Consider a minor volume reduction or focus on technical accuracy rather than heavy resistance.";
-      color = "#f59e0b"; // Orange
-      bgGradient = "from-amber-500/20 to-orange-500/20";
-    } else {
-      verdict = "High Recovery Deficit";
-      recommendation = "Significant sleep deprivation or deep repair debt detected. We suggest substituting today's scheduled training split with active rest or hydration focus.";
-      color = "#ef4444"; // Red
-      bgGradient = "from-red-500/20 to-orange-500/20";
-    }
-
-    return {
-      readinessScore,
-      sleepScore,
-      workoutScore,
-      verdict,
-      recommendation,
-      color,
-      bgGradient,
-      hasSleepData: total > 0,
-      total,
-      deep,
-      rem,
-      light
-    };
-  };
-
-  const readiness = getReadinessData();
 
   return (
     <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
@@ -960,177 +623,12 @@ const TodayView = () => {
                  </div>
                </div>
              </SwipeToDeleteRow>
-          </motion.div>
-        </div>
-
-        {/* Daily Biometrics - Sleep Recovery Card */}
-        {isHaleem && (
-          <div className="w-full animate-fade-in">
-            {/* Resting HR & Sleep Card */}
-            <motion.div 
-               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-               className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Health & Sleep</span>
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full">Daily</span>
-              </div>
-              
-              {sleepHours > 0 ? (
-                <>
-                  <div className="flex items-center gap-2 mt-2 mb-3">
-                    <Moon size={18} className="text-indigo-400" />
-                    {(() => {
-                      const totalMins = Math.floor(sleepHours * 60);
-                      const h = Math.floor(totalMins / 60);
-                      const m = totalMins % 60;
-                      return (
-                        <span className="text-2xl font-black text-white">{h}h{m > 0 ? ` ${m}m` : ''}</span>
-                      );
-                    })()}
-                  </div>
-                  
-                  {/* Sleep Stages Breakdown */}
-                  <div className="mt-2 border-t border-gray-800 pt-2">
-                    {(() => {
-                      const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
-                      const formatStage = (hrs: number) => {
-                        const totalMins = Math.round(hrs * 60);
-                        if (totalMins < 60) return `${totalMins}m`;
-                        const h = Math.floor(totalMins / 60);
-                        const m = totalMins % 60;
-                        return m > 0 ? `${h}h ${m}m` : `${h}h`;
-                      };
-                      return (
-                        <>
-                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-800">
-                            <div className="bg-purple-600" style={{ width: `${(deepSleepHours / totalStaged) * 100}%` }} title="Deep Sleep"></div>
-                            <div className="bg-blue-500" style={{ width: `${(remSleepHours / totalStaged) * 100}%` }} title="REM Sleep"></div>
-                            <div className="bg-emerald-500" style={{ width: `${(lightSleepHours / totalStaged) * 100}%` }} title="Light Sleep"></div>
-                          </div>
-                          <div className="grid grid-cols-3 gap-1.5 text-[9px] mt-2.5 text-gray-400 font-bold">
-                            <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <div className="w-1.5 h-1.5 bg-purple-600 rounded-full shrink-0"></div>
-                                <span className="text-gray-500 font-semibold">Deep</span>
-                              </div>
-                              <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(deepSleepHours)}</span>
-                            </div>
-                            <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>
-                                <span className="text-gray-500 font-semibold">REM</span>
-                              </div>
-                              <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(remSleepHours)}</span>
-                            </div>
-                            <div className="flex flex-col items-center bg-gray-900/40 p-2 rounded-lg border border-gray-800/50">
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></div>
-                                <span className="text-gray-500 font-semibold">Light</span>
-                              </div>
-                              <span className="text-white font-black text-[11px] whitespace-nowrap">{formatStage(lightSleepHours)}</span>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div className="flex justify-center mt-3.5">
-                    <button
-                      onClick={analyzeSleepWithAi}
-                      className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all flex items-center gap-1.5 border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
-                    >
-                      <Sparkles size={11} className="text-indigo-400 animate-pulse" />
-                      <span>Analyze Sleep</span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <Moon size={28} className="text-gray-650 mb-2 animate-pulse" />
-                  <span className="text-xs font-black text-gray-400 uppercase tracking-wider">No Sleep Telemetry</span>
-                  <p className="text-[9px] text-gray-550 max-w-[200px] mt-1 font-semibold leading-normal">
-                    No sleep stages or recovery metrics synced for this date.
-                  </p>
-                </div>
-              )}
             </motion.div>
-          </div>
-        )}
-
-        {/* Recovery Hub Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.38 }}
-          className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full flex flex-col"
-        >
-          <div className="flex justify-between items-center mb-3">
-            <div className="flex items-center gap-2 text-gray-400">
-              <span className="text-lg">🧖‍♂️</span>
-              <span className="text-sm font-bold uppercase tracking-wider">Recovery Hub</span>
-            </div>
-            <button
-              onClick={() => setShowRecoveryModal(true)}
-              className="text-xs font-bold text-primary hover:text-blue-400 flex items-center gap-1 cursor-pointer bg-gray-800/40 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 px-3 py-1.5 rounded-lg transition-all"
-            >
-              + LOG
-            </button>
-          </div>
-
-          {recoveryLoading ? (
-            <div className="py-4 flex justify-center">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : recoveryLogs.length === 0 ? (
-            <div className="text-center py-5 bg-gray-900/40 rounded-xl border border-gray-800/50">
-              <p className="text-xs text-gray-500 font-semibold">No recovery sessions logged today.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {recoveryLogs.map((logVal) => (
-                <SwipeToDeleteRow key={logVal.id} onDelete={() => deleteRecoverySession(logVal.id)} backgroundRounded="rounded-xl">
-                  <div className="bg-gray-900/50 border border-gray-800/60 p-3 rounded-xl flex justify-between items-center w-full">
-                    <div className="flex items-start gap-2.5">
-                      <span className="text-xl">
-                        {logVal.type === 'sauna' ? '🧖‍♂️' : logVal.type === 'cold_plunge' ? '🥶' : logVal.type === 'stretching' ? '🧘' : logVal.type === 'walk' ? '🚶' : '💨'}
-                      </span>
-                      <div>
-                        <h4 className="font-bold text-white text-xs uppercase tracking-wide">
-                          {logVal.type === 'sauna' ? 'Sauna' : logVal.type === 'cold_plunge' ? 'Cold Plunge' : logVal.type === 'stretching' ? 'Stretching' : logVal.type === 'walk' ? 'Recovery Walk' : 'Steam Room'}
-                        </h4>
-                        {logVal.notes && (
-                          <p className="text-[10px] text-gray-500 font-medium mt-0.5 line-clamp-1 italic">
-                            "{logVal.notes}"
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-black text-white text-xs block">
-                        {logVal.duration} min
-                      </span>
-                      <span className="text-[10px] text-gray-400 font-bold">
-                        {logVal.type === 'sauna' || logVal.type === 'cold_plunge' || logVal.type === 'steam' ? (
-                          `${logVal.metrics.temp}°C`
-                        ) : logVal.type === 'walk' ? (
-                          `${logVal.metrics.distance_km} km`
-                        ) : (
-                          logVal.metrics.focus_area || 'Full Body'
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </SwipeToDeleteRow>
-              ))}
-            </div>
-          )}
-        </motion.div>
 
         {/* InBody Snapshot */}
         <motion.div 
            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-           className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full"
+           className="bg-surface rounded-2xl p-4 border border-gray-800 animate-fade-in w-full col-span-2"
         >
           <span className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3.5 block">Latest InBody Scan</span>
           {inbody ? (
@@ -1162,77 +660,20 @@ const TodayView = () => {
           )}
         </motion.div>
       </div>
+    </div>
 
       {/* Subtle Separation Divider */}
       <div className="w-full border-t border-white/10 my-1" />
 
-      {/* SIDE-BY-SIDE METRICS GRID */}
-      <div className={`${isHaleem ? 'grid grid-cols-2' : 'flex'} gap-4 w-full animate-fade-in`}>
-        {/* READINESS INDEX CARD */}
-        {isHaleem && (
-          <motion.div
-            onClick={() => setShowReadinessModal(true)}
-            whileTap={{ scale: 0.98 }}
-            className="bg-surface rounded-3xl p-4 border border-gray-800 flex flex-col items-center justify-between gap-3 cursor-pointer hover:border-gray-700 transition-colors w-full relative overflow-hidden group min-h-[165px]"
-          >
-            {/* Glow */}
-            <div className={`absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-gradient-to-tr ${readiness.bgGradient} blur-2xl opacity-60 pointer-events-none`} />
-
-            {/* Title */}
-            <div className="flex items-center gap-1 w-full justify-center">
-              <Sparkles size={11} style={{ color: readiness.color }} />
-              <span className="text-[10px] font-bold text-gray-550 uppercase tracking-widest">Readiness</span>
-            </div>
-
-            {/* SVG Ring (compact 90x90px) */}
-            <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0 z-10">
-              <svg width="90" height="90" viewBox="0 0 90 90" className="transform -rotate-90">
-                <circle
-                  cx="45"
-                  cy="45"
-                  r="39"
-                  stroke="#1e293b"
-                  strokeWidth="6"
-                  fill="transparent"
-                />
-                <motion.circle
-                  cx="45"
-                  cy="45"
-                  r="39"
-                  stroke={readiness.color}
-                  strokeWidth="6"
-                  fill="transparent"
-                  strokeDasharray={245.0}
-                  strokeDashoffset={245.0 - (245.0 * readiness.readinessScore) / 100}
-                  strokeLinecap="round"
-                  initial={{ strokeDashoffset: 245.0 }}
-                  animate={{ strokeDashoffset: 245.0 - (245.0 * readiness.readinessScore) / 100 }}
-                  transition={{ type: 'spring', damping: 20, stiffness: 80 }}
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-base font-extrabold text-white tracking-tight leading-none">{readiness.hasSleepData ? readiness.readinessScore : '--'}</span>
-                <span className="text-[6px] font-bold text-gray-550 uppercase tracking-widest mt-0.5 leading-none">Score</span>
-              </div>
-            </div>
-
-            {/* Verdict label */}
-            <span className="text-[10px] font-black uppercase tracking-wider z-10 leading-none" style={{ color: readiness.color }}>
-              {readiness.verdict.split(' ')[0]}
-            </span>
-          </motion.div>
-        )}
-
-        {/* COMPACT CONCENTRIC TARGETS CARD */}
+      {/* CONCENTRIC TARGETS CARD */}
+      <div className="w-full animate-fade-in">
         <BioStatusRing 
           kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
           waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
           workoutStatus={workoutStatus}
-          sleepPct={sleepHours / 8}
           isRestDay={dayType === 'REST'}
-          compact={true}
+          compact={false}
           onClick={() => setShowTargetsModal(true)}
-          showSleep={isHaleem}
         />
       </div>
       
@@ -1358,393 +799,6 @@ const TodayView = () => {
           </>
         )}
 
-        {showSleepModal && sleepAnalysis && (() => {
-          const formatStageMins = (hrs: number) => {
-            const totalMins = Math.round(hrs * 60);
-            if (totalMins < 60) return `${totalMins} min`;
-            const h = Math.floor(totalMins / 60);
-            const m = totalMins % 60;
-            return m > 0 ? `${h}h ${m}m` : `${h}h`;
-          };
-          return (
-            <>
-              {/* Overlay */}
-            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm" onClick={() => setShowSleepModal(false)} />
-            
-            {/* Modal Content */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-4 top-[10%] bottom-[10%] md:inset-y-auto md:top-[15%] md:left-1/2 md:-translate-x-1/2 md:max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-[101] flex flex-col justify-between overflow-y-auto no-scrollbar"
-            >
-              {/* Close Button */}
-              <button 
-                type="button"
-                onClick={() => setShowSleepModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-
-              {/* Title */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
-                  <Sparkles size={18} />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-white text-base">Sleep Recovery Engine</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">AI Athlete Intelligence</p>
-                </div>
-              </div>
-
-              {/* Divided Donut Ring & Diagnostics Grid */}
-              {(() => {
-                const totalStaged = (deepSleepHours + remSleepHours + lightSleepHours) || sleepHours || 1;
-                const deepRatio = deepSleepHours / totalStaged;
-                const remRatio = remSleepHours / totalStaged;
-                const lightRatio = lightSleepHours / totalStaged;
-                
-
-
-                return (
-                  <div className="flex flex-col gap-4 py-4 px-4 bg-slate-950/40 rounded-2xl border border-slate-800/40 mb-6">
-                    <div className="flex items-center justify-between gap-6">
-                      {/* Visual Segmented Ring */}
-                      <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
-                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                          {/* Background base */}
-                          <circle 
-                            cx="50" cy="50" r="40" 
-                            stroke="#1e293b" strokeWidth="8" fill="transparent" 
-                          />
-                          {/* Deep Segment (Purple) */}
-                          {deepRatio > 0 && (
-                            <circle 
-                              cx="50" cy="50" r="40" 
-                              stroke="#a855f7" 
-                              strokeWidth="8" fill="transparent" 
-                              strokeDasharray={`${deepRatio * 251.33} 251.33`}
-                              strokeDashoffset={0}
-                              strokeLinecap="round"
-                            />
-                          )}
-                          {/* REM Segment (Blue) */}
-                          {remRatio > 0 && (
-                            <circle 
-                              cx="50" cy="50" r="40" 
-                              stroke="#3b82f6" 
-                              strokeWidth="8" fill="transparent" 
-                              strokeDasharray={`${remRatio * 251.33} 251.33`}
-                              strokeDashoffset={-deepRatio * 251.33}
-                              strokeLinecap="round"
-                            />
-                          )}
-                          {/* Light Segment (Emerald) */}
-                          {lightRatio > 0 && (
-                            <circle 
-                              cx="50" cy="50" r="40" 
-                              stroke="#10b981" 
-                              strokeWidth="8" fill="transparent" 
-                              strokeDasharray={`${lightRatio * 251.33} 251.33`}
-                              strokeDashoffset={-(deepRatio + remRatio) * 251.33}
-                              strokeLinecap="round"
-                            />
-                          )}
-                        </svg>
-                        <div className="absolute flex flex-col items-center">
-                          <span className="text-[17px] font-black text-white leading-none">{sleepAnalysis.score}%</span>
-                          <span className="text-[6.5px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Readiness</span>
-                        </div>
-                      </div>
-
-                      {/* Sleep stage numbers beside the ring */}
-                      <div className="flex-1 flex flex-col gap-1.5 text-xs text-gray-300 font-bold">
-                        <div className="flex justify-between items-center bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800/30">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span>
-                            <span className="text-gray-400 font-semibold text-[9px] uppercase tracking-wider">Deep</span>
-                          </div>
-                          <span className="text-white text-xs font-black">{formatStageMins(deepSleepHours)}</span>
-                        </div>
-                        <div className="flex justify-between items-center bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800/30">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-                            <span className="text-gray-400 font-semibold text-[9px] uppercase tracking-wider">REM</span>
-                          </div>
-                          <span className="text-white text-xs font-black">{formatStageMins(remSleepHours)}</span>
-                        </div>
-                        <div className="flex justify-between items-center bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-800/30">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
-                            <span className="text-gray-400 font-semibold text-[9px] uppercase tracking-wider">Light</span>
-                          </div>
-                          <span className="text-white text-xs font-black">{formatStageMins(lightSleepHours)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-center border-t border-slate-800/60 pt-3">
-                      <h4 className="text-sm font-extrabold text-white tracking-tight">{sleepAnalysis.verdict}</h4>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5 tracking-wider">Physiological Readiness Rating</p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Detailed Feedback & Action Item */}
-              <div className="flex-1 space-y-4 mb-6">
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                  <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <span>🔬</span> Physiological Verdict
-                  </h5>
-                  <p className="text-xs text-gray-300 leading-relaxed font-medium">
-                    {sleepAnalysis.advice}
-                  </p>
-                </div>
-
-                <div className={`p-4 rounded-2xl border ${
-                  sleepAnalysis.score >= 85 ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' :
-                  sleepAnalysis.score >= 70 ? 'bg-amber-950/20 border-amber-500/30 text-amber-300' :
-                  sleepAnalysis.score >= 50 ? 'bg-orange-950/20 border-orange-500/30 text-orange-300' :
-                  'bg-red-950/20 border-red-500/30 text-red-300'
-                }`}>
-                  <h5 className="text-[10px] font-black uppercase tracking-wider mb-1.5">
-                    🎯 Today's Action Plan
-                  </h5>
-                  <p className="text-xs font-bold leading-normal">
-                    {sleepAnalysis.action}
-                  </p>
-                </div>
-
-                {/* Sleep Architecture vs. Targets */}
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                  <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <span>📊</span> Sleep Architecture vs. Reference Targets
-                  </h5>
-                  
-                  <div className="space-y-3.5 text-xs">
-                    {/* Total Sleep */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-gray-300">Total Duration</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{formatStageMins(sleepHours)}</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 7.5h - 9.0h)</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${Math.min((sleepHours / 9.0) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-
-                    {/* Deep Sleep */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-[#a855f7]">Deep Sleep</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{formatStageMins(deepSleepHours)}</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 1.5h - 2.0h)</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#a855f7] h-2 rounded-full" style={{ width: `${Math.min((deepSleepHours / 2.0) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-
-                    {/* REM Sleep */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-[#3b82f6]">REM Sleep</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{formatStageMins(remSleepHours)}</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 1.5h - 2.0h)</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((remSleepHours / 2.0) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-
-                    {/* Light Sleep */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-[#10b981]">Light Sleep</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{formatStageMins(lightSleepHours)}</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 3.5h - 5.0h)</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#10b981] h-2 rounded-full" style={{ width: `${Math.min((lightSleepHours / 5.0) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Sleep Coach Tips */}
-                {sleepAnalysis.tips.length > 0 && (
-                  <div className="bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/25">
-                    <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <span>💡</span> AI Coach: How to Improve Next Time
-                    </h5>
-                    <ul className="space-y-2 text-xs text-indigo-200/90 font-semibold list-disc list-inside">
-                      {sleepAnalysis.tips.map((tip, idx) => (
-                        <li key={idx} className="leading-relaxed">
-                          <span className="text-indigo-300 font-bold">{tip.split(':')[0]}:</span>
-                          {tip.split(':').slice(1).join(':')}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        );
-      })()}
-
-        {showReadinessModal && (
-          <>
-            {/* Backdrop */}
-            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm" onClick={() => setShowReadinessModal(false)} />
-            
-            {/* Modal Container */}
-            <div className="fixed inset-0 z-[101] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative w-full max-w-sm my-auto mb-16 pointer-events-auto"
-              >
-                {/* Close Button */}
-                <button 
-                  type="button"
-                  onClick={() => setShowReadinessModal(false)}
-                  className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-
-                {/* Title */}
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
-                    <Sparkles size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Physiological Readiness</h3>
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Unified AI Score</p>
-                  </div>
-                </div>
-
-                {/* Score Dial */}
-                <div className="flex flex-col items-center mb-6 bg-slate-950/40 p-5 rounded-3xl border border-slate-800/40">
-                  <div className="relative w-32 h-32 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="52"
-                        stroke="#1e293b"
-                        strokeWidth="8"
-                        fill="transparent"
-                      />
-                      <motion.circle
-                        cx="64"
-                        cy="64"
-                        r="52"
-                        stroke={readiness.color}
-                        strokeWidth="8"
-                        fill="transparent"
-                        strokeDasharray={326.7}
-                        strokeDashoffset={326.7 - (326.7 * readiness.readinessScore) / 100}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000 ease-out"
-                      />
-                    </svg>
-                    <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-4xl font-black text-white tracking-tighter">
-                        {readiness.hasSleepData ? readiness.readinessScore : '--'}
-                      </span>
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Readiness Index</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase" style={{ backgroundColor: `${readiness.color}15`, color: readiness.color, border: `1px solid ${readiness.color}30` }}>
-                    {readiness.verdict}
-                  </div>
-                </div>
-
-                {/* Breakdown Progress Bars */}
-                <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
-                  {/* Recovery Foundation */}
-                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <span>💤</span> Recovery Foundation (Sleep Score)
-                    </h5>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-gray-300">Sleep Quality</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">
-                            {readiness.hasSleepData ? `${readiness.sleepScore}/100` : '--/100'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${readiness.hasSleepData ? readiness.sleepScore : 0}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Workout Compliance */}
-                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#a855f7] uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <span>🏋️‍♂️</span> Training Compliance (Workout Score)
-                    </h5>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-gray-300">Target Fulfillment</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{readiness.workoutScore}/100</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#a855f7] h-2 rounded-full" style={{ width: `${readiness.workoutScore}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Physiological Coach Verdict */}
-                  <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                      <span>🧠</span> Physiological Verdict
-                    </h5>
-                    <p className="text-xs text-gray-400 leading-relaxed font-semibold">
-                      {readiness.hasSleepData ? (
-                        <>
-                          Your recovery foundation is scored <span className="text-white font-bold">{readiness.sleepScore}/100</span> based on <span className="text-white font-bold">{readiness.total.toFixed(1)}h</span> of sleep (REM: {readiness.rem.toFixed(1)}h, Deep: {readiness.deep.toFixed(1)}h). Today's scheduled plan is <span className="text-white font-bold">{dayType}</span>. {readiness.recommendation}
-                        </>
-                      ) : (
-                        <>
-                          No sleep data logged for this date. Today's scheduled plan is <span className="text-white font-bold">{dayType}</span>. Please sync or enter sleep details to unlock readiness scores.
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                {/* OK Button */}
-                <button 
-                  onClick={() => setShowReadinessModal(false)}
-                  className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
-                >
-                  Acknowledge & Train
-                </button>
-              </motion.div>
-            </div>
-          </>
-        )}
-
         {showTargetsModal && (
           <>
             {/* Backdrop */}
@@ -1774,7 +828,7 @@ const TodayView = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-white uppercase tracking-wider">Today's Targets</h3>
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Biometric Compliance</p>
+                    <p className="text-[9px] text-gray-550 font-bold uppercase tracking-widest leading-none mt-0.5">Biometric Compliance</p>
                   </div>
                 </div>
 
@@ -1784,10 +838,8 @@ const TodayView = () => {
                     kcalPct={targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0}
                     waterPct={waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0}
                     workoutStatus={workoutStatus}
-                    sleepPct={sleepHours / 8}
                     isRestDay={dayType === 'REST'}
                     compact={false}
-                    showSleep={isHaleem}
                   />
                   <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                     Overall Target Fulfillment
@@ -1848,25 +900,6 @@ const TodayView = () => {
                       </div>
                     </div>
                   </div>
-
-                  {/* Sleep Progress */}
-                  {isHaleem && (
-                    <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                      <h5 className="text-[10px] font-black text-[#6366F1] uppercase tracking-widest mb-3 flex items-center justify-between">
-                        <span>💤 Sleep Recovery</span>
-                        <span>{Math.round((sleepHours / 8) * 100)}%</span>
-                      </h5>
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
-                          <span>Time Asleep</span>
-                          <span className="text-white font-black">{sleepHours.toFixed(1)} / 8.0 hrs</span>
-                        </div>
-                        <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                          <div className="bg-[#6366F1] h-2 rounded-full" style={{ width: `${Math.min((sleepHours / 8) * 100, 100)}%` }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Close Button */}
@@ -1878,185 +911,6 @@ const TodayView = () => {
                 </button>
               </motion.div>
             </div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Log Recovery Session Modal */}
-      <AnimatePresence>
-        {showRecoveryModal && (
-          <>
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setShowRecoveryModal(false);
-                resetRecoveryForm();
-              }}
-              className="fixed inset-0 bg-black z-[100] backdrop-blur-sm"
-            />
-            {/* Modal Bottom Sheet */}
-            <motion.div 
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed bottom-24 left-4 right-4 max-w-[358px] mx-auto bg-surface border border-gray-800 rounded-3xl p-6 z-[101] flex flex-col gap-5 shadow-2xl pb-6"
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-950 text-primary rounded-lg border border-blue-900">
-                    <span className="text-lg">🧖‍♂️</span>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white text-base">Log Recovery Session</h3>
-                    <p className="text-[10px] text-gray-400">CNS & Muscle Tissue Restoration</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => {
-                    setShowRecoveryModal(false);
-                    resetRecoveryForm();
-                  }}
-                  className="p-2 hover:bg-gray-800 rounded-xl transition-colors text-gray-400 hover:text-white cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Type Selectors */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {(['sauna', 'cold_plunge', 'stretching', 'walk', 'steam'] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      setRecoveryType(t);
-                      // Set default metrics based on type
-                      if (t === 'sauna') {
-                        setRecoveryMetrics({ temp: 85 });
-                      } else if (t === 'cold_plunge') {
-                        setRecoveryMetrics({ temp: 5 });
-                      } else if (t === 'stretching') {
-                        setRecoveryMetrics({ focus_area: 'Full Body' });
-                      } else if (t === 'walk') {
-                        setRecoveryMetrics({ distance_km: 3.0 });
-                      } else if (t === 'steam') {
-                        setRecoveryMetrics({ temp: 45 });
-                      }
-                    }}
-                    className={`py-2 px-0.5 rounded-2xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
-                      recoveryType === t
-                        ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/5'
-                        : 'bg-surface border-gray-800 text-gray-400 hover:border-gray-700'
-                    }`}
-                  >
-                    <span className="text-xl">
-                      {t === 'sauna' ? '🧖‍♂️' : t === 'cold_plunge' ? '🥶' : t === 'stretching' ? '🧘' : t === 'walk' ? '🚶' : '💨'}
-                    </span>
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-center">
-                      {t === 'sauna' ? 'Sauna' : t === 'cold_plunge' ? 'Plunge' : t === 'stretching' ? 'Stretch' : t === 'walk' ? 'Walk' : 'Steam'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Form Inputs */}
-              <div className="space-y-4">
-                {/* Duration */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Duration (Minutes)</label>
-                  <input
-                    type="number"
-                    required
-                    value={recoveryDuration}
-                    onChange={(e) => setRecoveryDuration(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
-                    placeholder="20"
-                    min="1"
-                  />
-                </div>
-
-                {/* Conditional Metrics */}
-                {(recoveryType === 'sauna' || recoveryType === 'cold_plunge' || recoveryType === 'steam') && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Temperature (°C)</label>
-                    <input
-                      type="number"
-                      required
-                      value={recoveryMetrics.temp || ''}
-                      onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, temp: Number(e.target.value) })}
-                      className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
-                      placeholder={recoveryType === 'sauna' ? '85' : recoveryType === 'cold_plunge' ? '5' : '45'}
-                    />
-                  </div>
-                )}
-
-                {recoveryType === 'stretching' && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Focus Area</label>
-                    <input
-                      type="text"
-                      required
-                      value={recoveryMetrics.focus_area || ''}
-                      onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, focus_area: e.target.value })}
-                      className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
-                      placeholder="e.g. Full Body, Lower Body"
-                    />
-                  </div>
-                )}
-
-                {recoveryType === 'walk' && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Distance (km)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={recoveryMetrics.distance_km || ''}
-                      onChange={(e) => setRecoveryMetrics({ ...recoveryMetrics, distance_km: Number(e.target.value) })}
-                      className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
-                      placeholder="3.2"
-                    />
-                  </div>
-                )}
-
-                {/* Notes */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes (Optional)</label>
-                  <input
-                    type="text"
-                    value={recoveryNotes}
-                    onChange={(e) => setRecoveryNotes(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 text-white font-semibold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors"
-                    placeholder="How did you feel?"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                onClick={async () => {
-                  if (!recoveryDuration || Number(recoveryDuration) <= 0) {
-                    alert("Please enter a valid duration.");
-                    return;
-                  }
-                  await logRecoverySession(
-                    recoveryType,
-                    Number(recoveryDuration),
-                    recoveryMetrics,
-                    recoveryNotes
-                  );
-                  setShowRecoveryModal(false);
-                  resetRecoveryForm();
-                }}
-                className="w-full bg-primary hover:bg-blue-600 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-white text-xs cursor-pointer mt-2"
-              >
-                SAVE RECOVERY SESSION
-              </button>
-            </motion.div>
           </>
         )}
       </AnimatePresence>

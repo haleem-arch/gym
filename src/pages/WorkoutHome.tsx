@@ -250,7 +250,7 @@ const WorkoutHome = () => {
       advice = `Your resistance training session on ${dateFormatted} stimulated high mechanical tension on your ${gymType} split, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg. This mechanical stimulus triggers muscular protein synthesis and neuromuscular adaptation. Physical fatigue in target muscle groups will peak in 24-48 hours.`;
       tips.push("Amino availability: Consume 30-40g of whey protein or essential amino acids (EAAs) immediately to trigger protein synthesis.");
       tips.push("Targeted blood flow: Perform active recovery or light movements tomorrow to flush metabolic waste from trained muscle groups.");
-      tips.push("Sleep quality: Ensure 8+ hours of sleep tonight, as deep sleep is the prime phase for growth hormone release and muscle repair.");
+      tips.push("Rest: Ensure adequate rest tonight to support growth hormone release and muscle repair.");
     } else {
       score = 50;
       verdict = "Minimal Training Load Detected";
@@ -542,7 +542,7 @@ const WorkoutHome = () => {
           <div className="bg-surface border border-gray-800 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg">
             <span className="text-4xl mb-3">💤</span>
             <h2 className="text-xl font-bold text-white mb-2">Rest Day</h2>
-            <p className="text-sm text-gray-400">Recovery is part of training. Sleep well, hydrate, and hit the sauna if possible.</p>
+            <p className="text-sm text-gray-400">Rest is part of training. Hydrate, eat well, and relax if possible.</p>
           </div>
         ) : dayType === 'RUN' ? (
           <div className="bg-surface border border-blue-900/30 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10 w-full">
@@ -1026,7 +1026,7 @@ const WorkoutHome = () => {
               {workoutAnalysis.tips.length > 0 && (
                 <div className="bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/25">
                   <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <span>⚡</span> Recovery Plan
+                    <span>⚡</span> Post-Workout Action Plan
                   </h5>
                   <ul className="space-y-2 text-xs text-indigo-200/90 font-semibold list-disc list-inside">
                     {workoutAnalysis.tips.map((tip, idx) => (
@@ -1045,7 +1045,7 @@ const WorkoutHome = () => {
               onClick={() => setShowWorkoutModal(false)}
               className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
             >
-              Acknowledge & Recover
+              Acknowledge
             </button>
           </motion.div>
         </div>

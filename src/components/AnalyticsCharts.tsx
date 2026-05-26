@@ -11,10 +11,9 @@ import {
   AreaChart,
   Area,
   ComposedChart,
-  Bar,
-  BarChart
+  Bar
 } from 'recharts';
-import { Activity, TrendingUp, Scale, AlertCircle, Moon } from 'lucide-react';
+import { Activity, TrendingUp, Scale, AlertCircle } from 'lucide-react';
 
 interface AnalyticsChartsProps {
   userId: string;
@@ -25,9 +24,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
   const [volumeData, setVolumeData] = useState<any[]>([]);
   const [runData, setRunData] = useState<any[]>([]);
   const [weightData, setWeightData] = useState<any[]>([]);
-  const [sleepData, setSleepData] = useState<any[]>([]);
   const [error, setError] = useState('');
-  const [isHaleem, setIsHaleem] = useState(false);
 
   useEffect(() => {
     fetchAnalytics();
@@ -36,16 +33,6 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      // Get current user session to check if they are Haleem or Coach
-      const { data: { session } } = await supabase.auth.getSession();
-      let isUserHaleem = !!session?.user?.email?.toLowerCase().startsWith('haleem');
-      if (!isUserHaleem && session?.user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
-        if (profile?.role === 'coach') {
-          isUserHaleem = true;
-        }
-      }
-      setIsHaleem(isUserHaleem);
 
       // 1. Fetch Workouts (Volume & Runs)
       const { data: workouts, error: workoutErr } = await supabase
@@ -105,29 +92,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
       }));
       setWeightData(wData);
 
-      // 3. Fetch Sleep data from athlete_biometrics only if user is Haleem
-      if (isUserHaleem) {
-        const { data: biometrics, error: biometricsErr } = await supabase
-          .from('athlete_biometrics')
-          .select('date, sleep_hours, deep_sleep_hours, rem_sleep_hours, light_sleep_hours')
-          .order('date', { ascending: true });
 
-        if (biometricsErr) throw biometricsErr;
-
-        // Process Sleep Data
-        const sData = (biometrics || [])
-          .filter(b => (b.sleep_hours || 0) > 0)
-          .map(b => ({
-            date: new Date(b.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-            total: parseFloat(Number(b.sleep_hours).toFixed(2)),
-            deep: parseFloat(Number(b.deep_sleep_hours || 0).toFixed(2)),
-            rem: parseFloat(Number(b.rem_sleep_hours || 0).toFixed(2)),
-            light: parseFloat(Number(b.light_sleep_hours || 0).toFixed(2))
-          }));
-        setSleepData(sData);
-      } else {
-        setSleepData([]);
-      }
 
     } catch (err: any) {
       setError(err.message);
@@ -148,7 +113,6 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
               {entry.dataKey === 'distance' && ' km'}
               {entry.dataKey === 'weight' && ' kg'}
               {entry.dataKey === 'paceDecimal' && ' min/km'}
-              {['deep', 'rem', 'light', 'total'].includes(entry.dataKey) && ' hrs'}
             </p>
           ))}
         </div>
@@ -287,54 +251,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
           </div>
         </div>
       )}
-      {/* SLEEP STAGES ANALYSIS */}
-      {isHaleem && sleepData.length > 0 && (
-        <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800/50 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <Moon size={100} />
-          </div>
-          <div className="flex items-center space-x-3 mb-6 relative z-10">
-            <div className="p-2.5 bg-indigo-500/20 text-indigo-400 rounded-xl">
-              <Moon size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-lg">Sleep Trends</h3>
-              <p className="text-slate-400 text-sm">Deep, REM, and Light distribution</p>
-            </div>
-          </div>
-          
-          <div className="h-64 w-full relative z-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sleepData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="h" />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="deep" name="Deep" stackId="sleepStack" fill="#312e81" />
-                <Bar dataKey="rem" name="REM" stackId="sleepStack" fill="#4f46e5" />
-                <Bar dataKey="light" name="Light" stackId="sleepStack" fill="#818cf8" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 mt-4 relative z-10 border-t border-slate-800/60 pt-4 text-[10px] font-extrabold uppercase tracking-wider">
-            <div className="flex items-center gap-1.5 text-indigo-300">
-              <span className="w-2.5 h-2.5 rounded bg-[#312e81]"></span>
-              <span>Deep</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-indigo-400">
-              <span className="w-2.5 h-2.5 rounded bg-[#4f46e5]"></span>
-              <span>REM</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-indigo-200">
-              <span className="w-2.5 h-2.5 rounded bg-[#818cf8]"></span>
-              <span>Light</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {volumeData.length === 0 && runData.length === 0 && weightData.length === 0 && sleepData.length === 0 && (
+      {volumeData.length === 0 && runData.length === 0 && weightData.length === 0 && (
         <div className="text-center p-10 bg-slate-800/50 rounded-3xl border border-slate-700/50">
           <div className="bg-slate-700/50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <TrendingUp size={32} className="text-slate-400" />
