@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
