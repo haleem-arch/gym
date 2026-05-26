@@ -445,12 +445,12 @@ export default function AddClientPage() {
         })
       });
 
+      const createUserData = await createRes.json().catch(() => ({}));
       if (!createRes.ok) {
-        const errData = await createRes.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to generate user account');
+        throw new Error(createUserData.error || 'Failed to generate user account');
       }
 
-      const { user: createdAuthUser } = await createRes.json();
+      const createdAuthUser = createUserData.user;
       if (!createdAuthUser) throw new Error('Failed to generate user account');
 
       const clientUserId = createdAuthUser.id;
@@ -479,8 +479,8 @@ export default function AddClientPage() {
         phone_number: formData.phoneNumber.trim()
       };
 
-      // 3. Insert public.profiles
-      const { error: profileError } = await supabase.from('profiles').insert({
+      // 3. Upsert public.profiles (to prevent duplicate key/primary key violation from pre-population in Vercel API)
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: clientUserId,
         username: formData.username.trim().toLowerCase(),
         email: virtualEmail,
