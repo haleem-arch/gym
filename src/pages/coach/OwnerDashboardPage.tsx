@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
 import {
-  Lock, ArrowLeft, RefreshCw, Sparkles, Users, Award, ShieldAlert, Sparkle
+  Lock, ArrowLeft, RefreshCw, ShieldAlert, Sparkle
 } from 'lucide-react';
 
 const getLocalDateString = (d: Date = new Date()) => {
