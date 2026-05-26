@@ -53,6 +53,7 @@ const TodayView = () => {
   const navigate = useNavigate();
   const [userDisplayName, setUserDisplayName] = useState('');
   const [isHaleem, setIsHaleem] = useState(false);
+  const [disableNutritionTargets, setDisableNutritionTargets] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -71,6 +72,12 @@ const TodayView = () => {
           setUserDisplayName('Haleem');
         }
         setIsHaleem(isUserHaleem);
+      }
+
+      // Fetch owner toggles
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      if (ownerProfile?.targets) {
+        setDisableNutritionTargets(!!ownerProfile.targets.disable_nutrition_targets);
       }
     };
     fetchProfile();
@@ -343,6 +350,7 @@ const TodayView = () => {
     : null;
 
   const inbody = latestInbody;
+  const showNutrition = !disableNutritionTargets || isHaleem;
 
   const hasCompletedRun = completedWorkoutsList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
   const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
@@ -538,66 +546,68 @@ const TodayView = () => {
         
         <div className="grid grid-cols-2 gap-4 w-full">
           {/* Nutrition Card (4 progress bars) */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer hover:border-gray-700 transition-colors w-full"
-            onClick={() => navigate('/diet')}
-          >
-            <div className="flex items-center gap-2 text-gray-400 mb-3">
-              <Utensils size={16} />
-              <span className="text-sm font-bold uppercase tracking-wider">Nutrition</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {/* Calories */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5 leading-none">
-                  <span className="font-semibold text-gray-300">Calories</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
-                </div>
+          {showNutrition && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="bg-surface rounded-2xl p-4 border border-gray-800 flex flex-col justify-between cursor-pointer hover:border-gray-700 transition-colors w-full"
+              onClick={() => navigate('/diet')}
+            >
+              <div className="flex items-center gap-2 text-gray-400 mb-3">
+                <Utensils size={16} />
+                <span className="text-sm font-bold uppercase tracking-wider">Nutrition</span>
               </div>
+              <div className="flex flex-col gap-3">
+                {/* Calories */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5 leading-none">
+                    <span className="font-semibold text-gray-300">Calories</span>
+                    <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
+                  </div>
+                </div>
 
-              {/* Protein */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5 leading-none">
-                  <span className="font-semibold text-gray-300">Protein</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
+                {/* Protein */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5 leading-none">
+                    <span className="font-semibold text-gray-300">Protein</span>
+                    <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
-                </div>
-              </div>
 
-              {/* Carbs */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5 leading-none">
-                  <span className="font-semibold text-gray-300">Carbs</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
+                {/* Carbs */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5 leading-none">
+                    <span className="font-semibold text-gray-300">Carbs</span>
+                    <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
-                </div>
-              </div>
 
-              {/* Fat */}
-              <div>
-                <div className="flex justify-between text-xs mb-1.5 leading-none">
-                  <span className="font-semibold text-gray-300">Fat</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
+                {/* Fat */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5 leading-none">
+                    <span className="font-semibold text-gray-300">Fat</span>
+                    <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
+                  </div>
+                  <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
 
           {/* Hydration Card (Prominent Button & Timestamp) */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden justify-between w-full"
+            className={`bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden justify-between w-full ${!showNutrition ? 'col-span-2' : ''}`}
           >
              <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
                <div className="p-4 flex flex-col justify-between h-full bg-surface">
@@ -674,6 +684,7 @@ const TodayView = () => {
           isRestDay={dayType === 'REST'}
           compact={false}
           onClick={() => setShowTargetsModal(true)}
+          disableNutrition={!showNutrition}
         />
       </div>
       
@@ -840,6 +851,7 @@ const TodayView = () => {
                     workoutStatus={workoutStatus}
                     isRestDay={dayType === 'REST'}
                     compact={false}
+                    disableNutrition={!showNutrition}
                   />
                   <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                     Overall Target Fulfillment
@@ -849,21 +861,23 @@ const TodayView = () => {
                 {/* Detailed progress values */}
                 <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
                   {/* Nutrition Progress */}
-                  <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#F97316] uppercase tracking-widest mb-3 flex items-center justify-between">
-                      <span>🍎 Nutrition Target</span>
-                      <span>{Math.round((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100)}%</span>
-                    </h5>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
-                        <span>Energy Consumption</span>
-                        <span className="text-white font-black">{Math.round(macros.kcal)} / {targets.kcal} kcal</span>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#F97316] h-2 rounded-full" style={{ width: `${Math.min((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100, 100)}%` }}></div>
+                  {showNutrition && (
+                    <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
+                      <h5 className="text-[10px] font-black text-[#F97316] uppercase tracking-widest mb-3 flex items-center justify-between">
+                        <span>🍎 Nutrition Target</span>
+                        <span>{Math.round((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100)}%</span>
+                      </h5>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
+                          <span>Energy Consumption</span>
+                          <span className="text-white font-black">{Math.round(macros.kcal)} / {targets.kcal} kcal</span>
+                        </div>
+                        <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
+                          <div className="bg-[#F97316] h-2 rounded-full" style={{ width: `${Math.min((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100, 100)}%` }}></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Hydration Progress */}
                   <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
