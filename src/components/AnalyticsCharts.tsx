@@ -36,9 +36,15 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      // Get current user session to check if they are Haleem
+      // Get current user session to check if they are Haleem or Coach
       const { data: { session } } = await supabase.auth.getSession();
-      const isUserHaleem = !!session?.user?.email?.toLowerCase().startsWith('haleem');
+      let isUserHaleem = !!session?.user?.email?.toLowerCase().startsWith('haleem');
+      if (!isUserHaleem && session?.user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+        if (profile?.role === 'coach') {
+          isUserHaleem = true;
+        }
+      }
       setIsHaleem(isUserHaleem);
 
       // 1. Fetch Workouts (Volume & Runs)

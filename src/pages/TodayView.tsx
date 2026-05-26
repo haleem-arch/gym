@@ -56,14 +56,24 @@ const TodayView = () => {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
+
+    const fetchUserRole = async (userId: string) => {
+      const { data } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
+      if (active && data) {
+        setUserRole(data.role || null);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return;
       if (session?.user) {
         setUserEmail(session.user.email || null);
         setUserDisplayName(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Athlete');
+        fetchUserRole(session.user.id);
       }
     });
 
@@ -72,9 +82,11 @@ const TodayView = () => {
       if (session?.user) {
         setUserEmail(session.user.email || null);
         setUserDisplayName(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Athlete');
+        fetchUserRole(session.user.id);
       } else {
         setUserEmail(null);
         setUserDisplayName(null);
+        setUserRole(null);
       }
     });
 
@@ -84,7 +96,7 @@ const TodayView = () => {
     };
   }, []);
 
-  const isHaleem = !!userEmail?.toLowerCase().startsWith('haleem');
+  const isHaleem = !!userEmail?.toLowerCase().startsWith('haleem') || userRole === 'coach';
 
   const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate, waterGoalMl } = useDiet();
