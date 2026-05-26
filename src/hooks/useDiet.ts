@@ -27,6 +27,7 @@ export interface DietMealItem {
   name: string;
   grams: number;
   macros: DailyMacros; // the calculated macros for this specific gram amount
+  serving_type?: 'per_100g' | 'per_item';
 }
 
 export interface DietMeal {

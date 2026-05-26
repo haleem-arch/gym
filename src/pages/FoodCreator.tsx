@@ -12,7 +12,8 @@ const FoodCreator = () => {
     kcal: '',
     protein: '',
     carbs: '',
-    fat: ''
+    fat: '',
+    serving_type: 'per_100g'
   });
 
   const handleSave = async () => {
@@ -33,7 +34,8 @@ const FoodCreator = () => {
       protein: parseFloat(formData.protein),
       carbs: parseFloat(formData.carbs),
       fat: parseFloat(formData.fat),
-      source: 'manual'
+      source: 'manual',
+      serving_type: formData.serving_type
     };
 
     const { error } = await supabase.from('food_inventory').insert(newFood);
@@ -82,8 +84,38 @@ const FoodCreator = () => {
           />
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Serving Type <span className="text-danger">*</span></label>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, serving_type: 'per_100g' })}
+              className={`flex-1 py-3 rounded-xl border font-bold transition-all ${
+                formData.serving_type === 'per_100g'
+                  ? 'bg-primary/20 border-primary text-primary'
+                  : 'bg-surface border-gray-700 text-gray-400 hover:border-gray-600'
+              }`}
+            >
+              Per 100g
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, serving_type: 'per_item' })}
+              className={`flex-1 py-3 rounded-xl border font-bold transition-all ${
+                formData.serving_type === 'per_item'
+                  ? 'bg-primary/20 border-primary text-primary'
+                  : 'bg-surface border-gray-700 text-gray-400 hover:border-gray-600'
+              }`}
+            >
+              Per Serving
+            </button>
+          </div>
+        </div>
+
         <div className="bg-surface border border-gray-800 rounded-2xl p-5 mt-2 shadow-xl">
-          <h2 className="text-sm font-bold text-white mb-4 border-b border-gray-800 pb-2">Nutritional Values (Per 100g)</h2>
+          <h2 className="text-sm font-bold text-white mb-4 border-b border-gray-800 pb-2">
+            Nutritional Values ({formData.serving_type === 'per_item' ? 'Per Serving' : 'Per 100g'})
+          </h2>
           
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
@@ -96,7 +128,9 @@ const FoodCreator = () => {
                   onChange={(e) => setFormData({...formData, kcal: e.target.value})}
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 pl-3 pr-10 text-white focus:border-primary outline-none"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">kcal</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                  {formData.serving_type === 'per_item' ? 'kcal/serv' : 'kcal'}
+                </span>
               </div>
             </div>
 
@@ -110,7 +144,9 @@ const FoodCreator = () => {
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="w-full bg-gray-900 border border-blue-900/50 rounded-lg py-2 pl-3 pr-8 text-white focus:border-blue-500 outline-none"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">g</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                  {formData.serving_type === 'per_item' ? 'g/serv' : 'g'}
+                </span>
               </div>
             </div>
 
@@ -124,7 +160,9 @@ const FoodCreator = () => {
                   onChange={(e) => setFormData({...formData, carbs: e.target.value})}
                   className="w-full bg-gray-900 border border-green-900/50 rounded-lg py-2 pl-3 pr-8 text-white focus:border-green-500 outline-none"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">g</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                  {formData.serving_type === 'per_item' ? 'g/serv' : 'g'}
+                </span>
               </div>
             </div>
 
@@ -138,7 +176,9 @@ const FoodCreator = () => {
                   onChange={(e) => setFormData({...formData, fat: e.target.value})}
                   className="w-full bg-gray-900 border border-yellow-900/50 rounded-lg py-2 pl-3 pr-8 text-white focus:border-yellow-500 outline-none"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">g</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                  {formData.serving_type === 'per_item' ? 'g/serv' : 'g'}
+                </span>
               </div>
             </div>
           </div>

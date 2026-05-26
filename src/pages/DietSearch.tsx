@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Search, Plus, Globe } from 'lucide-react';
+import { ArrowLeft, Search, Plus, Globe, UtensilsCrossed } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DumbbellLoader } from '../components/DumbbellLoader';
 
@@ -31,8 +31,8 @@ const DietSearch = () => {
       const { data } = await supabase
         .from('food_inventory')
         .select('*')
-        .or(`name.ilike.%${query}%,barcode.eq.${query}`)
-        .limit(20);
+        .or(`name.ilike.%${query}%,category.ilike.%${query}%,barcode.eq.${query}`)
+        .limit(50);
 
       if (data) localResults = data;
 
@@ -40,8 +40,9 @@ const DietSearch = () => {
       // If query is a barcode (only digits, length >= 6) and we don't have an exact match locally
       const isNumericBarcode = /^\d{6,}$/.test(query.trim());
       const hasExactLocalMatch = localResults.some(item => item.barcode === query.trim());
+      const hasLocalNameMatch = localResults.length > 0;
 
-      if (isNumericBarcode && !hasExactLocalMatch) {
+      if (isNumericBarcode && !hasExactLocalMatch && !hasLocalNameMatch) {
         try {
           const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${query.trim()}.json`);
           const apiData = await response.json();
@@ -83,8 +84,9 @@ const DietSearch = () => {
     setIsAdding(true);
 
     const amount = parseFloat(grams);
+    const isPerItem = selectedFood.serving_type === 'per_item';
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount in grams.');
+      alert(isPerItem ? 'Please enter a valid quantity.' : 'Please enter a valid amount in grams.');
       setIsAdding(false);
       return;
     }
@@ -122,7 +124,7 @@ const DietSearch = () => {
       }
     }
 
-    const multiplier = amount / 100;
+    const multiplier = isPerItem ? amount : amount / 100;
     const calculatedMacros = {
       kcal: selectedFood.kcal_per_100g * multiplier,
       protein: selectedFood.protein * multiplier,
@@ -135,7 +137,8 @@ const DietSearch = () => {
       food_id: foodId,
       name: selectedFood.name,
       grams: amount,
-      macros: calculatedMacros
+      macros: calculatedMacros,
+      serving_type: selectedFood.serving_type || 'per_100g'
     };
 
     // 1. Fetch current meal
@@ -153,11 +156,15 @@ const DietSearch = () => {
     navigate(`/diet/meal/${mealId}`);
   };
 
+  const isSelectedPerItem = selectedFood?.serving_type === 'per_item';
+  const previewMultiplier = isSelectedPerItem
+    ? parseFloat(grams || '0')
+    : parseFloat(grams || '0') / 100;
   const calculatedPreview = selectedFood ? {
-    kcal: selectedFood.kcal_per_100g * (parseFloat(grams || '0') / 100),
-    protein: selectedFood.protein * (parseFloat(grams || '0') / 100),
-    carbs: selectedFood.carbs * (parseFloat(grams || '0') / 100),
-    fat: selectedFood.fat * (parseFloat(grams || '0') / 100),
+    kcal: selectedFood.kcal_per_100g * previewMultiplier,
+    protein: selectedFood.protein * previewMultiplier,
+    carbs: selectedFood.carbs * previewMultiplier,
+    fat: selectedFood.fat * previewMultiplier,
   } : null;
 
   return (
@@ -208,35 +215,50 @@ const DietSearch = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-800">
-            {results.map((food) => (
-              <div 
-                key={food.id} 
-                onClick={() => { setSelectedFood(food); setGrams('100'); }}
-                className="p-4 bg-background hover:bg-surface transition-colors cursor-pointer active:scale-[0.98]"
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-bold text-white flex items-center gap-2">
-                    {food.name}
-                    {food.source === 'api' && (
-                      <span className="bg-purple-900/40 text-purple-400 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-800/50">
-                        <Globe size={10} /> Global API
+            {results.map((food) => {
+              const isPerItem = food.serving_type === 'per_item';
+              return (
+                <div 
+                  key={food.id} 
+                  onClick={() => { setSelectedFood(food); setGrams(isPerItem ? '1' : '100'); }}
+                  className="p-4 bg-background hover:bg-surface transition-colors cursor-pointer active:scale-[0.98]"
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-white flex items-center gap-2 flex-1 mr-2">
+                      {food.name}
+                      {food.source === 'api' && (
+                        <span className="bg-purple-900/40 text-purple-400 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-800/50 shrink-0">
+                          <Globe size={10} /> Global API
+                        </span>
+                      )}
+                    </h3>
+                    <span className="text-primary font-bold whitespace-nowrap ml-2">
+                      {Math.round(food.kcal_per_100g)} <span className="text-xs font-normal text-gray-500">{isPerItem ? 'kcal/serving' : 'kcal/100g'}</span>
+                    </span>
+                  </div>
+                  {food.category && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-[10px] text-gray-500">{food.category}</span>
+                    </div>
+                  )}
+                  <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                    <span>P: {Math.round(food.protein)}g</span>
+                    <span>C: {Math.round(food.carbs)}g</span>
+                    <span>F: {Math.round(food.fat)}g</span>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    {food.source === 'preset' && (
+                      <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded">Verified Preset</span>
+                    )}
+                    {isPerItem && (
+                      <span className="text-[10px] bg-amber-900/30 text-amber-400 px-2 py-0.5 rounded flex items-center gap-1">
+                        <UtensilsCrossed size={9} /> Per Serving
                       </span>
                     )}
-                  </h3>
-                  <span className="text-primary font-bold whitespace-nowrap ml-2">
-                    {Math.round(food.kcal_per_100g)} <span className="text-xs font-normal text-gray-500">kcal/100g</span>
-                  </span>
+                  </div>
                 </div>
-                <div className="flex gap-3 text-xs text-gray-400 mt-1">
-                  <span>P: {Math.round(food.protein)}g</span>
-                  <span>C: {Math.round(food.carbs)}g</span>
-                  <span>F: {Math.round(food.fat)}g</span>
-                </div>
-                {food.source === 'preset' && (
-                  <span className="inline-block mt-2 text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded">Verified Preset</span>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -260,11 +282,16 @@ const DietSearch = () => {
               className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 pb-10"
             >
               <h3 className="text-xl font-bold text-white mb-1">{selectedFood.name}</h3>
-              <p className="text-xs text-gray-400 mb-6 border-b border-gray-800 pb-4">Base: {selectedFood.kcal_per_100g} kcal per 100g</p>
+              <p className="text-xs text-gray-400 mb-6 border-b border-gray-800 pb-4">
+                {isSelectedPerItem
+                  ? `${selectedFood.kcal_per_100g} kcal per serving`
+                  : `Base: ${selectedFood.kcal_per_100g} kcal per 100g`
+                }
+              </p>
               
               <div className="flex items-center gap-4 mb-8">
                 <div className="flex-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">Amount</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">{isSelectedPerItem ? 'Quantity (Servings)' : 'Amount'}</label>
                   <div className="relative">
                     <input 
                       type="number"
@@ -274,7 +301,7 @@ const DietSearch = () => {
                       onChange={(e) => setGrams(e.target.value)}
                       className="w-full bg-gray-900 border border-gray-700 rounded-xl py-4 pl-4 pr-12 text-xl font-bold text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">g</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">{isSelectedPerItem ? 'serving(s)' : 'g'}</span>
                   </div>
                 </div>
                 

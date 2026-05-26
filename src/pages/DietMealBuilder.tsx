@@ -116,7 +116,9 @@ const DietMealBuilder = () => {
                 <div className="bg-surface rounded-lg p-3 border border-gray-800 flex justify-between items-center">
                   <div>
                     <h3 className="font-bold text-white">{item.name}</h3>
-                    <span className="text-xs font-semibold text-gray-400">{item.grams}g</span>
+                    <span className="text-xs font-semibold text-gray-400">
+                      {item.serving_type === 'per_item' ? (item.grams === 1 ? '1 serving' : `${item.grams} servings`) : `${item.grams}g`}
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="font-bold text-primary block">{Math.round(item.macros.kcal)} kcal</span>

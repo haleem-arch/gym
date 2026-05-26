@@ -75,13 +75,18 @@ const FoodInventory = () => {
                       )}
                     </h3>
                     <span className="text-primary font-bold whitespace-nowrap ml-2">
-                      {Math.round(food.kcal_per_100g)} <span className="text-xs font-normal text-gray-500">kcal</span>
+                      {Math.round(food.kcal_per_100g)} <span className="text-xs font-normal text-gray-500">{food.serving_type === 'per_item' ? 'kcal/serving' : 'kcal/100g'}</span>
                     </span>
                   </div>
                   <div className="flex gap-4 text-xs font-semibold text-gray-400 mt-2">
                     <span>P: <span className="text-blue-400">{Math.round(food.protein)}g</span></span>
                     <span>C: <span className="text-green-400">{Math.round(food.carbs)}g</span></span>
                     <span>F: <span className="text-yellow-400">{Math.round(food.fat)}g</span></span>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded">
+                      {food.serving_type === 'per_item' ? 'Per Serving' : 'Per 100g'}
+                    </span>
                   </div>
                 </div>
               </SwipeToDeleteRow>
