@@ -53,199 +53,54 @@ const BrandLogo = ({ className = "w-12 h-12" }: { className?: string }) => (
   </div>
 );
 
-// Custom login morphing logo component
+// Custom login morphing logo component — simple expand on error, brand colors always
 const LoginLogo = ({ className = "w-20 h-20", errorMsg = null }: { className?: string, errorMsg?: string | null }) => {
-  const getShortErrorMessage = (msg: string | null) => {
-    if (!msg) return '';
-    const lower = msg.toLowerCase();
-    if (lower.includes('credential') || lower.includes('invalid') || lower.includes('password') || lower.includes('email')) {
-      return 'WRONG PASSWORD / USERNAME';
-    }
-    if (lower.includes('network') || lower.includes('fetch')) {
-      return 'CONNECTION ERROR';
-    }
-    if (lower.includes('agree') || lower.includes('terms') || lower.includes('privacy')) {
-      return 'ACCEPT PRIVACY';
-    }
-    return 'AUTH FAILED';
-  };
-
-
   return (
     <div className={`relative flex items-center justify-center select-none ${className}`}>
-      {/* Outer div handles horizontal shake — key change re-triggers animation */}
-      <motion.div
-        key={errorMsg ?? 'idle'}
-        animate={errorMsg ? { x: [0, -10, 10, -10, 10, -5, 5, 0] } : { x: 0 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-      >
-      {/* Inner div handles width/height morph */}
+      {/* Spring-expands wider on error */}
       <motion.div
         animate={{
-          width: errorMsg ? 350 : 80,
-          height: 80,
-          borderRadius: errorMsg ? '16px' : '22px',
-          backgroundColor: errorMsg ? 'rgba(23, 15, 30, 0.65)' : 'rgba(59, 130, 246, 0)',
+          width: errorMsg ? 260 : 80,
+          height: 72,
+          borderRadius: errorMsg ? '18px' : '20px',
+          backgroundColor: errorMsg ? 'rgba(10, 12, 20, 0.85)' : 'transparent',
           borderWidth: errorMsg ? 1 : 0,
-          borderColor: errorMsg ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0,0,0,0)',
+          borderColor: errorMsg ? 'rgba(59,130,246,0.35)' : 'transparent',
         }}
-        transition={{ type: 'spring', stiffness: 120, damping: 15 }}
-        className="relative flex items-center justify-center"
+        transition={{ type: 'spring', stiffness: 180, damping: 22 }}
+        className="relative flex items-center justify-center overflow-hidden"
         style={{ borderStyle: 'solid' }}
       >
-        {/* Background Breathing Glow when in error */}
-        {errorMsg && (
-          <motion.div
-            animate={{
-              scale: [0.95, 1.05, 0.95],
-              opacity: [0.3, 0.5, 0.3],
-            }}
-            transition={{
-              duration: 1.6,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            className="absolute inset-0 rounded-full bg-red-500/20 blur-xl pointer-events-none"
-          />
-        )}
-
+        {/* Dumbbell — always brand colours, fixed -45deg */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 512 512"
           shapeRendering="geometricPrecision"
-          className="w-full h-full overflow-visible relative z-10 p-4"
+          style={{ width: 72, height: 72, flexShrink: 0 }}
+          className="relative z-10 p-3 overflow-visible"
         >
-          <g transform="translate(256 256)">
-            <motion.g
-              animate={{
-                rotate: errorMsg ? 0 : -45,
-              }}
-              transition={{ type: 'spring', stiffness: 100, damping: 12 }}
-            >
-              {/* Metal Rod / Handle */}
-              <motion.rect
-                animate={{
-                  x: errorMsg ? -220 : -120,
-                  width: errorMsg ? 440 : 240,
-                  height: errorMsg ? 36 : 32,
-                  y: errorMsg ? -18 : -16,
-                  fill: errorMsg ? '#0a0a0c' : '#ffffff',
-                  stroke: errorMsg ? '#ef4444' : 'transparent',
-                  strokeWidth: errorMsg ? 2 : 0,
-                }}
-                rx="8"
-                transition={{ type: 'spring', stiffness: 100, damping: 12 }}
-              />
-
-              {/* Left Weight Plates */}
-              <motion.g
-                animate={{
-                  x: errorMsg ? -100 : 0,
-                }}
-                transition={{ type: 'spring', stiffness: 100, damping: 12 }}
-              >
-                <motion.rect x="-110" y="-60" width="30" height="120" rx="8" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
-                <motion.rect x="-150" y="-80" width="30" height="160" rx="10" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
-                <motion.rect x="-170" y="-40" width="10" height="80" rx="4" animate={{ fill: errorMsg ? '#60a5fa' : '#ffffff' }} transition={{ duration: 0.3 }} />
-
-                {/* Extra weight plates that slide out in error state */}
-                <motion.rect
-                  x="-190"
-                  y="-70"
-                  width="20"
-                  height="140"
-                  rx="8"
-                  fill="#ef4444"
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{
-                    opacity: errorMsg ? 1 : 0,
-                    scaleX: errorMsg ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.3 }}
-                  style={{ transformOrigin: 'right' }}
-                />
-                <motion.rect
-                  x="-210"
-                  y="-50"
-                  width="15"
-                  height="100"
-                  rx="6"
-                  fill="#eab308"
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{
-                    opacity: errorMsg ? 1 : 0,
-                    scaleX: errorMsg ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.3, delay: 0.05 }}
-                  style={{ transformOrigin: 'right' }}
-                />
-              </motion.g>
-
-              {/* Right Weight Plates */}
-              <motion.g
-                animate={{
-                  x: errorMsg ? 100 : 0,
-                }}
-                transition={{ type: 'spring', stiffness: 100, damping: 12 }}
-              >
-                <motion.rect x="80" y="-60" width="30" height="120" rx="8" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
-                <motion.rect x="120" y="-80" width="30" height="160" rx="10" animate={{ fill: errorMsg ? '#3b82f6' : '#ffffff' }} transition={{ duration: 0.3 }} />
-                <motion.rect x="160" y="-40" width="10" height="80" rx="4" animate={{ fill: errorMsg ? '#60a5fa' : '#ffffff' }} transition={{ duration: 0.3 }} />
-
-                {/* Extra weight plates that slide out in error state */}
-                <motion.rect
-                  x="170"
-                  y="-70"
-                  width="20"
-                  height="140"
-                  rx="8"
-                  fill="#ef4444"
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{
-                    opacity: errorMsg ? 1 : 0,
-                    scaleX: errorMsg ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.3 }}
-                  style={{ transformOrigin: 'left' }}
-                />
-                <motion.rect
-                  x="195"
-                  y="-50"
-                  width="15"
-                  height="100"
-                  rx="6"
-                  fill="#eab308"
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{
-                    opacity: errorMsg ? 1 : 0,
-                    scaleX: errorMsg ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.3, delay: 0.05 }}
-                  style={{ transformOrigin: 'left' }}
-                />
-              </motion.g>
-
-              {/* Warning Text */}
-              <motion.text
-                x="0"
-                y="0"
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill="#ef4444"
-                className="font-mono select-none font-black"
-                style={{ fontSize: '15px', letterSpacing: '2px' }}
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: errorMsg ? 1 : 0,
-                }}
-                transition={{ duration: 0.3, delay: errorMsg ? 0.15 : 0 }}
-              >
-                {getShortErrorMessage(errorMsg)}
-              </motion.text>
-            </motion.g>
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
           </g>
         </svg>
-      </motion.div>
+
+        {/* Error text slides in beside the dumbbell */}
+        <motion.div
+          initial={{ opacity: 0, x: -6 }}
+          animate={{ opacity: errorMsg ? 1 : 0, x: errorMsg ? 0 : -6 }}
+          transition={{ duration: 0.28, delay: errorMsg ? 0.12 : 0 }}
+          className="flex flex-col justify-center pr-4 leading-tight"
+          style={{ pointerEvents: 'none' }}
+        >
+          <span className="text-[10px] font-black tracking-widest uppercase text-red-400 whitespace-nowrap">Wrong username</span>
+          <span className="text-[10px] font-black tracking-widest uppercase text-red-400 whitespace-nowrap">or password</span>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -303,7 +158,6 @@ export default function OnboardingFlow({
 
   const triggerPrivacyArrow = () => {
     setShowArrow(false);
-    // Allow state to reset, then recalculate and animate
     setTimeout(() => {
       const btnEl = loginButtonRef.current;
       const cbEl = privacyContainerRef.current;
@@ -313,17 +167,19 @@ export default function OnboardingFlow({
         const cbRect = cbEl.getBoundingClientRect();
         const cardRect = cardEl.getBoundingClientRect();
 
-        // Start at the center of the login button relative to the card
+        // Start: bottom-center of login button
         const startX = btnRect.left - cardRect.left + btnRect.width / 2;
-        const startY = btnRect.top - cardRect.top + btnRect.height / 2;
+        const startY = btnRect.bottom - cardRect.top;
 
-        // End at the checkbox relative to the card
+        // End: left edge of the checkbox
         const endX = cbRect.left - cardRect.left + 8;
         const endY = cbRect.top - cardRect.top + cbRect.height / 2;
 
-        // Curved path swooping to the right
-        const controlX = Math.max(startX, endX) + 110;
-        const controlY = (startY + endY) / 2 + 10;
+        // Loop around the button: go down-right from bottom of button,
+        // swing wide to the right, then come back up to the checkbox.
+        // Cubic bezier with two control points.
+        const controlX = btnRect.right - cardRect.left + 80;  // far right of button
+        const controlY = startY + 60;                          // below button
 
         setArrowPoints({ startX, startY, controlX, controlY, endX, endY });
         setShowArrow(true);
@@ -1081,46 +937,46 @@ export default function OnboardingFlow({
                       transition={{ duration: 0.2 }}
                       className="absolute inset-0 pointer-events-none z-50 overflow-visible w-full h-full"
                     >
-                      <defs>
-                        <linearGradient id="arrow-trail-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <defs>
+                        {/* Gradient fades from transparent at tail to solid blue at head */}
+                        <linearGradient id="arrow-trail-grad" gradientUnits="userSpaceOnUse"
+                          x1={arrowPoints.startX} y1={arrowPoints.startY}
+                          x2={arrowPoints.endX} y2={arrowPoints.endY}>
                           <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
-                          <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.4" />
+                          <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.55" />
                           <stop offset="100%" stopColor="#60a5fa" stopOpacity="1" />
                         </linearGradient>
-                        <marker id="flying-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-                          <path d="M1,1 L7,4 L1,7 Z" fill="#60a5fa" />
+                        <marker id="flying-arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                          <path d="M1,1 L9,5 L1,9 Z" fill="#3b82f6" />
                         </marker>
                       </defs>
 
-                      {/* Curved path */}
+                      {/* Cubic bezier: bottom-center of button → loops around right side → checkbox */}
                       <motion.path
-                        d={`M ${arrowPoints.startX} ${arrowPoints.startY} Q ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.endX} ${arrowPoints.endY}`}
+                        d={`M ${arrowPoints.startX} ${arrowPoints.startY} C ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.controlX} ${arrowPoints.endY - 30} ${arrowPoints.endX} ${arrowPoints.endY}`}
                         fill="none"
                         stroke="url(#arrow-trail-grad)"
-                        strokeWidth="3.5"
+                        strokeWidth="3"
                         strokeLinecap="round"
                         markerEnd="url(#flying-arrowhead)"
                         initial={{ pathLength: 0 }}
                         animate={{ pathLength: 1 }}
                         transition={{
-                          pathLength: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] },
+                          pathLength: { duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] },
                         }}
                       />
 
-                      {/* Glowing pulse at the destination */}
+                      {/* Glowing pulse at the checkbox destination */}
                       <motion.circle
                         cx={arrowPoints.endX}
                         cy={arrowPoints.endY}
-                        r="10"
-                        className="fill-blue-500/20 stroke-blue-400"
+                        r="8"
+                        fill="rgba(59,130,246,0.15)"
+                        stroke="#3b82f6"
                         strokeWidth="1.5"
                         initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: [1, 2, 1], opacity: [0, 0.8, 0] }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 1.2,
-                          delay: 0.6,
-                        }}
+                        animate={{ scale: [0.8, 2, 0.8], opacity: [0, 0.9, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.1, delay: 0.7 }}
                       />
                     </motion.svg>
                   )}
