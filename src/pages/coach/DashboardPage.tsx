@@ -344,8 +344,8 @@ export default function DashboardPage() {
       ex.muscle_group?.toLowerCase().includes(searchExerciseQuery.toLowerCase());
   }).slice(0, 6);
 
-  // Athlete day types from their actual plans
-  const athleteDayTypes = workoutPlans.map(p => p.plan_type);
+  // Athlete day types from their actual plans (always including Rest, Run, Run + Gym defaults)
+  const athleteDayTypes = ['REST', 'RUN', 'RUN + GYM', ...workoutPlans.map(p => p.plan_type)];
 
   // ─── SAVE DAY-TYPE NUTRITION ────────────────────────────
   const handleOpenDayEdit = (dt: string) => {
@@ -384,6 +384,20 @@ export default function DashboardPage() {
     } catch (err: any) {
       console.error(err);
       toast.error('Unable to update water goals. Please try again.');
+    }
+  };
+
+  // ─── SAVE BASELINE NUTRITION ─────────────────────────────
+  const handleSaveBaselineNutrition = async () => {
+    try {
+      const upd = { ...profileTargets, kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
+      const { error } = await db.from('profiles').update({ targets: upd }).eq('id', selectedUserId);
+      if (error) throw error;
+      setProfileTargets(upd);
+      toast.success('Baseline targets updated!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update baseline targets. Please try again.');
     }
   };
 
@@ -1021,6 +1035,47 @@ export default function DashboardPage() {
           {/* ── TAB: PLAN / DAY-TYPE NUTRITION ── */}
           {activeTab === 'overview' && (
             <div className="space-y-4">
+              {/* Daily Baseline Targets Card */}
+              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3 relative shadow-xl">
+                <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider flex items-center gap-1.5">🔥 Daily Baseline Targets</h3>
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Calories (kcal)</label>
+                    <input 
+                      type="number" value={targetKcal} onChange={e => setTargetKcal(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Protein (g)</label>
+                    <input 
+                      type="number" value={targetProtein} onChange={e => setTargetProtein(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Carbs (g)</label>
+                    <input 
+                      type="number" value={targetCarbs} onChange={e => setTargetCarbs(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Fat (g)</label>
+                    <input 
+                      type="number" value={targetFat} onChange={e => setTargetFat(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleSaveBaselineNutrition}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-xl active:scale-95 transition-all cursor-pointer mt-1 flex items-center justify-center gap-1.5"
+                >
+                  <Save size={13} /> Save Baseline Targets
+                </button>
+              </div>
+
               <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📋 Nutrition By Day Type</h3>

@@ -56,9 +56,15 @@ export const useDiet = () => {
   const [allDayTypes, setAllDayTypes] = useState<string[]>(['REST', 'RUN', 'RUN + GYM', 'PUSH', 'PULL', 'LEGS']);
   const [waterGoalMl, setWaterGoalMl] = useState<number>(3500);
 
-  const getDefaultTarget = (dt: string): MacroTarget => {
+  const getDefaultTarget = (dt: string, profileTargets?: any): MacroTarget => {
     const normalized = dt.replace(/\s+/g, '');
-    return DEFAULT_DAY_NUTRITION[dt] ?? DEFAULT_DAY_NUTRITION[normalized] ?? { kcal: 2400, protein: 170, carbs: 230, fat: 70 };
+    const baseline = {
+      kcal: profileTargets?.kcal ?? 2400,
+      protein: profileTargets?.protein ?? 170,
+      carbs: profileTargets?.carbs ?? 230,
+      fat: profileTargets?.fat ?? 70
+    };
+    return DEFAULT_DAY_NUTRITION[dt] ?? DEFAULT_DAY_NUTRITION[normalized] ?? baseline;
   };
 
   // Load per-day targets and dynamic day types
@@ -95,7 +101,7 @@ export const useDiet = () => {
       const exactKey = userMap[dt] 
         ? dt 
         : (userMap[dt.replace(/\s+/g, '')] ? dt.replace(/\s+/g, '') : null);
-      merged[dt] = exactKey ? { ...userMap[exactKey] } : getDefaultTarget(dt);
+      merged[dt] = exactKey ? { ...userMap[exactKey] } : getDefaultTarget(dt, profile?.targets);
     });
     setDayNutrition(merged);
 
@@ -103,7 +109,7 @@ export const useDiet = () => {
     const matchedType = finalTypes.find(t => t.toLowerCase().replace(/\s+/g, '') === dayType.toLowerCase().replace(/\s+/g, ''));
     const activeTarget = matchedType 
       ? merged[matchedType] 
-      : (merged['PUSH'] || getDefaultTarget('PUSH'));
+      : (merged['PUSH'] || getDefaultTarget('PUSH', profile?.targets));
       
     setTargets({ ...activeTarget });
   }, [dayType]);
@@ -113,16 +119,40 @@ export const useDiet = () => {
     fetchAndAdjustTargets();
   }, [fetchAndAdjustTargets]);
 
-  // Listen to plan updates (Workout Builder) and schedule updates to reload instantly
+  // Listen to plan updates, schedule updates, and profiles real-time changes to reload instantly
   useEffect(() => {
+    let subscription: any = null;
+
     const handleUpdate = () => {
       fetchAndAdjustTargets();
     };
+
     window.addEventListener('plan_updated', handleUpdate);
     window.addEventListener('schedule_updated', handleUpdate);
+
+    // Real-time subscription to targets updates in the profiles table
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const channelId = `profile-targets-${session.user.id}-${Date.now()}`;
+        subscription = supabase.channel(channelId)
+          .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles', 
+            filter: `id=eq.${session.user.id}` 
+          }, () => {
+            fetchAndAdjustTargets();
+          })
+          .subscribe();
+      }
+    });
+
     return () => {
       window.removeEventListener('plan_updated', handleUpdate);
       window.removeEventListener('schedule_updated', handleUpdate);
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
     };
   }, [fetchAndAdjustTargets]);
 
