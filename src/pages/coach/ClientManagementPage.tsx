@@ -6,8 +6,19 @@ import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { 
   ChevronLeft, Key, Trash2, Calendar, Scale, Ruler, 
-  Droplets, Dumbbell, Clipboard, Lock, Sparkles, User, UserCheck
+  Droplets, Dumbbell, Clipboard, Lock, Sparkles, User, UserCheck,
+  Phone, TrendingUp, Zap, ChevronRight
 } from 'lucide-react';
+
+const getMuscleColor = (muscle: string) => {
+  const m = muscle?.toLowerCase() || '';
+  if (m.includes('chest')) return { border: 'border-l-red-500', badge: 'bg-red-500/15 text-red-400 border-red-500/30', dot: 'bg-red-500' };
+  if (m.includes('back')) return { border: 'border-l-blue-500', badge: 'bg-blue-500/15 text-blue-400 border-blue-500/30', dot: 'bg-blue-500' };
+  if (m.includes('shoulder') || m.includes('delt')) return { border: 'border-l-purple-500', badge: 'bg-purple-500/15 text-purple-400 border-purple-500/30', dot: 'bg-purple-500' };
+  if (m.includes('quad') || m.includes('ham') || m.includes('leg') || m.includes('glute') || m.includes('calf')) return { border: 'border-l-yellow-500', badge: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30', dot: 'bg-yellow-500' };
+  if (m.includes('bicep') || m.includes('tricep') || m.includes('arm')) return { border: 'border-l-emerald-500', badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-500' };
+  return { border: 'border-l-gray-500', badge: 'bg-gray-500/15 text-gray-400 border-gray-500/30', dot: 'bg-gray-500' };
+};
 
 export default function ClientManagementPage() {
   const { clientId } = useParams();
@@ -23,6 +34,9 @@ export default function ClientManagementPage() {
   const [newPassword, setNewPassword] = useState('');
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Workout tab state
+  const [activeDay, setActiveDay] = useState(0);
 
   useEffect(() => {
     if (clientId) {
@@ -33,7 +47,6 @@ export default function ClientManagementPage() {
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
-      // 1. Fetch client profile & user credentials with specified user join relation
       const { data: clientProfile, error: profileErr } = await supabaseAdmin
         .from('client_profiles')
         .select(`
@@ -52,7 +65,7 @@ export default function ClientManagementPage() {
 
       setClient(clientProfile);
 
-      // 2. Fetch latest body composition scan weight
+      // Fetch latest weight from scans
       const { data: scans } = await supabaseAdmin
         .from('inbody_scans')
         .select('weight')
@@ -66,9 +79,7 @@ export default function ClientManagementPage() {
         setLatestWeight(null);
       }
 
-
-
-      // 4. Fetch workout day plans (read-only splits)
+      // Fetch workout day plans
       const { data: days } = await supabaseAdmin
         .from('client_workout_days')
         .select('*')
@@ -93,14 +104,12 @@ export default function ClientManagementPage() {
 
     setUpdatingPassword(true);
     try {
-      // Update Authentication account password
       const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(
         client.user_id,
         { password: newPassword.trim() }
       );
       if (authErr) throw authErr;
 
-      // Update client passcode indicator in client_profiles table
       const { error: dbErr } = await supabaseAdmin
         .from('client_profiles')
         .update({ generated_passcode: newPassword.trim() })
@@ -134,13 +143,11 @@ export default function ClientManagementPage() {
     try {
       const uid = client.user_id;
 
-      // 1. Delete auth account
       const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
       if (authErr) {
         console.warn('Auth user delete warning:', authErr);
       }
 
-      // 2. Cascade delete database records
       await supabaseAdmin.from('inbody_scans').delete().eq('user_id', uid);
       await supabaseAdmin.from('client_workout_days').delete().eq('user_id', uid);
       await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', uid);
@@ -183,7 +190,7 @@ export default function ClientManagementPage() {
     );
   }
 
-
+  const currentDay = workoutDays[activeDay];
 
   return (
     <div className="min-h-screen bg-[#060610] text-gray-100 font-sans pb-20">
@@ -198,7 +205,7 @@ export default function ClientManagementPage() {
         <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
           Client Profile Manager
         </span>
-        <div className="w-16" /> {/* spacer */}
+        <div className="w-16" />
       </div>
 
       {/* Main Container */}
@@ -226,52 +233,68 @@ export default function ClientManagementPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-5 border-t border-gray-850 pt-4 text-xs">
+          <div className="grid grid-cols-3 gap-3 mt-5 border-t border-gray-800/60 pt-4 text-xs">
             <div>
-              <p className="text-gray-500 font-semibold flex items-center gap-1.5"><Calendar size={12} /> Joined</p>
-              <p className="text-gray-200 font-bold mt-0.5">{new Date(client.user?.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+              <p className="text-gray-500 font-semibold flex items-center gap-1"><Calendar size={10} /> Joined</p>
+              <p className="text-gray-200 font-bold mt-1">{new Date(client.user?.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
             </div>
             <div>
-              <p className="text-gray-500 font-semibold flex items-center gap-1.5"><UserCheck size={12} /> Passcode</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-gray-500 font-semibold flex items-center gap-1"><UserCheck size={10} /> Passcode</p>
+              <div className="flex items-center gap-1 mt-1">
                 <span className="font-mono text-yellow-400 font-black tracking-wider">{client.generated_passcode}</span>
                 <button 
                   onClick={handleCopyCredentials} 
                   className="text-gray-400 hover:text-white p-0.5 rounded bg-gray-800/80 border border-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                   title="Copy Access Credentials"
                 >
-                  <Clipboard size={11} />
+                  <Clipboard size={10} />
                 </button>
               </div>
+            </div>
+            <div>
+              <p className="text-gray-500 font-semibold flex items-center gap-1"><Phone size={10} /> Phone</p>
+              <button 
+                onClick={() => {
+                  const phone = client.user?.targets?.phone_number || '';
+                  if (phone) {
+                    navigator.clipboard.writeText(phone);
+                    toast.success('Copied phone number!');
+                  }
+                }}
+                className="text-blue-400 hover:text-blue-300 font-bold mt-1 text-left cursor-pointer transition-colors block font-mono text-[11px]"
+                title="Click to copy"
+              >
+                {client.user?.targets?.phone_number || 'Not set'}
+              </button>
             </div>
           </div>
         </div>
 
         {/* Biometrics Card */}
         <Card className="p-5 space-y-4">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-800 pb-2 uppercase tracking-wider flex items-center gap-2">
             <User className="text-blue-500 w-4 h-4" /> Deployed Biometrics
           </h2>
           <div className="grid grid-cols-4 gap-2 text-center text-xs">
-            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
-              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><Scale size={10} /> Weight</p>
-              <p className="text-white font-extrabold text-xs mt-1">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-800">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><Scale size={9} /> Wt</p>
+              <p className="text-white font-extrabold text-xs mt-1">{latestWeight ? `${latestWeight}` : 'N/A'}<span className="text-gray-500 text-[9px]">kg</span></p>
             </div>
-            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
-              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><Ruler size={10} /> Height</p>
-              <p className="text-white font-extrabold text-xs mt-1">{client.height ? `${client.height} cm` : 'N/A'}</p>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-800">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><Ruler size={9} /> Ht</p>
+              <p className="text-white font-extrabold text-xs mt-1">{client.height ? `${client.height}` : 'N/A'}<span className="text-gray-500 text-[9px]">cm</span></p>
             </div>
-            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
-              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><User size={10} /> Age</p>
-              <p className="text-white font-extrabold text-xs mt-1">{client.age ? `${client.age} yrs` : 'N/A'}</p>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-800">
+              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5"><User size={9} /> Age</p>
+              <p className="text-white font-extrabold text-xs mt-1">{client.age ? `${client.age}` : 'N/A'}<span className="text-gray-500 text-[9px]">yr</span></p>
             </div>
-            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-850">
-              <p className="text-[9px] text-gray-500 uppercase font-bold flex justify-center items-center gap-0.5">⚧ Gender</p>
-              <p className="text-white font-extrabold text-xs mt-1 capitalize">{client.user?.targets?.gender || 'N/A'}</p>
+            <div className="bg-[#181d29] p-2.5 rounded-xl border border-gray-800">
+              <p className="text-[9px] text-gray-500 uppercase font-bold">Sex</p>
+              <p className="text-white font-extrabold text-[11px] mt-1 capitalize">{client.user?.targets?.gender?.charAt(0)?.toUpperCase() || 'N/A'}</p>
             </div>
           </div>
 
-          <div className="space-y-3 text-xs border-t border-gray-850 pt-3">
+          <div className="space-y-3 text-xs border-t border-gray-800 pt-3">
             <div>
               <p className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">Experience Level</p>
               <span className="inline-block bg-blue-950/60 border border-blue-800/30 text-blue-400 px-2 py-0.5 rounded font-black text-[10px] mt-1 select-none uppercase">
@@ -291,101 +314,124 @@ export default function ClientManagementPage() {
           </div>
         </Card>
 
-        {/* Water Intake Goal Display */}
-        <Card className="p-5 flex items-center justify-between border border-gray-800/80 bg-[#121620]/60">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-xl flex items-center justify-center">
-              <Droplets className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Water Intake Target</p>
-              <p className="text-white font-extrabold text-lg mt-0.5">
-                {((client.user?.targets?.water_goal_ml || 3500) / 1000).toFixed(1)} Liters
-              </p>
-            </div>
+        {/* Water Intake */}
+        <Card className="p-4 flex items-center gap-4 border border-gray-800/80 bg-[#121620]/60">
+          <div className="w-11 h-11 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-xl flex items-center justify-center shrink-0">
+            <Droplets className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Daily Water Target</p>
+            <p className="text-white font-extrabold text-2xl mt-0.5">
+              {((client.user?.targets?.water_goal_ml || 3500) / 1000).toFixed(1)}<span className="text-base text-sky-400 font-black ml-1">L</span>
+            </p>
           </div>
         </Card>
 
-        {/* Workout Program splits — READ ONLY */}
-        <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
-            <Dumbbell className="text-purple-400 w-4 h-4" /> Training Schedule
-          </h2>
-          
+        {/* ── TRAINING SCHEDULE ── */}
+        <div className="bg-[#0d1017] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="p-4 pb-3 flex items-center justify-between border-b border-gray-800/60">
+            <h2 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+              <Dumbbell className="text-purple-400 w-4 h-4" /> Training Schedule
+            </h2>
+            <span className="text-[10px] text-gray-500 font-bold">{workoutDays.length} days</span>
+          </div>
+
           {workoutDays.length === 0 ? (
-            <p className="text-xs text-gray-500 italic text-center py-4">No workout splits assigned yet.</p>
+            <p className="text-xs text-gray-500 italic text-center py-8">No workout splits assigned yet.</p>
           ) : (
-            <div className="space-y-4">
-              {workoutDays.map((day) => {
-                // Extract split key to find day-specific macros
-                const splitKey = day.day_name.replace(' Day', '').toUpperCase();
+            <>
+              {/* Day Tab Selector */}
+              <div className="flex overflow-x-auto gap-2 p-3 pb-0 scrollbar-hide">
+                {workoutDays.map((day, idx) => (
+                  <button
+                    key={day.id}
+                    onClick={() => setActiveDay(idx)}
+                    className={`flex-shrink-0 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                      activeDay === idx
+                        ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/30'
+                        : 'bg-gray-900/60 border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
+                    }`}
+                  >
+                    <span className="block text-[8px] font-bold opacity-70">DAY {day.day_number}</span>
+                    {day.day_name?.replace(' Day', '') || `Day ${day.day_number}`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active Day Content */}
+              {currentDay && (() => {
+                const splitKey = currentDay.day_name.replace(' Day', '').toUpperCase();
                 const dayNutrition = client.user?.targets?.day_nutrition?.[splitKey] || {
                   kcal: client.user?.targets?.kcal,
                   protein: client.user?.targets?.protein,
                   carbs: client.user?.targets?.carbs,
                   fat: client.user?.targets?.fat
                 };
-
                 return (
-                  <div key={day.id} className="bg-[#181d29] p-4 rounded-xl border border-gray-850/80 shadow-inner">
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-3 border-b border-gray-850/60 pb-3">
-                      <div>
-                        <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-purple-500" />
-                          {day.day_name}
-                        </h3>
-                        {/* Day Macros Display */}
-                        <div className="mt-1.5 flex flex-wrap gap-1.5 text-[9px] text-gray-400">
-                          <span className="bg-blue-950/40 border border-blue-900/30 px-1.5 py-0.5 rounded text-blue-300 font-bold">
-                            {dayNutrition.kcal || '—'} kcal
-                          </span>
-                          <span className="bg-emerald-950/40 border border-emerald-900/30 px-1.5 py-0.5 rounded text-emerald-300 font-bold">
-                            {dayNutrition.protein || '—'}g P
-                          </span>
-                          <span className="bg-amber-950/40 border border-amber-900/30 px-1.5 py-0.5 rounded text-amber-300 font-bold">
-                            {dayNutrition.carbs || '—'}g C
-                          </span>
-                          <span className="bg-red-950/40 border border-red-900/30 px-1.5 py-0.5 rounded text-red-300 font-bold">
-                            {dayNutrition.fat || '—'}g F
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-[9px] bg-purple-950/60 border border-purple-800/30 text-purple-400 px-2 py-0.5 rounded font-black uppercase shrink-0">
-                        DAY {day.day_number}
+                  <div className="p-3 pt-3 space-y-3">
+                    {/* Macro Bar */}
+                    <div className="flex gap-1.5 flex-wrap">
+                      <span className="bg-blue-950/60 border border-blue-900/40 text-blue-300 text-[10px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1">
+                        <Zap size={9} /> {dayNutrition.kcal || '—'} kcal
+                      </span>
+                      <span className="bg-emerald-950/60 border border-emerald-900/40 text-emerald-300 text-[10px] font-black px-2.5 py-1 rounded-lg">
+                        P {dayNutrition.protein || '—'}g
+                      </span>
+                      <span className="bg-amber-950/60 border border-amber-900/40 text-amber-300 text-[10px] font-black px-2.5 py-1 rounded-lg">
+                        C {dayNutrition.carbs || '—'}g
+                      </span>
+                      <span className="bg-red-950/60 border border-red-900/40 text-red-300 text-[10px] font-black px-2.5 py-1 rounded-lg">
+                        F {dayNutrition.fat || '—'}g
                       </span>
                     </div>
 
-                    {/* Exercises List */}
-                    <div className="space-y-2">
-                      {(!day.exercises || day.exercises.length === 0) ? (
-                        <p className="text-[10px] text-gray-500 italic">No exercises added to this split.</p>
-                      ) : (
-                        day.exercises.map((ex: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center text-xs bg-[#121620]/60 border border-gray-850/40 p-2.5 rounded-lg hover:border-gray-800 transition-colors">
-                            <div>
-                              <p className="text-gray-200 font-bold">{ex.name}</p>
-                              {ex.muscle_group && (
-                                <p className="text-[9px] text-gray-500 font-semibold mt-0.5 uppercase tracking-wide">{ex.muscle_group}</p>
-                              )}
+                    {/* Exercises */}
+                    {(!currentDay.exercises || currentDay.exercises.length === 0) ? (
+                      <p className="text-[10px] text-gray-500 italic text-center py-4">No exercises added to this split.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {currentDay.exercises.map((ex: any, idx: number) => {
+                          const colors = getMuscleColor(ex.muscle_group);
+                          return (
+                            <div key={idx} className={`flex items-center gap-3 bg-[#181d29] border border-gray-800/80 border-l-4 ${colors.border} rounded-xl p-3`}>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-extrabold text-xs leading-snug">{ex.name}</p>
+                                {ex.muscle_group && (
+                                  <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border mt-1 ${colors.badge}`}>
+                                    {ex.muscle_group}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="text-center bg-gray-900/80 border border-gray-800 rounded-lg px-2 py-1.5">
+                                  <p className="text-[7px] text-gray-500 uppercase font-bold">Sets</p>
+                                  <p className="text-gray-100 font-black text-[11px] mt-0.5">{ex.sets}</p>
+                                </div>
+                                <div className="text-center bg-gray-900/80 border border-gray-800 rounded-lg px-2 py-1.5">
+                                  <p className="text-[7px] text-gray-500 uppercase font-bold">Reps</p>
+                                  <p className="text-gray-100 font-black text-[11px] mt-0.5">{ex.reps_min || 8}–{ex.reps_max || 12}</p>
+                                </div>
+                                <div className="text-center bg-gray-900/80 border border-gray-800 rounded-lg px-2 py-1.5">
+                                  <p className="text-[7px] text-gray-500 uppercase font-bold">Rest</p>
+                                  <p className="text-gray-100 font-black text-[11px] mt-0.5">{ex.rest || 120}s</p>
+                                </div>
+                              </div>
                             </div>
-                            <span className="font-mono text-gray-400 text-[10px] bg-gray-900 border border-gray-850 px-2 py-1 rounded">
-                              {ex.sets} sets × {ex.reps_min || 8}-{ex.reps_max || 12} reps
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
-              })}
-            </div>
+              })()}
+            </>
           )}
         </div>
 
         {/* Change Password Card */}
         <Card className="p-5 space-y-4">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-800 pb-2 uppercase tracking-wider flex items-center gap-2">
             <Lock className="text-yellow-500 w-4 h-4" /> Change Password
           </h2>
           <form onSubmit={handleChangePassword} className="space-y-3">
@@ -396,7 +442,7 @@ export default function ClientManagementPage() {
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Enter at least 6 characters"
-                className="w-full bg-[#181d29] border border-gray-850 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
                 required
               />
             </div>
@@ -420,22 +466,25 @@ export default function ClientManagementPage() {
         </Card>
 
         {/* InBody Scan Records */}
-        <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
-            <Scale className="text-blue-400 w-4 h-4" /> Composition History
-          </h2>
-          <InBodyHistory clientId={clientId} />
+        <div className="bg-[#0d1017] border border-gray-800 rounded-2xl shadow-xl overflow-hidden">
+          <div className="p-4 pb-3 border-b border-gray-800/60 flex items-center gap-2">
+            <TrendingUp className="text-emerald-400 w-4 h-4" />
+            <h2 className="text-sm font-extrabold text-white uppercase tracking-wider">Composition History</h2>
+          </div>
+          <div className="p-4">
+            <InBodyHistory clientId={clientId} />
+          </div>
         </div>
 
         {/* Coach Progress Notes */}
         <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-800 pb-2 uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="text-blue-400 w-4 h-4" /> Coach Notes
           </h2>
           <ProgressNotes clientId={clientId} coachId={client.coach_id} />
         </div>
 
-        {/* Danger Zone: Delete Client */}
+        {/* Danger Zone */}
         <div className="bg-red-950/20 border border-red-900/30 rounded-2xl p-5 shadow-xl space-y-4">
           <h2 className="text-sm font-extrabold text-red-400 border-b border-red-950 pb-2 uppercase tracking-wider flex items-center gap-2">
             <Trash2 className="w-4 h-4 text-red-500" /> Danger Zone
@@ -461,10 +510,11 @@ export default function ClientManagementPage() {
   );
 }
 
-// InBody History Component using supabaseAdmin
+// ─── InBody History Component ────────────────────────────────────────────────
 function InBodyHistory({ clientId }: any) {
   const [scans, setScans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedScan, setExpandedScan] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchScans = async () => {
@@ -477,7 +527,6 @@ function InBodyHistory({ clientId }: any) {
       setScans(data || []);
       setLoading(false);
     };
-
     fetchScans();
   }, [clientId]);
 
@@ -485,38 +534,110 @@ function InBodyHistory({ clientId }: any) {
   if (scans.length === 0) return <p className="text-xs text-gray-500 italic text-center py-4">No body composition records found.</p>;
 
   return (
-    <div className="space-y-3">
-      {scans.map(scan => (
-        <div key={scan.id} className="bg-[#181d29] p-4 rounded-xl border border-gray-850">
-          <div className="flex justify-between items-center mb-3">
-            <p className="font-bold text-xs text-white">
-              {new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-            </p>
-            <span className="bg-blue-950/80 border border-blue-900/40 text-blue-400 text-[10px] px-2 py-0.5 rounded font-black select-none uppercase">
-              SCORE: {scan.score || scan.inbody_score || 'N/A'}
-            </span>
+    <div className="space-y-4">
+      {scans.map(scan => {
+        const isExpanded = expandedScan === scan.id;
+        return (
+          <div key={scan.id} className="bg-[#181d29] rounded-2xl border border-gray-800 overflow-hidden">
+            {/* Scan Header */}
+            <button
+              onClick={() => setExpandedScan(isExpanded ? null : scan.id)}
+              className="w-full text-left p-4 cursor-pointer hover:bg-gray-800/30 transition-colors"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-black text-white text-sm">
+                    {new Date(scan.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  {scan.score || scan.inbody_score ? (
+                    <span className="mt-1 inline-block bg-blue-950/80 border border-blue-900/40 text-blue-400 text-[10px] px-2 py-0.5 rounded font-black uppercase">
+                      InBody Score: {scan.score || scan.inbody_score}
+                    </span>
+                  ) : null}
+                </div>
+                <ChevronRight size={14} className={`text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+              </div>
+
+              {/* Quick Stats Row */}
+              <div className="flex gap-3 mt-3 text-xs">
+                <div className="flex-1 bg-gray-900/60 rounded-xl p-2.5 text-center">
+                  <p className="text-[8px] text-gray-500 uppercase font-bold">Weight</p>
+                  <p className="text-white font-black mt-0.5">{scan.weight || '—'}<span className="text-gray-500 text-[9px]">kg</span></p>
+                </div>
+                <div className="flex-1 bg-emerald-950/40 border border-emerald-900/30 rounded-xl p-2.5 text-center">
+                  <p className="text-[8px] text-emerald-500 uppercase font-bold">Muscle</p>
+                  <p className="text-emerald-300 font-black mt-0.5">{scan.smm || '—'}<span className="text-emerald-600 text-[9px]">kg</span></p>
+                </div>
+                <div className="flex-1 bg-red-950/40 border border-red-900/30 rounded-xl p-2.5 text-center">
+                  <p className="text-[8px] text-red-500 uppercase font-bold">Body Fat</p>
+                  <p className="text-red-300 font-black mt-0.5">{scan.bf_percent || '—'}<span className="text-red-600 text-[9px]">%</span></p>
+                </div>
+                <div className="flex-1 bg-blue-950/40 border border-blue-900/30 rounded-xl p-2.5 text-center">
+                  <p className="text-[8px] text-blue-500 uppercase font-bold">BFM</p>
+                  <p className="text-blue-300 font-black mt-0.5">{scan.bfm || '—'}<span className="text-blue-600 text-[9px]">kg</span></p>
+                </div>
+              </div>
+            </button>
+
+            {/* Expanded Full Readings */}
+            {isExpanded && (
+              <div className="px-4 pb-4 border-t border-gray-800/60 pt-3 space-y-3">
+                {/* Main Readings */}
+                <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Full Body Composition</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'BMR', value: scan.bmr ? `${scan.bmr} kcal` : null },
+                    { label: 'Total Body Water', value: scan.segmental?.tbw ? `${scan.segmental.tbw} L` : null },
+                    { label: 'Body Protein', value: scan.segmental?.protein ? `${scan.segmental.protein} kg` : null },
+                    { label: 'Body Minerals', value: scan.segmental?.minerals ? `${scan.segmental.minerals} kg` : null },
+                    { label: 'Visceral Fat', value: scan.segmental?.visceralFat ? `Level ${scan.segmental.visceralFat}` : null },
+                    { label: 'Body Fat Mass', value: scan.bfm ? `${scan.bfm} kg` : null },
+                  ].map(({ label, value }) => value ? (
+                    <div key={label} className="bg-[#121620] p-2.5 rounded-xl border border-gray-800/60">
+                      <p className="text-[8px] text-gray-500 uppercase font-black">{label}</p>
+                      <p className="text-white font-extrabold text-xs mt-0.5">{value}</p>
+                    </div>
+                  ) : null)}
+                </div>
+
+                {/* Segmental Lean Analysis */}
+                {(scan.segmental?.laLean || scan.segmental?.raLean || scan.segmental?.trunkLean || scan.segmental?.llLean || scan.segmental?.rlLean) && (
+                  <>
+                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider pt-1">Segmental Lean Analysis</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-[#121620] p-2.5 rounded-xl border border-gray-800 text-center">
+                        <p className="text-[8px] text-gray-500 font-bold">Left Arm</p>
+                        <p className="text-gray-200 font-extrabold text-[11px] mt-0.5">{scan.segmental?.laLean || '—'}<span className="text-gray-500 text-[8px]">kg</span></p>
+                      </div>
+                      <div className="bg-[#121620] p-2.5 rounded-xl border border-gray-800 text-center">
+                        <p className="text-[8px] text-gray-500 font-bold">Trunk</p>
+                        <p className="text-gray-200 font-extrabold text-[11px] mt-0.5">{scan.segmental?.trunkLean || '—'}<span className="text-gray-500 text-[8px]">kg</span></p>
+                      </div>
+                      <div className="bg-[#121620] p-2.5 rounded-xl border border-gray-800 text-center">
+                        <p className="text-[8px] text-gray-500 font-bold">Right Arm</p>
+                        <p className="text-gray-200 font-extrabold text-[11px] mt-0.5">{scan.segmental?.raLean || '—'}<span className="text-gray-500 text-[8px]">kg</span></p>
+                      </div>
+                      <div className="bg-[#121620] p-2.5 rounded-xl border border-gray-800 text-center">
+                        <p className="text-[8px] text-gray-500 font-bold">Left Leg</p>
+                        <p className="text-gray-200 font-extrabold text-[11px] mt-0.5">{scan.segmental?.llLean || '—'}<span className="text-gray-500 text-[8px]">kg</span></p>
+                      </div>
+                      <div className="bg-[#121620] p-2.5 rounded-xl border border-gray-800 text-center col-start-3">
+                        <p className="text-[8px] text-gray-500 font-bold">Right Leg</p>
+                        <p className="text-gray-200 font-extrabold text-[11px] mt-0.5">{scan.segmental?.rlLean || '—'}<span className="text-gray-500 text-[8px]">kg</span></p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-[#121620]/60 p-2 rounded-lg border border-gray-850/40">
-              <p className="text-gray-500 text-[9px] uppercase font-bold">Weight</p>
-              <p className="text-white font-extrabold mt-0.5">{scan.weight}kg</p>
-            </div>
-            <div className="bg-[#121620]/60 p-2 rounded-lg border border-gray-850/40">
-              <p className="text-gray-500 text-[9px] uppercase font-bold">SMM</p>
-              <p className="text-emerald-400 font-extrabold mt-0.5">{scan.smm}kg</p>
-            </div>
-            <div className="bg-[#121620]/60 p-2 rounded-lg border border-gray-850/40">
-              <p className="text-gray-500 text-[9px] uppercase font-bold">BF%</p>
-              <p className="text-red-400 font-extrabold mt-0.5">{scan.bf_percent}%</p>
-            </div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-// Progress Notes Component using supabaseAdmin
+// ─── Progress Notes Component ────────────────────────────────────────────────
 function ProgressNotes({ clientId, coachId }: any) {
   const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -532,7 +653,6 @@ function ProgressNotes({ clientId, coachId }: any) {
 
       setNotes(data || []);
     };
-
     fetchNotes();
   }, [clientId]);
 
@@ -553,7 +673,6 @@ function ProgressNotes({ clientId, coachId }: any) {
     if (!error) {
       setNewNote('');
       toast.success('Progress note saved');
-      // Refresh notes list
       const { data } = await supabaseAdmin
         .from('progress_notes')
         .select('*')
@@ -574,7 +693,7 @@ function ProgressNotes({ clientId, coachId }: any) {
           value={newNote}
           onChange={(e) => setNewNote(e.target.value)}
           placeholder="Add training log notes..."
-          className="flex-1 bg-[#181d29] border border-gray-850 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
+          className="flex-1 bg-[#181d29] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
           onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
         />
         <button
@@ -591,7 +710,7 @@ function ProgressNotes({ clientId, coachId }: any) {
           <p className="text-xs text-gray-500 italic text-center py-4">No logged notes for this athlete yet.</p>
         ) : (
           notes.map(note => (
-            <div key={note.id} className="bg-[#181d29] p-3.5 rounded-xl border border-gray-850">
+            <div key={note.id} className="bg-[#181d29] p-3.5 rounded-xl border border-gray-800">
               <p className="text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Calendar size={10} />
                 {new Date(note.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}

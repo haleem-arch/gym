@@ -10,15 +10,20 @@ export default function ClientsListPage() {
   const { clients, loading, refetch } = useCoachClients();
 
   const handleDeleteClient = async (client: any) => {
+    const phoneNumber = client.user?.targets?.phone_number;
     const clientCode = client.user?.targets?.client_code;
     const displayName = client.user?.display_name || 'this client';
+    
+    // Legacy support fallback if phone number is not defined
+    const expectedVerifyVal = phoneNumber || String(clientCode || '123');
+
     const input = window.prompt(
-      `To delete client "${displayName}", please enter their Client ID/Code (e.g. ${clientCode || '112'}):`
+      `To delete client "${displayName}", please enter their Phone Number (verification: ${expectedVerifyVal}):`
     );
 
-    if (input !== String(clientCode)) {
+    if (input !== expectedVerifyVal) {
       if (input !== null) {
-        toast.error('Incorrect client code. Deletion cancelled.');
+        toast.error('Incorrect verification value. Deletion cancelled.');
       }
       return;
     }

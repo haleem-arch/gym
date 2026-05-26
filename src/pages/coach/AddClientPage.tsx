@@ -56,6 +56,7 @@ export default function AddClientPage() {
     username: '',
     password: '',
     clientCode: '',
+    phoneNumber: '',
     age: '',
     height: '',
     experience_level: 'beginner',
@@ -464,7 +465,8 @@ export default function AddClientPage() {
         protein,
         carbs,
         fat,
-        client_code: nextClientCode
+        client_code: nextClientCode,
+        phone_number: formData.phoneNumber.trim()
       };
 
       // 3. Insert public.profiles
@@ -793,15 +795,29 @@ export default function AddClientPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Client Number (Optional)</label>
-                  <div className="relative">
-                    <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                    <input 
-                      type="number" name="clientCode" value={formData.clientCode} onChange={handleInputChange}
-                      placeholder="e.g. 112 (Leave blank to auto-generate)"
-                      className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Phone Number (Required)</label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                      <input 
+                        type="text" required name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange}
+                        placeholder="e.g. +20123456789"
+                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Client Number (Optional ID)</label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                      <input 
+                        type="number" name="clientCode" value={formData.clientCode} onChange={handleInputChange}
+                        placeholder="e.g. 112"
+                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                      />
+                    </div>
                   </div>
                 </div>
 

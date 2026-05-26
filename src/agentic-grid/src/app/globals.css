@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-volt: #ccff00;
+  --color-volt-hover: #b3e600;
+  --color-black-deep: #050505;
+  --color-surface: #111111;
+  --color-surface-hover: #1a1a1a;
+}
+
+body {
+  background-color: #000000;
+  color: #ffffff;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hide scrollbar for a cleaner mobile app feel */
+::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-card {
+  background: rgba(17, 17, 17, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
