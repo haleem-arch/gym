@@ -47,7 +47,7 @@ BEGIN
         
         EXECUTE sql_create;
         
-        RAISE NOTICE 'Updated constraint % on %.% to cascade/set null.', 
+        RAISE NOTICE 'Updated constraint % on table %', 
             r.constraint_name, r.table_name;
     END LOOP;
 END $$;
