@@ -13,7 +13,7 @@ export const useCoachClients = () => {
         .from('client_profiles')
         .select(`
           *,
-          user:profiles(id, username, email, display_name, targets, created_at)
+          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, created_at)
         `)
         .order('created_at', { ascending: false });
 

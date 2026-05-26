@@ -1,390 +1,458 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
+import { 
+  ChevronLeft, Key, Trash2, Calendar, Scale, Ruler, 
+  Droplets, Dumbbell, Clipboard, Lock, Sparkles, User, UserCheck
+} from 'lucide-react';
 
 export default function ClientManagementPage() {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  
+  // Data States
   const [client, setClient] = useState<any>(null);
   const [workoutDays, setWorkoutDays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+  const [latestWeight, setLatestWeight] = useState<number | null>(null);
+  const [waterTotalMl, setWaterTotalMl] = useState(0);
+
+  // Form States
+  const [newPassword, setNewPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (clientId) {
-      fetchClientProfile();
+      fetchClientDetails();
     }
   }, [clientId]);
 
-  const fetchClientProfile = async () => {
-    const { data, error } = await supabase
-      .from('client_profiles')
-      .select(`
-        *,
-        user:profiles(id, username, email, display_name, created_at)
-      `)
-      .eq('user_id', clientId)
-      .single();
+  const fetchClientDetails = async () => {
+    try {
+      setLoading(true);
+      // 1. Fetch client profile & user credentials with specified user join relation
+      const { data: clientProfile, error: profileErr } = await supabaseAdmin
+        .from('client_profiles')
+        .select(`
+          *,
+          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, created_at)
+        `)
+        .eq('user_id', clientId)
+        .single();
 
-    if (error) {
-      console.error('Error fetching client:', error);
-      toast.error('Client not found');
-      navigate('/coach/clients');
+      if (profileErr || !clientProfile) {
+        console.error('Error fetching client profile:', profileErr);
+        toast.error('Client profile not found');
+        navigate('/coach/clients');
+        return;
+      }
+
+      setClient(clientProfile);
+
+      // 2. Fetch latest body composition scan weight
+      const { data: scans } = await supabaseAdmin
+        .from('inbody_scans')
+        .select('weight')
+        .eq('user_id', clientId)
+        .order('date', { ascending: false })
+        .limit(1);
+
+      if (scans && scans.length > 0) {
+        setLatestWeight(scans[0].weight);
+      } else {
+        setLatestWeight(null);
+      }
+
+      // 3. Fetch today's logged water intake
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: wLogs } = await supabaseAdmin
+        .from('water_logs')
+        .select('amount_ml')
+        .eq('user_id', clientId)
+        .eq('date', todayStr);
+
+      const waterTotal = wLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
+      setWaterTotalMl(waterTotal);
+
+      // 4. Fetch workout day plans (read-only splits)
+      const { data: days } = await supabaseAdmin
+        .from('client_workout_days')
+        .select('*')
+        .eq('user_id', clientId)
+        .order('day_number', { ascending: true });
+
+      setWorkoutDays(days || []);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to load client information.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.trim().length < 6) {
+      toast.error('Password must be at least 6 characters.');
       return;
     }
 
-    setClient(data);
-    
-    // Fetch workout days
-    const { data: days } = await supabase
-      .from('client_workout_days')
-      .select('*')
-      .eq('user_id', clientId)
-      .order('day_number', { ascending: true });
+    setUpdatingPassword(true);
+    try {
+      // Update Authentication account password
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(
+        client.user_id,
+        { password: newPassword.trim() }
+      );
+      if (authErr) throw authErr;
 
-    setWorkoutDays(days || []);
-    setLoading(false);
+      // Update client passcode indicator in client_profiles table
+      const { error: dbErr } = await supabaseAdmin
+        .from('client_profiles')
+        .update({ generated_passcode: newPassword.trim() })
+        .eq('user_id', client.user_id);
+      if (dbErr) throw dbErr;
+
+      toast.success('Password updated successfully!');
+      setNewPassword('');
+      fetchClientDetails();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to change client password');
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
-  const handleUpdateDaysPerWeek = async (newDaysPerWeek: number) => {
-    // Create missing days
-    const existingDays = workoutDays.length;
-    if (newDaysPerWeek > existingDays) {
-      for (let i = existingDays + 1; i <= newDaysPerWeek; i++) {
-        await supabase.from('client_workout_days').insert({
-          user_id: clientId,
-          day_number: i,
-          day_name: `Day ${i}`,
-          exercises: []
-        });
+  const handleDeleteClient = async () => {
+    const confirmName = window.prompt(
+      `WARNING: This action is permanent and will completely delete the client account, including workouts, diet targets, composition history, and log records. \n\nType the client's name "${client.user?.display_name}" to confirm deletion:`
+    );
+
+    if (confirmName !== client.user?.display_name) {
+      if (confirmName !== null) {
+        toast.error('Name did not match. Deletion cancelled.');
       }
-    } else if (newDaysPerWeek < existingDays) {
-      // Delete excess days
-      for (let i = newDaysPerWeek + 1; i <= existingDays; i++) {
-        const dayToDelete = workoutDays.find(d => d.day_number === i);
-        if (dayToDelete) {
-          await supabase.from('client_workout_days').delete().eq('id', dayToDelete.id);
-        }
-      }
+      return;
     }
 
-    // Update client profile
-    await supabase
-      .from('client_profiles')
-      .update({ workouts_per_week: newDaysPerWeek })
-      .eq('user_id', clientId);
+    setDeleting(true);
+    try {
+      const uid = client.user_id;
 
-    toast.success(`Updated to ${newDaysPerWeek} days/week`);
-    fetchClientProfile();
+      // 1. Delete auth account
+      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(uid);
+      if (authErr) {
+        console.warn('Auth user delete warning:', authErr);
+      }
+
+      // 2. Cascade delete database records
+      await supabaseAdmin.from('inbody_scans').delete().eq('user_id', uid);
+      await supabaseAdmin.from('client_workout_days').delete().eq('user_id', uid);
+      await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', uid);
+      await supabaseAdmin.from('progress_notes').delete().eq('user_id', uid);
+      await supabaseAdmin.from('water_logs').delete().eq('user_id', uid);
+      await supabaseAdmin.from('client_profiles').delete().eq('user_id', uid);
+      await supabaseAdmin.from('profiles').delete().eq('id', uid);
+
+      toast.success('Client deleted successfully');
+      navigate('/coach/clients');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to delete client account');
+      setDeleting(false);
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    const text = `Life Gym Access Details:\nClient Code: #${client.user?.targets?.client_code || 'N/A'}\nUsername: ${client.user?.username}\nPassword: ${client.generated_passcode}`;
+    navigator.clipboard.writeText(text);
+    toast.success('Copied client credentials to clipboard!');
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <DumbbellLoader label="Loading client details..." size={100} />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#060610]">
+        <DumbbellLoader label="Loading client files..." size={100} />
       </div>
     );
   }
-  if (!client) return <div className="p-4 text-red-400">Client not found</div>;
+
+  if (!client) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#060610] p-4 text-center">
+        <p className="text-red-400 font-bold mb-4">Client file not found</p>
+        <Link to="/coach/clients" className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-white font-bold">
+          Back to Clients
+        </Link>
+      </div>
+    );
+  }
+
+  const waterGoal = (client.user?.targets?.water_goal_ml || 3500) / 1000;
+  const currentWater = waterTotalMl / 1000;
 
   return (
-    <div className="p-4 pb-20 overflow-y-auto h-full">
-      {/* Client Header Card */}
-      <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-lg p-6 mb-6 text-white shadow-xl">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold">{client.user?.display_name || 'Unnamed Client'}</h1>
-            <p className="text-gray-300 text-sm mt-2">@{client.user?.username || 'no-username'}</p>
-          </div>
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm transition-colors"
-          >
-            {editMode ? 'Done' : 'Edit'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          <div>
-            <p className="text-gray-300 text-xs uppercase tracking-wider">Email</p>
-            <p className="font-mono text-sm break-all">{client.user?.email}</p>
-          </div>
-          <div>
-            <p className="text-gray-300 text-xs uppercase tracking-wider">Username</p>
-            <p className="font-mono text-sm">{client.user?.username}</p>
-          </div>
-          <div>
-            <p className="text-gray-300 text-xs uppercase tracking-wider">Passcode</p>
-            <p className="font-mono text-sm font-bold text-yellow-400">{client.generated_passcode}</p>
-          </div>
-          <div>
-            <p className="text-gray-300 text-xs uppercase tracking-wider">Member Since</p>
-            <p className="text-sm">{new Date(client.user?.created_at).toLocaleDateString()}</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#060610] text-gray-100 font-sans pb-20">
+      {/* Top Navbar */}
+      <div className="p-4 border-b border-gray-800 bg-[#060610]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between">
+        <Link 
+          to="/coach/clients" 
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors py-1.5 px-3 rounded-lg bg-gray-900/60 border border-gray-800"
+        >
+          <ChevronLeft size={14} /> Back
+        </Link>
+        <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
+          Client Profile Manager
+        </span>
+        <div className="w-16" /> {/* spacer */}
       </div>
 
-      {/* Client Details */}
-      <Card className="mb-6">
-        <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Profile</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-gray-400 text-xs uppercase">Age</label>
-            <p className="text-white font-medium">{client.age || 'Not set'}</p>
+      {/* Main Container */}
+      <div className="max-w-[390px] mx-auto p-4 space-y-4">
+
+        {/* Client Header Card */}
+        <div className="bg-gradient-to-br from-blue-950/80 to-slate-900 border border-blue-900/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-[-20%] right-[-10%] w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+          <div className="flex items-start justify-between">
+            <div className="flex gap-3.5 items-center">
+              <div className="w-12 h-12 bg-blue-600/20 border border-blue-500/30 text-blue-400 rounded-xl flex items-center justify-center shadow-lg font-black text-lg uppercase select-none">
+                {client.user?.display_name?.charAt(0) || '?'}
+              </div>
+              <div>
+                <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-1.5">
+                  {client.user?.display_name || 'Unnamed Client'}
+                  {client.user?.targets?.client_code && (
+                    <span className="text-[10px] bg-blue-500/20 border border-blue-500/30 text-blue-400 px-1.5 py-0.5 rounded font-black tracking-normal">
+                      #{client.user.targets.client_code}
+                    </span>
+                  )}
+                </h1>
+                <p className="text-xs text-gray-400 mt-0.5 font-medium">@{client.user?.username || 'no-username'}</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="text-gray-400 text-xs uppercase">Height (cm)</label>
-            <p className="text-white font-medium">{client.height || 'Not set'}</p>
-          </div>
-          <div>
-            <label className="text-gray-400 text-xs uppercase">Level</label>
+
+          <div className="grid grid-cols-2 gap-4 mt-5 border-t border-gray-850 pt-4 text-xs">
             <div>
-              <span className="inline-block bg-blue-600 text-white px-2 py-1 rounded text-xs mt-1 font-bold">
-                {(client.experience_level || 'Beginner').toUpperCase()}
+              <p className="text-gray-500 font-semibold flex items-center gap-1.5"><Calendar size={12} /> Joined</p>
+              <p className="text-gray-200 font-bold mt-0.5">{new Date(client.user?.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 font-semibold flex items-center gap-1.5"><UserCheck size={12} /> Passcode</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="font-mono text-yellow-400 font-black tracking-wider">{client.generated_passcode}</span>
+                <button 
+                  onClick={handleCopyCredentials} 
+                  className="text-gray-400 hover:text-white p-0.5 rounded bg-gray-800/80 border border-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  title="Copy Access Credentials"
+                >
+                  <Clipboard size={11} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Biometrics Card */}
+        <Card className="p-5 space-y-4">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <User className="text-blue-500 w-4 h-4" /> Deployed Biometrics
+          </h2>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-[#181d29] p-3 rounded-xl border border-gray-850">
+              <p className="text-[10px] text-gray-500 uppercase font-bold flex justify-center items-center gap-1"><Scale size={11} /> Weight</p>
+              <p className="text-white font-extrabold text-sm mt-1">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
+            </div>
+            <div className="bg-[#181d29] p-3 rounded-xl border border-gray-850">
+              <p className="text-[10px] text-gray-500 uppercase font-bold flex justify-center items-center gap-1"><Ruler size={11} /> Height</p>
+              <p className="text-white font-extrabold text-sm mt-1">{client.height ? `${client.height} cm` : 'N/A'}</p>
+            </div>
+            <div className="bg-[#181d29] p-3 rounded-xl border border-gray-850">
+              <p className="text-[10px] text-gray-500 uppercase font-bold flex justify-center items-center gap-1"><User size={11} /> Age</p>
+              <p className="text-white font-extrabold text-sm mt-1">{client.age ? `${client.age} yrs` : 'N/A'}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-xs border-t border-gray-850 pt-3">
+            <div>
+              <p className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">Experience Level</p>
+              <span className="inline-block bg-blue-950/60 border border-blue-800/30 text-blue-400 px-2 py-0.5 rounded font-black text-[10px] mt-1 select-none uppercase">
+                {client.experience_level || 'Beginner'}
               </span>
             </div>
-          </div>
-          <div>
-            <label className="text-gray-400 text-xs uppercase">Goals</label>
-            <p className="text-white text-sm mt-1">{client.goals || 'Not set'}</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Workout Schedule */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg border border-gray-700">
-        <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Workout Schedule</h2>
-        
-        {editMode && (
-          <div className="mb-6 flex items-center gap-3 bg-gray-700 p-3 rounded-lg">
-            <label className="text-gray-300 text-sm font-bold">Days per week:</label>
-            <select
-              defaultValue={client.workouts_per_week || 3}
-              onChange={(e) => handleUpdateDaysPerWeek(parseInt(e.target.value))}
-              className="bg-gray-600 text-white rounded px-3 py-1 text-sm border border-gray-500"
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map(n => (
-                <option key={n} value={n}>{n} days</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {workoutDays.map((day) => (
-            <WorkoutDayCard
-              key={day.id}
-              day={day}
-              clientId={clientId}
-              editMode={editMode}
-              onUpdate={fetchClientProfile}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* InBody History */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg border border-gray-700">
-        <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Body Composition</h2>
-        <InBodyHistory clientId={clientId} />
-      </div>
-
-      {/* Progress Notes */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
-        <h2 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Coach Notes</h2>
-        <ProgressNotes clientId={clientId} coachId={client.coach_id} />
-      </div>
-    </div>
-  );
-}
-
-// Workout Day Card Component
-function WorkoutDayCard({ day, editMode }: any) {
-  const [dayName, setDayName] = useState(day.day_name);
-  const [exercises, setExercises] = useState(day.exercises || []);
-  const [showExerciseSearch, setShowExerciseSearch] = useState(false);
-
-  const handleAddExercise = async (exercise: any) => {
-    const newExercises = [...exercises, exercise];
-    setExercises(newExercises);
-
-    await supabase
-      .from('client_workout_days')
-      .update({ exercises: newExercises })
-      .eq('id', day.id);
-
-    toast.success(`Added ${exercise.name}`);
-  };
-
-  const handleRemoveExercise = async (exerciseId: string) => {
-    const newExercises = exercises.filter((e: any) => e.id !== exerciseId);
-    setExercises(newExercises);
-
-    await supabase
-      .from('client_workout_days')
-      .update({ exercises: newExercises })
-      .eq('id', day.id);
-
-    toast.success('Exercise removed');
-  };
-
-  const handleRenameDay = async (newName: string) => {
-    setDayName(newName);
-    await supabase
-      .from('client_workout_days')
-      .update({ day_name: newName })
-      .eq('id', day.id);
-  };
-
-  return (
-    <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-      <div className="flex items-center justify-between mb-4">
-        {editMode ? (
-          <input
-            type="text"
-            value={dayName}
-            onChange={(e) => handleRenameDay(e.target.value)}
-            className="bg-gray-600 text-white rounded px-3 py-2 flex-1 mr-4 border border-gray-500 focus:outline-none focus:border-blue-500"
-            placeholder="Day name (e.g., Push, Pull, Legs)"
-          />
-        ) : (
-          <h3 className="text-lg font-bold text-white">{dayName}</h3>
-        )}
-        <span className="bg-gray-600 text-gray-300 text-xs px-2 py-1 rounded font-bold">DAY {day.day_number}</span>
-      </div>
-
-      {/* Exercise List */}
-      <div className="space-y-2 mb-4">
-        {exercises.length === 0 ? (
-          <p className="text-gray-500 text-sm italic">No exercises added yet.</p>
-        ) : (
-          exercises.map((exercise: any, idx: number) => (
-            <div key={idx} className="bg-gray-600 p-3 rounded flex justify-between items-center border border-gray-500">
-              <div>
-                <p className="text-white font-bold">{exercise.name}</p>
-                <p className="text-gray-300 text-xs">{exercise.sets}×{exercise.reps_min}-{exercise.reps_max}</p>
-              </div>
-              {editMode && (
-                <button
-                  onClick={() => handleRemoveExercise(exercise.id)}
-                  className="text-red-400 text-sm hover:text-red-300 font-bold"
-                >
-                  Remove
-                </button>
-              )}
+            <div>
+              <p className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">Primary Goals</p>
+              <p className="text-gray-300 font-semibold mt-1 leading-relaxed">{client.goals || 'No goals specified.'}</p>
             </div>
-          ))
-        )}
-      </div>
+            {client.injuries_notes && (
+              <div>
+                <p className="text-red-400 font-bold uppercase tracking-wider text-[9px]">Injuries &amp; Restrictions</p>
+                <p className="text-red-300 font-medium mt-1 leading-relaxed bg-red-950/20 border border-red-900/30 p-2.5 rounded-lg">{client.injuries_notes}</p>
+              </div>
+            )}
+          </div>
+        </Card>
 
-      {editMode && (
-        <button
-          onClick={() => setShowExerciseSearch(!showExerciseSearch)}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-bold transition-colors"
-        >
-          + Add Exercise
-        </button>
-      )}
+        {/* Water Intake Stats */}
+        <Card className="p-5 space-y-3.5">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <Droplets className="text-sky-400 w-4 h-4" /> Daily Hydration
+          </h2>
+          <div className="flex justify-between items-center text-xs">
+            <div>
+              <p className="text-gray-500 font-semibold">Today's Intake</p>
+              <p className="text-white font-extrabold text-lg mt-0.5">{currentWater.toFixed(1)}L <span className="text-xs text-gray-500 font-normal">/ {waterGoal.toFixed(1)}L target</span></p>
+            </div>
+            <div className="bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-lg text-sky-400 font-black text-xs">
+              {waterGoal > 0 ? Math.round((currentWater / waterGoal) * 100) : 0}% Completed
+            </div>
+          </div>
+          <div className="w-full bg-[#181d29] border border-gray-850 h-2.5 rounded-full overflow-hidden">
+            <div 
+              className="bg-sky-500 h-full rounded-full transition-all duration-500 shadow-md shadow-sky-500/20"
+              style={{ width: `${Math.min(waterGoal > 0 ? (currentWater / waterGoal) * 100 : 0, 100)}%` }}
+            />
+          </div>
+        </Card>
 
-      {showExerciseSearch && (
-        <ExerciseSearchModal
-          onSelect={handleAddExercise}
-          onClose={() => setShowExerciseSearch(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-// Exercise Search Modal
-function ExerciseSearchModal({ onSelect, onClose }: any) {
-  const [search, setSearch] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (search.length < 2) {
-      setResults([]);
-      return;
-    }
-
-    const fetchExercises = async () => {
-      // Trying both tables as per standard schema
-      const { data } = await supabase
-        .from('exercises')
-        .select('*')
-        .ilike('name', `%${search}%`)
-        .limit(10);
-
-      setResults(data || []);
-    };
-
-    fetchExercises();
-  }, [search]);
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 w-full max-w-md rounded-lg p-4 shadow-2xl border border-gray-700 max-h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-white font-bold">Add Exercise</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
-        </div>
-
-        <input
-          type="text"
-          placeholder="Search exercises..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          autoFocus
-          className="w-full bg-gray-700 text-white rounded px-4 py-2 mb-4 border border-gray-600 focus:outline-none focus:border-blue-500"
-        />
-
-        <div className="space-y-2 overflow-y-auto flex-1">
-          {results.length === 0 && search.length >= 2 ? (
-            <p className="text-center text-gray-500 py-4">No exercises found.</p>
+        {/* Workout Programsplits — READ ONLY */}
+        <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <Dumbbell className="text-purple-400 w-4 h-4" /> Training Schedule
+          </h2>
+          
+          {workoutDays.length === 0 ? (
+            <p className="text-xs text-gray-500 italic text-center py-4">No workout splits assigned yet.</p>
           ) : (
-            results.map(exercise => (
-              <button
-                key={exercise.id}
-                onClick={() => {
-                  onSelect({
-                    ...exercise,
-                    sets: 3,
-                    reps_min: 8,
-                    reps_max: 12
-                  });
-                  onClose();
-                }}
-                className="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded text-left border border-gray-600 transition-colors"
-              >
-                <p className="font-bold text-white">{exercise.name}</p>
-                <p className="text-gray-400 text-xs">{exercise.muscle_group} · {exercise.equipment || 'No equipment'}</p>
-              </button>
-            ))
+            <div className="space-y-3.5">
+              {workoutDays.map((day) => (
+                <div key={day.id} className="bg-[#181d29] p-4 rounded-xl border border-gray-850">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-xs font-black text-gray-200 uppercase tracking-widest flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                      {day.day_name}
+                    </h3>
+                    <span className="text-[9px] bg-purple-950/60 border border-purple-800/30 text-purple-400 px-2 py-0.5 rounded font-black uppercase">
+                      DAY {day.day_number}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(!day.exercises || day.exercises.length === 0) ? (
+                      <p className="text-[10px] text-gray-500 italic">No exercises added to this split.</p>
+                    ) : (
+                      day.exercises.map((ex: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center text-xs bg-[#121620]/60 border border-gray-850/40 p-2.5 rounded-lg">
+                          <div>
+                            <p className="text-gray-200 font-bold">{ex.name}</p>
+                            {ex.muscle_group && (
+                              <p className="text-[9px] text-gray-500 font-medium mt-0.5 uppercase tracking-wide">{ex.muscle_group}</p>
+                            )}
+                          </div>
+                          <span className="font-mono text-gray-400 text-[10px] bg-gray-900 border border-gray-850 px-2 py-1 rounded">
+                            {ex.sets} sets × {ex.reps_min || 8}-{ex.reps_max || 12} reps
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full mt-4 bg-gray-700 text-white py-2 rounded font-bold hover:bg-gray-600 transition-colors"
-        >
-          Close
-        </button>
+        {/* Change Password Card */}
+        <Card className="p-5 space-y-4">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <Lock className="text-yellow-500 w-4 h-4" /> Change Password
+          </h2>
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">New Client Password</label>
+              <input 
+                type="text"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Enter at least 6 characters"
+                className="w-full bg-[#181d29] border border-gray-850 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={updatingPassword}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 flex items-center justify-center gap-1.5"
+            >
+              {updatingPassword ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Key size={13} /> Update Password
+                </>
+              )}
+            </button>
+          </form>
+        </Card>
+
+        {/* InBody Scan Records */}
+        <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <Scale className="text-blue-400 w-4 h-4" /> Composition History
+          </h2>
+          <InBodyHistory clientId={clientId} />
+        </div>
+
+        {/* Coach Progress Notes */}
+        <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h2 className="text-sm font-extrabold text-white border-b border-gray-850 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <Sparkles className="text-blue-400 w-4 h-4" /> Coach Notes
+          </h2>
+          <ProgressNotes clientId={clientId} coachId={client.coach_id} />
+        </div>
+
+        {/* Danger Zone: Delete Client */}
+        <div className="bg-red-950/20 border border-red-900/30 rounded-2xl p-5 shadow-xl space-y-4">
+          <h2 className="text-sm font-extrabold text-red-400 border-b border-red-950 pb-2 uppercase tracking-wider flex items-center gap-2">
+            <Trash2 className="w-4 h-4 text-red-500" /> Danger Zone
+          </h2>
+          <p className="text-xs text-red-300/80 leading-relaxed">
+            Deleting this client will immediately terminate their active account and wipe all history (InBody, water, workouts, notes) from the system. This cannot be undone.
+          </p>
+          <button
+            onClick={handleDeleteClient}
+            disabled={deleting}
+            className="w-full bg-red-600/90 hover:bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-red-900/10 transition-all active:scale-[0.98] cursor-pointer mt-1 flex items-center justify-center gap-1.5"
+          >
+            {deleting ? 'Deleting client...' : (
+              <>
+                <Trash2 size={13} /> Delete Client Account
+              </>
+            )}
+          </button>
+        </div>
+
       </div>
     </div>
   );
 }
 
-// InBody History Component
+// InBody History Component using supabaseAdmin
 function InBodyHistory({ clientId }: any) {
   const [scans, setScans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchScans = async () => {
-      const { data } = await supabase
+      const { data } = await supabaseAdmin
         .from('inbody_scans')
         .select('*')
         .eq('user_id', clientId)
@@ -397,29 +465,33 @@ function InBodyHistory({ clientId }: any) {
     fetchScans();
   }, [clientId]);
 
-  if (loading) return <DumbbellLoader label="Loading scans..." size={60} />;
-  if (scans.length === 0) return <p className="text-gray-500 italic">No scans yet.</p>;
+  if (loading) return <DumbbellLoader label="Loading scans..." size={50} />;
+  if (scans.length === 0) return <p className="text-xs text-gray-500 italic text-center py-4">No body composition records found.</p>;
 
   return (
     <div className="space-y-3">
       {scans.map(scan => (
-        <div key={scan.id} className="bg-gray-700 p-4 rounded border border-gray-600">
+        <div key={scan.id} className="bg-[#181d29] p-4 rounded-xl border border-gray-850">
           <div className="flex justify-between items-center mb-3">
-            <p className="font-bold text-white">{new Date(scan.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-            <span className="bg-blue-900 text-blue-200 text-[10px] px-2 py-0.5 rounded font-bold">SCORE: {scan.score || scan.inbody_score || 'N/A'}</span>
+            <p className="font-bold text-xs text-white">
+              {new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+            <span className="bg-blue-950/80 border border-blue-900/40 text-blue-400 text-[10px] px-2 py-0.5 rounded font-black select-none uppercase">
+              SCORE: {scan.score || scan.inbody_score || 'N/A'}
+            </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-gray-800 p-2 rounded">
-              <p className="text-gray-400 text-[10px] uppercase">Weight</p>
-              <p className="text-white font-bold text-sm">{scan.weight}kg</p>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="bg-[#121620]/60 p-2 rounded-lg border border-gray-850/40">
+              <p className="text-gray-500 text-[9px] uppercase font-bold">Weight</p>
+              <p className="text-white font-extrabold mt-0.5">{scan.weight}kg</p>
             </div>
-            <div className="bg-gray-800 p-2 rounded">
-              <p className="text-gray-400 text-[10px] uppercase">SMM</p>
-              <p className="text-green-400 font-bold text-sm">{scan.smm}kg</p>
+            <div className="bg-[#121620]/60 p-2 rounded-lg border border-gray-850/40">
+              <p className="text-gray-500 text-[9px] uppercase font-bold">SMM</p>
+              <p className="text-emerald-400 font-extrabold mt-0.5">{scan.smm}kg</p>
             </div>
-            <div className="bg-gray-800 p-2 rounded">
-              <p className="text-gray-400 text-[10px] uppercase">BF%</p>
-              <p className="text-red-400 font-bold text-sm">{scan.bf_percent}%</p>
+            <div className="bg-[#121620]/60 p-2 rounded-lg border border-gray-850/40">
+              <p className="text-gray-500 text-[9px] uppercase font-bold">BF%</p>
+              <p className="text-red-400 font-extrabold mt-0.5">{scan.bf_percent}%</p>
             </div>
           </div>
         </div>
@@ -428,7 +500,7 @@ function InBodyHistory({ clientId }: any) {
   );
 }
 
-// Progress Notes Component
+// Progress Notes Component using supabaseAdmin
 function ProgressNotes({ clientId, coachId }: any) {
   const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -436,7 +508,7 @@ function ProgressNotes({ clientId, coachId }: any) {
 
   useEffect(() => {
     const fetchNotes = async () => {
-      const { data } = await supabase
+      const { data } = await supabaseAdmin
         .from('progress_notes')
         .select('*')
         .eq('user_id', clientId)
@@ -452,60 +524,63 @@ function ProgressNotes({ clientId, coachId }: any) {
     if (!newNote.trim()) return;
     setAdding(true);
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('progress_notes')
       .insert({
         user_id: clientId,
         coach_id: coachId,
         date: new Date().toISOString().split('T')[0],
-        note: newNote,
+        note: newNote.trim(),
         category: 'general'
       });
 
     if (!error) {
       setNewNote('');
-      toast.success('Note added');
-      // Refresh notes
-      const { data } = await supabase
+      toast.success('Progress note saved');
+      // Refresh notes list
+      const { data } = await supabaseAdmin
         .from('progress_notes')
         .select('*')
         .eq('user_id', clientId)
         .order('date', { ascending: false });
       setNotes(data || []);
     } else {
-      toast.error('Failed to add note');
+      toast.error('Failed to save note');
     }
     setAdding(false);
   };
 
   return (
-    <div>
-      <div className="flex gap-2 mb-6">
+    <div className="space-y-4">
+      <div className="flex gap-2">
         <input
           type="text"
           value={newNote}
           onChange={(e) => setNewNote(e.target.value)}
-          placeholder="Add a note for the client..."
-          className="flex-1 bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
+          placeholder="Add training log notes..."
+          className="flex-1 bg-[#181d29] border border-gray-850 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
           onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
         />
         <button
           onClick={handleAddNote}
           disabled={adding}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold transition-colors disabled:bg-gray-600"
+          className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold text-xs px-4 py-3 rounded-xl transition-all active:scale-[0.98] cursor-pointer"
         >
-          {adding ? '...' : 'Add'}
+          Add
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {notes.length === 0 ? (
-          <p className="text-gray-500 italic text-sm text-center py-4">No notes for this client yet.</p>
+          <p className="text-xs text-gray-500 italic text-center py-4">No logged notes for this athlete yet.</p>
         ) : (
           notes.map(note => (
-            <div key={note.id} className="bg-gray-700 p-3 rounded border border-gray-600">
-              <p className="text-gray-400 text-[10px] font-bold uppercase mb-1">{new Date(note.date).toLocaleDateString()}</p>
-              <p className="text-white text-sm leading-relaxed">{note.note}</p>
+            <div key={note.id} className="bg-[#181d29] p-3.5 rounded-xl border border-gray-850">
+              <p className="text-gray-500 text-[9px] font-black uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Calendar size={10} />
+                {new Date(note.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+              <p className="text-gray-300 text-xs leading-relaxed font-medium">{note.note}</p>
             </div>
           ))
         )}
