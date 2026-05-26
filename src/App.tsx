@@ -28,6 +28,7 @@ import DashboardPage from './pages/coach/DashboardPage';
 import ClientsListPage from './pages/coach/ClientsListPage';
 import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
+import OwnerDashboardPage from './pages/coach/OwnerDashboardPage';
 import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
 
@@ -170,6 +171,7 @@ const AppContent = () => {
               <Route path="/coach/clients" element={<PageTransition direction={direction}><ClientsListPage /></PageTransition>} />
               <Route path="/coach/clients/new" element={<PageTransition direction={direction}><AddClientPage /></PageTransition>} />
               <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
+              <Route path="/coach/owner" element={<PageTransition direction={direction}><OwnerDashboardPage /></PageTransition>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
