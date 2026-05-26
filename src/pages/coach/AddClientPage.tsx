@@ -479,8 +479,8 @@ export default function AddClientPage() {
         phone_number: formData.phoneNumber.trim()
       };
 
-      // 3. Insert public.profiles
-      const { error: profileError } = await supabase.from('profiles').insert({
+      // 3. Insert public.profiles (using upsert to overwrite default profile row created by Supabase Auth trigger)
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: clientUserId,
         username: formData.username.trim().toLowerCase(),
         email: virtualEmail,
