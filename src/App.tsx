@@ -94,6 +94,13 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 const AppContent = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator as any).standalone === true;
+    setIsStandalone(!!isPWA);
+  }, []);
   const navigate = useNavigate();
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
@@ -141,7 +148,10 @@ const AppContent = () => {
   return (
     <>
       {/* ── App shell (constrained width, clipped) ── */}
-      <div className="flex flex-col h-[100dvh] bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800">
+      <div 
+        className={`flex flex-col ${isStandalone ? 'fixed inset-0 sm:relative sm:inset-auto sm:h-[100dvh]' : 'h-[100dvh]'} bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto relative overflow-hidden shadow-2xl sm:border-x sm:border-gray-800`}
+        style={isStandalone ? { paddingTop: 'env(safe-area-inset-top)' } : {}}
+      >
         {showIntro && <OpeningAnimation onComplete={() => setShowIntro(false)} />}
 
         <div className="flex-1 relative">
