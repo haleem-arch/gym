@@ -36,8 +36,8 @@ const BottomNav = () => {
 
   return (
     <nav 
-      className="absolute bottom-0 left-0 right-0 bg-surface border-t border-gray-800 px-4 pt-3 flex justify-between items-center z-50 overflow-x-auto no-scrollbar"
-      style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 px-4 pt-3 flex justify-between items-center z-50 overflow-x-auto no-scrollbar"
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
     >
       {navItems.map((item) => (
         <NavLink
