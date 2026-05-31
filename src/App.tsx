@@ -85,6 +85,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
       exit="exit"
       transition={{ duration: 0.25, ease: "easeInOut" }}
       className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-28 no-scrollbar bg-background"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       {children}
     </motion.div>
@@ -94,13 +95,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 const AppContent = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
-  const [isStandalone, setIsStandalone] = useState(false);
 
-  useEffect(() => {
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  (window.navigator as any).standalone === true;
-    setIsStandalone(!!isPWA);
-  }, []);
   const navigate = useNavigate();
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
@@ -149,10 +144,7 @@ const AppContent = () => {
     <>
       {/* ── App shell (constrained width, clipped) ── */}
       <div 
-        className={`flex flex-col bg-background text-gray-100 font-sans w-full sm:max-w-[390px] mx-auto overflow-hidden shadow-2xl sm:border-x sm:border-gray-800 ${
-          isStandalone ? 'fixed inset-0 sm:relative sm:inset-auto sm:h-[100dvh]' : 'relative h-[100dvh]'
-        }`}
-        style={isStandalone ? { paddingTop: 'env(safe-area-inset-top)' } : {}}
+        className="flex flex-col bg-background text-gray-100 font-sans w-full fixed inset-0 sm:relative sm:inset-auto sm:h-[100dvh] mx-auto overflow-hidden shadow-2xl sm:border-x sm:border-gray-800"
       >
         {showIntro && <OpeningAnimation onComplete={() => setShowIntro(false)} />}
 
