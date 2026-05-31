@@ -12,6 +12,13 @@ body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   user-select: none;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  min-height: 100%;
 }
 
 input,
