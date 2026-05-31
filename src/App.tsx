@@ -144,7 +144,7 @@ const AppContent = () => {
     <>
       {/* ── App shell (constrained width, clipped) ── */}
       <div 
-        className="flex flex-col bg-background text-gray-100 font-sans w-full sm:max-w-[390px] fixed inset-0 sm:relative sm:inset-auto sm:h-[100dvh] mx-auto overflow-hidden shadow-2xl sm:border-x sm:border-gray-800"
+        className="flex flex-col bg-background text-gray-100 font-sans w-full h-full sm:max-w-[390px] mx-auto overflow-hidden shadow-2xl sm:border-x sm:border-gray-800 relative"
       >
         {showIntro && <OpeningAnimation onComplete={() => setShowIntro(false)} />}
 
