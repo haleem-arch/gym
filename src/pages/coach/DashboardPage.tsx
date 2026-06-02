@@ -150,7 +150,16 @@ export default function DashboardPage() {
         setCoachUserId(session.user.id);
       }
 
-      const { data: userProfiles } = await db.from('profiles').select('*').order('display_name');
+      const coachId = session?.user?.id;
+      const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+
+      // Owner sees all profiles; other coaches see only their assigned clients
+      let profileQuery = db.from('profiles').select('*').order('display_name');
+      if (coachId && coachId !== OWNER_ID) {
+        profileQuery = profileQuery.eq('coach_id', coachId);
+      }
+
+      const { data: userProfiles } = await profileQuery;
       if (userProfiles) {
         setProfiles(userProfiles);
         if (userProfiles.length > 0 && !selectedUserId) setSelectedUserId(userProfiles[0].id);
