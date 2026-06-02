@@ -483,6 +483,27 @@ export default function SystemConsolePage() {
         </div>
       </div>
 
+      {/* Coach Portal Link Copy Banner */}
+      <div className="bg-gradient-to-r from-blue-950/40 to-indigo-950/20 border border-blue-900/40 rounded-3xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden">
+        <div className="absolute top-[-30%] left-[-10%] w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
+        <div className="flex flex-col gap-1 relative z-10">
+          <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Desktop Coach Portal URL</p>
+          <p className="text-xs text-white font-mono select-all">
+            {window.location.origin}/coach-portal
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/coach-portal`);
+            toast.success('Desktop Coach Portal link copied!');
+          }}
+          className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-extrabold px-3 py-2 rounded-xl uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-500/10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Copy Link
+        </button>
+      </div>
+
       {/* System Health Check Status */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[#0f1424] border border-gray-800 rounded-2xl p-4 flex items-center gap-3">

@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
-  Users, UserPlus, Database, ShieldAlert, Sparkles, Activity, Search, 
-  Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, Phone, 
-  Dumbbell, Clipboard, Save, Lock, UserCheck, UserX, User, Apple, 
-  Zap, Droplets, LogOut, CheckCircle, RefreshCw
+  Users, UserPlus, Database, ShieldAlert, Activity, Search, 
+  Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, 
+  Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -23,7 +22,6 @@ export default function DesktopCoachPortal() {
   // Lists & DB Data
   const [profiles, setProfiles] = useState<any[]>([]);
   const [clientsList, setClientsList] = useState<any[]>([]);
-  const [exerciseDb, setExerciseDb] = useState<any[]>([]);
   const [dbHealthy, setDbHealthy] = useState<boolean>(true);
 
   // Live Feed
@@ -37,7 +35,6 @@ export default function DesktopCoachPortal() {
   const [workoutDays, setWorkoutDays] = useState<any[]>([]);
   const [activeSplitDayIdx, setActiveSplitDayIdx] = useState(0);
   const [latestWeight, setLatestWeight] = useState<number | null>(null);
-  const [inbodyScans, setInbodyScans] = useState<any[]>([]);
   const [loadingClientDetails, setLoadingClientDetails] = useState(false);
 
   // Client target updates (Clients Tab)
@@ -75,7 +72,7 @@ export default function DesktopCoachPortal() {
     injuries_notes: ''
   });
   const [deployGender, setDeployGender] = useState<'male' | 'female'>('male');
-  const [deploySplits, setDeploySplits] = useState<any[]>([
+  const [deploySplits] = useState<any[]>([
     { key: 'PUSH', label: 'Push', color: '#ef4444', exercises: [
       { name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', sets: 3, rest: 120 },
       { name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
@@ -147,11 +144,7 @@ export default function DesktopCoachPortal() {
         setClientsList(userProfiles.filter(p => p.role === 'client'));
       }
 
-      // 2. Fetch exercises
-      const { data: exercises } = await supabase.from('exercises').select('*').order('name');
-      if (exercises) setExerciseDb(exercises);
-
-      // 3. Fetch feed data
+      // 2. Fetch feed data
       await fetchFeedData();
 
       setDbHealthy(true);
@@ -259,7 +252,6 @@ export default function DesktopCoachPortal() {
         .eq('user_id', clientId)
         .order('date', { ascending: false });
       
-      setInbodyScans(scans || []);
       if (scans && scans.length > 0) {
         setLatestWeight(scans[0].weight);
       } else {
@@ -568,7 +560,7 @@ export default function DesktopCoachPortal() {
       await supabase.from('inbody_scans').insert({
         user_id: clientUserId,
         date: new Date().toISOString().split('T')[0],
-        weight: 75,
+        weight: weightVal || 75,
         smm: 34,
         bfm: 12,
         bf_percent: 16,
@@ -737,7 +729,7 @@ export default function DesktopCoachPortal() {
   const handleChangeSystemUserPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!systemSelectedUser || !systemSelectedUserPassword) return;
-    systemUpdatingPassword(true);
+    setSystemUpdatingPassword(true);
     try {
       const response = await fetch('/api/update-user', {
         method: 'POST',
@@ -1448,6 +1440,28 @@ export default function DesktopCoachPortal() {
           {/* TAB 4: SYSTEM CONSOLE */}
           {activeTab === 'system' && (
             <div className="space-y-8 max-w-6xl">
+              
+              {/* Copy Portal Link Banner */}
+              <div className="bg-[#0b0c16] border border-gray-805 rounded-3xl p-5 flex items-center justify-between relative overflow-hidden bg-gradient-to-r from-blue-950/10 to-indigo-950/5">
+                <div className="absolute top-[-30%] left-[-10%] w-36 h-36 bg-blue-500/5 rounded-full blur-2xl" />
+                <div className="space-y-1 relative z-10">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Desktop Coach Portal URL</h3>
+                  <p className="text-xs text-gray-400">Provide this link to coaches to access the desktop hub directly:</p>
+                  <p className="text-xs text-white font-mono select-all bg-gray-950/40 px-3 py-1.5 rounded-xl border border-gray-800 inline-block mt-2">
+                    {window.location.origin}/coach-portal
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/coach-portal`);
+                    toast.success('Desktop Coach Portal link copied!');
+                  }}
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-extrabold px-3 py-2.5 rounded-xl uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-500/10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  Copy Link
+                </button>
+              </div>
               
               {/* Top Warning block (If not owner) */}
               {coachUserId && coachUserId !== OWNER_ID && (
