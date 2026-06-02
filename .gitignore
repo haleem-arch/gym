@@ -27,3 +27,4 @@ dist-ssr
 # Scratch & Backups
 scratch/
 
+.vercel
