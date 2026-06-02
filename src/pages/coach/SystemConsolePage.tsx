@@ -36,6 +36,7 @@ export default function SystemConsolePage() {
   // Change Password Form
   const [newPasswordForSelected, setNewPasswordForSelected] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
 
   // Live Activity Feed
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
@@ -71,26 +72,51 @@ export default function SystemConsolePage() {
       setDbHealthy(true);
 
       // Fetch Activity Feed data (last 5 completed workouts & last 5 diet logs)
-      const { data: workouts } = await supabase
+      const { data: workoutsData } = await supabase
         .from('workouts')
-        .select('id, date, day_type, total_volume, profiles(display_name)')
+        .select('id, user_id, date, day_type, total_volume')
         .eq('status', 'completed')
         .order('date', { ascending: false })
         .limit(5);
 
-      if (workouts) {
-        setRecentWorkouts(workouts);
-      }
-
-      const { data: dietLogs } = await supabase
+      const { data: dietLogsData } = await supabase
         .from('diet_logs')
-        .select('id, date, daily_totals, profiles(display_name)')
+        .select('id, user_id, date, daily_totals')
         .order('date', { ascending: false })
         .limit(5);
 
-      if (dietLogs) {
-        setRecentDiets(dietLogs);
+      // Stitch profiles in-memory to prevent database constraint PGRST200 errors
+      const feedUserIds = Array.from(new Set([
+        ...(workoutsData || []).map(w => w.user_id),
+        ...(dietLogsData || []).map(d => d.user_id)
+      ]));
+
+      const feedProfilesMap: Record<string, string> = {};
+      if (feedUserIds.length > 0) {
+        const { data: feedProfiles } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', feedUserIds);
+        
+        if (feedProfiles) {
+          feedProfiles.forEach(p => {
+            feedProfilesMap[p.id] = p.display_name || 'Athlete';
+          });
+        }
       }
+
+      const stitchedWorkouts = (workoutsData || []).map(w => ({
+        ...w,
+        profiles: { display_name: feedProfilesMap[w.user_id] || 'Athlete' }
+      }));
+
+      const stitchedDiets = (dietLogsData || []).map(d => ({
+        ...d,
+        profiles: { display_name: feedProfilesMap[d.user_id] || 'Athlete' }
+      }));
+
+      setRecentWorkouts(stitchedWorkouts);
+      setRecentDiets(stitchedDiets);
 
     } catch (err) {
       console.error(err);
@@ -301,6 +327,61 @@ export default function SystemConsolePage() {
       toast.error('Failed to update password. Please check your connection.');
     } finally {
       setIsUpdatingPassword(false);
+    }
+  };
+
+  // Delete Selected User completely from Auth and Database
+  const handleDeleteUser = async (uid: string) => {
+    if (!selectedUser) return;
+    const displayName = selectedUser.display_name || selectedUser.email.split('@')[0];
+    const confirmName = window.prompt(
+      `WARNING: This action is permanent and will completely delete the user/coach account, including all records. \n\nType the user's name "${displayName}" to confirm deletion:`
+    );
+
+    if (confirmName !== displayName) {
+      if (confirmName !== null) {
+        toast.error('Name did not match. Deletion cancelled.');
+      }
+      return;
+    }
+
+    setIsDeletingUser(true);
+    const toastId = toast.loading(`Deleting account...`);
+    try {
+      // 1. Delete from auth account using secure Vercel Serverless API.
+      const response = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ uid })
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || 'Failed to delete user from auth system');
+      }
+
+      // 2. Cascade delete database records
+      await supabase.from('inbody_scans').delete().eq('user_id', uid);
+      await supabase.from('client_workout_days').delete().eq('user_id', uid);
+      await supabase.from('user_workout_plans').delete().eq('user_id', uid);
+      await supabase.from('progress_notes').delete().eq('user_id', uid);
+      await supabase.from('water_logs').delete().eq('user_id', uid);
+      await supabase.from('client_profiles').delete().eq('user_id', uid);
+      await supabase.from('profiles').delete().eq('id', uid);
+
+      toast.success('User account deleted successfully', { id: toastId });
+      setSelectedUser(null);
+      
+      // Refresh user list
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Unable to delete user account. Please check your connection.', { id: toastId });
+    } finally {
+      setIsDeletingUser(false);
     }
   };
 
@@ -675,6 +756,22 @@ export default function SystemConsolePage() {
                 </button>
               </div>
             </form>
+
+            {/* Danger Zone */}
+            <div className="border-t border-red-950/40 pt-4 space-y-2">
+              <p className="text-[9px] font-black uppercase tracking-widest text-red-500">Danger Zone</p>
+              <p className="text-[10px] text-gray-500 leading-normal">
+                Deleting this account will permanently clear their access credentials and database files.
+              </p>
+              <button
+                type="button"
+                disabled={isDeletingUser}
+                onClick={() => handleDeleteUser(selectedUser.id)}
+                className="w-full bg-red-950/20 border border-red-900/30 hover:bg-red-600 hover:text-white text-red-400 font-extrabold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isDeletingUser ? 'Deleting Account...' : 'Delete Account Completely'}
+              </button>
+            </div>
           </div>
         )}
       </div>

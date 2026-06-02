@@ -30,6 +30,7 @@ import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
 import OwnerDashboardPage from './pages/coach/OwnerDashboardPage';
 import SystemConsolePage from './pages/coach/SystemConsolePage';
+import DesktopCoachPortal from './pages/coach/DesktopCoachPortal';
 import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
 
@@ -139,6 +140,18 @@ const AppContent = () => {
 
   // Any active overlay = hide the bottom nav so it can't bleed through
   const anyOverlayActive = showSplash || showGymSplash;
+
+  const isCoachPortal = location.pathname.startsWith('/coach-portal');
+
+  if (isCoachPortal) {
+    return (
+      <div className="w-full min-h-screen bg-background text-gray-100 font-sans">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/coach-portal" element={<DesktopCoachPortal />} />
+        </Routes>
+      </div>
+    );
+  }
 
   return (
     <>
