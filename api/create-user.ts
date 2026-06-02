@@ -29,15 +29,21 @@ export default async function handler(req: any, res: any) {
   }
 
   const token = authHeader.split(' ')[1];
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  // Create admin client (bypasses RLS) for all server-side operations
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+
+  // Validate the coach's JWT token
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
   if (authError || !user) {
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 
-  // Verify role
-  const { data: profile } = await supabase
+  // Verify role using admin client (bypasses RLS)
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -53,10 +59,6 @@ export default async function handler(req: any, res: any) {
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing email or password' });
   }
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
 
   const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,
