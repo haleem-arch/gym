@@ -1,15 +1,65 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
   Users, UserPlus, Database, ShieldAlert, Activity, Search, 
   Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, 
-  Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw
+  Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw,
+  ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
+  ChevronDown, ChevronUp, FileText
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
+import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
+import { GymReceipt } from '../../components/GymReceipt';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+
+const getLocalDateString = (d: Date = new Date()) => {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+};
+
+function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-700"
+        style={{ width: `${pct}%`, backgroundColor: color }}
+      />
+    </div>
+  );
+}
+
+function StatCard({ label, value, max, unit, color, emoji }: {
+  label: string; value: number; max: number; unit: string; color: string; emoji: string;
+}) {
+  const pct = max > 0 ? Math.min(Math.round((value / max) * 100), 100) : 0;
+  return (
+    <div className="bg-[#121624] border border-gray-850 p-3.5 rounded-2xl flex flex-col gap-2">
+      <div className="flex justify-between items-center">
+        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{emoji} {label}</span>
+        <span className="text-[10px] font-black" style={{ color }}>{pct}%</span>
+      </div>
+      <ProgressBar value={value} max={max} color={color} />
+      <div className="flex justify-between text-[9px] text-gray-500 font-bold">
+        <span style={{ color }}>{value.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
+        <span>/ {max.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+function dayColor(dt: string) {
+  const u = dt.toUpperCase();
+  if (u === 'PUSH') return 'bg-blue-900/40 text-blue-400 border-blue-800/30';
+  if (u === 'PULL') return 'bg-purple-900/40 text-purple-400 border-purple-800/30';
+  if (u === 'LEGS') return 'bg-green-900/40 text-green-400 border-green-800/30';
+  if (u === 'REST') return 'bg-gray-800/80 text-gray-400 border-gray-700/30';
+  if (u === 'RUN') return 'bg-amber-900/40 text-amber-400 border-amber-800/30';
+  if (u.includes('REST') && u.includes('RUN')) return 'bg-orange-900/40 text-orange-400 border-orange-800/30';
+  return 'bg-indigo-900/40 text-indigo-400 border-indigo-800/30';
+}
 
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
@@ -32,10 +82,48 @@ export default function DesktopCoachPortal() {
   // Selected Client (Clients Tab)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedClientProfile, setSelectedClientProfile] = useState<any | null>(null);
-  const [workoutDays, setWorkoutDays] = useState<any[]>([]);
-  const [activeSplitDayIdx, setActiveSplitDayIdx] = useState(0);
   const [latestWeight, setLatestWeight] = useState<number | null>(null);
   const [loadingClientDetails, setLoadingClientDetails] = useState(false);
+
+  // Client sub-tabs layout
+  const [clientActiveTab, setClientActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody'>('overview');
+  const [clientActiveDateStr, setClientActiveDateStr] = useState<string>(() => getLocalDateString());
+
+  // Client daily data records (for selected date and client)
+  const [clientDietLog, setClientDietLog] = useState<any>(null);
+  const [clientMeals, setClientMeals] = useState<any[]>([]);
+  const [clientWaterLogs, setClientWaterLogs] = useState<any[]>([]);
+  const [clientWorkoutsList, setClientWorkoutsList] = useState<any[]>([]);
+  const [clientScans, setClientScans] = useState<any[]>([]);
+  const [clientWorkoutPlans, setClientWorkoutPlans] = useState<any[]>([]);
+  const [exerciseDb, setExerciseDb] = useState<any[]>([]);
+
+  // Exercise catalog search in training tab
+  const [searchExerciseQuery, setSearchExerciseQuery] = useState('');
+  const [activeSplitEditKey, setActiveSplitEditKey] = useState<string | null>(null);
+
+  // Dialog/modal states
+  const [selectedReceiptWorkout, setSelectedReceiptWorkout] = useState<any>(null);
+  const [showAddMealForm, setShowAddMealForm] = useState(false);
+  const [showAddScanForm, setShowAddScanForm] = useState(false);
+  const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
+
+  // Preset/Form states
+  const [newMealName, setNewMealName] = useState('');
+  const [newMealKcal, setNewMealKcal] = useState(400);
+  const [newMealProtein, setNewMealProtein] = useState(30);
+  const [newMealCarbs, setNewMealCarbs] = useState(45);
+  const [newMealFat, setNewMealFat] = useState(10);
+  const [newWaterAmount, setNewWaterAmount] = useState(500);
+
+  // InBody scan form states
+  const [newScanDate, setNewScanDate] = useState(() => getLocalDateString());
+  const [newScanWeight, setNewScanWeight] = useState('');
+  const [newScanSmm, setNewScanSmm] = useState('');
+  const [newScanBfPercent, setNewScanBfPercent] = useState('');
+  const [newScanScore, setNewScanScore] = useState(75);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Client target updates (Clients Tab)
   const [targetKcal, setTargetKcal] = useState(2400);
@@ -44,6 +132,14 @@ export default function DesktopCoachPortal() {
   const [targetFat, setTargetFat] = useState(70);
   const [targetWaterLiters, setTargetWaterLiters] = useState(3.5);
   const [savingTargets, setSavingTargets] = useState(false);
+
+  // Day nutrition templates target map
+  const [dayNutrition, setDayNutrition] = useState<Record<string, { kcal: number; protein: number; carbs: number; fat: number }>>({});
+  const [editingDayType, setEditingDayType] = useState<string | null>(null);
+  const [editDayKcal, setEditDayKcal] = useState(0);
+  const [editDayProtein, setEditDayProtein] = useState(0);
+  const [editDayCarbs, setEditDayCarbs] = useState(0);
+  const [editDayFat, setEditDayFat] = useState(0);
 
   // Quota & Suspension states (Clients Tab)
   const [aiQuotaInput, setAiQuotaInput] = useState<number>(20);
@@ -56,7 +152,8 @@ export default function DesktopCoachPortal() {
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [systemSearchQuery, setSystemSearchQuery] = useState('');
 
-  // Deploy Athlete form
+  // Deploy Athlete Multi-step Wizard
+  const [deployStep, setDeployStep] = useState(1);
   const [deployLoading, setDeployLoading] = useState(false);
   const [deploySuccessData, setDeploySuccessData] = useState<any | null>(null);
   const [formData, setFormData] = useState({
@@ -72,23 +169,74 @@ export default function DesktopCoachPortal() {
     injuries_notes: ''
   });
   const [deployGender, setDeployGender] = useState<'male' | 'female'>('male');
-  const [deploySplits] = useState<any[]>([
-    { key: 'PUSH', label: 'Push', color: '#ef4444', exercises: [
-      { name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', sets: 3, rest: 120 },
-      { name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
-      { name: 'Overhead Cable Extension (rope)', muscle_group: 'Triceps', sets: 3, rest: 120 }
-    ]},
-    { key: 'PULL', label: 'Pull', color: '#3b82f6', exercises: [
-      { name: 'Lat Pulldown (wide grip)', muscle_group: 'Back', sets: 3, rest: 120 },
-      { name: 'Chest-Supported DB Row', muscle_group: 'Back', sets: 3, rest: 120 },
-      { name: 'Incline DB Curl - Bayesian', muscle_group: 'Biceps', sets: 3, rest: 120 }
-    ]},
-    { key: 'LEGS', label: 'Legs', color: '#eab308', exercises: [
-      { name: 'Leg Press (feet high for glutes)', muscle_group: 'Legs', sets: 3, rest: 120 },
-      { name: 'DB Romanian Deadlift', muscle_group: 'Legs', sets: 3, rest: 120 },
-      { name: 'Standing Calf Raise', muscle_group: 'Calves', sets: 3, rest: 120 }
-    ]}
+  
+  // Deploy Wizard Split template state
+  const [deploySplits, setDeploySplits] = useState<any[]>([
+    { 
+      key: 'PUSH', 
+      label: 'Push', 
+      emoji: '🔴',
+      color: '#ef4444', 
+      exercises: [
+        { id: 'dp-push-0', name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', sets: 3, rest: 120 },
+        { id: 'dp-push-1', name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
+        { id: 'dp-push-2', name: 'Incline DB Y-Raise (20-30°)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
+        { id: 'dp-push-3', name: 'Cable Chest Fly (low pulley)', muscle_group: 'Chest', sets: 3, rest: 120 },
+        { id: 'dp-push-4', name: 'Overhead Cable Extension (rope)', muscle_group: 'Triceps', sets: 3, rest: 120 },
+        { id: 'dp-push-5', name: 'DB Lateral Raise (elbow-lead)', muscle_group: 'Shoulders', sets: 3, rest: 120 }
+      ]
+    },
+    { 
+      key: 'PULL', 
+      label: 'Pull', 
+      emoji: '🔵',
+      color: '#3b82f6', 
+      exercises: [
+        { id: 'dp-pull-0', name: 'Lat Pulldown (wide grip)', muscle_group: 'Back', sets: 3, rest: 120 },
+        { id: 'dp-pull-1', name: 'Chest-Supported DB Row', muscle_group: 'Back', sets: 3, rest: 120 },
+        { id: 'dp-pull-2', name: 'Sideways One-Arm Rear Delt Fly', muscle_group: 'Rear Delts', sets: 3, rest: 120 },
+        { id: 'dp-pull-3', name: 'Face Pull (rope eye height)', muscle_group: 'Rear Delts', sets: 3, rest: 120 },
+        { id: 'dp-pull-4', name: 'Incline DB Curl - Bayesian', muscle_group: 'Biceps', sets: 3, rest: 120 },
+        { id: 'dp-pull-5', name: 'Zottman Curl', muscle_group: 'Biceps', sets: 3, rest: 120 }
+      ]
+    },
+    { 
+      key: 'LEGS', 
+      label: 'Legs', 
+      emoji: '🟡',
+      color: '#eab308', 
+      exercises: [
+        { id: 'dp-legs-0', name: 'Leg Press (feet high for glutes)', muscle_group: 'Glutes', sets: 3, rest: 120 },
+        { id: 'dp-legs-1', name: 'DB Romanian Deadlift', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'dp-legs-2', name: 'DB Bulgarian Split Squat', muscle_group: 'Quads', sets: 3, rest: 120 },
+        { id: 'dp-legs-3', name: 'Seated Leg Curl', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'dp-legs-4', name: '45° Back Extension (BW/DB)', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'dp-legs-5', name: 'Standing Calf Raise', muscle_group: 'Calves', sets: 3, rest: 120 }
+      ]
+    }
   ]);
+  const [newDeploySplitName, setNewDeploySplitName] = useState('');
+  const [deployActiveSplitKey, setDeployActiveSplitKey] = useState<string | null>(null);
+
+  // Deploy Nutrition inputs
+  const [deployKcal, setDeployKcal] = useState(2400);
+  const [deployProtein, setDeployProtein] = useState(160);
+  const [deployCarbs, setDeployCarbs] = useState(240);
+  const [deployFat, setDeployFat] = useState(70);
+  const [deployRestKcal, setDeployRestKcal] = useState(2100);
+  const [deployRestProtein, setDeployRestProtein] = useState(150);
+  const [deployRestCarbs, setDeployRestCarbs] = useState(218);
+  const [deployRestFat, setDeployRestFat] = useState(70);
+  const [deployIsRestOverridden, setDeployIsRestOverridden] = useState(false);
+  const [deployWaterGoalLiters, setDeployWaterGoalLiters] = useState(3.5);
+
+  // Deploy Biometrics inputs
+  const [deployWeight, setDeployWeight] = useState('');
+  const [deployBfPercent, setDeployBfPercent] = useState('');
+  const [deploySmm, setDeploySmm] = useState('');
+  const [deployBfm, setDeployBfm] = useState('');
+  const [deployInbodyScore, setDeployInbodyScore] = useState(75);
+  const [deployCsvScans, setDeployCsvScans] = useState<any[]>([]);
 
   // System Tab: Coach creation form
   const [coachName, setCoachName] = useState('');
@@ -102,6 +250,42 @@ export default function DesktopCoachPortal() {
   const [systemSelectedUserPassword, setSystemSelectedUserPassword] = useState('');
   const [systemUpdatingPassword, setSystemUpdatingPassword] = useState(false);
   const [systemDeletingUser, setSystemDeletingUser] = useState(false);
+
+  // Day-type auto rest updates inside Deploy Athlete Form
+  useEffect(() => {
+    if (!deployIsRestOverridden) {
+      const crKcal = Math.max(1200, deployKcal - 300);
+      const crProtein = Math.max(80, deployProtein - 10);
+      const crFat = deployFat;
+      const crCarbs = Math.max(50, Math.round((crKcal - crProtein * 4 - crFat * 9) / 4));
+      
+      setDeployRestKcal(crKcal);
+      setDeployRestProtein(crProtein);
+      setDeployRestFat(crFat);
+      setDeployRestCarbs(crCarbs);
+    }
+  }, [deployKcal, deployProtein, deployFat, deployIsRestOverridden]);
+
+  // Recalculate fat mass inside Deploy Athlete Form
+  useEffect(() => {
+    const w = parseFloat(deployWeight);
+    const f = parseFloat(deployBfPercent);
+    if (!isNaN(w) && !isNaN(f)) {
+      setDeployBfm(((w * f) / 100).toFixed(1));
+      if (!deploySmm) {
+        setDeploySmm(((w * (100 - f) * 0.55) / 100).toFixed(1));
+      }
+    } else {
+      setDeployBfm('');
+    }
+  }, [deployWeight, deployBfPercent]);
+
+  // Enforce security block on system tab for standard coaches
+  useEffect(() => {
+    if (activeTab === 'system' && coachUserId && coachUserId !== OWNER_ID) {
+      setActiveTab('overview');
+    }
+  }, [activeTab, coachUserId]);
 
   // ─── INITIAL BOOTSTRAP ─────────────────────────────────────
   useEffect(() => {
@@ -133,7 +317,7 @@ export default function DesktopCoachPortal() {
 
       const isOwner = session.user.id === OWNER_ID;
 
-      // 1. Fetch profiles
+      // Fetch profiles
       let profilesQuery = supabase.from('profiles').select('*').order('display_name');
       if (!isOwner) {
         profilesQuery = profilesQuery.eq('coach_id', session.user.id);
@@ -144,7 +328,13 @@ export default function DesktopCoachPortal() {
         setClientsList(userProfiles.filter(p => p.role === 'client'));
       }
 
-      // 2. Fetch feed data
+      // Fetch exercises database catalog
+      const { data: exercises } = await supabase.from('exercises').select('*').order('name');
+      if (exercises) {
+        setExerciseDb(exercises);
+      }
+
+      // Fetch feed data
       await fetchFeedData();
 
       setDbHealthy(true);
@@ -244,41 +434,8 @@ export default function DesktopCoachPortal() {
       setTargetCarbs(targets.carbs || 240);
       setTargetFat(targets.fat || 70);
       setTargetWaterLiters((targets.water_goal_ml || 3500) / 1000);
+      setDayNutrition(targets.day_nutrition || {});
 
-      // Weight & Scans
-      const { data: scans } = await supabase
-        .from('inbody_scans')
-        .select('*')
-        .eq('user_id', clientId)
-        .order('date', { ascending: false });
-      
-      if (scans && scans.length > 0) {
-        setLatestWeight(scans[0].weight);
-      } else {
-        setLatestWeight(null);
-      }
-
-      // Workout Plans
-      const { data: plans } = await supabase
-        .from('user_workout_plans')
-        .select('*')
-        .eq('user_id', clientId)
-        .order('created_at', { ascending: true });
-
-      const normalisedDays = (plans || []).map((p: any, idx: number) => ({
-        id: p.id,
-        day_number: idx + 1,
-        day_name: p.plan_type + ' Day',
-        exercises: (p.exercises || []).map((ex: any) => ({
-          ...ex,
-          reps_min: ex.reps_min ?? 8,
-          reps_max: ex.reps_max ?? 12,
-        })),
-        nutrition: p.nutrition || null,
-      }));
-
-      setWorkoutDays(normalisedDays);
-      setActiveSplitDayIdx(0);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load client profile details.');
@@ -286,6 +443,98 @@ export default function DesktopCoachPortal() {
       setLoadingClientDetails(false);
     }
   };
+
+  // ─── FETCH CLIENT RECORDS (Realtime/Date synced logs) ───────
+  const fetchClientData = async (userId: string, dateStr: string, silent = false) => {
+    if (!userId) return;
+    if (!silent) setLoadingClientDetails(true);
+    try {
+      // 1. Diet log & meals
+      const { data: dLog } = await supabase.from('diet_logs').select('*').eq('user_id', userId).eq('date', dateStr).maybeSingle();
+      setClientDietLog(dLog || null);
+
+      if (dLog) {
+        const { data: dMeals } = await supabase.from('diet_meals').select('*').eq('diet_log_id', dLog.id).order('created_at', { ascending: true });
+        setClientMeals(dMeals || []);
+      } else {
+        setClientMeals([]);
+      }
+
+      // 2. Water logs
+      const { data: wLogs } = await supabase.from('water_logs').select('*').eq('user_id', userId).eq('date', dateStr).order('time', { ascending: true });
+      setClientWaterLogs(wLogs || []);
+
+      // 3. Workouts logged
+      const { data: wList } = await supabase.from('workouts').select('*').eq('user_id', userId).eq('date', dateStr);
+      setClientWorkoutsList(wList || []);
+
+      // 4. InBody scans history
+      const { data: inbodyScans } = await supabase.from('inbody_scans').select('*').eq('user_id', userId).order('date', { ascending: false });
+      setClientScans(inbodyScans || []);
+
+      if (inbodyScans && inbodyScans.length > 0) {
+        setLatestWeight(inbodyScans[0].weight);
+      } else {
+        setLatestWeight(null);
+      }
+
+      // 5. Workout Splits Templates
+      const { data: plansData } = await supabase
+        .from('user_workout_plans')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      setClientWorkoutPlans(plansData || []);
+
+    } catch (err) {
+      console.error(err);
+      toast.error('Unable to sync active client database logs.');
+    } finally {
+      if (!silent) setLoadingClientDetails(false);
+    }
+  };
+
+  // Fetch client logs when date changes or client selection is active
+  useEffect(() => {
+    if (selectedClientId) {
+      fetchClientData(selectedClientId, clientActiveDateStr);
+    }
+  }, [selectedClientId, clientActiveDateStr]);
+
+  // Real-time synchronization subscription for active client logs
+  useEffect(() => {
+    if (!selectedClientId || !clientActiveDateStr) return;
+
+    const channel = supabase
+      .channel(`desktop-coach-realtime-${selectedClientId}-${clientActiveDateStr}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs' }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'diet_meals' }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'diet_logs' }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts' }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inbody_scans' }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchClientDetails(selectedClientId);
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans' }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedClientId, clientActiveDateStr]);
 
   // ─── SAVE TARGETS ──────────────────────────────────────────
   const handleSaveTargets = async () => {
@@ -310,7 +559,6 @@ export default function DesktopCoachPortal() {
       if (error) throw error;
       toast.success('Macros and hydration goals updated successfully!');
       
-      // Update state ref
       setSelectedClientProfile((prev: any) => ({
         ...prev,
         user: {
@@ -326,7 +574,358 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  // ─── CLIENT OPERATIONS ─────────────────────────────────────
+  // ─── SAVE DAY-TYPE TARGET NUTRITION ────────────────────────
+  const handleOpenDayEdit = (dt: string) => {
+    const existing = dayNutrition[dt];
+    setEditDayKcal(existing?.kcal ?? targetKcal);
+    setEditDayProtein(existing?.protein ?? targetProtein);
+    setEditDayCarbs(existing?.carbs ?? targetCarbs);
+    setEditDayFat(existing?.fat ?? targetFat);
+    setEditingDayType(dt);
+  };
+
+  const handleSaveDayNutrition = async () => {
+    try {
+      const updDN = { ...dayNutrition, [editingDayType!]: { kcal: editDayKcal, protein: editDayProtein, carbs: editDayCarbs, fat: editDayFat } };
+      const currentTargets = selectedClientProfile?.user?.targets || {};
+      const updatedTargets = { ...currentTargets, day_nutrition: updDN };
+
+      const { error } = await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', selectedClientId!);
+      if (error) throw error;
+      setDayNutrition(updDN);
+      setSelectedClientProfile((prev: any) => ({
+        ...prev,
+        user: { ...prev.user, targets: updatedTargets }
+      }));
+      setEditingDayType(null);
+      toast.success(`${editingDayType} day macros saved!`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update targets. Please try again.');
+    }
+  };
+
+  // ─── DIET LOGGER OPERATIONS ────────────────────────────────
+  const handleAddMealLog = async () => {
+    if (!newMealName.trim() || !selectedClientId) { toast.error('Enter a meal name'); return; }
+    try {
+      let logId = clientDietLog?.id;
+      if (!logId) {
+        const { data: newLog, error: le } = await supabase.from('diet_logs').insert({
+          user_id: selectedClientId, date: clientActiveDateStr,
+          daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+        }).select().single();
+        if (le) throw le;
+        logId = newLog.id;
+        setClientDietLog(newLog);
+      }
+      const item = { id: `ci-${Date.now()}`, food_id: 'custom', name: newMealName, grams: 100, macros: { kcal: newMealKcal, protein: newMealProtein, carbs: newMealCarbs, fat: newMealFat } };
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:00`;
+      const { data: nm, error: me } = await supabase.from('diet_meals').insert({
+        diet_log_id: logId, name: newMealName,
+        time: timeStr,
+        items: [item]
+      }).select().single();
+      if (me) throw me;
+
+      const allMeals = [...clientMeals, nm];
+      const totals = allMeals.reduce((t, m) => {
+        m.items?.forEach((i: any) => { t.kcal += i.macros.kcal || 0; t.protein += i.macros.protein || 0; t.carbs += i.macros.carbs || 0; t.fat += i.macros.fat || 0; });
+        return t;
+      }, { kcal: 0, protein: 0, carbs: 0, fat: 0, water: clientDietLog?.daily_totals?.water || 0, completed: false });
+      await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', logId);
+
+      toast.success('Meal logged for athlete!');
+      setNewMealName(''); setShowAddMealForm(false);
+      fetchClientData(selectedClientId, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to log meal. Please try again.');
+    }
+  };
+
+  const handleDeleteMeal = async (mealId: string) => {
+    try {
+      const { error } = await supabase.from('diet_meals').delete().eq('id', mealId);
+      if (error) throw error;
+      const remaining = clientMeals.filter(m => m.id !== mealId);
+      const totals = remaining.reduce((t, m) => {
+        m.items?.forEach((i: any) => { t.kcal += i.macros.kcal || 0; t.protein += i.macros.protein || 0; t.carbs += i.macros.carbs || 0; t.fat += i.macros.fat || 0; });
+        return t;
+      }, { kcal: 0, protein: 0, carbs: 0, fat: 0, water: clientDietLog?.daily_totals?.water || 0, completed: false });
+      if (clientDietLog) await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', clientDietLog.id);
+      toast.success('Meal deleted');
+      fetchClientData(selectedClientId!, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to remove meal. Please try again.');
+    }
+  };
+
+  // ─── WATER LOGGER OPERATIONS ───────────────────────────────
+  const handleAddWater = async () => {
+    if (!selectedClientId) return;
+    try {
+      const now = new Date();
+      const { error } = await supabase.from('water_logs').insert({
+        user_id: selectedClientId,
+        date: clientActiveDateStr,
+        time: now.toISOString(),
+        amount_ml: newWaterAmount
+      });
+      if (error) throw error;
+      toast.success(`${newWaterAmount}ml logged!`);
+      fetchClientData(selectedClientId, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to log water intake.');
+    }
+  };
+
+  const handleDeleteWater = async (id: string) => {
+    const { error } = await supabase.from('water_logs').delete().eq('id', id);
+    if (error) {
+      toast.error('Unable to remove water log.');
+      return;
+    }
+    toast.success('Entry removed');
+    fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  };
+
+  const handleClearWater = async () => {
+    const { error } = await supabase.from('water_logs').delete().eq('user_id', selectedClientId).eq('date', clientActiveDateStr);
+    if (error) {
+      toast.error('Unable to clear logs.');
+      return;
+    }
+    toast.success('Water logs cleared');
+    fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  };
+
+  // ─── INBODY SCAN OPERATIONS ────────────────────────────────
+  const handleAddInBodyScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const wt = parseFloat(newScanWeight);
+    if (isNaN(wt) || wt <= 0 || !selectedClientId) { toast.error('Enter valid weight'); return; }
+    try {
+      const bfVal = parseFloat(newScanBfPercent) || 0;
+      const smmVal = parseFloat(newScanSmm) || 0;
+      const { error } = await supabase.from('inbody_scans').insert({
+        user_id: selectedClientId, date: newScanDate, weight: wt, smm: smmVal,
+        bfm: parseFloat(((wt * bfVal) / 100).toFixed(1)), bf_percent: bfVal,
+        bmr: Math.round(10 * wt + 6.25 * 175 - 5 * 25 + 5), score: newScanScore,
+        segmental: { visceralFat: 6, tbw: Math.round(wt * 0.6), protein: Math.round(wt * 0.18), minerals: Math.round(wt * 0.05), raLean: Math.round(wt * 0.05), laLean: Math.round(wt * 0.05), trunkLean: Math.round(wt * 0.28), rlLean: Math.round(wt * 0.12), llLean: Math.round(wt * 0.12) }
+      });
+      if (error) throw error;
+      toast.success('Scan logged!');
+      setNewScanWeight(''); setNewScanSmm(''); setNewScanBfPercent(''); setShowAddScanForm(false);
+      fetchClientData(selectedClientId, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to save biometrics record.');
+    }
+  };
+
+  const handleDeleteScan = async (id: string) => {
+    if (!window.confirm('Delete this scan?')) return;
+    const { error } = await supabase.from('inbody_scans').delete().eq('id', id);
+    if (error) {
+      toast.error('Unable to delete scan.');
+      return;
+    }
+    toast.success('Scan deleted');
+    fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  };
+
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedClientId) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      if (!text) { setIsImporting(false); return; }
+
+      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length < 2) {
+        toast.error('Invalid CSV file or empty file.');
+        setIsImporting(false);
+        return;
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const payloads = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(v => v.trim());
+        if (row.length < 5) continue;
+
+        const getValue = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? parseFloat(row[idx]) : 0;
+        };
+
+        const getString = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? row[idx] : '';
+        };
+
+        const dateRaw = getString('date');
+        if (!dateRaw) continue;
+
+        let dateStr = getLocalDateString();
+        if (dateRaw.length >= 8) {
+          dateStr = `${dateRaw.substring(0, 4)}-${dateRaw.substring(4, 6)}-${dateRaw.substring(6, 8)}`;
+        }
+
+        const segmental = {
+          visceralFat: getValue('visceral fat level') || 6,
+          tbw: getValue('total body water') || Math.round(getValue('weight(kg)') * 0.6) || 40,
+          protein: getValue('protein') || Math.round(getValue('weight(kg)') * 0.18) || 12,
+          minerals: getValue('mineral') || Math.round(getValue('weight(kg)') * 0.05) || 4,
+          raLean: getValue('right arm lean') || 3.2,
+          laLean: getValue('left arm lean') || 3.2,
+          trunkLean: getValue('trunk lean') || 22,
+          rlLean: getValue('right leg lean') || 8.5,
+          llLean: getValue('left leg lean') || 8.5,
+        };
+
+        payloads.push({
+          user_id: selectedClientId,
+          date: dateStr,
+          weight: getValue('weight(kg)') || getValue('weight') || 0,
+          smm: getValue('skeletal muscle mass') || getValue('smm') || 0,
+          bfm: getValue('body fat mass') || getValue('bfm') || 0,
+          bf_percent: getValue('percent body fat') || getValue('bf_percent') || 0,
+          bmr: getValue('basal metabolic rate') || getValue('bmr') || 1600,
+          score: getValue('inbody score') || getValue('score') || 75,
+          segmental: segmental
+        });
+      }
+
+      if (payloads.length > 0) {
+        const { error } = await supabase.from('inbody_scans').insert(payloads);
+        if (error) {
+          toast.error('Error during bulk upload: ' + error.message);
+        } else {
+          toast.success(`Successfully imported ${payloads.length} scans!`);
+          fetchClientData(selectedClientId, clientActiveDateStr, true);
+        }
+      } else {
+        toast.error('No valid data found in CSV.');
+      }
+
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  // ─── SPLIT TEMPLATE BUILDER OPERATIONS ────────────────────
+  const handleUpdateExerciseStats = async (planType: string, exId: string, sets: number, rest: number) => {
+    try {
+      const plan = clientWorkoutPlans.find(p => p.plan_type === planType);
+      if (!plan) return;
+      const upd = plan.exercises.map((e: any) => {
+        if (e.id === exId) {
+          return { ...e, sets: Math.max(1, sets), rest: Math.max(0, rest) };
+        }
+        return e;
+      });
+      const { error } = await supabase.from('user_workout_plans').update({ exercises: upd }).eq('id', plan.id);
+      if (error) throw error;
+      setClientWorkoutPlans(prev => prev.map(p => p.plan_type === planType ? { ...p, exercises: upd } : p));
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to update exercise split template.');
+    }
+  };
+
+  const handleAddExerciseToSplit = async (planType: string, exercise: any) => {
+    try {
+      const plan = clientWorkoutPlans.find(p => p.plan_type === planType);
+      const exs = plan ? [...plan.exercises] : [];
+      if (exs.some((e: any) => e.name === exercise.name)) { toast.error('Already in split'); return; }
+      exs.push({ id: exercise.id || `ce-${Date.now()}`, name: exercise.name, muscle_group: exercise.muscle_group || '', sets: 3, rest: 120 });
+
+      const { error } = await supabase.from('user_workout_plans').upsert(
+        { user_id: selectedClientId, plan_type: planType, exercises: exs },
+        { onConflict: 'user_id,plan_type' }
+      );
+      if (error) throw error;
+      toast.success(`Added to ${planType}`);
+      setSearchExerciseQuery('');
+      fetchClientData(selectedClientId!, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to add exercise.');
+    }
+  };
+
+  const handleRemoveExerciseFromSplit = async (planType: string, exId: string) => {
+    try {
+      const plan = clientWorkoutPlans.find(p => p.plan_type === planType);
+      if (!plan) return;
+      const upd = plan.exercises.filter((e: any) => e.id !== exId);
+      const { error } = await supabase.from('user_workout_plans').update({ exercises: upd }).eq('id', plan.id);
+      if (error) throw error;
+      toast.success('Exercise removed');
+      fetchClientData(selectedClientId!, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to remove exercise.');
+    }
+  };
+
+  const handleCreateSplitDay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newDeploySplitName.trim().toUpperCase();
+    if (!name || !selectedClientId) return;
+    if (clientWorkoutPlans.some(p => p.plan_type === name)) { toast.error('Already exists'); return; }
+    try {
+      const { error } = await supabase.from('user_workout_plans').insert({ user_id: selectedClientId, plan_type: name, exercises: [] });
+      if (error) throw error;
+      toast.success(`${name} day created!`);
+      setNewDeploySplitName('');
+      fetchClientData(selectedClientId, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to create split day.');
+    }
+  };
+
+  const handleDeleteSplitDay = async (id: string) => {
+    if (!window.confirm('Delete this split day? All exercises in it will be removed.')) return;
+    const { error } = await supabase.from('user_workout_plans').delete().eq('id', id);
+    if (error) {
+      toast.error('Unable to delete split day.');
+      return;
+    }
+    toast.success('Split deleted');
+    fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  };
+
+  const handleRenameSplitDay = async (plan: any) => {
+    const newName = window.prompt(`Rename "${plan.plan_type}" to:`, plan.plan_type)?.trim().toUpperCase();
+    if (!newName || newName === plan.plan_type) return;
+    try {
+      if (clientWorkoutPlans.some(p => p.plan_type === newName && p.id !== plan.id)) {
+        toast.error('A split day with that name already exists');
+        return;
+      }
+      const { error } = await supabase.from('user_workout_plans').update({ plan_type: newName }).eq('id', plan.id);
+      if (error) throw error;
+      toast.success(`Renamed to ${newName}!`);
+      fetchClientData(selectedClientId!, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to rename split day.');
+    }
+  };
+
+  // ─── CLIENT ADMINISTRATIVE PARAMETERS ─────────────────────
   const handleSaveQuota = async () => {
     if (!selectedClientId || !selectedClientProfile) return;
     setUpdatingQuota(true);
@@ -465,9 +1064,8 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  // ─── DEPLOY ATHLETE ACTION ─────────────────────────────────
-  const handleDeployAthlete = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ─── DEPLOY ATHLETE 4-STEP ACTION ──────────────────────────
+  const handleDeployAthlete = async () => {
     if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim()) {
       toast.error('Name, Username, and Password are required.');
       return;
@@ -515,17 +1113,27 @@ export default function DesktopCoachPortal() {
 
       const clientUserId = resData.user.id;
 
-      // 3. Public Profiles setup
+      // 3. Setup split nutrition day map
+      const dayNutritionMap: Record<string, any> = {};
+      dayNutritionMap['REST'] = { kcal: deployRestKcal, protein: deployRestProtein, carbs: deployRestCarbs, fat: deployRestFat };
+      dayNutritionMap['RUN'] = { kcal: deployKcal + 200, protein: deployProtein, carbs: deployCarbs + 50, fat: deployFat };
+      dayNutritionMap['RUN + GYM'] = { kcal: deployKcal + 400, protein: deployProtein + 10, carbs: deployCarbs + 70, fat: deployFat + 5 };
+
+      deploySplits.forEach(s => {
+        dayNutritionMap[s.key] = { kcal: deployKcal, protein: deployProtein, carbs: deployCarbs, fat: deployFat };
+      });
+
+      // 4. Public Profiles setup
       const targets = {
         onboarding_completed: true,
         show_welcome_animation: true,
-        water_goal_ml: 3500,
-        day_nutrition: {},
+        water_goal_ml: Math.round(deployWaterGoalLiters * 1000),
+        day_nutrition: dayNutritionMap,
         gender: deployGender,
-        kcal: 2500,
-        protein: 160,
-        carbs: 240,
-        fat: 70,
+        kcal: deployKcal,
+        protein: deployProtein,
+        carbs: deployCarbs,
+        fat: deployFat,
         client_code: nextClientCode,
         phone_number: formData.phoneNumber.trim()
       };
@@ -541,7 +1149,7 @@ export default function DesktopCoachPortal() {
       });
       if (profileError) throw profileError;
 
-      // 4. Client Profiles row
+      // 5. Client Profiles row
       const { error: clientProfileError } = await supabase.from('client_profiles').insert({
         user_id: clientUserId,
         coach_id: coachUserId,
@@ -555,21 +1163,45 @@ export default function DesktopCoachPortal() {
       });
       if (clientProfileError) throw clientProfileError;
 
-      // 5. InBody
-      const weightVal = parseFloat(formData.age); // using age/weight mockup
-      await supabase.from('inbody_scans').insert({
-        user_id: clientUserId,
-        date: new Date().toISOString().split('T')[0],
-        weight: weightVal || 75,
-        smm: 34,
-        bfm: 12,
-        bf_percent: 16,
-        bmr: 1700,
-        score: 75,
-        segmental: { visceralFat: 6 }
-      });
+      // 6. Save initial InBody composition scan(s)
+      if (deployCsvScans.length > 0) {
+        const scansToInsert = deployCsvScans.map(scan => ({
+          ...scan,
+          user_id: clientUserId
+        }));
+        await supabase.from('inbody_scans').insert(scansToInsert);
+      } else {
+        const weightVal = parseFloat(deployWeight);
+        if (!isNaN(weightVal) && weightVal > 0) {
+          const bfVal = parseFloat(deployBfPercent) || 0;
+          const smmVal = parseFloat(deploySmm) || 0;
+          const bfmVal = parseFloat(deployBfm) || 0;
 
-      // 6. Workout plans & days
+          await supabase.from('inbody_scans').insert({
+            user_id: clientUserId,
+            date: new Date().toISOString().split('T')[0],
+            weight: weightVal,
+            smm: smmVal,
+            bfm: bfmVal,
+            bf_percent: bfVal,
+            bmr: Math.round(10 * weightVal + 6.25 * (parseFloat(formData.height) || 175) - 5 * (parseInt(formData.age) || 25) + 5),
+            score: deployInbodyScore,
+            segmental: {
+              visceralFat: 6,
+              tbw: Math.round(weightVal * 0.6),
+              protein: Math.round(weightVal * 0.18),
+              minerals: Math.round(weightVal * 0.05),
+              raLean: Math.round(weightVal * 0.05),
+              laLean: Math.round(weightVal * 0.05),
+              trunkLean: Math.round(weightVal * 0.28),
+              rlLean: Math.round(weightVal * 0.12),
+              llLean: Math.round(weightVal * 0.12)
+            }
+          });
+        }
+      }
+
+      // 7. Workout plans templates & days
       const planPromises = deploySplits.map(split => {
         return supabase.from('user_workout_plans').upsert({
           user_id: clientUserId,
@@ -598,7 +1230,7 @@ export default function DesktopCoachPortal() {
 
       toast.success('Athlete registered and splits deployed successfully!');
       
-      // Reset form
+      // Reset form & states
       setFormData({
         displayName: '',
         username: '',
@@ -611,8 +1243,12 @@ export default function DesktopCoachPortal() {
         goals: '',
         injuries_notes: ''
       });
+      setDeployStep(1);
+      setDeployWeight('');
+      setDeployBfPercent('');
+      setDeploySmm('');
+      setDeployCsvScans([]);
 
-      // Refresh list
       fetchBaseData();
     } catch (err: any) {
       console.error(err);
@@ -620,6 +1256,169 @@ export default function DesktopCoachPortal() {
     } finally {
       setDeployLoading(false);
     }
+  };
+
+  const handleDeployCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      if (!text) { setIsImporting(false); return; }
+
+      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length < 2) {
+        toast.error('Invalid CSV file or empty file.');
+        setIsImporting(false);
+        return;
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const parsedScans = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(v => v.trim());
+        if (row.length < 5) continue;
+
+        const getValue = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? parseFloat(row[idx]) : 0;
+        };
+
+        const getString = (keyContains: string) => {
+          const idx = headers.findIndex(h => h.includes(keyContains.toLowerCase()));
+          return idx !== -1 ? row[idx] : '';
+        };
+
+        const dateRaw = getString('date');
+        if (!dateRaw) continue;
+
+        let dateStr = getLocalDateString();
+        if (dateRaw.length >= 8) {
+          dateStr = `${dateRaw.substring(0, 4)}-${dateRaw.substring(4, 6)}-${dateRaw.substring(6, 8)}`;
+        }
+
+        const segmental = {
+          visceralFat: getValue('visceral fat level') || 6,
+          tbw: getValue('total body water') || Math.round(getValue('weight(kg)') * 0.6) || 40,
+          protein: getValue('protein') || Math.round(getValue('weight(kg)') * 0.18) || 12,
+          minerals: getValue('mineral') || Math.round(getValue('weight(kg)') * 0.05) || 4,
+          raLean: getValue('right arm lean') || 3.2,
+          laLean: getValue('left arm lean') || 3.2,
+          trunkLean: getValue('trunk lean') || 22,
+          rlLean: getValue('right leg lean') || 8.5,
+          llLean: getValue('left leg lean') || 8.5,
+        };
+
+        const parsedWeight = getValue('weight(kg)') || getValue('weight') || 0;
+        const parsedSmm = getValue('skeletal muscle mass') || getValue('smm') || 0;
+        const parsedBfPercent = getValue('percent body fat') || getValue('bf_percent') || 0;
+
+        if (parsedWeight > 0) {
+          parsedScans.push({
+            date: dateStr,
+            weight: parsedWeight,
+            smm: parsedSmm,
+            bfm: parseFloat(((parsedWeight * parsedBfPercent) / 100).toFixed(1)),
+            bf_percent: parsedBfPercent,
+            bmr: getValue('basal metabolic rate') || 1600,
+            score: getValue('inbody score') || 75,
+            segmental: segmental
+          });
+        }
+      }
+
+      if (parsedScans.length > 0) {
+        parsedScans.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setDeployCsvScans(parsedScans);
+
+        const latestScan = parsedScans[parsedScans.length - 1];
+        setDeployWeight(latestScan.weight.toString());
+        setDeployBfPercent(latestScan.bf_percent.toString());
+        setDeploySmm(latestScan.smm.toString());
+        setDeployInbodyScore(latestScan.score || 75);
+
+        toast.success(`Loaded ${parsedScans.length} scans from CSV for deployment!`);
+      } else {
+        toast.error('No valid data found in CSV.');
+      }
+      setIsImporting(false);
+    };
+    reader.readAsText(file);
+  };
+
+  // Add/remove exercises to splits in deployment flow
+  const handleAddExerciseToDeploySplit = (splitKey: string, ex: any) => {
+    setDeploySplits(prev => prev.map(s => {
+      if (s.key === splitKey) {
+        if (s.exercises.some((e: any) => e.name === ex.name)) {
+          toast.error(`${ex.name} is already in split`);
+          return s;
+        }
+        return {
+          ...s,
+          exercises: [
+            ...s.exercises,
+            {
+              id: ex.id || `dp-custom-${Date.now()}`,
+              name: ex.name,
+              muscle_group: ex.muscle_group || '',
+              sets: 3,
+              rest: 120
+            }
+          ]
+        };
+      }
+      return s;
+    }));
+    toast.success(`Added ${ex.name}`);
+  };
+
+  const handleRemoveExerciseFromDeploySplit = (splitKey: string, exId: string) => {
+    setDeploySplits(prev => prev.map(s => {
+      if (s.key === splitKey) {
+        return {
+          ...s,
+          exercises: s.exercises.filter((ex: any) => ex.id !== exId)
+        };
+      }
+      return s;
+    }));
+  };
+
+  const addDeploySplit = () => {
+    const trimmed = newDeploySplitName.trim();
+    if (!trimmed) return;
+    if (deploySplits.some(s => s.key.toUpperCase() === trimmed.toUpperCase())) {
+      toast.error('This split name already exists.');
+      return;
+    }
+    const colorOptions = ['#ef4444', '#3b82f6', '#eab308', '#a855f7', '#ec4899', '#10b981', '#f97316', '#06b6d4'];
+    const randomColor = colorOptions[deploySplits.length % colorOptions.length];
+    
+    setDeploySplits(prev => [
+      ...prev,
+      {
+        key: trimmed.toUpperCase(),
+        label: trimmed,
+        emoji: '🏋️‍♂️',
+        color: randomColor,
+        exercises: []
+      }
+    ]);
+    setNewDeploySplitName('');
+    toast.success(`Split "${trimmed}" added!`);
+  };
+
+  const removeDeploySplit = (key: string) => {
+    if (deploySplits.length <= 1) {
+      toast.error('You must keep at least one training split.');
+      return;
+    }
+    setDeploySplits(prev => prev.filter(s => s.key !== key));
+    if (deployActiveSplitKey === key) setDeployActiveSplitKey(null);
   };
 
   // ─── SYSTEM TAB: COACH GENERATION ─────────────────────────
@@ -691,7 +1490,6 @@ export default function DesktopCoachPortal() {
 
       toast.success('User details updated!');
       
-      // Update local view
       setProfiles((prev: any[]) => prev.map(p => {
         if (p.id === uid) {
           const updatedTargets = { ...(p.targets || {}) };
@@ -801,6 +1599,26 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  // Helper date preseters
+  const shiftClientDate = (days: number) => {
+    const d = new Date(clientActiveDateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    setClientActiveDateStr(getLocalDateString(d));
+  };
+
+  const calculateInBodyDelta = (current: number, previous: number, invertColors = false) => {
+    if (previous === undefined || previous === null || previous === 0) return null;
+    const diff = current - previous;
+    if (diff === 0) return <span className="text-gray-500 text-[10px] ml-1">(-)</span>;
+    const isPositive = diff > 0;
+    const isGood = invertColors ? !isPositive : isPositive;
+    return (
+      <span className={`text-[10px] ml-1 font-bold ${isGood ? 'text-emerald-400' : 'text-red-400'}`}>
+        ({isPositive ? '+' : ''}{diff.toFixed(1)})
+      </span>
+    );
+  };
+
   // Filters
   const filteredClients = clientsList.filter(c => 
     c.display_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
@@ -811,6 +1629,51 @@ export default function DesktopCoachPortal() {
     p.display_name?.toLowerCase().includes(systemSearchQuery.toLowerCase()) ||
     p.email?.toLowerCase().includes(systemSearchQuery.toLowerCase())
   );
+
+  // Filter Catalog exercises inside Directory template split builder
+  const filteredCatalog = exerciseDb.filter(ex => {
+    if (!searchExerciseQuery) return false;
+    return ex.name.toLowerCase().includes(searchExerciseQuery.toLowerCase()) ||
+      ex.muscle_group?.toLowerCase().includes(searchExerciseQuery.toLowerCase());
+  }).slice(0, 6);
+
+  // Filter catalog inside Deploy Athlete wizard
+  const filteredDeployCatalog = exerciseDb.filter(ex => {
+    if (!searchExerciseQuery) return false;
+    return ex.name.toLowerCase().includes(searchExerciseQuery.toLowerCase()) ||
+      ex.muscle_group?.toLowerCase().includes(searchExerciseQuery.toLowerCase());
+  }).slice(0, 5);
+
+  const deployStepsInfo = [
+    { label: 'Identity', icon: <UserCheck size={14} /> },
+    { label: 'Workouts', icon: <Dumbbell size={14} /> },
+    { label: 'Diet', icon: <Apple size={14} /> },
+    { label: 'InBody', icon: <Scale size={14} /> }
+  ];
+
+  // Daily statistics for chosen client tab
+  const consumedMacros = clientMeals.reduce(
+    (acc, m) => {
+      m.items?.forEach((item: any) => {
+        acc.kcal += item.macros?.kcal || 0;
+        acc.protein += item.macros?.protein || 0;
+        acc.carbs += item.macros?.carbs || 0;
+        acc.fat += item.macros?.fat || 0;
+      });
+      return acc;
+    },
+    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+
+  const waterTotalMl = clientWaterLogs.reduce((acc, log) => acc + (log.amount_ml || 0), 0);
+
+  const athleteDayTypes = Array.from(new Set([
+    'REST', 
+    'RUN', 
+    'RUN + GYM', 
+    ...clientWorkoutPlans.map(p => p.plan_type),
+    ...Object.keys(dayNutrition)
+  ])).filter(Boolean);
 
   if (loading) {
     return (
@@ -913,16 +1776,18 @@ export default function DesktopCoachPortal() {
             <UserPlus size={15} /> Deploy New Athlete
           </button>
 
-          <button 
-            onClick={() => setActiveTab('system')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
-              activeTab === 'system' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
-                : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
-            }`}
-          >
-            <Shield size={15} /> System Console
-          </button>
+          {coachUserId === OWNER_ID && (
+            <button 
+              onClick={() => setActiveTab('system')}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                activeTab === 'system' 
+                  ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                  : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
+              }`}
+            >
+              <Shield size={15} /> System Console
+            </button>
+          )}
         </aside>
 
         {/* Content View Area */}
@@ -1069,7 +1934,7 @@ export default function DesktopCoachPortal() {
               <div className="flex-1 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 overflow-y-auto no-scrollbar relative">
                 
                 {loadingClientDetails ? (
-                  <div className="absolute inset-0 bg-[#0b0c16]/80 flex flex-col items-center justify-center z-10 rounded-3xl">
+                  <div className="absolute inset-0 bg-[#0b0c16]/80 flex flex-col items-center justify-center z-20 rounded-3xl">
                     <DumbbellLoader label="Retrieving client dossier..." size={100} />
                   </div>
                 ) : null}
@@ -1084,7 +1949,7 @@ export default function DesktopCoachPortal() {
                   <div className="space-y-6">
                     
                     {/* Detail Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-5">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase">
                           {selectedClientProfile.user?.display_name?.charAt(0) || '?'}
@@ -1113,209 +1978,695 @@ export default function DesktopCoachPortal() {
                       </div>
                     </div>
 
-                    {/* Biometrics row */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Scale size={10} /> Weight</p>
-                        <p className="text-base font-black text-white mt-1.5">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
-                      </div>
-                      <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Ruler size={10} /> Height</p>
-                        <p className="text-base font-black text-white mt-1.5">{selectedClientProfile.height ? `${selectedClientProfile.height} cm` : 'N/A'}</p>
-                      </div>
-                      <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Calendar size={10} /> Age</p>
-                        <p className="text-base font-black text-white mt-1.5">{selectedClientProfile.age ? `${selectedClientProfile.age} yrs` : 'N/A'}</p>
-                      </div>
-                      <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1">Passcode</p>
-                        <p className="text-base font-black text-yellow-500 font-mono mt-1.5">{selectedClientProfile.generated_passcode || 'N/A'}</p>
-                      </div>
+                    {/* Client Detail Sub-Tabs Navigation */}
+                    <div className="flex border-b border-gray-800 gap-4 mt-4">
+                      {([
+                        { id: 'overview', label: 'Overview', icon: <Activity size={13} /> },
+                        { id: 'diet', label: 'Diet Logs', icon: <Apple size={13} /> },
+                        { id: 'water', label: 'Water Logs', icon: <Droplets size={13} /> },
+                        { id: 'workouts', label: 'Training Plans', icon: <Dumbbell size={13} /> },
+                        { id: 'inbody', label: 'InBody Scans', icon: <Scale size={13} /> },
+                      ] as const).map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setClientActiveTab(tab.id)}
+                          className={`pb-2 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                            clientActiveTab === tab.id
+                              ? 'border-blue-500 text-blue-400 font-extrabold'
+                              : 'border-transparent text-gray-500 hover:text-gray-300'
+                          }`}
+                        >
+                          {tab.icon}
+                          {tab.label}
+                        </button>
+                      ))}
                     </div>
 
-                    {/* Layout Split: Macro updates vs Training Split */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-                      
-                      {/* Macro / Goals updates */}
-                      <Card className="p-5 space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-gray-800 pb-2 flex items-center gap-2">
-                          <Apple size={14} /> Macro &amp; Hydration Targets
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 gap-3.5">
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Calories (kcal)</label>
-                            <input 
-                              type="number" value={targetKcal} onChange={e => setTargetKcal(parseInt(e.target.value) || 0)}
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                            />
+                    {/* CLIENT TAB: OVERVIEW */}
+                    {clientActiveTab === 'overview' && (
+                      <div className="space-y-6">
+                        {/* Biometrics row */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Scale size={10} /> Weight</p>
+                            <p className="text-base font-black text-white mt-1.5">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
                           </div>
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Protein (g)</label>
-                            <input 
-                              type="number" value={targetProtein} onChange={e => setTargetProtein(parseInt(e.target.value) || 0)}
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                            />
+                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Ruler size={10} /> Height</p>
+                            <p className="text-base font-black text-white mt-1.5">{selectedClientProfile.height ? `${selectedClientProfile.height} cm` : 'N/A'}</p>
                           </div>
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Carbs (g)</label>
-                            <input 
-                              type="number" value={targetCarbs} onChange={e => setTargetCarbs(parseInt(e.target.value) || 0)}
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                            />
+                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Calendar size={10} /> Age</p>
+                            <p className="text-base font-black text-white mt-1.5">{selectedClientProfile.age ? `${selectedClientProfile.age} yrs` : 'N/A'}</p>
                           </div>
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Fat (g)</label>
-                            <input 
-                              type="number" value={targetFat} onChange={e => setTargetFat(parseInt(e.target.value) || 0)}
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                            />
-                          </div>
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Water Goal (Liters)</label>
-                            <input 
-                              type="number" step="0.1" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                            />
+                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1">Passcode</p>
+                            <p className="text-base font-black text-yellow-500 font-mono mt-1.5">{selectedClientProfile.generated_passcode || 'N/A'}</p>
                           </div>
                         </div>
 
-                        <button
-                          onClick={handleSaveTargets}
-                          disabled={savingTargets}
-                          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          {savingTargets ? 'Saving Targets...' : <><Save size={13} /> Save Nutrition Targets</>}
-                        </button>
-                      </Card>
-
-                      {/* Training splits */}
-                      <Card className="p-5 flex flex-col justify-between">
-                        <div>
-                          <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 border-b border-gray-800 pb-2 flex items-center gap-2">
-                            <Dumbbell size={14} /> Active Workout Plans
-                          </h3>
-
-                          {workoutDays.length === 0 ? (
-                            <p className="text-xs text-gray-500 italic text-center py-12">No active splits assigned.</p>
-                          ) : (
-                            <div className="space-y-4 mt-4">
-                              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                                {workoutDays.map((day, idx) => (
-                                  <button
-                                    key={day.id}
-                                    onClick={() => setActiveSplitDayIdx(idx)}
-                                    className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border ${
-                                      activeSplitDayIdx === idx
-                                        ? 'bg-purple-600 border-purple-500 text-white'
-                                        : 'bg-gray-900/60 border-gray-800 text-gray-400'
-                                    }`}
-                                  >
-                                    {day.day_name.replace(' Day', '')}
-                                  </button>
-                                ))}
+                        {/* Nutrition targets editor */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                          <Card className="p-5 space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-gray-800 pb-2 flex items-center gap-2">
+                              <Apple size={14} /> Macro &amp; Hydration Targets
+                            </h3>
+                            
+                            <div className="grid grid-cols-2 gap-3.5">
+                              <div className="space-y-1">
+                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Calories (kcal)</label>
+                                <input 
+                                  type="number" value={targetKcal} onChange={e => setTargetKcal(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                />
                               </div>
+                              <div className="space-y-1">
+                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Protein (g)</label>
+                                <input 
+                                  type="number" value={targetProtein} onChange={e => setTargetProtein(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Carbs (g)</label>
+                                <input 
+                                  type="number" value={targetCarbs} onChange={e => setTargetCarbs(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Fat (g)</label>
+                                <input 
+                                  type="number" value={targetFat} onChange={e => setTargetFat(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                />
+                              </div>
+                              <div className="space-y-1 col-span-2">
+                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Water Goal (Liters)</label>
+                                <input 
+                                  type="number" step="0.1" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                />
+                              </div>
+                            </div>
 
-                              {workoutDays[activeSplitDayIdx] && (
-                                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
-                                  {workoutDays[activeSplitDayIdx].exercises.map((ex: any, i: number) => (
-                                    <div key={i} className="flex justify-between items-center bg-[#121624] border border-gray-850 p-2.5 rounded-xl text-[11px]">
-                                      <div>
-                                        <p className="font-extrabold text-white">{ex.name}</p>
-                                        <p className="text-[9px] text-gray-500 uppercase mt-0.5 font-bold">{ex.muscle_group}</p>
+                            <button
+                              onClick={handleSaveTargets}
+                              disabled={savingTargets}
+                              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              {savingTargets ? 'Saving Targets...' : <><Save size={13} /> Save Nutrition Targets</>}
+                            </button>
+                          </Card>
+
+                          {/* Nutrition by day type */}
+                          <div className="bg-[#121624] border border-gray-800 rounded-2xl p-5 space-y-4">
+                            <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-800 pb-2 flex items-center gap-1.5">📋 Day-Type Custom Targets</h3>
+                            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
+                              {athleteDayTypes.map(dt => {
+                                const dn = dayNutrition[dt];
+                                const isEditing = editingDayType === dt;
+                                return (
+                                  <div key={dt} className="bg-gray-900/60 border border-gray-850 rounded-xl overflow-hidden">
+                                    <button
+                                      onClick={() => isEditing ? setEditingDayType(null) : handleOpenDayEdit(dt)}
+                                      className="w-full flex items-center justify-between p-3.5 hover:bg-gray-800/20 transition-colors"
+                                    >
+                                      <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${dayColor(dt)}`}>{dt}</span>
+                                      {dn ? (
+                                        <span className="text-[10px] text-gray-400 font-bold">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
+                                      ) : (
+                                        <span className="text-[10px] text-gray-600 italic">Default Work Macros</span>
+                                      )}
+                                    </button>
+
+                                    {isEditing && (
+                                      <div className="border-t border-gray-800 p-3 space-y-3 bg-[#0a0f1a]">
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {[
+                                            { label: 'Kcal', val: editDayKcal, set: setEditDayKcal },
+                                            { label: 'Prot (g)', val: editDayProtein, set: setEditDayProtein },
+                                            { label: 'Carb (g)', val: editDayCarbs, set: setEditDayCarbs },
+                                            { label: 'Fat (g)', val: editDayFat, set: setEditDayFat },
+                                          ].map(({ label, val, set }) => (
+                                            <div key={label}>
+                                              <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">{label}</label>
+                                              <input
+                                                type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
+                                                className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2 text-xs text-white text-center font-bold"
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <button onClick={handleSaveDayNutrition} className="flex-1 bg-blue-600 text-white font-bold text-xs uppercase py-2 rounded-xl">Save</button>
+                                          <button onClick={() => setEditingDayType(null)} className="px-3 bg-gray-800 text-gray-400 font-bold text-xs rounded-xl">Cancel</button>
+                                        </div>
                                       </div>
-                                      <p className="text-purple-400 font-extrabold">{ex.sets} sets × {ex.reps_min}-{ex.reps_max} reps</p>
-                                    </div>
-                                  ))}
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Danger zone / parameters controls */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-850 pt-6">
+                          {/* Admin Parameters */}
+                          <Card className="p-5 space-y-4 border-gray-850 bg-[#0d0f1a]/40">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-yellow-500 border-b border-gray-800 pb-2">Administrative Parameters</h3>
+                            <form onSubmit={handleUpdatePassword} className="space-y-3">
+                              <div className="space-y-1">
+                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Reset Access Passcode</label>
+                                <div className="flex gap-2">
+                                  <input 
+                                    type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                    placeholder="Min 6 characters"
+                                    className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none"
+                                  />
+                                  <button type="submit" disabled={updatingPassword} className="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-2 rounded-xl text-xs uppercase"><Key size={13} /></button>
                                 </div>
+                              </div>
+                            </form>
+
+                            <div className="space-y-1">
+                              <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Daily AI Message Quota</label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="number" value={aiQuotaInput} onChange={e => setAiQuotaInput(parseInt(e.target.value) || 0)}
+                                  className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none"
+                                />
+                                <button onClick={handleSaveQuota} disabled={updatingQuota} className="bg-blue-600 text-white font-bold px-3 py-2 rounded-xl text-xs uppercase">Update</button>
+                              </div>
+                            </div>
+                          </Card>
+
+                          {/* Danger Zone */}
+                          <Card className="p-5 space-y-4 border-red-950/20 bg-red-950/5">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-red-400 border-b border-red-950 pb-2">Danger Zone</h3>
+                            <div className="flex gap-3">
+                              <button
+                                onClick={handleToggleSuspension} disabled={updatingSuspension}
+                                className={`flex-1 py-3.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border transition-all active:scale-[0.98] cursor-pointer ${
+                                  selectedClientProfile.user?.targets?.is_deactivated === true
+                                    ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white'
+                                    : 'bg-red-950/20 hover:bg-red-900 border-red-900/30 text-red-400'
+                                }`}
+                              >
+                                {updatingSuspension ? 'Updating...' : (selectedClientProfile.user?.targets?.is_deactivated === true ? 'Reactivate Access' : 'Suspend Account')}
+                              </button>
+
+                              <button
+                                onClick={handleDeleteClient}
+                                className="flex-1 py-3.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-[0.98] cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <Trash2 size={13} /> Delete Athlete
+                              </button>
+                            </div>
+                            <p className="text-[9px] text-red-400/60 leading-relaxed">
+                              ⚠️ Suspending restricts client PWA logins. Deleting wipes their workouts history, diet tracking, InBody scans, and credentials permanently.
+                            </p>
+                          </Card>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CLIENT TAB: DIET LOGS */}
+                    {clientActiveTab === 'diet' && (
+                      <div className="space-y-6">
+                        {/* Date Navigator */}
+                        <div className="flex items-center justify-between bg-[#121624] border border-gray-850 p-3 rounded-2xl">
+                          <button onClick={() => shiftClientDate(-1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronLeft size={16} /></button>
+                          <span className="text-xs font-bold text-white flex items-center gap-1.5"><Calendar size={13} className="text-blue-400" /> {clientActiveDateStr}</span>
+                          <button onClick={() => shiftClientDate(1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronRight size={16} /></button>
+                        </div>
+
+                        {/* Nutrition indicators */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+                          <StatCard label="Calories" value={consumedMacros.kcal} max={targetKcal} unit=" kcal" color="#f97316" emoji="🔥" />
+                          <StatCard label="Protein" value={consumedMacros.protein} max={targetProtein} unit="g" color="#60a5fa" emoji="🍳" />
+                          <StatCard label="Carbs" value={consumedMacros.carbs} max={targetCarbs} unit="g" color="#fbbf24" emoji="🍯" />
+                          <StatCard label="Fat" value={consumedMacros.fat} max={targetFat} unit="g" color="#f87171" emoji="🥑" />
+                        </div>
+
+                        {/* Custom food logger & meals table */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                          {/* Log Meal Form */}
+                          <Card className="p-5 space-y-4">
+                            <div className="flex justify-between items-center border-b border-gray-850 pb-2">
+                              <h3 className="text-xs font-black uppercase text-blue-400">Log Custom Meal</h3>
+                              <button onClick={() => setShowAddMealForm(!showAddMealForm)} className="text-[10px] text-blue-400 font-extrabold uppercase">{showAddMealForm ? 'Close Form' : 'Log Food'}</button>
+                            </div>
+
+                            {showAddMealForm && (
+                              <div className="space-y-3">
+                                <input 
+                                  type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
+                                  placeholder="Meal Name (e.g. Oatmeal & Eggs)"
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
+                                />
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[8px] text-gray-500 uppercase font-black">Calories (kcal)</label>
+                                    <input type="number" value={newMealKcal} onChange={e => setNewMealKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                  </div>
+                                  <div>
+                                    <label className="text-[8px] text-gray-500 uppercase font-black">Protein (g)</label>
+                                    <input type="number" value={newMealProtein} onChange={e => setNewMealProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                  </div>
+                                  <div>
+                                    <label className="text-[8px] text-gray-500 uppercase font-black">Carbs (g)</label>
+                                    <input type="number" value={newMealCarbs} onChange={e => setNewMealCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                  </div>
+                                  <div>
+                                    <label className="text-[8px] text-gray-500 uppercase font-black">Fat (g)</label>
+                                    <input type="number" value={newMealFat} onChange={e => setNewMealFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                  </div>
+                                </div>
+                                <button onClick={handleAddMealLog} className="w-full bg-blue-600 text-white font-bold text-xs uppercase py-3 rounded-xl">Save Meal Entry</button>
+                              </div>
+                            )}
+                          </Card>
+
+                          {/* Logged Meals List */}
+                          <div className="lg:col-span-2 bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
+                            <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Meals Logged Timeline</h3>
+                            <div className="divide-y divide-gray-850 mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                              {clientMeals.length === 0 ? (
+                                <p className="text-xs text-gray-500 italic py-8 text-center">No meals recorded for this date.</p>
+                              ) : (
+                                clientMeals.map(meal => {
+                                  const mm = meal.items?.reduce((t: any, i: any) => ({
+                                    kcal: t.kcal + (i.macros?.kcal || 0),
+                                    protein: t.protein + (i.macros?.protein || 0),
+                                    carbs: t.carbs + (i.macros?.carbs || 0),
+                                    fat: t.fat + (i.macros?.fat || 0),
+                                  }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+                                  return (
+                                    <div key={meal.id} className="flex justify-between items-center py-3.5 gap-4">
+                                      <div>
+                                        <p className="text-xs font-bold text-white">{meal.name}</p>
+                                        <p className="text-[10px] text-gray-500 mt-0.5">
+                                          {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
+                                        </p>
+                                      </div>
+                                      <button onClick={() => handleDeleteMeal(meal.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-xl transition-colors"><Trash2 size={14} /></button>
+                                    </div>
+                                  );
+                                })
                               )}
                             </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CLIENT TAB: WATER LOGS */}
+                    {clientActiveTab === 'water' && (
+                      <div className="space-y-6">
+                        {/* Date Navigator */}
+                        <div className="flex items-center justify-between bg-[#121624] border border-gray-850 p-3 rounded-2xl">
+                          <button onClick={() => shiftClientDate(-1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronLeft size={16} /></button>
+                          <span className="text-xs font-bold text-white flex items-center gap-1.5"><Calendar size={13} className="text-blue-400" /> {clientActiveDateStr}</span>
+                          <button onClick={() => shiftClientDate(1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronRight size={16} /></button>
+                        </div>
+
+                        {/* Hydration Goal Status */}
+                        <div className="bg-[#121624] border border-gray-850 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">💧</span>
+                            <div>
+                              <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Water Consumed Progress</p>
+                              <p className="text-lg font-black text-white mt-0.5">
+                                {(waterTotalMl / 1000).toFixed(2)}L <span className="text-xs text-gray-500">/ {targetWaterLiters}L Goal</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex-1 max-w-[240px]">
+                            <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#38bdf8" />
+                          </div>
+                        </div>
+
+                        {/* Logger inputs & timeline logs */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                          {/* Log Water presets */}
+                          <Card className="p-5 space-y-4">
+                            <div className="flex justify-between items-center border-b border-gray-850 pb-2">
+                              <h3 className="text-xs font-black uppercase text-blue-400">Log Hydration</h3>
+                              {clientWaterLogs.length > 0 && (
+                                <button onClick={handleClearWater} className="text-[9px] font-black uppercase text-red-400">Clear Day</button>
+                              )}
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                              {[250, 330, 500, 750, 1000].map(ml => (
+                                <button 
+                                  key={ml} 
+                                  onClick={() => { setNewWaterAmount(ml); }}
+                                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border ${newWaterAmount === ml ? 'bg-sky-600 border-sky-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                                >
+                                  {ml}ml
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <input 
+                                type="number" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
+                                className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
+                              />
+                              <button onClick={handleAddWater} className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider whitespace-nowrap">+ Log</button>
+                            </div>
+                          </Card>
+
+                          {/* Water log timeline */}
+                          <div className="lg:col-span-2 bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
+                            <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Daily Timeline logs</h3>
+                            <div className="divide-y divide-gray-850 mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                              {clientWaterLogs.length === 0 ? (
+                                <p className="text-xs text-gray-500 italic py-8 text-center">No water logged for this date.</p>
+                              ) : (
+                                clientWaterLogs.map(log => (
+                                  <div key={log.id} className="flex justify-between items-center py-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">💧</span>
+                                      <div>
+                                        <p className="text-xs font-black text-white">{log.amount_ml} ml</p>
+                                        <p className="text-[9px] text-gray-500 flex items-center gap-0.5 mt-0.5">
+                                          <Clock size={8} /> {log.time?.includes('T') ? new Date(log.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : log.time}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button onClick={() => handleDeleteWater(log.id)} className="p-2 text-gray-500 hover:text-red-400"><Trash2 size={13} /></button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CLIENT TAB: TRAINING PLANS */}
+                    {clientActiveTab === 'workouts' && (
+                      <div className="space-y-6">
+                        {/* Completed sessions on selected date */}
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-3">
+                          <div className="flex items-center justify-between border-b border-gray-850 pb-2">
+                            <h3 className="text-xs font-black uppercase text-blue-400">Completed Sessions</h3>
+                            {/* Short Date Navigator */}
+                            <div className="flex items-center gap-2 border border-gray-800 bg-[#121624] py-1 px-3.5 rounded-xl">
+                              <button onClick={() => shiftClientDate(-1)} className="text-gray-400 hover:text-white"><ChevronLeft size={12} /></button>
+                              <span className="text-[10px] font-bold text-gray-300 font-mono">{clientActiveDateStr}</span>
+                              <button onClick={() => shiftClientDate(1)} className="text-gray-400 hover:text-white"><ChevronRight size={12} /></button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 mt-2">
+                            {clientWorkoutsList.length === 0 ? (
+                              <p className="text-xs text-gray-500 italic py-4 text-center">No completed workouts logged on this date.</p>
+                            ) : (
+                              clientWorkoutsList.map(w => (
+                                <div 
+                                  key={w.id} 
+                                  onClick={() => w.status === 'completed' && setSelectedReceiptWorkout(w)}
+                                  className={`bg-[#121624]/50 border border-gray-850 p-3 rounded-2xl flex justify-between items-center text-xs transition-all ${w.status === 'completed' ? 'hover:border-gray-700 cursor-pointer hover:bg-gray-900/20' : ''}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase ${dayColor(w.day_type || '')}`}>{w.day_type || 'GYM'}</span>
+                                    <span className="font-bold text-white">{w.name || 'Workout Session'}</span>
+                                  </div>
+                                  <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${
+                                    w.status === 'completed' ? 'bg-green-500/10 border border-green-500/20 text-emerald-400' : 'bg-gray-800 text-gray-500'
+                                  }`}>
+                                    {w.status === 'completed' ? '✓ View Receipt' : w.status || 'pending'}
+                                  </span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Splits template editor */}
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-3xl p-5 space-y-4">
+                          <div className="flex items-center justify-between border-b border-gray-850 pb-2">
+                            <h3 className="text-xs font-black uppercase text-blue-400">Gym Program templates splits ({clientWorkoutPlans.length})</h3>
+                            
+                            <form onSubmit={handleCreateSplitDay} className="flex gap-2">
+                              <input 
+                                type="text" value={newDeploySplitName} onChange={e => setNewDeploySplitName(e.target.value)}
+                                placeholder="E.g. PUSH, LEGS"
+                                className="bg-[#121624] border border-gray-800 rounded-xl px-3 py-1.5 text-[10px] text-white outline-none focus:border-blue-500 font-bold uppercase"
+                              />
+                              <button type="submit" className="bg-blue-600 text-white text-[10px] font-bold px-3.5 py-1.5 rounded-xl uppercase transition-all">+ Add Split</button>
+                            </form>
+                          </div>
+
+                          <div className="divide-y divide-gray-850">
+                            {clientWorkoutPlans.map(plan => {
+                              const dt = plan.plan_type;
+                              const isExp = activeSplitEditKey === dt;
+                              return (
+                                <div key={plan.id} className="py-2.5">
+                                  <div className="w-full flex items-center justify-between py-2">
+                                    <div 
+                                      className="flex items-center gap-2 cursor-pointer"
+                                      onClick={() => setActiveSplitEditKey(isExp ? null : dt)}
+                                    >
+                                      <span className={`text-[9px] font-black px-2.5 py-0.5 rounded border uppercase ${dayColor(dt)}`}>{dt}</span>
+                                      <span className="text-[10px] text-gray-400 font-bold">({plan.exercises?.length || 0} exercises)</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <button onClick={() => handleRenameSplitDay(plan)} className="p-2 text-gray-500 hover:text-blue-400" title="Rename"><Edit3 size={13} /></button>
+                                      <button onClick={() => handleDeleteSplitDay(plan.id)} className="p-2 text-gray-500 hover:text-red-400" title="Delete"><Trash2 size={13} /></button>
+                                      <button onClick={() => setActiveSplitEditKey(isExp ? null : dt)} className="p-2 text-gray-500 hover:text-white">{isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button>
+                                    </div>
+                                  </div>
+
+                                  {isExp && (
+                                    <div className="mt-3 bg-[#0d1220] border border-gray-850 p-4 rounded-2xl space-y-4">
+                                      {/* Exercises rows */}
+                                      {!plan.exercises || plan.exercises.length === 0 ? (
+                                        <p className="text-[10px] text-gray-500 italic py-2 text-center">No exercises added. Use search below.</p>
+                                      ) : (
+                                        <div className="space-y-1.5">
+                                          {plan.exercises.map((ex: any, idx: number) => (
+                                            <div key={ex.id || idx} className="flex justify-between items-center bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs">
+                                              <div>
+                                                <p className="font-bold text-white">{ex.name}</p>
+                                                <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
+                                              </div>
+                                              <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1">
+                                                  <input 
+                                                    type="number" value={ex.sets || 3} min="1"
+                                                    onChange={e => handleUpdateExerciseStats(dt, ex.id, parseInt(e.target.value) || 3, ex.rest || 120)}
+                                                    className="w-10 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
+                                                  />
+                                                  <span className="text-[9px] text-gray-500 uppercase font-black">Sets</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                  <input 
+                                                    type="number" value={ex.rest || 120} min="0" step="5"
+                                                    onChange={e => handleUpdateExerciseStats(dt, ex.id, ex.sets || 3, parseInt(e.target.value) || 0)}
+                                                    className="w-12 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
+                                                  />
+                                                  <span className="text-[9px] text-gray-500 uppercase font-black">Rest</span>
+                                                </div>
+                                                <button onClick={() => handleRemoveExerciseFromSplit(dt, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {/* Search Exercises catalog to insert */}
+                                      <div className="border-t border-gray-850 pt-3 space-y-2 relative">
+                                        <div className="relative">
+                                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                                          <input 
+                                            type="text" value={searchExerciseQuery} onChange={e => setSearchExerciseQuery(e.target.value)}
+                                            placeholder="Search catalog to add exercise..."
+                                            className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2 pl-9 pr-8 text-xs text-white outline-none focus:border-blue-500"
+                                          />
+                                          {searchExerciseQuery && <button onClick={() => setSearchExerciseQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"><X size={12} /></button>}
+                                        </div>
+
+                                        {searchExerciseQuery && (
+                                          <div className="bg-[#121624] border border-gray-800 rounded-xl overflow-hidden shadow-2xl max-h-[160px] overflow-y-auto">
+                                            {filteredCatalog.length === 0 ? (
+                                              <p className="text-[10px] text-gray-500 italic p-3 text-center">No exercises found.</p>
+                                            ) : (
+                                              filteredCatalog.map(ex => (
+                                                <button 
+                                                  key={ex.id} 
+                                                  onClick={() => handleAddExerciseToSplit(dt, ex)}
+                                                  className="w-full text-left px-3 py-2 text-xs hover:bg-blue-600/20 flex justify-between border-b border-gray-800/60 last:border-0"
+                                                >
+                                                  <span className="font-bold text-gray-200">{ex.name}</span>
+                                                  <span className="text-[8px] bg-gray-800 border border-gray-700 text-gray-500 font-extrabold px-1.5 py-0.5 rounded uppercase">{ex.muscle_group}</span>
+                                                </button>
+                                              ))
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
+
+                    {/* CLIENT TAB: INBODY SCANS */}
+                    {clientActiveTab === 'inbody' && (
+                      <div className="space-y-6">
+                        {/* CSV Import Zone */}
+                        <div className="bg-[#121624] border border-gray-850 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between relative overflow-hidden gap-4 shadow-xl">
+                          <div className="absolute right-0 top-0 w-32 h-32 bg-blue-600/10 rounded-full blur-[40px] pointer-events-none" />
+                          <div className="flex-1 text-center sm:text-left z-10">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
+                              <FileText size={15} className="text-blue-400" /> Bulk Import InBody CSV
+                            </h3>
+                            <p className="text-[10px] text-gray-400 mt-1">Upload the athlete's exported CSV to sync body composition trends immediately.</p>
+                          </div>
+                          <label className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 shrink-0 z-10 text-center w-full sm:w-auto">
+                            <input
+                              type="file" ref={fileInputRef} accept=".csv" className="hidden"
+                              onChange={handleCSVUpload} disabled={isImporting}
+                            />
+                            {isImporting ? 'Importing...' : 'Upload CSV'}
+                          </label>
+                        </div>
+
+                        {/* Log manual InBody scan */}
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl overflow-hidden">
+                          <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/10">
+                            <h3 className="text-xs font-black uppercase text-blue-400">Log Manual Scan</h3>
+                            <button onClick={() => setShowAddScanForm(!showAddScanForm)} className="text-xs font-black text-blue-400 hover:text-white cursor-pointer flex items-center gap-1">
+                              <Plus size={13} /> {showAddScanForm ? 'Cancel' : 'New Scan'}
+                            </button>
+                          </div>
+
+                          {showAddScanForm && (
+                            <form onSubmit={handleAddInBodyScan} className="p-4 space-y-3 bg-[#0a0f1a]">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div>
+                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Scan Date</label>
+                                  <input type="date" value={newScanDate} onChange={e => setNewScanDate(e.target.value)} required className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">InBody Score</label>
+                                  <input type="number" value={newScanScore} onChange={e => setNewScanScore(parseInt(e.target.value) || 0)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white text-center font-bold" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Weight (kg)</label>
+                                  <input type="number" step="any" required placeholder="e.g. 78.5" value={newScanWeight} onChange={e => setNewScanWeight(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Body Fat %</label>
+                                  <input type="number" step="any" placeholder="e.g. 14.8" value={newScanBfPercent} onChange={e => setNewScanBfPercent(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                </div>
+                                <div className="col-span-2 md:col-span-4">
+                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Muscle Mass SMM (kg)</label>
+                                  <input type="number" step="any" placeholder="e.g. 36.5" value={newScanSmm} onChange={e => setNewScanSmm(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                </div>
+                              </div>
+                              <button type="submit" className="w-full bg-blue-600 text-white font-bold text-xs uppercase py-3.5 rounded-xl">Save composition record</button>
+                            </form>
                           )}
                         </div>
-                      </Card>
 
-                    </div>
+                        {/* Scans list */}
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl overflow-hidden p-5">
+                          <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Historical Scans timeline ({clientScans.length})</h3>
+                          <div className="divide-y divide-gray-850 mt-3 max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
+                            {clientScans.length === 0 ? (
+                              <p className="text-xs text-gray-500 italic py-8 text-center">No InBody scans recorded.</p>
+                            ) : (
+                              clientScans.map((scan, idx) => {
+                                const isExpanded = expandedScanId === scan.id;
+                                const prev = idx + 1 < clientScans.length ? clientScans[idx + 1] : null;
+                                const seg = scan.segmental || {};
 
-                    {/* Danger Zone / Admin Controls */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-850 pt-6">
-                      
-                      {/* Admin parameters / passcode resets */}
-                      <Card className="p-5 space-y-4 border-gray-850 bg-[#0d0f1a]/40">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-yellow-500 border-b border-gray-800 pb-2">
-                          Administrative Parameters
-                        </h3>
+                                return (
+                                  <div key={scan.id} className="py-4">
+                                    <div className="flex justify-between items-center">
+                                      <div className="flex-1 cursor-pointer" onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}>
+                                        <p className="text-sm font-black text-white flex items-center gap-1.5">
+                                          {new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                          {isExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
+                                        </p>
+                                        <p className="text-[10px] text-gray-500 mt-0.5">
+                                          Score: <span className="text-emerald-400 font-black">{scan.score || 75}</span>
+                                          {idx === 0 && <span className="ml-2 bg-blue-900/40 text-blue-400 text-[8px] font-black px-1.5 py-0.5 rounded">LATEST</span>}
+                                        </p>
+                                      </div>
+                                      <button onClick={() => handleDeleteScan(scan.id)} className="p-2 text-gray-500 hover:text-red-400"><Trash2 size={14} /></button>
+                                    </div>
 
-                        {/* Reset passcode */}
-                        <form onSubmit={handleUpdatePassword} className="space-y-3">
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Reset Access Passcode</label>
-                            <div className="flex gap-2">
-                              <input 
-                                type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                placeholder="Enter at least 6 chars"
-                                className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
-                              />
-                              <button
-                                type="submit" disabled={updatingPassword}
-                                className="bg-yellow-600 hover:bg-yellow-500 text-white font-extrabold px-3 py-2 rounded-xl text-xs uppercase transition-all cursor-pointer flex items-center justify-center"
-                              >
-                                {updatingPassword ? 'Resetting...' : <Key size={13} />}
-                              </button>
-                            </div>
-                          </div>
-                        </form>
+                                    <div className="grid grid-cols-3 gap-2 mt-2 cursor-pointer" onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}>
+                                      <div className="bg-[#121624] border border-gray-850 rounded-xl p-3 text-center">
+                                        <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Weight</p>
+                                        <p className="text-xs font-black text-white">{scan.weight} kg{prev && calculateInBodyDelta(scan.weight, prev.weight, true)}</p>
+                                      </div>
+                                      <div className="bg-[#121624] border border-gray-850 rounded-xl p-3 text-center">
+                                        <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Muscle SMM</p>
+                                        <p className="text-xs font-black text-blue-400">{scan.smm} kg{prev && calculateInBodyDelta(scan.smm, prev.smm)}</p>
+                                      </div>
+                                      <div className="bg-[#121624] border border-gray-850 rounded-xl p-3 text-center">
+                                        <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Body Fat</p>
+                                        <p className="text-xs font-black text-red-400">{scan.bf_percent}%{prev && calculateInBodyDelta(scan.bf_percent, prev.bf_percent, true)}</p>
+                                      </div>
+                                    </div>
 
-                        {/* AI limit */}
-                        <div className="space-y-3 pt-2">
-                          <div className="space-y-1">
-                            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Daily AI Message Quota</label>
-                            <div className="flex gap-2">
-                              <input 
-                                type="number" value={aiQuotaInput} onChange={e => setAiQuotaInput(parseInt(e.target.value) || 0)}
-                                className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                              />
-                              <button
-                                onClick={handleSaveQuota} disabled={updatingQuota}
-                                className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs uppercase transition-all cursor-pointer"
-                              >
-                                {updatingQuota ? 'Saving...' : 'Update'}
-                              </button>
-                            </div>
+                                    {isExpanded && (
+                                      <div className="border-t border-gray-850 mt-3 pt-3 space-y-4">
+                                        <div className="space-y-4 bg-gray-950/20 border border-gray-850 p-4 rounded-2xl">
+                                          <div>
+                                            <h4 className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Activity size={10} /> Muscle-Fat balance</h4>
+                                            <div className="grid grid-cols-2 gap-2.5">
+                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">Skeletal Muscle Mass:</span> <span className="text-white font-black">{scan.smm} kg</span></div>
+                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">Body Fat Mass:</span> <span className="text-white font-black">{scan.bfm} kg</span></div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div>
+                                            <h4 className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Droplet size={10} /> Body Composition</h4>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div className="bg-[#121624] p-2 rounded-xl text-center text-xs"><p className="text-gray-500">Water</p><p className="text-white font-black">{seg.tbw || 0}L</p></div>
+                                              <div className="bg-[#121624] p-2 rounded-xl text-center text-xs"><p className="text-gray-500">Protein</p><p className="text-white font-black">{seg.protein || 0}kg</p></div>
+                                              <div className="bg-[#121624] p-2 rounded-xl text-center text-xs"><p className="text-gray-500">Minerals</p><p className="text-white font-black">{seg.minerals || 0}kg</p></div>
+                                            </div>
+                                          </div>
+
+                                          <div>
+                                            <h4 className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Flame size={10} /> Obesity Evaluator</h4>
+                                            <div className="grid grid-cols-2 gap-2.5">
+                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">Visceral Fat Level:</span> <span className="text-white font-black">{seg.visceralFat || 0}</span></div>
+                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">BMR calories:</span> <span className="text-white font-black">{scan.bmr} kcal</span></div>
+                                            </div>
+                                          </div>
+
+                                          <div className="border-t border-gray-800 pt-3">
+                                            <SegmentalBodyMap scan={scan} allScans={clientScans} />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
                           </div>
                         </div>
-                      </Card>
 
-                      {/* Deactivation / Deletion */}
-                      <Card className="p-5 space-y-4 border-red-950/20 bg-red-950/5">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-red-400 border-b border-red-950 pb-2">
-                          Danger Zone
-                        </h3>
-                        
-                        <div className="flex gap-3">
-                          <button
-                            onClick={handleToggleSuspension} disabled={updatingSuspension}
-                            className={`flex-1 py-3.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border transition-all active:scale-[0.98] cursor-pointer ${
-                              selectedClientProfile.user?.targets?.is_deactivated === true
-                                ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white'
-                                : 'bg-red-950/20 hover:bg-red-900 border-red-900/30 text-red-400'
-                            }`}
-                          >
-                            {updatingSuspension ? 'Updating...' : (selectedClientProfile.user?.targets?.is_deactivated === true ? 'Reactivate Access' : 'Suspend Account')}
-                          </button>
-
-                          <button
-                            onClick={handleDeleteClient}
-                            className="flex-1 py-3.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-[0.98] cursor-pointer transition-all flex items-center justify-center gap-1.5"
-                          >
-                            <Trash2 size={13} /> Delete Athlete
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-red-400/60 leading-relaxed">
-                          ⚠️ Suspending immediately restricts app logins. Wiping/deleting the athlete completely deletes their training logs, InBody history, and water database files permanently.
-                        </p>
-                      </Card>
-
-                    </div>
+                      </div>
+                    )}
 
                   </div>
                 )}
@@ -1323,116 +2674,417 @@ export default function DesktopCoachPortal() {
             </div>
           )}
 
-          {/* TAB 3: DEPLOY NEW ATHLETE */}
+          {/* TAB 3: DEPLOY NEW ATHLETE (Stepped Wizard Form) */}
           {activeTab === 'deploy' && (
-            <div className="max-w-3xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6">
-              <div>
-                <h2 className="text-xl font-black text-white uppercase tracking-wider">Deploy New Athlete</h2>
-                <p className="text-xs text-gray-500 mt-1">Register a client account, initialize dynamic macro quotas, and deploy customized split libraries.</p>
-              </div>
-
-              {deploySuccessData && (
-                <div className="bg-emerald-950/20 border border-emerald-500/20 p-5 rounded-2xl space-y-3">
-                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
-                    <CheckCircle size={16} /> Athlete Deployed Successfully!
-                  </h3>
-                  <p className="text-xs text-gray-400 font-medium">Provide these details to the athlete to access the dashboard:</p>
-                  <div className="bg-gray-950/50 p-4 rounded-xl space-y-1.5 text-xs font-mono text-gray-300">
-                    <p><span className="text-gray-500">Name:</span> {deploySuccessData.displayName}</p>
-                    <p><span className="text-gray-500">Client Number:</span> #{deploySuccessData.clientCode}</p>
-                    <p><span className="text-gray-500">Username:</span> {deploySuccessData.username}</p>
-                    <p><span className="text-gray-500">Access Passcode:</span> {deploySuccessData.password}</p>
-                  </div>
+            <div className="max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6">
+              
+              <div className="flex justify-between items-start border-b border-gray-800 pb-4">
+                <div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-wider">Deploy Athlete Setup Wizard</h2>
+                  <p className="text-xs text-gray-500 mt-1">Register a client account, initialize dynamic work/rest calorie targets, and deploy split templates.</p>
+                </div>
+                {deploySuccessData && (
                   <button 
-                    onClick={() => setDeploySuccessData(null)}
-                    className="text-xs font-extrabold text-blue-400 hover:text-white underline cursor-pointer mt-2 block"
+                    onClick={() => { setDeploySuccessData(null); setDeployStep(1); }}
+                    className="text-xs font-black text-blue-400 hover:text-white underline cursor-pointer"
                   >
                     Deploy another client
                   </button>
-                </div>
-              )}
+                )}
+              </div>
 
-              {!deploySuccessData && (
-                <form onSubmit={handleDeployAthlete} className="space-y-6">
-                  
-                  {/* Identity Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Full Name</label>
-                      <input 
-                        type="text" required value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })}
-                        placeholder="e.g. Captain Ahmed"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+              {deploySuccessData ? (
+                <div className="bg-emerald-950/20 border border-emerald-500/20 p-6 rounded-3xl space-y-4">
+                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle size={16} /> Athlete Deployed Successfully!
+                  </h3>
+                  <p className="text-xs text-gray-400">Share these login details with the athlete to access their custom PWA space:</p>
+                  <div className="bg-gray-950/60 p-5 rounded-2xl space-y-2 text-xs font-mono text-gray-300 border border-gray-800/80">
+                    <p><span className="text-gray-500">Name:</span> {deploySuccessData.displayName}</p>
+                    <p><span className="text-gray-500">Client Code:</span> #{deploySuccessData.clientCode}</p>
+                    <p><span className="text-gray-500">Username:</span> {deploySuccessData.username}</p>
+                    <p><span className="text-gray-500">Passcode:</span> {deploySuccessData.password}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Stepper indicator */}
+                  <div className="flex justify-between relative px-2 max-w-lg mx-auto">
+                    <div className="absolute top-4 left-6 right-6 h-[2px] bg-gray-850 z-0">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${((deployStep - 1) / (deployStepsInfo.length - 1)) * 100}%` }}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Username / Handle</label>
-                      <input 
-                        type="text" required value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })}
-                        placeholder="e.g. ahmedfit"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Access Passcode (min 6 chars)</label>
-                      <input 
-                        type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })}
-                        placeholder="••••••••"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Client Code (Auto or Custom)</label>
-                      <input 
-                        type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value })}
-                        placeholder="Leave blank to auto-increment"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Phone Number</label>
-                      <input 
-                        type="text" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
-                        placeholder="e.g. +20 123 456789"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block">Biological Sex</label>
-                      <div className="flex gap-2 mt-1">
-                        <button
-                          type="button" onClick={() => setDeployGender('male')}
-                          className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                            deployGender === 'male' 
-                              ? 'bg-blue-600 border-blue-500 text-white' 
-                              : 'bg-gray-900 border-gray-800 text-gray-400'
-                          }`}
-                        >
-                          Male
-                        </button>
-                        <button
-                          type="button" onClick={() => setDeployGender('female')}
-                          className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                            deployGender === 'female' 
-                              ? 'bg-blue-600 border-blue-500 text-white' 
-                              : 'bg-gray-900 border-gray-800 text-gray-400'
-                          }`}
-                        >
-                          Female
-                        </button>
-                      </div>
-                    </div>
+
+                    {deployStepsInfo.map((info, idx) => {
+                      const isCompleted = deployStep > idx + 1;
+                      const isActive = deployStep === idx + 1;
+                      return (
+                        <div key={idx} className="flex flex-col items-center gap-1.5 z-10 relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (idx + 1 > deployStep && (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim())) {
+                                toast.error('Complete basic account fields first.');
+                                return;
+                              }
+                              setDeployStep(idx + 1);
+                            }}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
+                              isCompleted 
+                                ? 'bg-emerald-600 border-emerald-400 text-white shadow-md'
+                                : isActive 
+                                  ? 'bg-blue-600 border-blue-400 text-white shadow-md scale-110'
+                                  : 'bg-[#121620] border-gray-800 text-gray-500'
+                            }`}
+                          >
+                            {isCompleted ? <CheckCircle size={14} /> : info.icon}
+                          </button>
+                          <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-blue-400' : isCompleted ? 'text-emerald-400' : 'text-gray-500'}`}>
+                            {info.label}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  <button
-                    type="submit" disabled={deployLoading}
-                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-[0.99] transition-all cursor-pointer border border-white/5"
-                  >
-                    {deployLoading ? 'Deploying...' : 'Deploy Athlete Account'}
-                  </button>
+                  {/* Form step contents */}
+                  <div className="bg-[#121624]/30 border border-gray-800 rounded-3xl p-6 min-h-[300px]">
+                    
+                    {/* STEP 1: IDENTITY */}
+                    {deployStep === 1 && (
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-800 pb-2">Step 1: Identity &amp; Auth Credentials</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Full Name</label>
+                            <input 
+                              type="text" required value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })}
+                              placeholder="e.g. Captain Ahmed"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Username / Handle</label>
+                            <input 
+                              type="text" required value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })}
+                              placeholder="e.g. ahmedfit"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Access Passcode (min 6 chars)</label>
+                            <input 
+                              type="text" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })}
+                              placeholder="e.g. 123456"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Client Code (Auto-increment or custom)</label>
+                            <input 
+                              type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value })}
+                              placeholder="Leave blank to auto-increment"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Phone Number</label>
+                            <input 
+                              type="text" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                              placeholder="e.g. +20 123 456789"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500 block mb-1">Sex</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button" onClick={() => setDeployGender('male')}
+                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${deployGender === 'male' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                              >
+                                Male
+                              </button>
+                              <button
+                                type="button" onClick={() => setDeployGender('female')}
+                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${deployGender === 'female' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                              >
+                                Female
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Age</label>
+                            <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} placeholder="Years" className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none" />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Height (cm)</label>
+                            <input type="number" value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} placeholder="Centimeters" className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none" />
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Onboarding Experience Level</label>
+                            <select value={formData.experience_level} onChange={e => setFormData({ ...formData, experience_level: e.target.value })} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none">
+                              <option value="beginner">Beginner (Under 1 Year)</option>
+                              <option value="intermediate">Intermediate (1-3 Years)</option>
+                              <option value="advanced">Advanced (3+ Years)</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Injuries &amp; Medical Notes</label>
+                            <textarea value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} placeholder="Enter details about any injuries, operations, or medical conditions..." className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none h-20" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                </form>
+                    {/* STEP 2: WORKOUTS TEMPLATE PROGRAM */}
+                    {deployStep === 2 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b border-gray-800 pb-2">
+                          <h3 className="text-xs font-black uppercase text-blue-400">Step 2: Training template splits ({deploySplits.length} splits)</h3>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" value={newDeploySplitName} onChange={e => setNewDeploySplitName(e.target.value)}
+                              placeholder="E.g. UPPER, ARMS"
+                              className="bg-[#121624] border border-gray-800 rounded-lg px-2.5 py-1 text-[10px] text-white outline-none uppercase font-bold"
+                            />
+                            <button onClick={addDeploySplit} className="bg-blue-600 text-white text-[10px] px-3.5 py-1 rounded-lg uppercase font-bold">+ Day</button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
+                          {deploySplits.map(split => {
+                            const isExp = deployActiveSplitKey === split.key;
+                            return (
+                              <div key={split.key} className="bg-[#121624]/60 border border-gray-800 rounded-2xl overflow-hidden" style={{ borderLeft: `4px solid ${split.color}` }}>
+                                <div onClick={() => setDeployActiveSplitKey(isExp ? null : split.key)} className="p-3.5 flex justify-between items-center cursor-pointer hover:bg-gray-800/10 transition-all">
+                                  <div>
+                                    <p className="text-xs font-bold text-white uppercase tracking-wider">{split.label} Split Day</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">{split.exercises?.length || 0} exercises planned</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button onClick={(e) => { e.stopPropagation(); removeDeploySplit(split.key); }} className="text-gray-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-xl transition-colors"><Trash2 size={14} /></button>
+                                    <span className="text-[10px] bg-gray-900 border border-gray-850 text-gray-400 px-2 py-1 rounded font-bold uppercase">{isExp ? 'Close' : 'Edit'}</span>
+                                  </div>
+                                </div>
+
+                                {isExp && (
+                                  <div className="p-3.5 bg-black/10 border-t border-gray-850 space-y-3">
+                                    {/* Exercises in split */}
+                                    {split.exercises.length === 0 ? (
+                                      <p className="text-[10px] text-gray-500 italic py-2 text-center">No exercises. Search catalog below.</p>
+                                    ) : (
+                                      <div className="space-y-1.5">
+                                        {split.exercises.map((ex: any, idx: number) => (
+                                          <div key={ex.id || idx} className="flex justify-between items-center bg-[#121624] border border-gray-800 p-2.5 rounded-xl text-xs">
+                                            <div>
+                                              <p className="font-bold text-white">{ex.name}</p>
+                                              <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                              <span className="text-[10px] text-purple-400 font-extrabold">{ex.sets} sets x {ex.rest}s rest</span>
+                                              <button onClick={() => handleRemoveExerciseFromDeploySplit(split.key, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* Exercise catalog search inside deploy wizard split */}
+                                    <div className="border-t border-gray-800 pt-3 relative">
+                                      <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                                        <input 
+                                          type="text" value={searchExerciseQuery} onChange={e => setSearchExerciseQuery(e.target.value)}
+                                          placeholder="Search exercises to add to split..."
+                                          className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2 pl-9 pr-8 text-xs text-white outline-none"
+                                        />
+                                        {searchExerciseQuery && <button onClick={() => setSearchExerciseQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"><X size={12} /></button>}
+                                      </div>
+
+                                      {searchExerciseQuery && (
+                                        <div className="bg-[#121624] border border-gray-800 rounded-xl overflow-hidden shadow-2xl z-55 max-h-[140px] overflow-y-auto">
+                                          {filteredDeployCatalog.length === 0 ? (
+                                            <p className="text-[10px] text-gray-500 italic p-3 text-center">No exercises found</p>
+                                          ) : (
+                                            filteredDeployCatalog.map(ex => (
+                                              <button 
+                                                key={ex.id} 
+                                                onClick={() => {
+                                                  handleAddExerciseToDeploySplit(split.key, ex);
+                                                  setSearchExerciseQuery('');
+                                                }}
+                                                className="w-full text-left px-3 py-2.5 text-xs hover:bg-blue-600/20 flex justify-between border-b border-gray-850"
+                                              >
+                                                <span className="font-bold text-gray-200">{ex.name}</span>
+                                                <span className="text-[8px] bg-gray-800 border border-gray-700 text-gray-500 font-extrabold px-1.5 py-0.5 rounded uppercase">{ex.muscle_group}</span>
+                                              </button>
+                                            ))
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 3: DIET & NUTRITION GOALS */}
+                    {deployStep === 3 && (
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-800 pb-2">Step 3: Baseline &amp; Rest Day nutrition macros</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Training Day macros */}
+                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl space-y-3.5">
+                            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Baseline Training Day Goals</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Calories (kcal)</label>
+                                <input type="number" value={deployKcal} onChange={e => setDeployKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Protein (g)</label>
+                                <input type="number" value={deployProtein} onChange={e => setDeployProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Carbs (g)</label>
+                                <input type="number" value={deployCarbs} onChange={e => setDeployCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Fat (g)</label>
+                                <input type="number" value={deployFat} onChange={e => setDeployFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-gray-500 uppercase font-black">Daily Hydration Goal (Liters)</label>
+                              <input type="number" step="0.1" value={deployWaterGoalLiters} onChange={e => setDeployWaterGoalLiters(parseFloat(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                            </div>
+                          </div>
+
+                          {/* Rest day overrides */}
+                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl space-y-3.5 relative">
+                            <div className="flex justify-between items-center">
+                              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Rest Day Target Override</h4>
+                              <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-blue-400 font-bold select-none">
+                                <input 
+                                  type="checkbox" checked={deployIsRestOverridden} onChange={e => setDeployIsRestOverridden(e.target.checked)}
+                                  className="rounded border-gray-800 text-blue-600 bg-gray-900 focus:ring-0"
+                                />
+                                Override Auto
+                              </label>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Calories (kcal)</label>
+                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestKcal} onChange={e => setDeployRestKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Protein (g)</label>
+                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestProtein} onChange={e => setDeployRestProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Carbs (g)</label>
+                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestCarbs} onChange={e => setDeployRestCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500 uppercase font-black">Fat (g)</label>
+                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestFat} onChange={e => setDeployRestFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 4: BIOMETRICS & INBODY INITIALIZATION */}
+                    {deployStep === 4 && (
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-800 pb-2">Step 4: Initial Biometrics Scan &amp; CSV upload</h3>
+                        
+                        {/* CSV Import */}
+                        <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div>
+                            <h4 className="text-xs font-bold text-white flex items-center gap-1.5"><FileText size={13} className="text-blue-400" /> Import Historical InBody CSV</h4>
+                            <p className="text-[9px] text-gray-400 mt-1">Upload the athlete's exported file to pre-populate scan charts.</p>
+                          </div>
+                          <label className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] uppercase px-4 py-2.5 rounded-xl transition-all cursor-pointer">
+                            <input type="file" accept=".csv" className="hidden" onChange={handleDeployCSVUpload} />
+                            Upload CSV File
+                          </label>
+                        </div>
+
+                        <div className="border-t border-gray-850 pt-3">
+                          <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Or enter manual baseline scan stats:</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="text-[9px] text-gray-500 block uppercase font-black mb-1">Weight (kg)</label>
+                              <input type="number" step="any" placeholder="e.g. 78.5" value={deployWeight} onChange={e => setDeployWeight(e.target.value)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-gray-500 block uppercase font-black mb-1">Body Fat %</label>
+                              <input type="number" step="any" placeholder="e.g. 14.2" value={deployBfPercent} onChange={e => setDeployBfPercent(e.target.value)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-gray-500 block uppercase font-black mb-1">Muscle SMM (kg)</label>
+                              <input type="number" step="any" placeholder="e.g. 36.1" value={deploySmm} onChange={e => setDeploySmm(e.target.value)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-gray-500 block uppercase font-black mb-1">InBody Score</label>
+                              <input type="number" placeholder="75" value={deployInbodyScore} onChange={e => setDeployInbodyScore(parseInt(e.target.value) || 75)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white text-center font-bold" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {deployCsvScans.length > 0 && (
+                          <div className="bg-emerald-950/10 border border-emerald-500/20 p-3.5 rounded-xl">
+                            <p className="text-[10px] text-emerald-400 font-bold">✓ Ready to insert {deployCsvScans.length} historical scans from CSV on account deployment.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Deploy wizard action buttons */}
+                  <div className="flex justify-between items-center gap-4 bg-gray-950/20 p-4 border border-gray-800 rounded-2xl">
+                    <button 
+                      onClick={() => { if (deployStep > 1) setDeployStep(prev => prev - 1); }} 
+                      disabled={deployStep === 1}
+                      className="px-4 py-2.5 bg-gray-900 border border-gray-850 hover:border-gray-700 disabled:opacity-50 text-gray-400 hover:text-white rounded-xl text-xs uppercase font-black"
+                    >
+                      Back Step
+                    </button>
+                    {deployStep < 4 ? (
+                      <button 
+                        onClick={() => {
+                          if (deployStep === 1 && (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim())) {
+                            toast.error('Complete basic account credentials fields.');
+                            return;
+                          }
+                          setDeployStep(prev => prev + 1);
+                        }}
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs uppercase font-black"
+                      >
+                        Next Step
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleDeployAthlete} 
+                        disabled={deployLoading}
+                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs uppercase font-black shadow-lg shadow-blue-500/20"
+                      >
+                        {deployLoading ? 'Deploying...' : 'Deploy Athlete'}
+                      </button>
+                    )}
+                  </div>
+
+                </div>
               )}
             </div>
           )}
@@ -1565,7 +3217,7 @@ export default function DesktopCoachPortal() {
                             className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                               systemSelectedUser?.id === u.id 
                                 ? 'bg-blue-600/10 border-blue-500/50' 
-                                : 'bg-[#121624]/40 border-gray-850/80 hover:border-gray-800'
+                                : 'bg-[#121624]/40 border-gray-850/80 hover:border-gray-850'
                             }`}
                           >
                             <div>
@@ -1659,6 +3311,14 @@ export default function DesktopCoachPortal() {
 
         </main>
       </div>
+
+      {/* COMPLETED WORKOUT RECEIPT DIALOG MODAL */}
+      {selectedReceiptWorkout && (
+        <GymReceipt 
+          stats={selectedReceiptWorkout}
+          onClose={() => setSelectedReceiptWorkout(null)}
+        />
+      )}
 
     </div>
   );
