@@ -7,7 +7,7 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, AlertTriangle, History
+  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -122,6 +122,11 @@ export default function DesktopCoachPortal() {
   const [loading, setLoading] = useState(true);
   const [isNotCoach, setIsNotCoach] = useState(false);
 
+  // Profile Card Toggles
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedPasscode, setCopiedPasscode] = useState(false);
+  const [showPasscode, setShowPasscode] = useState(false);
+
   // Lists & DB Data
   const [profiles, setProfiles] = useState<any[]>([]);
   const [clientsList, setClientsList] = useState<any[]>([]);
@@ -147,6 +152,9 @@ export default function DesktopCoachPortal() {
   const [clientActiveTab, setClientActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody'>('overview');
   const [clientActiveDateStr, setClientActiveDateStr] = useState<string>(() => getLocalDateString());
   const [myCoachProfile, setMyCoachProfile] = useState<any | null>(null);
+  const [showPasscode, setShowPasscode] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedPasscode, setCopiedPasscode] = useState(false);
 
   // Client daily data records (for selected date and client)
   const [clientDietLog, setClientDietLog] = useState<any>(null);
@@ -508,10 +516,13 @@ export default function DesktopCoachPortal() {
 
       const { data: myProfile } = await supabase
         .from('profiles')
-        .select('role, targets')
+        .select('role, targets, email, username, display_name')
         .eq('id', session.user.id)
         .maybeSingle();
 
+      if (myProfile) {
+        myProfile.email = myProfile.email || session.user.email;
+      }
       setMyCoachProfile(myProfile);
 
       if (myProfile?.role !== 'coach' && session.user.id !== OWNER_ID) {
@@ -1687,6 +1698,24 @@ export default function DesktopCoachPortal() {
     try {
       const { error } = await supabase.auth.updateUser({ password: ownNewPassword });
       if (error) throw error;
+
+      // Update in public profiles table targets
+      const currentTargets = myCoachProfile?.targets || {};
+      const updatedTargets = { ...currentTargets, generated_passcode: ownNewPassword.trim() };
+      
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachUserId);
+        
+      if (profileError) throw profileError;
+
+      // Update local state immediately
+      setMyCoachProfile((prev: any) => ({
+        ...prev,
+        targets: updatedTargets
+      }));
+
       toast.success('Your account password has been updated successfully!');
       setOwnNewPassword('');
       setOwnConfirmPassword('');
@@ -4970,137 +4999,228 @@ export default function DesktopCoachPortal() {
             </div>
           )}
 
-          {/* TAB 5: PROFILE SETTINGS */}
           {activeTab === 'profile' && (
-            <div className="space-y-6 max-w-2xl">
-              <div className="border-b border-gray-800 pb-4">
-                <h2 className="text-xl font-black text-white uppercase tracking-wider">Coach Profile Settings</h2>
-                <p className="text-xs text-gray-500 mt-1">Manage your administrative password and review your active website subscription status.</p>
+            <div className="space-y-8 max-w-3xl">
+              <div className="border-b border-gray-800 pb-5">
+                <h2 className="text-2xl font-black text-white uppercase tracking-wider bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
+                  Coach Portal Profile Settings
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">Review your administrative access credentials, manage your portal account password, and check subscription licenses.</p>
               </div>
 
-              {/* Subscription Card */}
-              <Card className="p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] border border-gray-850 space-y-6 relative overflow-hidden">
-                <div className="absolute right-[-10%] top-[-10%] w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+              {/* Login Credentials & Info Card */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                <div className="flex items-center gap-3 border-b border-gray-855 pb-4">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                    <CreditCard size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase text-blue-400">Website Subscription Status</h3>
-                    <p className="text-[10px] text-gray-500">Details about your active coaching subscription plan.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Account Plan</p>
-                    <p className="text-white font-extrabold flex items-center gap-1.5">
-                      {coachUserId === OWNER_ID ? (
-                        <span className="text-indigo-400 font-mono font-black uppercase tracking-wider">Lifetime Creator Admin</span>
-                      ) : isTrialActive ? (
-                        <span className="text-yellow-500 font-black uppercase tracking-wider">Free Trial Mode</span>
-                      ) : (
-                        <span className="text-emerald-400 font-black uppercase tracking-wider">Premium Coach License</span>
-                      )}
-                    </p>
+                {/* Visual Glassmorphic Credentials Card */}
+                <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/90 via-[#0d1228]/85 to-[#0b0c1b]/95 p-6 shadow-2xl backdrop-blur-md">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                  
+                  <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner">
+                      <Key size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">Web Portal Login Credentials</h3>
+                      <p className="text-[10px] text-gray-500">Your credentials to access the LIFE GYM system.</p>
+                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Time Remaining / Status</p>
-                    <p className="text-white font-bold font-mono">
-                      {coachUserId === OWNER_ID ? (
-                        <span className="text-indigo-400 font-extrabold">Unlimited access (No Expiration)</span>
-                      ) : (
-                        <span className="text-white font-extrabold">
-                          {(() => {
-                            if (!myCoachProfile?.targets?.subscription_end_date) return 'Lifetime Access';
-                            const expiry = new Date(myCoachProfile.targets.subscription_end_date);
-                            const now = new Date();
-                            const diffMs = expiry.getTime() - now.getTime();
-                            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                            if (diffDays < 0) return 'Expired';
-                            if (diffDays === 0) return 'Expires today';
-                            return `${diffDays} days left`;
-                          })()}
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-gray-500 block">Login User Email</span>
+                      <div className="flex items-center justify-between bg-[#090b14] border border-gray-850 px-3 py-2 rounded-xl transition-all duration-300 hover:border-blue-500/30">
+                        <span className="text-xs font-mono font-bold text-white select-all break-all pr-2">
+                          {myCoachProfile?.email || 'Loading email...'}
                         </span>
-                      )}
-                    </p>
+                        {myCoachProfile?.email && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(myCoachProfile.email);
+                              setCopiedEmail(true);
+                              setTimeout(() => setCopiedEmail(false), 2000);
+                              toast.success('Email copied to clipboard');
+                            }}
+                            className="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all flex-shrink-0"
+                            title="Copy email"
+                          >
+                            {copiedEmail ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-gray-500 block">Access Passcode / Password</span>
+                      <div className="flex items-center justify-between bg-[#090b14] border border-gray-850 px-3 py-2 rounded-xl transition-all duration-300 hover:border-blue-500/30">
+                        <span className="text-xs font-mono font-extrabold text-yellow-500 tracking-wide select-all">
+                          {showPasscode 
+                            ? (myCoachProfile?.targets?.generated_passcode || '******')
+                            : '••••••••'}
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setShowPasscode(!showPasscode)}
+                            className="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all"
+                            title={showPasscode ? "Hide Passcode" : "Show Passcode"}
+                          >
+                            {showPasscode ? <EyeOff size={12} /> : <Eye size={12} />}
+                          </button>
+                          {myCoachProfile?.targets?.generated_passcode && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(myCoachProfile.targets.generated_passcode);
+                                setCopiedPasscode(true);
+                                setTimeout(() => setCopiedPasscode(false), 2000);
+                                toast.success('Passcode copied to clipboard');
+                              }}
+                              className="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all"
+                              title="Copy passcode"
+                            >
+                              {copiedPasscode ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Nice visual bar for remaining time (Coach only, Owner doesn't need it) */}
-                {coachUserId !== OWNER_ID && myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
-                  <div className="space-y-2 mt-4">
-                    <div className="flex justify-between text-[10px] text-gray-500 font-mono">
-                      <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
-                      <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                {/* Subscription Card */}
+                <div className="relative overflow-hidden rounded-3xl border border-gray-850 bg-[#0d1222]/50 p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div>
+                    <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-5">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
+                        <CreditCard size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-emerald-400 tracking-wider">Subscription Plan Details</h3>
+                        <p className="text-[10px] text-gray-500">Details about your active coaching subscription plan.</p>
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-900 border border-gray-850 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
-                        style={{
-                          width: `${(() => {
-                            const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
-                            const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
-                            const now = new Date().getTime();
-                            if (now >= end) return 0;
-                            if (now <= start) return 100;
-                            const total = end - start;
-                            const remaining = end - now;
-                            return Math.max(0, Math.min(100, (remaining / total) * 100));
-                          })()}%`
-                        }}
-                      />
+
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Account License</p>
+                        <p className="text-white font-extrabold">
+                          {coachUserId === OWNER_ID ? (
+                            <span className="text-indigo-400 font-mono font-black uppercase tracking-wider">Lifetime Creator Admin</span>
+                          ) : isTrialActive ? (
+                            <span className="text-yellow-500 font-black uppercase tracking-wider">Free Trial Mode</span>
+                          ) : (
+                            <span className="text-emerald-400 font-black uppercase tracking-wider">Premium License</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Remaining Duration</p>
+                        <p className="text-white font-bold font-mono">
+                          {coachUserId === OWNER_ID ? (
+                            <span className="text-indigo-400 font-extrabold">Never Expires</span>
+                          ) : (
+                            <span className="text-white font-extrabold">
+                              {(() => {
+                                if (!myCoachProfile?.targets?.subscription_end_date) return 'Lifetime Access';
+                                const expiry = new Date(myCoachProfile.targets.subscription_end_date);
+                                const now = new Date();
+                                const diffMs = expiry.getTime() - now.getTime();
+                                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                                if (diffDays < 0) return 'Expired';
+                                if (diffDays === 0) return 'Expires today';
+                                return `${diffDays} days left`;
+                              })()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                )}
-              </Card>
+
+                  {/* Nice visual bar for remaining time (Coach only, Owner doesn't need it) */}
+                  {coachUserId !== OWNER_ID && myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date ? (
+                    <div className="space-y-2 mt-6">
+                      <div className="flex justify-between text-[9px] text-gray-500 font-mono">
+                        <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
+                        <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-900 border border-gray-850 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                          style={{
+                            width: `${(() => {
+                              const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
+                              const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
+                              const now = new Date().getTime();
+                              if (now >= end) return 0;
+                              if (now <= start) return 100;
+                              const total = end - start;
+                              const remaining = end - now;
+                              return Math.max(0, Math.min(100, (remaining / total) * 100));
+                            })()}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-indigo-400/80 bg-indigo-500/5 border border-indigo-500/10 px-3 py-2 rounded-xl mt-6 font-semibold flex items-center justify-center gap-1.5">
+                      👑 Unlimited Premium Admin Privileges
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Password Editing Form Card */}
-              <Card className="p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] border border-gray-850 space-y-6">
-                <div className="flex items-center gap-3 border-b border-gray-850 pb-4">
-                  <div className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
+              <div className="rounded-3xl border border-gray-850 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-6 shadow-xl space-y-6">
+                <div className="flex items-center gap-3 border-b border-gray-855 pb-4">
+                  <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-inner">
                     <Shield size={18} />
                   </div>
                   <div>
-                    <h3 className="text-xs font-black uppercase text-yellow-500">Change Admin Access Password</h3>
-                    <p className="text-[10px] text-gray-500">Update the password used to log in to your portal.</p>
+                    <h3 className="text-xs font-black uppercase text-yellow-500 tracking-wider">Change Portal Access Password</h3>
+                    <p className="text-[10px] text-gray-500">Update the administrative password used to log in to your coach account.</p>
                   </div>
                 </div>
 
-                <form onSubmit={handleUpdateOwnPassword} className="space-y-4 font-bold">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">New Access Password</label>
-                    <input
-                      type="password"
-                      value={ownNewPassword}
-                      onChange={e => setOwnNewPassword(e.target.value)}
-                      placeholder="Minimum 6 characters"
-                      className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold"
-                    />
-                  </div>
+                <form onSubmit={handleUpdateOwnPassword} className="space-y-5 font-bold">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">New Access Password</label>
+                      <input
+                        type="password"
+                        value={ownNewPassword}
+                        onChange={e => setOwnNewPassword(e.target.value)}
+                        placeholder="Minimum 6 characters"
+                        className="w-full bg-[#121624] border border-gray-805 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)]"
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Confirm Password</label>
-                    <input
-                      type="password"
-                      value={ownConfirmPassword}
-                      onChange={e => setOwnConfirmPassword(e.target.value)}
-                      placeholder="Confirm your new password"
-                      className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold"
-                    />
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Confirm Password</label>
+                      <input
+                        type="password"
+                        value={ownConfirmPassword}
+                        onChange={e => setOwnConfirmPassword(e.target.value)}
+                        placeholder="Confirm your new password"
+                        className="w-full bg-[#121624] border border-gray-805 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)]"
+                      />
+                    </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={updatingOwnPassword || !ownNewPassword || !ownConfirmPassword}
-                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-855 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     {updatingOwnPassword ? 'Updating Password...' : <><Save size={13} /> Update Password</>}
                   </button>
                 </form>
-              </Card>
+              </div>
             </div>
           )}
 
