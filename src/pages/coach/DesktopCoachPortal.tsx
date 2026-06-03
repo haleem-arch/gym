@@ -163,6 +163,12 @@ export default function DesktopCoachPortal() {
   const [coachSearchQuery, setCoachSearchQuery] = useState('');
   const [reassignCoachTargetId, setReassignCoachTargetId] = useState<Record<string, string>>({});
   const [updatingCoachStatus, setUpdatingCoachStatus] = useState(false);
+  const [isRegisteringNewCoach, setIsRegisteringNewCoach] = useState(false);
+  const [newCoachName, setNewCoachName] = useState('');
+  const [newCoachEmail, setNewCoachEmail] = useState('');
+  const [newCoachPassword, setNewCoachPassword] = useState('');
+  const [isCreatingNewCoach, setIsCreatingNewCoach] = useState(false);
+  const [createdNewCoachCredentials, setCreatedNewCoachCredentials] = useState<any | null>(null);
 
   // Deploy Athlete Multi-step Wizard
   const [deployStep, setDeployStep] = useState(1);
@@ -1284,6 +1290,55 @@ export default function DesktopCoachPortal() {
       toast.error("Failed to update coach suspension status.");
     } finally {
       setUpdatingCoachStatus(false);
+    }
+  };
+
+  const handleCreateNewCoach = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCoachName || !newCoachEmail || !newCoachPassword) {
+      toast.error('Coach Name, Email and Password are required.');
+      return;
+    }
+    setIsCreatingNewCoach(true);
+    setCreatedNewCoachCredentials(null);
+
+    try {
+      const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          email: newCoachEmail,
+          password: newCoachPassword,
+          display_name: newCoachName,
+          gender: 'male',
+          role: 'coach'
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create coach account');
+      }
+
+      setCreatedNewCoachCredentials({
+        name: newCoachName,
+        email: newCoachEmail,
+        password: newCoachPassword
+      });
+
+      toast.success('Coach registered successfully!');
+      setNewCoachName('');
+      setNewCoachEmail('');
+      setNewCoachPassword('');
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to register coach.');
+    } finally {
+      setIsCreatingNewCoach(false);
     }
   };
 
@@ -3438,15 +3493,32 @@ export default function DesktopCoachPortal() {
                   
                   {/* Left Column: Coaches List */}
                   <div className="w-[320px] flex flex-col gap-4 bg-[#0b0c16] border border-gray-800 rounded-3xl p-4 shrink-0">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                      <input 
-                        type="text"
-                        value={coachSearchQuery}
-                        onChange={e => setCoachSearchQuery(e.target.value)}
-                        placeholder="Search coaches..."
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                      />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                        <input 
+                          type="text"
+                          value={coachSearchQuery}
+                          onChange={e => setCoachSearchQuery(e.target.value)}
+                          placeholder="Search coaches..."
+                          className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSystemSelectedCoachId(null);
+                          setIsRegisteringNewCoach(true);
+                        }}
+                        className={`p-2.5 rounded-xl border text-white transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+                          isRegisteringNewCoach && !systemSelectedCoachId
+                            ? 'bg-blue-600/20 border-blue-500'
+                            : 'bg-[#121624] border-gray-800 hover:border-gray-700'
+                        }`}
+                        title="Register New Coach"
+                      >
+                        <UserPlus size={16} />
+                      </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
@@ -3458,7 +3530,10 @@ export default function DesktopCoachPortal() {
                           <button
                             key={coach.id}
                             type="button"
-                            onClick={() => setSystemSelectedCoachId(systemSelectedCoachId === coach.id ? null : coach.id)}
+                            onClick={() => {
+                              setSystemSelectedCoachId(systemSelectedCoachId === coach.id ? null : coach.id);
+                              setIsRegisteringNewCoach(false);
+                            }}
                             className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
                               systemSelectedCoachId === coach.id 
                                 ? 'bg-blue-600/10 border-blue-500/50' 
@@ -3499,11 +3574,109 @@ export default function DesktopCoachPortal() {
                   {/* Right Column: Coach Dossier & Analytics */}
                   <div className="flex-1 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 overflow-y-auto no-scrollbar relative flex flex-col justify-start">
                     
-                    {!selectedCoachProfile ? (
-                      <div className="h-full flex-1 flex flex-col justify-center items-center text-center text-gray-500 space-y-2 py-16">
+                    {isRegisteringNewCoach && !selectedCoachProfile ? (
+                      <div className="space-y-6">
+                        <div className="border-b border-gray-800 pb-4">
+                          <h2 className="text-lg font-black text-white flex items-center gap-2">
+                            <UserPlus className="text-blue-500" size={20} /> Register New Coach Account
+                          </h2>
+                          <p className="text-xs text-gray-500 mt-1">Fill out the credentials below to register a new coach user login on the platform.</p>
+                        </div>
+
+                        {createdNewCoachCredentials ? (
+                          <div className="bg-emerald-950/20 border border-emerald-500/25 p-6 rounded-3xl space-y-4">
+                            <div className="flex items-center gap-2 text-emerald-400">
+                              <CheckCircle size={18} />
+                              <span className="text-xs font-black uppercase tracking-wider">Coach Registered Successfully!</span>
+                            </div>
+                            <p className="text-xs text-gray-400">Please provide the new coach with their login details:</p>
+                            <div className="bg-gray-900/60 p-4 rounded-2xl space-y-2 text-xs font-mono border border-gray-800">
+                              <p className="text-gray-400">Name: <span className="text-white font-bold">{createdNewCoachCredentials.name}</span></p>
+                              <p className="text-gray-400">Email: <span className="text-white font-bold">{createdNewCoachCredentials.email}</span></p>
+                              <p className="text-gray-400">Password: <span className="text-white font-bold">{createdNewCoachCredentials.password}</span></p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCreatedNewCoachCredentials(null);
+                                setIsRegisteringNewCoach(false);
+                              }}
+                              className="w-full bg-[#121624] hover:bg-gray-850 text-white font-black text-xs uppercase py-3 rounded-2xl transition-all cursor-pointer"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        ) : (
+                          <form onSubmit={handleCreateNewCoach} className="space-y-5">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Coach Display Name</label>
+                              <input
+                                type="text"
+                                value={newCoachName}
+                                onChange={e => setNewCoachName(e.target.value)}
+                                placeholder="e.g. Coach John Doe"
+                                className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                                required
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Coach Email Address</label>
+                              <input
+                                type="email"
+                                value={newCoachEmail}
+                                onChange={e => setNewCoachEmail(e.target.value)}
+                                placeholder="e.g. coach@striderite.com"
+                                className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                                required
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Login Password</label>
+                              <input
+                                type="text"
+                                value={newCoachPassword}
+                                onChange={e => setNewCoachPassword(e.target.value)}
+                                placeholder="Choose a secure password"
+                                className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                                required
+                              />
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setIsRegisteringNewCoach(false)}
+                                className="flex-1 bg-transparent border border-gray-800 text-gray-400 hover:bg-gray-900 text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer text-center"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={isCreatingNewCoach}
+                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer disabled:bg-gray-800"
+                              >
+                                {isCreatingNewCoach ? 'Registering...' : 'Register Coach'}
+                              </button>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    ) : !selectedCoachProfile ? (
+                      <div className="h-full flex-1 flex flex-col justify-center items-center text-center text-gray-500 space-y-4 py-16">
                         <Shield size={48} className="text-gray-700" />
-                        <p className="text-sm font-bold">No Coach Selected</p>
-                        <p className="text-xs max-w-[280px] leading-relaxed">Select a coach profile from the directory on the left to view active managed clients, inspect platform metrics, or reassign users.</p>
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-white">No Coach Selected</p>
+                          <p className="text-xs max-w-[280px] leading-relaxed mx-auto">Select a coach profile from the directory on the left to view active managed clients, inspect platform metrics, or reassign users.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsRegisteringNewCoach(true)}
+                          className="bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase px-4 py-2.5 rounded-2xl transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 mx-auto"
+                        >
+                          <UserPlus size={14} /> Register Coach Account
+                        </button>
                       </div>
                     ) : (
                       <div className="space-y-6">
