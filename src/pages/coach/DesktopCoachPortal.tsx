@@ -2624,28 +2624,46 @@ export default function DesktopCoachPortal() {
 
   if (isNotCoach) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6 font-bold">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
           <ShieldAlert size={28} className="text-red-500" />
         </div>
-        <h1 className="text-xl font-black text-white">Access Denied</h1>
-        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+        <h1 className="text-xl font-black text-white uppercase tracking-wider">Access Denied</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed font-bold">
           Only authorized coaches and system administrators can access the Desktop Coach Portal.
         </p>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/coach-portal';
+          }}
+          className="mt-6 flex items-center gap-2 py-2.5 px-5 rounded-xl border border-red-900/40 hover:border-red-700 bg-red-950/20 text-xs font-black uppercase text-red-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+        >
+          <LogOut size={13} /> Sign Out / Log Out
+        </button>
       </div>
     );
   }
 
   if (isCoachSuspended) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6 font-bold">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
           <ShieldAlert size={28} className="text-red-500" />
         </div>
-        <h1 className="text-xl font-black text-white">Account Suspended</h1>
-        <p className="text-gray-400 text-xs mt-3 max-w-[320px] leading-relaxed">
+        <h1 className="text-xl font-black text-white uppercase tracking-wider">Account Suspended</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[320px] leading-relaxed font-bold">
           {coachSuspensionReason}
         </p>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/coach-portal';
+          }}
+          className="mt-6 flex items-center gap-2 py-2.5 px-5 rounded-xl border border-red-900/40 hover:border-red-700 bg-red-950/20 text-xs font-black uppercase text-red-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+        >
+          <LogOut size={13} /> Sign Out / Log Out
+        </button>
       </div>
     );
   }
