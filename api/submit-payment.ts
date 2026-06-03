@@ -79,7 +79,17 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Missing required parameters: period, method, sender_details' });
     }
 
-    const planPrice = PLAN_PRICES[period];
+    // Retrieve owner's profile for dynamic prices and Telegram chat ID
+    const { data: ownerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('targets')
+      .eq('id', OWNER_ID)
+      .maybeSingle();
+
+    const ownerTargets = ownerProfile?.targets || {};
+    const dbPlanPrices = ownerTargets.plan_prices || {};
+    const planPrice = dbPlanPrices[period] || PLAN_PRICES[period];
+
     if (!planPrice) {
       return res.status(400).json({ error: `Invalid subscription period: ${period}` });
     }
@@ -122,13 +132,7 @@ export default async function handler(req: any, res: any) {
     }
 
     // 4. Retrieve owner Telegram Chat ID
-    const { data: ownerProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('targets')
-      .eq('id', OWNER_ID)
-      .maybeSingle();
-
-    const telegramChatId = ownerProfile?.targets?.telegram_chat_id;
+    const telegramChatId = ownerTargets?.telegram_chat_id;
     if (!telegramChatId) {
       return res.status(200).json({ 
         success: true, 

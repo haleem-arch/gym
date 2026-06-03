@@ -121,6 +121,17 @@ export default function DesktopCoachPortal() {
   const [financialsSearchQuery, setFinancialsSearchQuery] = useState('');
   const [financialsStatusFilter, setFinancialsStatusFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
   const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
+  const [planPrices, setPlanPrices] = useState<Record<string, string>>({
+    '2 weeks': '2,000 EGP',
+    '1 month': '3,500 EGP',
+    '3 months': '8,500 EGP',
+    '6 months': '14,000 EGP'
+  });
+  const [editPrices2Weeks, setEditPrices2Weeks] = useState('2,000');
+  const [editPrices1Month, setEditPrices1Month] = useState('3,500');
+  const [editPrices3Months, setEditPrices3Months] = useState('8,500');
+  const [editPrices6Months, setEditPrices6Months] = useState('14,000');
+  const [updatingPlanPrices, setUpdatingPlanPrices] = useState(false);
   const [coachUserId, setCoachUserId] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -581,6 +592,23 @@ export default function DesktopCoachPortal() {
         myProfile.email = myProfile.email || session.user.email;
       }
       setMyCoachProfile(myProfile);
+
+      // Fetch plan prices configuration from Owner's targets.plan_prices
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', OWNER_ID)
+        .maybeSingle();
+      const ownerPlanPrices = ownerProfile?.targets?.plan_prices || null;
+      if (ownerPlanPrices) {
+        setPlanPrices(ownerPlanPrices);
+        if (session.user.id === OWNER_ID) {
+          setEditPrices2Weeks(ownerPlanPrices['2 weeks']?.replace(/[^0-9]/g, '') || '2,000');
+          setEditPrices1Month(ownerPlanPrices['1 month']?.replace(/[^0-9]/g, '') || '3,500');
+          setEditPrices3Months(ownerPlanPrices['3 months']?.replace(/[^0-9]/g, '') || '8,500');
+          setEditPrices6Months(ownerPlanPrices['6 months']?.replace(/[^0-9]/g, '') || '14,000');
+        }
+      }
 
       if (myProfile?.role !== 'coach' && session.user.id !== OWNER_ID) {
         setIsNotCoach(true);
@@ -3014,6 +3042,46 @@ export default function DesktopCoachPortal() {
       toast.error(err.message || "Failed to reject payment");
     } finally {
       setProcessingPaymentId(null);
+    }
+  };
+
+  const handleSavePlanPricesDirect = async () => {
+    setUpdatingPlanPrices(true);
+    try {
+      const prices = {
+        '2 weeks': `${parseFloat(editPrices2Weeks.replace(/,/g, '')).toLocaleString()} EGP`,
+        '1 month': `${parseFloat(editPrices1Month.replace(/,/g, '')).toLocaleString()} EGP`,
+        '3 months': `${parseFloat(editPrices3Months.replace(/,/g, '')).toLocaleString()} EGP`,
+        '6 months': `${parseFloat(editPrices6Months.replace(/,/g, '')).toLocaleString()} EGP`
+      };
+      
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', OWNER_ID)
+        .maybeSingle();
+        
+      const updatedTargets = {
+        ...(ownerProfile?.targets || {}),
+        plan_prices: prices
+      };
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', OWNER_ID);
+        
+      if (error) throw error;
+      
+      setPlanPrices(prices);
+      // Sync local profiles list
+      setProfiles(prev => prev.map(p => p.id === OWNER_ID ? { ...p, targets: updatedTargets } : p));
+      toast.success("Pricing configuration updated successfully!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to update pricing settings.");
+    } finally {
+      setUpdatingPlanPrices(false);
     }
   };
 
@@ -5847,184 +5915,275 @@ export default function DesktopCoachPortal() {
                   </Card>
                 </div>
 
-                {/* 2. Web Registrations / Subscription Payments Review Section */}
-                {pendingReviewList.length > 0 && (
-                  <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-[#1b1510]/95 via-[#1a140f]/90 to-[#120d09]/98 p-6 shadow-2xl backdrop-blur-md">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-                    <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner flex-shrink-0 animate-pulse">
-                        <Clock size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider">Pending Web Registrations</h3>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Please verify deposit transactions and approve or reject access.</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {pendingReviewList.map(item => {
-                        const coach = profiles.find(p => p.id === item.coachId);
-                        const pendingPay = coach?.targets?.pending_payment || {};
-                        const isProcessing = processingPaymentId === item.coachId;
-
-                        return (
-                          <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#080910]/80 border border-gray-850">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 font-extrabold uppercase shrink-0">
-                                {item.coachName.charAt(0)}
-                              </div>
-                              <div>
-                                <p className="font-extrabold text-white text-xs">{item.coachName}</p>
-                                <p className="text-[10px] text-gray-500 font-mono">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
-                                <p className="text-[10px] text-amber-400 mt-1.5 flex items-center gap-1.5">
-                                  <span className="bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-widest font-extrabold text-[8px]">
-                                    {pendingPay.duration} Plan ({pendingPay.amount})
-                                  </span>
-                                  <span className="text-gray-500 font-mono">
-                                    Submitted: {new Date(item.timestamp).toLocaleString()}
-                                  </span>
-                                </p>
-                                {pendingPay.receipt && (
-                                  <div className="mt-3 flex items-center gap-2">
-                                    <span className="text-[9px] text-gray-400 font-bold uppercase">Screenshot Attached:</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const win = window.open();
-                                        if (win) {
-                                          win.document.write(`<iframe src="${pendingPay.receipt}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-                                        }
-                                      }}
-                                      className="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 text-[9px] text-blue-400 hover:text-blue-300 cursor-pointer hover:bg-gray-800 transition-colors uppercase tracking-wider"
-                                    >
-                                      View Receipt Screenshot
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                              <button
-                                type="button"
-                                disabled={isProcessing}
-                                onClick={() => {
-                                  const reason = window.prompt("Enter rejection reason (e.g. Invalid Screenshot, Wrong Amount, Not Received):", "Invalid Screenshot");
-                                  if (reason) handleRejectPaymentDirect(item.coachId, reason);
-                                }}
-                                className="px-4 py-2 border border-red-500/30 hover:border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-red-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
-                              >
-                                {isProcessing ? 'Processing...' : '❌ Reject'}
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isProcessing}
-                                onClick={() => {
-                                  if (window.confirm(`Approve subscription renewal for ${item.coachName}?`)) {
-                                    handleApprovePaymentDirect(item.coachId);
-                                  }
-                                }}
-                                className="px-4 py-2 border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-emerald-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
-                              >
-                                {isProcessing ? 'Processing...' : '✅ Approve & Add Plan'}
-                              </button>
-                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  
+                  {/* Left column - 2/3 width */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* 2. Web Registrations / Subscription Payments Review Section */}
+                    {pendingReviewList.length > 0 && (
+                      <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-[#1b1510]/95 via-[#1a140f]/90 to-[#120d09]/98 p-6 shadow-2xl backdrop-blur-md">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner flex-shrink-0 animate-pulse">
+                            <Clock size={16} />
                           </div>
-                        );
-                      })}
+                          <div>
+                            <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider">Pending Web Registrations</h3>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Please verify deposit transactions and approve or reject access.</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {pendingReviewList.map(item => {
+                            const coach = profiles.find(p => p.id === item.coachId);
+                            const pendingPay = coach?.targets?.pending_payment || {};
+                            const isProcessing = processingPaymentId === item.coachId;
+
+                            return (
+                              <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#080910]/80 border border-gray-850">
+                                <div className="flex items-start gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 font-extrabold uppercase shrink-0">
+                                    {item.coachName.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-extrabold text-white text-xs">{item.coachName}</p>
+                                    <p className="text-[10px] text-gray-500 font-mono">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
+                                    <p className="text-[10px] text-amber-400 mt-1.5 flex items-center gap-1.5">
+                                      <span className="bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-widest font-extrabold text-[8px]">
+                                        {pendingPay.duration} Plan ({pendingPay.amount})
+                                      </span>
+                                      <span className="text-gray-500 font-mono">
+                                        Submitted: {new Date(item.timestamp).toLocaleString()}
+                                      </span>
+                                    </p>
+                                    {pendingPay.receipt && (
+                                      <div className="mt-3 flex items-center gap-2">
+                                        <span className="text-[9px] text-gray-400 font-bold uppercase">Screenshot Attached:</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const win = window.open();
+                                            if (win) {
+                                              win.document.write(`<iframe src="${pendingPay.receipt}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                            }
+                                          }}
+                                          className="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 text-[9px] text-blue-400 hover:text-blue-300 cursor-pointer hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                                        >
+                                          View Receipt Screenshot
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                  <button
+                                    type="button"
+                                    disabled={isProcessing}
+                                    onClick={() => {
+                                      const reason = window.prompt("Enter rejection reason (e.g. Invalid Screenshot, Wrong Amount, Not Received):", "Invalid Screenshot");
+                                      if (reason) handleRejectPaymentDirect(item.coachId, reason);
+                                    }}
+                                    className="px-4 py-2 border border-red-500/30 hover:border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-red-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
+                                  >
+                                    {isProcessing ? 'Processing...' : '❌ Reject'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={isProcessing}
+                                    onClick={() => {
+                                      if (window.confirm(`Approve subscription renewal for ${item.coachName}?`)) {
+                                        handleApprovePaymentDirect(item.coachId);
+                                      }
+                                    }}
+                                    className="px-4 py-2 border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-emerald-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
+                                  >
+                                    {isProcessing ? 'Processing...' : '✅ Approve & Add Plan'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. Transaction Audit Ledger Table */}
+                    <div className="space-y-4">
+                      {/* Search and Filters */}
+                      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                        <div className="relative w-full sm:w-[320px]">
+                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                          <input 
+                            type="text"
+                            value={financialsSearchQuery}
+                            onChange={e => setFinancialsSearchQuery(e.target.value)}
+                            placeholder="Search by coach name, plan, or details..."
+                            className="w-full bg-[#0b0c16] border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs font-bold text-gray-400 self-stretch sm:self-center justify-end">
+                          <span>Filter status:</span>
+                          <select
+                            value={financialsStatusFilter}
+                            onChange={e => setFinancialsStatusFilter(e.target.value as any)}
+                            className="bg-[#0b0c16] border border-gray-800 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-blue-500 font-bold"
+                          >
+                            <option value="all">All Logs</option>
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Dynamic Audit Ledger Table */}
+                      <Card className="bg-[#0b0c16] border border-gray-800 rounded-3xl overflow-hidden p-2">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-800 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                <th className="py-4 px-5">Date & Time</th>
+                                <th className="py-4 px-5">Coach Profile</th>
+                                <th className="py-4 px-5">Plan Duration</th>
+                                <th className="py-4 px-5">EGP Amount</th>
+                                <th className="py-4 px-5">Verification Status</th>
+                                <th className="py-4 px-5">Transaction Details Log</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-850">
+                              {filteredLogs.map(log => (
+                                <tr key={log.id} className="hover:bg-gray-900/40 transition-colors text-xs font-semibold">
+                                  <td className="py-4 px-5 text-gray-500 font-mono text-[10px]">
+                                    {new Date(log.timestamp).toLocaleString()}
+                                  </td>
+                                  <td className="py-4 px-5">
+                                    <p className="font-extrabold text-white">{log.coachName}</p>
+                                    <p className="text-[10px] text-gray-500 font-mono">{log.coachEmail}</p>
+                                  </td>
+                                  <td className="py-4 px-5 font-mono text-[11px] text-gray-300">
+                                    {log.duration}
+                                  </td>
+                                  <td className="py-4 px-5 font-mono text-[11px] text-blue-400 font-black">
+                                    {log.amount}
+                                  </td>
+                                  <td className="py-4 px-5">
+                                    <span className={`px-2 py-0.5 border rounded text-[8px] uppercase tracking-wider font-mono font-black ${
+                                      log.status === 'approved'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                        : log.status === 'pending'
+                                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                        : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                    }`}>
+                                      {log.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-5 text-gray-400 font-mono text-[10px]">
+                                    {log.details}
+                                  </td>
+                                </tr>
+                              ))}
+
+                              {filteredLogs.length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="py-12 text-center text-gray-500 italic">
+                                    <PieChart className="w-8 h-8 text-gray-800 mx-auto mb-2 animate-pulse" />
+                                    No financial records match the selected filters.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
                     </div>
                   </div>
-                )}
 
-                {/* 3. Transaction Audit Ledger Table */}
-                <div className="space-y-4">
-                  {/* Search and Filters */}
-                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full sm:w-[320px]">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                      <input 
-                        type="text"
-                        value={financialsSearchQuery}
-                        onChange={e => setFinancialsSearchQuery(e.target.value)}
-                        placeholder="Search by coach name, plan, or details..."
-                        className="w-full bg-[#0b0c16] border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                      />
-                    </div>
+                  {/* Right column - 1/3 width Settings Card */}
+                  <div className="space-y-6">
+                    <Card className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/95 via-[#0d1228]/90 to-[#0b0c1b]/98 p-6 shadow-2xl backdrop-blur-md">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                      
+                      <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-5">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner shrink-0">
+                          <Settings size={16} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Plan Prices Settings</h3>
+                          <p className="text-[10px] text-gray-400 mt-0.5 font-medium">Change subscription package rates in real time.</p>
+                        </div>
+                      </div>
 
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-400 self-stretch sm:self-center justify-end">
-                      <span>Filter status:</span>
-                      <select
-                        value={financialsStatusFilter}
-                        onChange={e => setFinancialsStatusFilter(e.target.value as any)}
-                        className="bg-[#0b0c16] border border-gray-800 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-blue-500 font-bold"
-                      >
-                        <option value="all">All Logs</option>
-                        <option value="approved">Approved</option>
-                        <option value="pending">Pending</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
+                      <div className="space-y-4 font-bold text-xs text-gray-200">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">2 Weeks Subscription Price</label>
+                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
+                            <input
+                              type="text"
+                              value={editPrices2Weeks}
+                              onChange={e => setEditPrices2Weeks(e.target.value)}
+                              placeholder="e.g. 2,000"
+                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">1 Month Subscription Price</label>
+                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
+                            <input
+                              type="text"
+                              value={editPrices1Month}
+                              onChange={e => setEditPrices1Month(e.target.value)}
+                              placeholder="e.g. 3,500"
+                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">3 Months Subscription Price</label>
+                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
+                            <input
+                              type="text"
+                              value={editPrices3Months}
+                              onChange={e => setEditPrices3Months(e.target.value)}
+                              placeholder="e.g. 8,500"
+                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">6 Months Subscription Price</label>
+                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
+                            <input
+                              type="text"
+                              value={editPrices6Months}
+                              onChange={e => setEditPrices6Months(e.target.value)}
+                              placeholder="e.g. 14,000"
+                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={updatingPlanPrices}
+                          onClick={handleSavePlanPricesDirect}
+                          className="w-full mt-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg hover:shadow-blue-500/10 active:scale-95"
+                        >
+                          {updatingPlanPrices ? 'Saving Prices...' : <><Save size={13} /> Update Plan Prices</>}
+                        </button>
+                      </div>
+                    </Card>
                   </div>
 
-                  {/* Dynamic Audit Ledger Table */}
-                  <Card className="bg-[#0b0c16] border border-gray-800 rounded-3xl overflow-hidden p-2">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-gray-800 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                            <th className="py-4 px-5">Date & Time</th>
-                            <th className="py-4 px-5">Coach Profile</th>
-                            <th className="py-4 px-5">Plan Duration</th>
-                            <th className="py-4 px-5">EGP Amount</th>
-                            <th className="py-4 px-5">Verification Status</th>
-                            <th className="py-4 px-5">Transaction Details Log</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-850">
-                          {filteredLogs.map(log => (
-                            <tr key={log.id} className="hover:bg-gray-900/40 transition-colors text-xs font-semibold">
-                              <td className="py-4 px-5 text-gray-500 font-mono text-[10px]">
-                                {new Date(log.timestamp).toLocaleString()}
-                              </td>
-                              <td className="py-4 px-5">
-                                <p className="font-extrabold text-white">{log.coachName}</p>
-                                <p className="text-[10px] text-gray-500 font-mono">{log.coachEmail}</p>
-                              </td>
-                              <td className="py-4 px-5 font-mono text-[11px] text-gray-300">
-                                {log.duration}
-                              </td>
-                              <td className="py-4 px-5 font-mono text-[11px] text-blue-400 font-black">
-                                {log.amount}
-                              </td>
-                              <td className="py-4 px-5">
-                                <span className={`px-2 py-0.5 border rounded text-[8px] uppercase tracking-wider font-mono font-black ${
-                                  log.status === 'approved'
-                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                    : log.status === 'pending'
-                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
-                                }`}>
-                                  {log.status}
-                                </span>
-                              </td>
-                              <td className="py-4 px-5 text-gray-400 font-mono text-[10px]">
-                                {log.details}
-                              </td>
-                            </tr>
-                          ))}
-
-                          {filteredLogs.length === 0 && (
-                            <tr>
-                              <td colSpan={6} className="py-12 text-center text-gray-500 italic">
-                                <PieChart className="w-8 h-8 text-gray-800 mx-auto mb-2 animate-pulse" />
-                                No financial records match the selected filters.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </Card>
                 </div>
               </div>
             );
@@ -6100,10 +6259,10 @@ export default function DesktopCoachPortal() {
                 <label className="text-[10px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: '2 weeks', label: '2 Weeks', price: '2,000 EGP' },
-                    { id: '1 month', label: '1 Month', price: '3,500 EGP' },
-                    { id: '3 months', label: '3 Months', price: '8,500 EGP' },
-                    { id: '6 months', label: '6 Months', price: '14,000 EGP' }
+                    { id: '2 weeks', label: '2 Weeks', price: planPrices['2 weeks'] || '2,000 EGP' },
+                    { id: '1 month', label: '1 Month', price: planPrices['1 month'] || '3,500 EGP' },
+                    { id: '3 months', label: '3 Months', price: planPrices['3 months'] || '8,500 EGP' },
+                    { id: '6 months', label: '6 Months', price: planPrices['6 months'] || '14,000 EGP' }
                   ].map(plan => (
                     <button
                       key={plan.id}
@@ -6165,13 +6324,7 @@ export default function DesktopCoachPortal() {
               <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
                 <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
                 <span className="text-base font-black text-white font-mono">
-                  {(() => {
-                    if (subOverlayPlan === '2 weeks') return '2,000 EGP';
-                    if (subOverlayPlan === '1 month') return '3,500 EGP';
-                    if (subOverlayPlan === '3 months') return '8,500 EGP';
-                    if (subOverlayPlan === '6 months') return '14,000 EGP';
-                    return '0 EGP';
-                  })()}
+                  {planPrices[subOverlayPlan] || '0 EGP'}
                 </span>
               </div>
             </div>
