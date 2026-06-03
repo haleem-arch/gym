@@ -172,6 +172,11 @@ export default function DesktopCoachPortal() {
   const [coachSubIsFreeTrial, setCoachSubIsFreeTrial] = useState(false);
   const [coachSubCustomEnd, setCoachSubCustomEnd] = useState(getLocalDateTimeString());
   const [updatingCoachSub, setUpdatingCoachSub] = useState(false);
+  
+  const [registerCoachSubPeriod, setRegisterCoachSubPeriod] = useState('1 month');
+  const [registerCoachSubDelay, setRegisterCoachSubDelay] = useState('0');
+  const [registerCoachSubIsFreeTrial, setRegisterCoachSubIsFreeTrial] = useState(false);
+  const [registerCoachSubCustomEnd, setRegisterCoachSubCustomEnd] = useState(getLocalDateTimeString());
 
   const [newWaterAmount, setNewWaterAmount] = useState(500);
 
@@ -232,6 +237,7 @@ export default function DesktopCoachPortal() {
   const [reactivateCustomEnd, setReactivateCustomEnd] = useState(getLocalDateTimeString());
   const [reactivateSaving, setReactivateSaving] = useState(false);
   const [selectedSubClient, setSelectedSubClient] = useState<any | null>(null);
+  const [selectedSystemCoach, setSelectedSystemCoach] = useState<any | null>(null);
 
   // Search queries
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -248,6 +254,8 @@ export default function DesktopCoachPortal() {
   const [newCoachName, setNewCoachName] = useState('');
   const [newCoachEmail, setNewCoachEmail] = useState('');
   const [newCoachPassword, setNewCoachPassword] = useState('');
+  const [newCoachPhoneNumber, setNewCoachPhoneNumber] = useState('');
+  const [newCoachContactEmail, setNewCoachContactEmail] = useState('');
   const [isCreatingNewCoach, setIsCreatingNewCoach] = useState(false);
   const [createdNewCoachCredentials, setCreatedNewCoachCredentials] = useState<any | null>(null);
 
@@ -450,9 +458,9 @@ export default function DesktopCoachPortal() {
       const trial = myCoachProfile.targets?.is_free_trial === true;
       setIsTrialActive(trial);
 
-      // Warning banner is displayed for Free Trials OR if subscription is under 5 days (5 * 24 * 3600 * 1000)
-      const isUnder5Days = diffVal < 5 * 24 * 60 * 60 * 1000;
-      if (trial || isUnder5Days) {
+      // Warning banner is displayed for Free Trials OR if subscription is under 7 days (7 * 24 * 3600 * 1000)
+      const isUnder7Days = diffVal < 7 * 24 * 60 * 60 * 1000;
+      if (trial || isUnder7Days) {
         setShowCoachWarningBanner(true);
       } else {
         setShowCoachWarningBanner(false);
@@ -1732,6 +1740,37 @@ export default function DesktopCoachPortal() {
     setCreatedNewCoachCredentials(null);
 
     try {
+      const delayDays = parseInt(registerCoachSubDelay) || 0;
+      const startDate = new Date(Date.now() + delayDays * 24 * 60 * 60 * 1000);
+      
+      let endDate: Date | null = null;
+      if (registerCoachSubPeriod === 'none') {
+        // Lifetime / No Expiry
+        endDate = null;
+      } else if (registerCoachSubPeriod === 'custom') {
+        endDate = registerCoachSubCustomEnd ? new Date(registerCoachSubCustomEnd) : null;
+      } else {
+        let durationMs = 30 * 24 * 60 * 60 * 1000; // default 1 month
+        if (registerCoachSubPeriod === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+        else if (registerCoachSubPeriod === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+        else if (registerCoachSubPeriod === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+        else if (registerCoachSubPeriod === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+        else if (registerCoachSubPeriod === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+        else if (registerCoachSubPeriod === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+        
+        endDate = new Date(startDate.getTime() + durationMs);
+      }
+
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        action: 'coach_subscription_initial',
+        period: registerCoachSubPeriod,
+        delay_days: delayDays,
+        is_free_trial: registerCoachSubIsFreeTrial,
+        start_date: startDate.toISOString(),
+        end_date: endDate ? endDate.toISOString() : null
+      };
+
       const response = await fetch('/api/create-user', {
         method: 'POST',
         headers: {
@@ -1743,7 +1782,18 @@ export default function DesktopCoachPortal() {
           password: newCoachPassword,
           display_name: newCoachName,
           gender: 'male',
-          role: 'coach'
+          role: 'coach',
+          targets: {
+            is_deactivated: false,
+            is_free_trial: registerCoachSubIsFreeTrial,
+            subscription_start_date: startDate.toISOString(),
+            subscription_end_date: endDate ? endDate.toISOString() : null,
+            subscription_duration: registerCoachSubPeriod,
+            subscription_delay: registerCoachSubDelay,
+            phone_number: newCoachPhoneNumber || null,
+            contact_email: newCoachContactEmail || null,
+            subscription_history: [logEntry]
+          }
         })
       });
 
@@ -1762,6 +1812,13 @@ export default function DesktopCoachPortal() {
       setNewCoachName('');
       setNewCoachEmail('');
       setNewCoachPassword('');
+      setNewCoachPhoneNumber('');
+      setNewCoachContactEmail('');
+      // Reset form subscription options to defaults
+      setRegisterCoachSubPeriod('1 month');
+      setRegisterCoachSubDelay('0');
+      setRegisterCoachSubIsFreeTrial(false);
+      setRegisterCoachSubCustomEnd(getLocalDateTimeString());
       fetchBaseData();
     } catch (err: any) {
       console.error(err);
@@ -4420,460 +4477,205 @@ export default function DesktopCoachPortal() {
           {/* TAB 4: SYSTEM CONSOLE */}
           {activeTab === 'system' && (
             <div className="space-y-6">
-              {/* Header warning if not Owner */}
-              {coachUserId && coachUserId !== OWNER_ID && (
-                <div className="bg-red-950/20 border border-red-900/30 p-5 rounded-3xl flex items-start gap-4 max-w-2xl mx-auto mt-8">
-                  <ShieldAlert className="text-red-400 shrink-0 mt-0.5" size={24} />
-                  <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Access Restricted</h3>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                      You are logged in as a standard coach account. Only the system owner has access to view other coaches, inspect their clients, and reassign athletes.
-                    </p>
+              {/* Header warning if not Owner               {coachUserId === OWNER_ID && (
+                <div className="space-y-6">
+                  {/* Dashboard stats row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Total Registered Coaches</p>
+                      <p className="text-3xl font-black text-white mt-1.5">{systemCoaches.length}</p>
+                    </Card>
+                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Active Coaches</p>
+                      <p className="text-3xl font-black text-emerald-400 mt-1.5">
+                        {systemCoaches.filter(c => c.targets?.is_deactivated !== true).length}
+                      </p>
+                    </Card>
+                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Suspended / Inactive</p>
+                      <p className="text-3xl font-black text-red-400 mt-1.5">
+                        {systemCoaches.filter(c => c.targets?.is_deactivated === true).length}
+                      </p>
+                    </Card>
+                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Managed Clients (Total)</p>
+                      <p className="text-3xl font-black text-blue-400 mt-1.5">
+                        {profiles.filter(p => p.role === 'client').length}
+                      </p>
+                    </Card>
                   </div>
-                </div>
-              )}
 
-              {coachUserId === OWNER_ID && (
-                <div className="flex gap-6 h-[calc(100vh-140px)] items-stretch">
-                  
-                  {/* Left Column: Coaches List */}
-                  <div className="w-[320px] flex flex-col gap-4 bg-[#0b0c16] border border-gray-800 rounded-3xl p-4 shrink-0">
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                        <input 
-                          type="text"
-                          value={coachSearchQuery}
-                          onChange={e => setCoachSearchQuery(e.target.value)}
-                          placeholder="Search coaches..."
-                          className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSystemSelectedCoachId(null);
-                          setIsRegisteringNewCoach(true);
-                        }}
-                        className={`p-2.5 rounded-xl border text-white transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
-                          isRegisteringNewCoach && !systemSelectedCoachId
-                            ? 'bg-blue-600/20 border-blue-500'
-                            : 'bg-[#121624] border-gray-800 hover:border-gray-700'
-                        }`}
-                        title="Register New Coach"
-                      >
-                        <UserPlus size={16} />
-                      </button>
+                  {/* Actions & Filters */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:w-[320px]">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                      <input 
+                        type="text"
+                        value={coachSearchQuery}
+                        onChange={e => setCoachSearchQuery(e.target.value)}
+                        placeholder="Search by coach name, email, or handle..."
+                        className="w-full bg-[#0b0c16] border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                      />
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
-                      {filteredSystemCoaches.map(coach => {
-                        const isDeact = coach.targets?.is_deactivated === true;
-                        const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === coach.id);
-                        const isSelf = coach.id === OWNER_ID;
-                        return (
-                          <button
-                            key={coach.id}
-                            type="button"
-                            onClick={() => {
-                              const newId = systemSelectedCoachId === coach.id ? null : coach.id;
-                              setSystemSelectedCoachId(newId);
-                              setIsRegisteringNewCoach(false);
-                              if (newId) {
-                                const tg = coach.targets || {};
-                                setCoachSubPeriod(tg.subscription_duration || '1 month');
-                                setCoachSubDelay(tg.subscription_delay || '0');
-                                setCoachSubIsFreeTrial(tg.is_free_trial === true);
-                                setCoachSubCustomEnd(tg.subscription_end_date ? getLocalDateTimeString(new Date(tg.subscription_end_date)) : getLocalDateTimeString());
+                    <button
+                      type="button"
+                      onClick={() => setIsRegisteringNewCoach(true)}
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase px-5 py-3 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/10 animate-fade-in"
+                    >
+                      <UserPlus size={14} /> Register Coach Account
+                    </button>
+                  </div>
+
+                  {/* Coaches Full Table */}
+                  <Card className="bg-[#0b0c16] border border-gray-800 rounded-3xl overflow-hidden p-2">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-800 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            <th className="py-4 px-4">Coach / Handle</th>
+                            <th className="py-4 px-4">Start Date</th>
+                            <th className="py-4 px-4">Last Resub Date</th>
+                            <th className="py-4 px-4">Expiration Date</th>
+                            <th className="py-4 px-4 text-center">Clients</th>
+                            <th className="py-4 px-4">Subscription Status</th>
+                            <th className="py-4 px-4">Contact Info</th>
+                            <th className="py-4 px-4 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-850">
+                          {filteredSystemCoaches.map(coach => {
+                            const tg = coach.targets || {};
+                            const isDeact = tg.is_deactivated === true;
+                            const isSelf = coach.id === OWNER_ID;
+                            const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === coach.id);
+                            
+                            const now = new Date();
+                            const isExpired = tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
+                            const isPending = tg.subscription_start_date && now < new Date(tg.subscription_start_date);
+                            
+                            let statusLabel = 'ACTIVE';
+                            let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                            if (isDeact) {
+                              statusLabel = 'SUSPENDED';
+                              statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
+                            } else if (isExpired) {
+                              statusLabel = 'EXPIRED';
+                              statusColor = 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+                            } else if (isPending) {
+                              statusLabel = 'PENDING';
+                              statusColor = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                            }
+
+                            // Compute days remaining
+                            let daysRemainingLabel = '';
+                            if (isSelf) {
+                              daysRemainingLabel = 'Lifetime / Owner';
+                            } else if (tg.subscription_end_date) {
+                              const expiryDate = new Date(tg.subscription_end_date);
+                              const diffMs = expiryDate.getTime() - now.getTime();
+                              const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                              
+                              if (diffDays < 0) {
+                                daysRemainingLabel = `Expired (${Math.abs(diffDays)}d ago)`;
+                              } else if (diffDays === 0) {
+                                daysRemainingLabel = 'Expires today';
+                              } else {
+                                daysRemainingLabel = `${diffDays} days remaining`;
                               }
-                            }}
-                            className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
-                              systemSelectedCoachId === coach.id 
-                                ? 'bg-blue-600/10 border-blue-500/50' 
-                                : 'bg-[#121624]/40 border-gray-850/80 hover:border-gray-750'
-                            }`}
-                          >
-                            <div className={`w-9 h-9 rounded-xl font-black flex items-center justify-center text-xs uppercase ${
-                              isSelf ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-900/40 text-blue-300'
-                            }`}>
-                              {coach.display_name?.charAt(0) || '?'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
-                                {coach.display_name || 'Unnamed Coach'}
-                                {isSelf && <span className="text-[7px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-1 rounded uppercase tracking-wider font-mono">Owner</span>}
-                              </p>
-                              <p className="text-[10px] text-gray-500 truncate">@{coach.username || 'no-username'}</p>
-                            </div>
-                            <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                              <span className="text-[10px] font-black text-gray-300">{coachClients.length} clients</span>
-                              {!isSelf && (
-                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
-                                  isDeact ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                }`}>
-                                  {isDeact ? 'SUSPENDED' : 'ACTIVE'}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                      {filteredSystemCoaches.length === 0 && (
-                        <p className="text-xs text-gray-500 italic text-center py-12">No coaches found.</p>
-                      )}
-                    </div>
-                  </div>
+                            } else {
+                              daysRemainingLabel = 'Lifetime Access';
+                            }
 
-                  {/* Right Column: Coach Dossier & Analytics */}
-                  <div className="flex-1 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 overflow-y-auto no-scrollbar relative flex flex-col justify-start">
-                    
-                    {isRegisteringNewCoach && !selectedCoachProfile ? (
-                      <div className="space-y-6">
-                        <div className="border-b border-gray-800 pb-4">
-                          <h2 className="text-lg font-black text-white flex items-center gap-2">
-                            <UserPlus className="text-blue-500" size={20} /> Register New Coach Account
-                          </h2>
-                          <p className="text-xs text-gray-500 mt-1">Fill out the credentials below to register a new coach user login on the platform.</p>
-                        </div>
+                            // Format dates
+                            const startDate = tg.subscription_start_date 
+                              ? new Date(tg.subscription_start_date).toLocaleDateString()
+                              : (isSelf ? 'N/A' : 'Immediate (Not set)');
 
-                        {createdNewCoachCredentials ? (
-                          <div className="bg-emerald-950/20 border border-emerald-500/25 p-6 rounded-3xl space-y-4">
-                            <div className="flex items-center gap-2 text-emerald-400">
-                              <CheckCircle size={18} />
-                              <span className="text-xs font-black uppercase tracking-wider">Coach Registered Successfully!</span>
-                            </div>
-                            <p className="text-xs text-gray-400">Please provide the new coach with their login details:</p>
-                            <div className="bg-gray-900/60 p-4 rounded-2xl space-y-2 text-xs font-mono border border-gray-800">
-                              <p className="text-gray-400">Name: <span className="text-white font-bold">{createdNewCoachCredentials.name}</span></p>
-                              <p className="text-gray-400">Email: <span className="text-white font-bold">{createdNewCoachCredentials.email}</span></p>
-                              <p className="text-gray-400">Password: <span className="text-white font-bold">{createdNewCoachCredentials.password}</span></p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCreatedNewCoachCredentials(null);
-                                setIsRegisteringNewCoach(false);
-                              }}
-                              className="w-full bg-[#121624] hover:bg-gray-850 text-white font-black text-xs uppercase py-3 rounded-2xl transition-all cursor-pointer"
-                            >
-                              Done
-                            </button>
-                          </div>
-                        ) : (
-                          <form onSubmit={handleCreateNewCoach} className="space-y-5">
-                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Coach Display Name</label>
-                              <input
-                                type="text"
-                                value={newCoachName}
-                                onChange={e => setNewCoachName(e.target.value)}
-                                placeholder="e.g. Coach John Doe"
-                                className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                                required
-                              />
-                            </div>
+                            let lastResubDate = 'N/A';
+                            if (isSelf) {
+                              lastResubDate = 'N/A';
+                            } else if (tg.subscription_history && tg.subscription_history.length > 0) {
+                              const sortedHistory = [...tg.subscription_history].sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                              if (sortedHistory.length > 0) {
+                                lastResubDate = new Date(sortedHistory[0].timestamp).toLocaleDateString();
+                              }
+                            } else if (tg.subscription_start_date) {
+                              lastResubDate = new Date(tg.subscription_start_date).toLocaleDateString();
+                            }
+                            
+                            const expirationDate = tg.subscription_end_date 
+                              ? new Date(tg.subscription_end_date).toLocaleDateString()
+                              : (isSelf ? 'Never (Lifetime)' : 'Never (Lifetime)');
 
-                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Coach Email Address</label>
-                              <input
-                                type="email"
-                                value={newCoachEmail}
-                                onChange={e => setNewCoachEmail(e.target.value)}
-                                placeholder="e.g. coach@striderite.com"
-                                className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                                required
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Login Password</label>
-                              <input
-                                type="text"
-                                value={newCoachPassword}
-                                onChange={e => setNewCoachPassword(e.target.value)}
-                                placeholder="Choose a secure password"
-                                className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                                required
-                              />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                              <button
-                                type="button"
-                                onClick={() => setIsRegisteringNewCoach(false)}
-                                className="flex-1 bg-transparent border border-gray-800 text-gray-400 hover:bg-gray-900 text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer text-center"
+                            return (
+                              <tr 
+                                key={coach.id}
+                                onClick={() => {
+                                  setSelectedSystemCoach(coach);
+                                  // Pre-fill fields for update/billing
+                                  setCoachSubPeriod(tg.subscription_duration || '1 month');
+                                  setCoachSubDelay(tg.subscription_delay || '0');
+                                  setCoachSubIsFreeTrial(tg.is_free_trial === true);
+                                  setCoachSubCustomEnd(tg.subscription_end_date ? getLocalDateTimeString(new Date(tg.subscription_end_date)) : getLocalDateTimeString());
+                                }}
+                                className="group hover:bg-gray-900/40 transition-colors cursor-pointer text-xs"
                               >
-                                Cancel
-                              </button>
-                              <button
-                                type="submit"
-                                disabled={isCreatingNewCoach}
-                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer disabled:bg-gray-800"
-                              >
-                                {isCreatingNewCoach ? 'Registering...' : 'Register Coach'}
-                              </button>
-                            </div>
-                          </form>
-                        )}
-                      </div>
-                    ) : !selectedCoachProfile ? (
-                      <div className="h-full flex-1 flex flex-col justify-center items-center text-center text-gray-500 space-y-4 py-16">
-                        <Shield size={48} className="text-gray-700" />
-                        <div className="space-y-1">
-                          <p className="text-sm font-bold text-white">No Coach Selected</p>
-                          <p className="text-xs max-w-[280px] leading-relaxed mx-auto">Select a coach profile from the directory on the left to view active managed clients, inspect platform metrics, or reassign users.</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsRegisteringNewCoach(true)}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase px-4 py-2.5 rounded-2xl transition-all cursor-pointer active:scale-95 flex items-center gap-1.5 mx-auto"
-                        >
-                          <UserPlus size={14} /> Register Coach Account
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        
-                        {/* Dossier Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase">
-                              {selectedCoachProfile.display_name?.charAt(0) || '?'}
-                            </div>
-                            <div>
-                              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                                {selectedCoachProfile.display_name}
-                                {selectedCoachProfile.id === OWNER_ID && (
-                                  <span className="text-[9px] bg-indigo-500/20 border border-indigo-500/25 text-indigo-400 px-2 py-0.5 rounded font-black tracking-normal uppercase">
-                                    System Owner
-                                  </span>
-                                )}
-                              </h2>
-                              <p className="text-xs text-gray-500">Handle: @{selectedCoachProfile.username || 'no-username'} | Email: {selectedCoachProfile.email || 'no-email'}</p>
-                            </div>
-                          </div>
-
-                          {selectedCoachProfile.id !== OWNER_ID && (
-                            <button
-                              onClick={() => handleToggleCoachSuspension(selectedCoachProfile.id, selectedCoachProfile.targets?.is_deactivated === true)}
-                              disabled={updatingCoachStatus}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
-                                selectedCoachProfile.targets?.is_deactivated === true 
-                                  ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white' 
-                                  : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
-                              }`}
-                            >
-                              {updatingCoachStatus ? 'Updating...' : (selectedCoachProfile.targets?.is_deactivated === true ? 'Reactivate Coach' : 'Suspend Coach')}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Analytics Cards Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <Card className="p-5 flex flex-col gap-1 relative overflow-hidden bg-[#121624]/60">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Clients Managed</p>
-                            <p className="text-3xl font-black text-white mt-1.5">{selectedCoachClients.length}</p>
-                          </Card>
-                          <Card className="p-5 flex flex-col gap-1 relative overflow-hidden bg-[#121624]/60">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Athletes</p>
-                            <p className="text-3xl font-black text-emerald-400 mt-1.5">
-                              {selectedCoachClients.filter(c => c.targets?.is_deactivated !== true).length}
-                            </p>
-                          </Card>
-                          <Card className="p-5 flex flex-col gap-1 relative overflow-hidden bg-[#121624]/60">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Suspended Athletes</p>
-                            <p className="text-3xl font-black text-red-400 mt-1.5">
-                              {selectedCoachClients.filter(c => c.targets?.is_deactivated === true).length}
-                            </p>
-                          </Card>
-                        </div>
-
-                        {selectedCoachProfile.id !== OWNER_ID && (
-                          <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
-                            <div className="border-b border-gray-850 pb-2 flex justify-between items-center">
-                              <h3 className="text-xs font-black uppercase tracking-wide text-blue-400 flex items-center gap-1.5">
-                                <CreditCard size={14} /> Coach Subscription Plan &amp; Billing
-                              </h3>
-                              {(() => {
-                                const tg = selectedCoachProfile.targets || {};
-                                const now = new Date();
-                                const isExpired = tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
-                                const isPending = tg.subscription_start_date && now < new Date(tg.subscription_start_date);
-                                const isDeact = tg.is_deactivated === true;
-                                
-                                let statusLabel = "ACTIVE";
-                                let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-                                if (isDeact) {
-                                  statusLabel = "SUSPENDED";
-                                  statusColor = "bg-red-500/10 text-red-400 border-red-500/20";
-                                } else if (isExpired) {
-                                  statusLabel = "EXPIRED";
-                                  statusColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                                } else if (isPending) {
-                                  statusLabel = "PENDING";
-                                  statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-                                }
-                                return (
-                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${statusColor}`}>
-                                    {statusLabel}
-                                  </span>
-                                );
-                              })()}
-                            </div>
-
-                            {/* Current Active Plan Stats */}
-                            <div className="grid grid-cols-2 gap-4 text-xs">
-                              <div className="bg-[#121624]/60 p-3.5 rounded-xl border border-gray-800">
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Start Date</p>
-                                <p className="text-white font-extrabold">
-                                  {selectedCoachProfile.targets?.subscription_start_date 
-                                    ? new Date(selectedCoachProfile.targets.subscription_start_date).toLocaleDateString()
-                                    : 'Immediate (Not set)'
-                                  }
-                                </p>
-                              </div>
-                              <div className="bg-[#121624]/60 p-3.5 rounded-xl border border-gray-800">
-                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Expiration Date</p>
-                                <p className="text-white font-extrabold">
-                                  {selectedCoachProfile.targets?.subscription_end_date 
-                                    ? new Date(selectedCoachProfile.targets.subscription_end_date).toLocaleDateString()
-                                    : 'Never (Lifetime)'
-                                  }
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Subscription Duration & Start Delay Form */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
-                              <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Plan Duration</label>
-                                <select
-                                  value={coachSubPeriod}
-                                  onChange={e => setCoachSubPeriod(e.target.value)}
-                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
-                                >
-                                  <option value="2 weeks">2 Weeks</option>
-                                  <option value="1 month">1 Month</option>
-                                  <option value="3 months">3 Months</option>
-                                  <option value="6 months">6 Months</option>
-                                  <option value="12 months">12 Months</option>
-                                  <option value="2 years">2 Years</option>
-                                  <option value="none">No Expiry (Lifetime)</option>
-                                  <option value="custom">Custom Date &amp; Time</option>
-                                </select>
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Start Delay (Days)</label>
-                                <select
-                                  value={coachSubDelay}
-                                  onChange={e => setCoachSubDelay(e.target.value)}
-                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
-                                >
-                                  <option value="0">Immediate (0 days)</option>
-                                  <option value="1">1 Day delay</option>
-                                  <option value="3">3 Days delay</option>
-                                  <option value="7">7 Days delay</option>
-                                  <option value="14">14 Days delay</option>
-                                  <option value="30">30 Days delay</option>
-                                </select>
-                              </div>
-
-                              <div className="space-y-1.5 flex flex-col justify-end">
-                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1 block">Free Trial Plan</label>
-                                <div className="flex items-center h-full">
+                                <td className="py-4 px-4 flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-lg font-black flex items-center justify-center text-xs uppercase ${
+                                    isSelf ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-900/40 text-blue-300'
+                                  }`}>
+                                    {coach.display_name?.charAt(0) || '?'}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-white group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                                      {coach.display_name}
+                                      {isSelf && <span className="text-[7px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-1 rounded uppercase tracking-wider font-mono">Owner</span>}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500">@{coach.username || 'no-username'}</p>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-4 text-gray-300 font-mono font-bold">{startDate}</td>
+                                <td className="py-4 px-4 text-gray-300 font-mono font-bold">{lastResubDate}</td>
+                                <td className="py-4 px-4 text-gray-300 font-mono font-bold">{expirationDate}</td>
+                                <td className="py-4 px-4 text-center font-extrabold text-white">{coachClients.length}</td>
+                                <td className="py-4 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${statusColor}`}>
+                                      {statusLabel}
+                                    </span>
+                                    <span className="text-gray-500 font-medium text-[10px] font-mono">({daysRemainingLabel})</span>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-4">
+                                  <div className="flex flex-col gap-0.5">
+                                    <p className="text-gray-300 font-mono text-[11px]">{coach.email}</p>
+                                    {tg.contact_email && <p className="text-gray-400 font-mono text-[10px]">{tg.contact_email}</p>}
+                                    {tg.phone_number && <p className="text-gray-500 text-[9px]">{tg.phone_number}</p>}
+                                  </div>
+                                </td>
+                                <td className="py-4 px-4 text-right">
                                   <button
                                     type="button"
-                                    onClick={() => setCoachSubIsFreeTrial(!coachSubIsFreeTrial)}
-                                    className={`w-full flex items-center justify-between border px-4 py-2 rounded-xl transition-all cursor-pointer ${
-                                      coachSubIsFreeTrial 
-                                        ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-extrabold' 
-                                        : 'bg-[#131b2e] border-gray-750 text-gray-400 font-bold hover:border-gray-600'
-                                    }`}
+                                    className="bg-[#121624] group-hover:bg-blue-600 border border-gray-800 group-hover:border-blue-500 text-gray-400 group-hover:text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all"
                                   >
-                                    <span>Free Trial</span>
-                                    <span className="text-[9px] font-black uppercase font-mono bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">{coachSubIsFreeTrial ? "ON" : "OFF"}</span>
+                                    Manage Details
                                   </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            {coachSubPeriod === 'custom' && (
-                              <div className="space-y-1.5 text-xs">
-                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Custom Expiration Date &amp; Time</label>
-                                <input
-                                  type="datetime-local"
-                                  value={coachSubCustomEnd}
-                                  onChange={e => setCoachSubCustomEnd(e.target.value)}
-                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
-                                />
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateCoachSubscription(selectedCoachProfile.id)}
-                              disabled={updatingCoachSub}
-                              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-500/10 flex items-center justify-center gap-1.5"
-                            >
-                              <CreditCard size={14} />
-                              {updatingCoachSub ? 'Saving...' : 'Update / Extend Coach Subscription'}
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Interactive Client re-assignment list */}
-                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
-                          <div className="border-b border-gray-850 pb-2 flex justify-between items-center">
-                            <h3 className="text-xs font-black uppercase tracking-wide text-blue-400">Assigned Clients &amp; Re-assignment</h3>
-                            <span className="text-[10px] text-gray-500 font-bold">{selectedCoachClients.length} users</span>
-                          </div>
-
-                          <div className="divide-y divide-gray-850 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
-                            {selectedCoachClients.length === 0 ? (
-                              <p className="text-xs text-gray-500 italic py-12 text-center">No athletes assigned to this coach.</p>
-                            ) : (
-                              selectedCoachClients.map(client => {
-                                const selectedDestCoachId = reassignCoachTargetId[client.id] || '';
-                                return (
-                                  <div key={client.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                                    <div>
-                                      <p className="font-extrabold text-white">{client.display_name || 'Unnamed Client'}</p>
-                                      <p className="text-[10px] text-gray-500">@{client.username}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <select
-                                        value={selectedDestCoachId}
-                                        onChange={e => setReassignCoachTargetId(prev => ({ ...prev, [client.id]: e.target.value }))}
-                                        className="bg-[#131b2e] border border-gray-700 rounded-xl px-2 py-1.5 text-[10px] text-white outline-none font-bold"
-                                      >
-                                        <option value="" disabled>Select destination coach...</option>
-                                        {systemCoaches
-                                          .filter(c => c.id !== selectedCoachProfile.id)
-                                          .map(c => (
-                                            <option key={c.id} value={c.id}>Move to {c.display_name}</option>
-                                          ))
-                                        }
-                                      </select>
-                                      <button
-                                        onClick={() => handleReassignClient(client.id, selectedDestCoachId)}
-                                        disabled={!selectedDestCoachId}
-                                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-                                      >
-                                        Move
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-
-                      </div>
-                    )}
-                  </div>
-                  
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {filteredSystemCoaches.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="py-12 text-center text-gray-500 italic">
+                                No coaches found matching criteria.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
                 </div>
               )}
             </div>
@@ -5261,12 +5063,546 @@ export default function DesktopCoachPortal() {
                     setSelectedSubClient(null);
                     setActiveTab('management');
                   }}
-                  className="flex-1 bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-black py-3 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center"
+            </>
+          );
+        })()}
+      </div>
+
+      {/* SLIDING COACH CREATION DRAWER */}
+      {isRegisteringNewCoach && (
+        <div 
+          className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-45 transition-opacity duration-300"
+          onClick={() => setIsRegisteringNewCoach(false)}
+        />
+      )}
+      <div 
+        className={`fixed inset-y-0 right-0 w-full sm:w-[500px] bg-[#0d111d] border-l border-gray-850 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
+          isRegisteringNewCoach ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex-1 overflow-y-auto p-6 no-scrollbar space-y-6 flex flex-col justify-start h-full">
+          <div className="flex justify-between items-center border-b border-gray-850 pb-4 shrink-0">
+            <div>
+              <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <UserPlus className="text-blue-500" size={16} /> Register Coach Account
+              </h2>
+              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Create a login and set initial subscription plan</p>
+            </div>
+            <button 
+              onClick={() => setIsRegisteringNewCoach(false)}
+              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-6 overflow-y-auto no-scrollbar pr-1">
+            {createdNewCoachCredentials ? (
+              <div className="bg-emerald-950/20 border border-emerald-500/25 p-6 rounded-3xl space-y-4">
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <CheckCircle size={18} />
+                  <span className="text-xs font-black uppercase tracking-wider">Coach Registered Successfully!</span>
+                </div>
+                <p className="text-xs text-gray-400">Please provide the new coach with their login details:</p>
+                <div className="bg-gray-900/60 p-4 rounded-2xl space-y-2 text-xs font-mono border border-gray-800">
+                  <p className="text-gray-400 font-bold">Name: <span className="text-white font-black">{createdNewCoachCredentials.name}</span></p>
+                  <p className="text-gray-400 font-bold">Username/Email: <span className="text-white font-black">{createdNewCoachCredentials.email}</span></p>
+                  <p className="text-gray-400 font-bold">Password: <span className="text-white font-black">{createdNewCoachCredentials.password}</span></p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatedNewCoachCredentials(null);
+                    setIsRegisteringNewCoach(false);
+                  }}
+                  className="w-full bg-[#121624] hover:bg-gray-850 text-white font-black text-xs uppercase py-3 rounded-2xl transition-all cursor-pointer"
                 >
-                  Manage Profile
+                  Done
                 </button>
               </div>
-            </>
+            ) : (
+              <form onSubmit={handleCreateNewCoach} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Coach Display Name</label>
+                  <input
+                    type="text"
+                    value={newCoachName}
+                    onChange={e => setNewCoachName(e.target.value)}
+                    placeholder="e.g. Coach John Doe"
+                    className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors font-bold"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Login Username / Email</label>
+                    <input
+                      type="email"
+                      value={newCoachEmail}
+                      onChange={e => setNewCoachEmail(e.target.value)}
+                      placeholder="e.g. coach@striderite.com"
+                      className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors font-bold font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Login Password</label>
+                    <input
+                      type="text"
+                      value={newCoachPassword}
+                      onChange={e => setNewCoachPassword(e.target.value)}
+                      placeholder="Choose a secure password"
+                      className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors font-bold font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Contact Email (Reference Only)</label>
+                    <input
+                      type="email"
+                      value={newCoachContactEmail}
+                      onChange={e => setNewCoachContactEmail(e.target.value)}
+                      placeholder="e.g. personal-email@gmail.com"
+                      className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors font-bold font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Coach Number (Phone / ID)</label>
+                    <input
+                      type="text"
+                      value={newCoachPhoneNumber}
+                      onChange={e => setNewCoachPhoneNumber(e.target.value)}
+                      placeholder="e.g. +1 555-0199"
+                      className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors font-bold"
+                    />
+                  </div>
+                </div>
+
+                {/* Initial Subscription Setup */}
+                <div className="border border-gray-850 bg-gray-950/20 p-5 rounded-3xl space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-400">Initial Subscription Plan</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Plan Duration Preset</label>
+                      <select
+                        value={registerCoachSubPeriod}
+                        onChange={e => setRegisterCoachSubPeriod(e.target.value)}
+                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors cursor-pointer font-bold"
+                      >
+                        <option value="2 weeks">2 Weeks Trial</option>
+                        <option value="1 month">1 Month Plan</option>
+                        <option value="3 months">3 Months Plan</option>
+                        <option value="6 months">6 Months Plan</option>
+                        <option value="12 months">1 Year Plan</option>
+                        <option value="2 years">2 Years Plan</option>
+                        <option value="none">No Expiry (Lifetime)</option>
+                        <option value="custom">Custom End Date & Time</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Delay Start Date</label>
+                      <select
+                        value={registerCoachSubDelay}
+                        onChange={e => setRegisterCoachSubDelay(e.target.value)}
+                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors cursor-pointer font-bold"
+                      >
+                        <option value="0">Start Immediately</option>
+                        <option value="1">Delay 1 Day</option>
+                        <option value="3">Delay 3 Days</option>
+                        <option value="7">Delay 1 Week</option>
+                        <option value="14">Delay 2 Weeks</option>
+                        <option value="30">Delay 30 Days</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {registerCoachSubPeriod === 'custom' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Custom Subscription End Date</label>
+                      <input
+                        type="datetime-local"
+                        value={registerCoachSubCustomEnd}
+                        onChange={e => setRegisterCoachSubCustomEnd(e.target.value)}
+                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors cursor-pointer font-bold"
+                      />
+                    </div>
+                  )}
+
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={registerCoachSubIsFreeTrial}
+                      onChange={e => setRegisterCoachSubIsFreeTrial(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-800 text-blue-600 bg-gray-900 focus:ring-0 focus:ring-offset-0"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-white">Enable Free Trial Mode</span>
+                      <span className="text-[9px] text-gray-500 font-medium">Marks this initial period as a trial subscription</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsRegisteringNewCoach(false)}
+                    className="flex-1 bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-black uppercase py-3 rounded-2xl text-xs tracking-wider transition-all cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreatingNewCoach}
+                    className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer shadow-lg shadow-blue-500/10"
+                  >
+                    {isCreatingNewCoach ? 'Registering...' : 'Register Coach'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SLIDING COACH DETAILS DRAWER */}
+      {selectedSystemCoach && (
+        <div 
+          className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+          onClick={() => setSelectedSystemCoach(null)}
+        />
+      )}
+      <div 
+        className={`fixed inset-y-0 right-0 w-full sm:w-[520px] bg-[#0d111d] border-l border-gray-850 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
+          selectedSystemCoach ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {selectedSystemCoach && (() => {
+          const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === selectedSystemCoach.id);
+          const isSelf = selectedSystemCoach.id === OWNER_ID;
+          const tg = selectedSystemCoach.targets || {};
+          
+          return (
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-850 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl font-black flex items-center justify-center text-sm uppercase ${
+                    isSelf ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-900/40 text-blue-300'
+                  }`}>
+                    {selectedSystemCoach.display_name?.charAt(0) || '?'}
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                      {selectedSystemCoach.display_name}
+                      {isSelf && <span className="text-[7px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-1 rounded uppercase tracking-wider font-mono">Owner</span>}
+                    </h2>
+                    <p className="text-[10px] text-gray-500 lowercase mt-0.5">@{selectedSystemCoach.username} | Login: {selectedSystemCoach.email}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedSystemCoach(null)}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar font-bold">
+                
+                {/* Contact Information */}
+                <div className="bg-[#121624]/40 border border-gray-850 p-5 rounded-2xl space-y-3.5">
+                  <h3 className="text-[10px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                    <User size={12} /> Contact & Reference Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Contact Email</p>
+                      <p className="text-white font-mono">{tg.contact_email || 'Not added'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Phone Number / ID</p>
+                      <p className="text-white font-bold">{tg.phone_number || 'Not added'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Suspension status */}
+                {!isSelf && (
+                  <div className="bg-red-500/[0.02] border border-red-900/20 p-5 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-white">Deactivate / Suspend Access</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Temporarily block this coach from logging in.</p>
+                    </div>
+                    <button
+                      onClick={() => handleToggleCoachSuspension(selectedSystemCoach.id, tg.is_deactivated === true)}
+                      disabled={updatingCoachStatus}
+                      className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
+                        tg.is_deactivated === true 
+                          ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white' 
+                          : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                      }`}
+                    >
+                      {updatingCoachStatus ? 'Updating...' : (tg.is_deactivated === true ? 'Reactivate Coach' : 'Suspend Coach')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Metrics */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-[#121624]/60 border border-gray-800 p-4 rounded-xl text-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Clients</p>
+                    <p className="text-xl font-black text-white mt-1">{coachClients.length}</p>
+                  </div>
+                  <div className="bg-[#121624]/60 border border-gray-800 p-4 rounded-xl text-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Active</p>
+                    <p className="text-xl font-black text-emerald-400 mt-1">{coachClients.filter(c => c.targets?.is_deactivated !== true).length}</p>
+                  </div>
+                  <div className="bg-[#121624]/60 border border-gray-800 p-4 rounded-xl text-center">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Suspended</p>
+                    <p className="text-xl font-black text-red-400 mt-1">{coachClients.filter(c => c.targets?.is_deactivated === true).length}</p>
+                  </div>
+                </div>
+
+                {/* Plan Setup */}
+                {!isSelf && (
+                  <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
+                    <div className="border-b border-gray-850 pb-2 flex justify-between items-center">
+                      <h3 className="text-xs font-black uppercase tracking-wide text-blue-400 flex items-center gap-1.5">
+                        <CreditCard size={14} /> Plan &amp; Billing Control
+                      </h3>
+                      {(() => {
+                        const now = new Date();
+                        const isExpired = tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
+                        const isPending = tg.subscription_start_date && now < new Date(tg.subscription_start_date);
+                        const isDeact = tg.is_deactivated === true;
+                        
+                        let statusLabel = "ACTIVE";
+                        let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                        if (isDeact) {
+                          statusLabel = "SUSPENDED";
+                          statusColor = "bg-red-500/10 text-red-400 border-red-500/20";
+                        } else if (isExpired) {
+                          statusLabel = "EXPIRED";
+                          statusColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                        } else if (isPending) {
+                          statusLabel = "PENDING";
+                          statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                        }
+                        return (
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${statusColor}`}>
+                            {statusLabel}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="bg-[#121624]/60 p-3.5 rounded-xl border border-gray-800">
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Start Date</p>
+                        <p className="text-white font-extrabold">
+                          {tg.subscription_start_date 
+                            ? new Date(tg.subscription_start_date).toLocaleDateString()
+                            : 'Immediate (Not set)'
+                          }
+                        </p>
+                      </div>
+                      <div className="bg-[#121624]/60 p-3.5 rounded-xl border border-gray-800">
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Expiration Date</p>
+                        <p className="text-white font-extrabold">
+                          {tg.subscription_end_date 
+                            ? new Date(tg.subscription_end_date).toLocaleDateString()
+                            : 'Never (Lifetime)'
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Plan Preset</label>
+                        <select
+                          value={coachSubPeriod}
+                          onChange={e => setCoachSubPeriod(e.target.value)}
+                          className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
+                        >
+                          <option value="2 weeks">2 Weeks</option>
+                          <option value="1 month">1 Month</option>
+                          <option value="3 months">3 Months</option>
+                          <option value="6 months">6 Months</option>
+                          <option value="12 months">12 Months</option>
+                          <option value="2 years">2 Years</option>
+                          <option value="none">No Expiry (Lifetime)</option>
+                          <option value="custom">Custom Date</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Start Delay (Days)</label>
+                        <select
+                          value={coachSubDelay}
+                          onChange={e => setCoachSubDelay(e.target.value)}
+                          className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
+                        >
+                          <option value="0">Immediate (0 days)</option>
+                          <option value="1">1 Day delay</option>
+                          <option value="3">3 Days delay</option>
+                          <option value="7">7 Days delay</option>
+                          <option value="14">14 Days delay</option>
+                          <option value="30">30 Days delay</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5 flex flex-col justify-end">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1 block">Free Trial Plan</label>
+                        <div className="flex items-center h-full">
+                          <button
+                            type="button"
+                            onClick={() => setCoachSubIsFreeTrial(!coachSubIsFreeTrial)}
+                            className={`w-full flex items-center justify-between border px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
+                              coachSubIsFreeTrial 
+                                ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-extrabold' 
+                                : 'bg-[#131b2e] border-gray-750 text-gray-400 font-bold hover:border-gray-600'
+                            }`}
+                          >
+                            <span>Free Trial</span>
+                            <span className="text-[9px] font-black uppercase font-mono bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">{coachSubIsFreeTrial ? "ON" : "OFF"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {coachSubPeriod === 'custom' && (
+                      <div className="space-y-1.5 text-xs">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Custom Expiration Date &amp; Time</label>
+                        <input
+                          type="datetime-local"
+                          value={coachSubCustomEnd}
+                          onChange={e => setCoachSubCustomEnd(e.target.value)}
+                          className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleUpdateCoachSubscription(selectedSystemCoach.id);
+                        // Refresh the local drawer copy so stats update
+                        const updatedCoach = systemCoaches.find(c => c.id === selectedSystemCoach.id);
+                        if (updatedCoach) {
+                          setSelectedSystemCoach(updatedCoach);
+                        }
+                      }}
+                      disabled={updatingCoachSub}
+                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-500/10 flex items-center justify-center gap-1.5"
+                    >
+                      <CreditCard size={14} />
+                      {updatingCoachSub ? 'Saving Plan...' : 'Save Plan / Billing Changes'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Interactive Client re-assignment list */}
+                <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
+                  <div className="border-b border-gray-850 pb-2 flex justify-between items-center">
+                    <h3 className="text-xs font-black uppercase tracking-wide text-blue-400">Assigned Clients &amp; Re-assignment</h3>
+                    <span className="text-[10px] text-gray-500 font-bold">{coachClients.length} users</span>
+                  </div>
+
+                  <div className="divide-y divide-gray-850 max-h-[300px] overflow-y-auto pr-1 no-scrollbar text-xs">
+                    {coachClients.length === 0 ? (
+                      <p className="text-xs text-gray-500 italic py-12 text-center">No athletes assigned to this coach.</p>
+                    ) : (
+                      coachClients.map(client => {
+                        const selectedDestCoachId = reassignCoachTargetId[client.id] || '';
+                        return (
+                          <div key={client.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div>
+                              <p className="font-extrabold text-white">{client.display_name || 'Unnamed Client'}</p>
+                              <p className="text-[10px] text-gray-500">@{client.username}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={selectedDestCoachId}
+                                onChange={e => setReassignCoachTargetId(prev => ({ ...prev, [client.id]: e.target.value }))}
+                                className="bg-[#131b2e] border border-gray-700 rounded-xl px-2 py-1.5 text-[10px] text-white outline-none font-bold"
+                              >
+                                <option value="" disabled>Select destination...</option>
+                                {systemCoaches
+                                  .filter(c => c.id !== selectedSystemCoach.id)
+                                  .map(c => (
+                                    <option key={c.id} value={c.id}>Move to {c.display_name}</option>
+                                  ))
+                                }
+                              </select>
+                              <button
+                                onClick={async () => {
+                                  await handleReassignClient(client.id, selectedDestCoachId);
+                                  // Re-fetch to sync
+                                  const updatedCoach = systemCoaches.find(c => c.id === selectedSystemCoach.id);
+                                  if (updatedCoach) {
+                                    setSelectedSystemCoach(updatedCoach);
+                                  }
+                                }}
+                                disabled={!selectedDestCoachId}
+                                className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                              >
+                                Move
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub History Logs List */}
+                {!isSelf && tg.subscription_history && tg.subscription_history.length > 0 && (
+                  <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
+                    <div className="border-b border-gray-850 pb-2">
+                      <h3 className="text-xs font-black uppercase tracking-wide text-blue-400">Subscription History Logs</h3>
+                    </div>
+                    <div className="space-y-3.5 max-h-[250px] overflow-y-auto pr-1 no-scrollbar">
+                      {tg.subscription_history
+                        .slice()
+                        .reverse()
+                        .map((entry: any, index: number) => (
+                          <div key={index} className="text-[11px] bg-[#121624]/60 p-3 rounded-xl border border-gray-850 space-y-1">
+                            <div className="flex justify-between items-center text-gray-500 font-mono">
+                              <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                              <span className="font-bold text-gray-400 uppercase tracking-wider text-[9px] bg-gray-800 px-1.5 py-0.5 rounded">
+                                {entry.action?.replace('coach_subscription_', '') || 'Action'}
+                              </span>
+                            </div>
+                            <div className="text-gray-300 font-medium">
+                              {entry.action === 'coach_subscription_initial' ? (
+                                <p>Registered coach account with a <span className="text-blue-400 font-bold">{entry.period} preset</span> duration (Delay: {entry.delay_days} days).</p>
+                              ) : (
+                                <p>Updated billing profile. Extended plan preset to <span className="text-blue-400 font-bold">{entry.period}</span> (Delay: {entry.delay_days} days).</p>
+                              )}
+                              <p className="text-[10px] text-gray-500 mt-1">
+                                Effective: <span className="text-gray-400">{entry.start_date ? new Date(entry.start_date).toLocaleDateString() : 'N/A'}</span> to <span className="text-gray-400">{entry.end_date ? new Date(entry.end_date).toLocaleDateString() : 'Never'}</span>
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
           );
         })()}
       </div>
