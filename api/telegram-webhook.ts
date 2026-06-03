@@ -13,8 +13,8 @@ const REJECTION_REASONS: Record<string, string> = {
 
 const PLAN_PRICES: Record<string, string> = {
   '2 weeks': '2,000 EGP',
-  '4 weeks': '3,500 EGP',
-  '3 months': '8,000 EGP',
+  '1 month': '3,500 EGP',
+  '3 months': '8,500 EGP',
   '6 months': '14,000 EGP'
 };
 
@@ -187,6 +187,39 @@ Your unique Telegram Chat ID is:
 • Extended by <b>${period}</b> from ${baseDate.toLocaleDateString()}
 `;
         await editMessageText(chatId, messageId, originalMessage, successText);
+
+        // Send a structured receipt as a new message to the owner
+        const receiptText = `
+🧾 <b>LIFE GYM SUBSCRIPTION RECEIPT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━
+<b>Receipt ID:</b> <code>rec_${paymentId}</code>
+<b>Date:</b> ${nowObj.toLocaleString()}
+
+👤 <b>Coach Details:</b>
+• <b>Name:</b> ${coach.display_name || 'N/A'}
+• <b>Email:</b> ${coach.email || 'N/A'}
+
+💳 <b>Payment Details:</b>
+• <b>Plan Duration:</b> ${period}
+• <b>Amount Paid:</b> ${pendingPayment.amount}
+• <b>Payment Method:</b> ${pendingPayment.method === 'telda' ? 'Telda' : 'Mobile Wallet'}
+
+📅 <b>Coverage Period:</b>
+• <b>Start Date:</b> ${baseDate.toLocaleDateString()}
+• <b>End Date:</b> ${newEndDate.toLocaleDateString()}
+
+✅ <b>Status:</b> PAID (Verified & Approved)
+━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: receiptText,
+            parse_mode: 'HTML'
+          })
+        });
       }
 
       // Action 2: Show Rejection Reasons Options
@@ -245,7 +278,7 @@ Your unique Telegram Chat ID is:
           const inlineKeyboard = {
             inline_keyboard: [
               [
-                { text: '✅ Approve & Add Plan', callback_data: `approve:${coachId}:${paymentId}:${targets.pending_payment?.period || '4 weeks'}` },
+                { text: '✅ Approve & Add Plan', callback_data: `approve:${coachId}:${paymentId}:${targets.pending_payment?.period || '1 month'}` },
                 { text: '❌ Reject Payment', callback_data: `reject:${coachId}:${paymentId}` }
               ]
             ]
@@ -355,9 +388,9 @@ async function editMessageText(chatId: number, messageId: number, originalMessag
 function getDurationDays(period: string): number {
   switch (period) {
     case '2 weeks': return 14;
-    case '4 weeks': return 28;
+    case '1 month': return 30;
     case '3 months': return 90;
     case '6 months': return 180;
-    default: return 28;
+    default: return 30;
   }
 }

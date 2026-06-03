@@ -9,8 +9,8 @@ const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
 const PLAN_PRICES: Record<string, string> = {
   '2 weeks': '2,000 EGP',
-  '4 weeks': '3,500 EGP',
-  '3 months': '8,000 EGP',
+  '1 month': '3,500 EGP',
+  '3 months': '8,500 EGP',
   '6 months': '14,000 EGP'
 };
 

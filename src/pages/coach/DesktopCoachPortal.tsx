@@ -7,7 +7,7 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check
+  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -243,19 +243,22 @@ export default function DesktopCoachPortal() {
   const [ownConfirmPassword, setOwnConfirmPassword] = useState('');
   const [updatingOwnPassword, setUpdatingOwnPassword] = useState(false);
   // Owner Telegram Approvals Configuration states
-  // const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
-  // const [savingTelegramId, setSavingTelegramId] = useState(false);
+  const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
+  const [savingTelegramId, setSavingTelegramId] = useState(false);
 
   // Coach Subscription Renewal Flow states
-  // const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
-  // const [subOverlayPlan, setSubOverlayPlan] = useState('4 weeks');
-  // const [subOverlayMethod, setSubOverlayMethod] = useState('wallet');
-  // const [subOverlayPhone, setSubOverlayPhone] = useState('');
-  // const [subOverlayTeldaUser, setSubOverlayTeldaUser] = useState('');
-  // const [subOverlayScreenshot, setSubOverlayScreenshot] = useState('');
-  // const [subOverlayTermsChecked, setSubOverlayTermsChecked] = useState(false);
-  // const [subOverlayRefundChecked, setSubOverlayRefundChecked] = useState(false);
-  // const [subOverlaySubmitting, setSubOverlaySubmitting] = useState(false);
+  const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
+  const [subOverlayPlan, setSubOverlayPlan] = useState('1 month');
+  const [subOverlayMethod, setSubOverlayMethod] = useState('wallet');
+  const [subOverlayPhone, setSubOverlayPhone] = useState('');
+  const [subOverlayTeldaUser, setSubOverlayTeldaUser] = useState('');
+  const [subOverlayScreenshot, setSubOverlayScreenshot] = useState('');
+  const [subOverlayTermsChecked, setSubOverlayTermsChecked] = useState(false);
+  const [subOverlayRefundChecked, setSubOverlayRefundChecked] = useState(false);
+  const [subOverlaySubmitting, setSubOverlaySubmitting] = useState(false);
+
+  // History ledger modal state
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // Subscriptions Tab Reactivation Modal state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
@@ -515,42 +518,42 @@ export default function DesktopCoachPortal() {
   }, [myCoachProfile, coachUserId]);
 
   // Prefill Owner Telegram ID
-  // useEffect(() => {
-  //   if (myCoachProfile?.targets?.telegram_chat_id) {
-  //     setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
-  //   }
-  // }, [myCoachProfile]);
+  useEffect(() => {
+    if (myCoachProfile?.targets?.telegram_chat_id) {
+      setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
+    }
+  }, [myCoachProfile]);
 
-  // const handleSaveTelegramChatId = async () => {
-  //   if (!coachUserId) return;
-  //   try {
-  //     setSavingTelegramId(true);
-  //     const currentTargets = myCoachProfile?.targets || {};
-  //     const updatedTargets = {
-  //       ...currentTargets,
-  //       telegram_chat_id: ownerTelegramChatId.trim()
-  //     };
-  // 
-  //     const { error } = await supabase
-  //       .from('profiles')
-  //       .update({ targets: updatedTargets })
-  //       .eq('id', coachUserId);
-  // 
-  //     if (error) throw error;
-  // 
-  //     toast.success('Telegram Chat ID updated successfully.');
-  //     // Refresh local profile
-  //     setMyCoachProfile((prev: any) => ({
-  //       ...prev,
-  //       targets: updatedTargets
-  //     }));
-  //   } catch (err: any) {
-  //     console.error(err);
-  //     toast.error('Failed to update Telegram Chat ID: ' + err.message);
-  //   } finally {
-  //     setSavingTelegramId(false);
-  //   }
-  // };
+  const handleSaveTelegramChatId = async () => {
+    if (!coachUserId) return;
+    try {
+      setSavingTelegramId(true);
+      const currentTargets = myCoachProfile?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        telegram_chat_id: ownerTelegramChatId.trim()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachUserId);
+
+      if (error) throw error;
+
+      toast.success('Telegram Chat ID updated successfully.');
+      // Refresh local profile
+      setMyCoachProfile((prev: any) => ({
+        ...prev,
+        targets: updatedTargets
+      }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update Telegram Chat ID: ' + err.message);
+    } finally {
+      setSavingTelegramId(false);
+    }
+  };
 
   const fetchBaseData = async (silent = false) => {
     try {
@@ -1776,6 +1779,119 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  const handleRenewSubscription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subOverlayTermsChecked || !subOverlayRefundChecked) {
+      toast.error('You must accept the privacy policy and non-refundable terms.');
+      return;
+    }
+    
+    // Validate fields
+    if (subOverlayMethod === 'telda') {
+      if (!subOverlayTeldaUser.trim() || !subOverlayPhone.trim()) {
+        toast.error('Please fill out both the Telda username and phone number.');
+        return;
+      }
+    } else {
+      if (!subOverlayPhone.trim()) {
+        toast.error('Please enter the sender phone number.');
+        return;
+      }
+      if (!subOverlayScreenshot) {
+        toast.error('Please upload a transaction receipt screenshot.');
+        return;
+      }
+    }
+
+    setSubOverlaySubmitting(true);
+    try {
+      // 1. Get session access token for authorization header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session. Please log in again.');
+        return;
+      }
+
+      // Prepare payload
+      const sender_details = subOverlayMethod === 'telda'
+        ? { telda_username: subOverlayTeldaUser.trim(), phone: subOverlayPhone.trim() }
+        : { phone: subOverlayPhone.trim() };
+
+      const response = await fetch('/api/submit-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          period: subOverlayPlan,
+          method: subOverlayMethod,
+          sender_details,
+          screenshot: subOverlayScreenshot // Base64 screenshot
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || 'Failed to submit transaction.');
+      }
+
+      toast.success('Your subscription request has been submitted successfully for verification!');
+      
+      // Close overlay and reset fields
+      setShowSubscriptionOverlay(false);
+      setSubOverlayPhone('');
+      setSubOverlayTeldaUser('');
+      setSubOverlayScreenshot('');
+      setSubOverlayTermsChecked(false);
+      setSubOverlayRefundChecked(false);
+      
+      // Re-fetch profile data to show pending status
+      fetchBaseData(true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Payment submission failed.');
+    } finally {
+      setSubOverlaySubmitting(false);
+    }
+  };
+
+  const handleScreenshotFile = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size exceeds 2MB limit.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSubOverlayScreenshot(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearPaymentResult = async () => {
+    try {
+      const currentTargets = myCoachProfile?.targets || {};
+      const updatedTargets = { ...currentTargets };
+      delete updatedTargets.last_payment_result;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachUserId);
+        
+      if (error) throw error;
+      
+      setMyCoachProfile((prev: any) => ({
+        ...prev,
+        targets: updatedTargets
+      }));
+      toast.success('Notification cleared.');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to clear notification.');
+    }
+  };
+
 
 
   const handleSaveManagementQuota = async () => {
@@ -2906,7 +3022,7 @@ export default function DesktopCoachPortal() {
         </aside>
 
         {/* Content View Area */}
-        <main className="flex-1 p-8 overflow-y-auto max-h-[calc(100vh-73px)]">
+        <main className="flex-1 p-8 overflow-y-auto no-scrollbar max-h-[calc(100vh-73px)]">
           
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
@@ -4900,6 +5016,57 @@ export default function DesktopCoachPortal() {
                     </Card>
                   </div>
 
+                  {/* Telegram Bot Config Card */}
+                  <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/95 via-[#0d1228]/90 to-[#0b0c1b]/98 p-8 shadow-2xl backdrop-blur-md">
+                    <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800/80 pb-5 mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
+                          <Send size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Telegram Bot Configuration</h3>
+                          <p className="text-xs text-gray-400 mt-0.5 font-medium">Configure your Chat ID to receive instant coach subscription approval notifications.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6 text-xs text-gray-300 font-bold">
+                      <div className="p-4 rounded-2xl bg-[#080910] border border-gray-850 space-y-2 text-gray-400 font-medium leading-relaxed">
+                        <p className="font-extrabold text-white text-xs uppercase tracking-wider">How to get your Telegram Chat ID:</p>
+                        <ol className="list-decimal pl-4 space-y-1.5 text-[11px]">
+                          <li>Open Telegram and search for the bot: <a href="https://t.me/LifeGymVerificationBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-bold">@LifeGymVerificationBot</a> (or click link).</li>
+                          <li>Send the command <code className="bg-gray-900 px-1.5 py-0.5 rounded text-yellow-500 font-mono">/start</code> or <code className="bg-gray-900 px-1.5 py-0.5 rounded text-yellow-500 font-mono">/getid</code> to the bot.</li>
+                          <li>The bot will reply with your unique Chat ID (e.g., <code className="text-white font-mono">123456789</code>).</li>
+                          <li>Copy that ID and paste it into the input field below.</li>
+                        </ol>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 items-end">
+                        <div className="flex-1 space-y-2">
+                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Owner Telegram Chat ID</label>
+                          <input
+                            type="text"
+                            value={ownerTelegramChatId}
+                            onChange={e => setOwnerTelegramChatId(e.target.value)}
+                            placeholder="Enter Telegram Chat ID"
+                            className="w-full bg-[#080910] border border-gray-850 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={savingTelegramId}
+                          onClick={handleSaveTelegramChatId}
+                          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:bg-gray-850 disabled:text-gray-500 border border-blue-500 disabled:border-transparent text-white font-extrabold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-blue-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          {savingTelegramId ? 'Saving...' : 'Save Configuration'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Actions & Filters */}
                   <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                     <div className="relative w-full sm:w-[320px]">
@@ -5085,6 +5252,57 @@ export default function DesktopCoachPortal() {
                 <p className="text-sm text-gray-400 mt-2">Review your administrative access credentials, manage your portal account password, and check subscription licenses.</p>
               </div>
 
+              {/* Pending Payment Verification Banner */}
+              {myCoachProfile?.targets?.pending_payment && (
+                <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg shadow-amber-500/5 animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 flex-shrink-0 animate-pulse text-amber-500" />
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Subscription Pending Approval</h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        You submitted a request for <span className="font-bold text-white">{myCoachProfile.targets.pending_payment.period}</span> ({myCoachProfile.targets.pending_payment.amount}) on {new Date(myCoachProfile.targets.pending_payment.submitted_at).toLocaleString()}. We are verifying the payment.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="self-start sm:self-center px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider">Pending Verification</span>
+                </div>
+              )}
+
+              {/* Approval/Rejection Notice Banner */}
+              {myCoachProfile?.targets?.last_payment_result && (
+                <div className={`p-5 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg animate-fade-in ${
+                  myCoachProfile.targets.last_payment_result.status === 'approved'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-emerald-500/5'
+                    : 'bg-red-500/10 border-red-500/20 text-red-400 shadow-red-500/5'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {myCoachProfile.targets.last_payment_result.status === 'approved' ? (
+                      <CheckCircle className="w-5 h-5 flex-shrink-0 text-emerald-400" />
+                    ) : (
+                      <ShieldAlert className="w-5 h-5 flex-shrink-0 text-red-400" />
+                    )}
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider">
+                        Subscription {myCoachProfile.targets.last_payment_result.status === 'approved' ? 'Approved' : 'Refused'}
+                      </h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {myCoachProfile.targets.last_payment_result.status === 'approved'
+                          ? `Your subscription of ${myCoachProfile.targets.last_payment_result.period} has been approved. Thank you!`
+                          : `Your subscription request was rejected. Reason: ${myCoachProfile.targets.last_payment_result.reason || 'Verification failed.'}`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearPaymentResult}
+                    className="self-start sm:self-center px-3.5 py-1.5 rounded-xl bg-gray-900/60 hover:bg-gray-800 border border-gray-800 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                  >
+                    Clear Notification
+                  </button>
+                </div>
+              )}
+
               {/* Login Credentials & Info Card */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
@@ -5244,9 +5462,49 @@ export default function DesktopCoachPortal() {
                         />
                       </div>
                     </div>
+                  ) : coachUserId !== OWNER_ID ? (
+                    <div className="text-xs text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
+                      Unlimited Life Access
+                    </div>
                   ) : (
                     <div className="text-xs text-indigo-400/90 bg-indigo-500/5 border border-indigo-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
                       👑 Unlimited Premium Admin Privileges
+                    </div>
+                  )}
+
+                  {/* Renew/Upgrade and Ledger Buttons Section */}
+                  {coachUserId !== OWNER_ID && (
+                    <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-5 border-t border-gray-800/40">
+                      <button
+                        type="button"
+                        disabled={!!myCoachProfile?.targets?.pending_payment}
+                        onClick={() => setShowSubscriptionOverlay(true)}
+                        className={`flex-1 text-[10px] font-black uppercase tracking-wider py-2.5 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
+                          myCoachProfile?.targets?.pending_payment
+                            ? 'bg-gray-800/40 text-gray-500 border-transparent cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white shadow-lg shadow-emerald-500/10'
+                        }`}
+                      >
+                        <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
+                        {(() => {
+                          if (myCoachProfile?.targets?.pending_payment) return 'Verification Pending';
+                          const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
+                          const now = new Date();
+                          if (!expiry) return 'Renew Subscription';
+                          const diffMs = expiry.getTime() - now.getTime();
+                          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                          return diffDays <= 7 ? 'Renew Subscription' : 'Upgrade Subscription';
+                        })()}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setShowHistoryModal(true)}
+                        className="px-4 py-2.5 rounded-xl bg-[#090b14] hover:bg-gray-900 border border-gray-800 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <History size={12} />
+                        Last Subscriptions
+                      </button>
                     </div>
                   )}
                 </div>
@@ -5310,6 +5568,397 @@ export default function DesktopCoachPortal() {
           stats={selectedReceiptWorkout}
           onClose={() => setSelectedReceiptWorkout(null)}
         />
+      )}
+
+      {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
+      {showSubscriptionOverlay && (
+        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
+          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-xl w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-850 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <CreditCard size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    {(() => {
+                      const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
+                      const now = new Date();
+                      if (!expiry) return 'Subscribe Premium';
+                      const diffMs = expiry.getTime() - now.getTime();
+                      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                      return diffDays <= 7 ? 'Renew Subscription' : 'Upgrade Subscription';
+                    })()}
+                  </h3>
+                  <p className="text-[10px] text-gray-500">Extend your coaching portal license</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubscriptionOverlay(false);
+                  setSubOverlayScreenshot('');
+                }}
+                className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <form onSubmit={handleRenewSubscription} className="space-y-5 text-xs font-bold text-gray-300">
+              
+              {/* Plan Choice Grid */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: '2 weeks', label: '2 Weeks', price: '2,000 EGP' },
+                    { id: '1 month', label: '1 Month', price: '3,500 EGP' },
+                    { id: '3 months', label: '3 Months', price: '8,500 EGP' },
+                    { id: '6 months', label: '6 Months', price: '14,000 EGP' }
+                  ].map(plan => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => setSubOverlayPlan(plan.id)}
+                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer ${
+                        subOverlayPlan === plan.id
+                          ? 'bg-blue-600/10 border-blue-500 text-white shadow-lg shadow-blue-500/5'
+                          : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                      }`}
+                    >
+                      <span className="text-xs font-extrabold">{plan.label}</span>
+                      <span className={`text-[11px] font-mono mt-1 ${subOverlayPlan === plan.id ? 'text-blue-400' : 'text-gray-500'}`}>{plan.price}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Method Selector */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500">Choose Payment Method</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'wallet', label: 'Mobile Wallet', desc: 'Vodafone Cash, Orange, etc.' },
+                    { id: 'telda', label: 'Telda App', desc: 'Transfer to Username' }
+                  ].map(method => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => {
+                        setSubOverlayMethod(method.id);
+                        setSubOverlayScreenshot('');
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left flex flex-col transition-all duration-200 cursor-pointer ${
+                        subOverlayMethod === method.id
+                          ? 'bg-emerald-600/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/5'
+                          : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                      }`}
+                    >
+                      <span className="text-xs font-extrabold">{method.label}</span>
+                      <span className="text-[9px] text-gray-500 mt-0.5 font-medium">{method.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Guide/Instruction Info Alert */}
+              <div className="p-4 rounded-2xl bg-[#121624]/80 border border-gray-800 space-y-1.5 font-medium text-[11px] text-gray-400">
+                <p className="font-extrabold text-white text-xs uppercase tracking-wider">Payment Instructions:</p>
+                {subOverlayMethod === 'telda' ? (
+                  <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@haleemmamdouh</span></p>
+                ) : (
+                  <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01096739669</span></p>
+                )}
+                <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
+              </div>
+
+              {/* Dynamic Inputs depending on Method */}
+              <div className="space-y-4">
+                {subOverlayMethod === 'telda' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Telda Username</label>
+                      <input
+                        type="text"
+                        required
+                        value={subOverlayTeldaUser}
+                        onChange={e => setSubOverlayTeldaUser(e.target.value)}
+                        placeholder="@username"
+                        className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Phone Number</label>
+                      <input
+                        type="tel"
+                        required
+                        value={subOverlayPhone}
+                        onChange={e => setSubOverlayPhone(e.target.value)}
+                        placeholder="e.g. 01xxxxxxxxx"
+                        className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Wallet Phone Number</label>
+                      <input
+                        type="tel"
+                        required
+                        value={subOverlayPhone}
+                        onChange={e => setSubOverlayPhone(e.target.value)}
+                        placeholder="e.g. 01xxxxxxxxx"
+                        className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                      />
+                    </div>
+
+                    {/* Screenshot drag and drop area */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Transfer Screenshot / Receipt</label>
+                      
+                      {!subOverlayScreenshot ? (
+                        <div 
+                          className="border-2 border-dashed border-gray-800 hover:border-blue-500/40 bg-[#121624]/40 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-pointer relative"
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={e => {
+                            e.preventDefault();
+                            if (e.dataTransfer.files?.[0]) {
+                              handleScreenshotFile(e.dataTransfer.files[0]);
+                            }
+                          }}
+                        >
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => {
+                              if (e.target.files?.[0]) {
+                                handleScreenshotFile(e.target.files[0]);
+                              }
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          <div className="w-10 h-10 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 mb-2 transition-all">
+                            <Plus size={16} />
+                          </div>
+                          <p className="text-[11px] text-gray-400 font-extrabold group-hover:text-blue-400 transition-colors">Drag and drop screenshot here, or click to upload</p>
+                          <p className="text-[9px] text-gray-600 mt-1">Accepts PNG, JPG, or JPEG up to 2MB (Processed locally only)</p>
+                        </div>
+                      ) : (
+                        <div className="relative border border-gray-800 rounded-2xl overflow-hidden bg-[#121624] p-3 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={subOverlayScreenshot} 
+                              alt="Transaction Screenshot" 
+                              className="w-12 h-12 object-cover rounded-lg border border-gray-850"
+                            />
+                            <div>
+                              <p className="text-white text-[11px] font-bold">Screenshot Attached</p>
+                              <p className="text-[9px] text-emerald-400 font-bold">Ready to upload</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSubOverlayScreenshot('')}
+                            className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                            title="Remove screenshot"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Total checkout amount display */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
+                <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
+                <span className="text-base font-black text-white font-mono">
+                  {(() => {
+                    if (subOverlayPlan === '2 weeks') return '2,000 EGP';
+                    if (subOverlayPlan === '1 month') return '3,500 EGP';
+                    if (subOverlayPlan === '3 months') return '8,500 EGP';
+                    if (subOverlayPlan === '6 months') return '14,000 EGP';
+                    return '0 EGP';
+                  })()}
+                </span>
+              </div>
+
+              {/* Privacy Policy & Terms acceptance checklists */}
+              <div className="space-y-3 pt-2 border-t border-gray-800/80">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={subOverlayTermsChecked}
+                    onChange={e => setSubOverlayTermsChecked(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                  />
+                  <div className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                    I accept the{' '}
+                    <span 
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toast(
+                          (t) => (
+                            <div className="text-[10px] text-gray-300 font-medium space-y-2 pr-1 max-h-[300px] overflow-y-auto no-scrollbar">
+                              <p className="font-extrabold text-xs text-white uppercase border-b border-gray-850 pb-1">Life Gym Privacy Policy Summary</p>
+                              <p>We process the following data categories securely to manage your Coach Portal access:</p>
+                              <ul className="list-disc pl-4 space-y-1">
+                                <li><b>Profile Data:</b> Email address, username, display name, account passwords.</li>
+                                <li><b>Athletes Logged:</b> Assigned client names, height/weight logs, experience metrics, schedules.</li>
+                                <li><b>Diet & Training:</b> Nutrition target settings, exercise sets logged, muscle maps.</li>
+                                <li><b>Composition:</b> Body fat, muscle mass measurements, and uploaded InBody PDF/CSV reports.</li>
+                                <li><b>Transaction Ledger:</b> Sender names, transfer phone numbers, and screenshot receipts.</li>
+                              </ul>
+                              <p>Data is stored securely in encrypted cloud instances. Transaction screenshots are sent to administrative channels solely for validation and are not retained in public database buckets.</p>
+                              <button 
+                                onClick={() => toast.dismiss(t.id)} 
+                                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] uppercase px-3 py-1.5 rounded-lg cursor-pointer mt-1"
+                              >
+                                Close Summary
+                              </button>
+                            </div>
+                          ),
+                          { duration: 15000, style: { background: '#0b0c16', border: '1px solid #1e293b', minWidth: '320px' } }
+                        );
+                      }}
+                      className="text-blue-400 hover:underline font-extrabold"
+                    >
+                      Privacy Policy Summary (View Data Details)
+                    </span>{' '}
+                    and authorize my profile details and client records to be securely processed.
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={subOverlayRefundChecked}
+                    onChange={e => setSubOverlayRefundChecked(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                  />
+                  <span className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                    I acknowledge that this transaction is strictly <span className="font-bold text-white uppercase">non-refundable</span> and access depends on the owner's manual verification of the screenshot or Telda username record.
+                  </span>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubscriptionOverlay(false);
+                    setSubOverlayScreenshot('');
+                  }}
+                  className="flex-1 bg-gray-900 hover:bg-gray-850 border border-gray-850 text-gray-300 font-bold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <X size={13} /> Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={subOverlaySubmitting || !subOverlayTermsChecked || !subOverlayRefundChecked}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {subOverlaySubmitting ? 'Submitting...' : <><Save size={13} /> Submit Renewal</>}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* COACH SUBSCRIPTION HISTORY LEDGER MODAL */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
+          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-850 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-black">
+                  <History size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Subscription Ledger</h3>
+                  <p className="text-[10px] text-gray-500">Your historical billing receipts log</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* List / History Ledger container */}
+            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 no-scrollbar">
+              {!myCoachProfile?.targets?.subscription_history || myCoachProfile.targets.subscription_history.length === 0 ? (
+                <div className="py-12 text-center text-gray-500 italic space-y-2">
+                  <Activity className="w-8 h-8 text-gray-700 mx-auto animate-pulse" />
+                  <p className="text-xs">No subscription payments logged for this account yet.</p>
+                </div>
+              ) : (
+                myCoachProfile.targets.subscription_history
+                  .slice()
+                  .reverse()
+                  .map((entry: any, index: number) => (
+                    <div key={index} className="bg-[#121624]/60 border border-gray-800 p-4 rounded-2xl space-y-2.5 font-bold text-xs text-gray-300">
+                      <div className="flex justify-between items-center border-b border-gray-850 pb-2">
+                        <span className="text-[10px] font-mono text-gray-500">
+                          {new Date(entry.timestamp).toLocaleString()}
+                        </span>
+                        <span className="text-[9px] bg-blue-500/15 border border-blue-500/20 text-blue-400 uppercase tracking-widest px-2 py-0.5 rounded font-black">
+                          Approved
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-[11px]">
+                        <div>
+                          <p className="text-[9px] text-gray-500 uppercase tracking-wider">Extended Plan</p>
+                          <p className="text-white mt-0.5">{entry.period}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-gray-500 uppercase tracking-wider">Amount Paid</p>
+                          <p className="text-emerald-400 font-mono mt-0.5">{entry.amount || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-[#090b14]/50 border border-gray-850 rounded-xl text-[10px] font-mono text-gray-400">
+                        <p className="flex justify-between">
+                          <span>Starts:</span>
+                          <span className="text-white">{entry.start_date ? new Date(entry.start_date).toLocaleDateString() : 'N/A'}</span>
+                        </p>
+                        <p className="flex justify-between mt-1">
+                          <span>Expires:</span>
+                          <span className="text-white">{entry.end_date ? new Date(entry.end_date).toLocaleDateString() : 'Lifetime'}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="w-full bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 font-bold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <X size={13} /> Close Ledger
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
       {/* REACTIVATE SUBSCRIPTION DIALOG MODAL */}
