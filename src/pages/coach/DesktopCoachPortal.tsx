@@ -131,6 +131,7 @@ export default function DesktopCoachPortal() {
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
   const [recentDiets, setRecentDiets] = useState<any[]>([]);
   const [refreshingFeed, setRefreshingFeed] = useState(false);
+  const [feedFilterMineOnly, setFeedFilterMineOnly] = useState(false);
 
   // Selected Client (Clients Tab)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -432,6 +433,10 @@ export default function DesktopCoachPortal() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    fetchFeedData();
+  }, [feedFilterMineOnly]);
+
   // Coach subscription warning and free trial countdown timer
   useEffect(() => {
     if (!myCoachProfile || coachUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c') {
@@ -563,18 +568,52 @@ export default function DesktopCoachPortal() {
     try {
       setRefreshingFeed(true);
       
-      const { data: workoutsData } = await supabase
+      let activeUid = coachUserId;
+      if (!activeUid) {
+        const { data: { session } } = await supabase.auth.getSession();
+        activeUid = session?.user?.id || '';
+      }
+      if (!activeUid) {
+        setRefreshingFeed(false);
+        return;
+      }
+      
+      const isOwner = activeUid === OWNER_ID;
+      const shouldFilter = !isOwner || feedFilterMineOnly;
+
+      let workoutsQuery = supabase
         .from('workouts')
         .select('id, user_id, date, day_type, total_volume, duration, notes')
         .eq('status', 'completed')
-        .order('date', { ascending: false })
-        .limit(10);
+        .order('date', { ascending: false });
 
-      const { data: dietLogsData } = await supabase
+      let dietLogsQuery = supabase
         .from('diet_logs')
         .select('id, user_id, date, daily_totals')
-        .order('date', { ascending: false })
-        .limit(10);
+        .order('date', { ascending: false });
+
+      if (shouldFilter) {
+        // Fetch only clients belonging to this coach
+        const { data: myClients } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'client')
+          .eq('coach_id', activeUid);
+        const myClientIds = myClients?.map(c => c.id) || [];
+        
+        if (myClientIds.length > 0) {
+          workoutsQuery = workoutsQuery.in('user_id', myClientIds);
+          dietLogsQuery = dietLogsQuery.in('user_id', myClientIds);
+        } else {
+          setRecentWorkouts([]);
+          setRecentDiets([]);
+          setRefreshingFeed(false);
+          return;
+        }
+      }
+
+      const { data: workoutsData } = await workoutsQuery.limit(10);
+      const { data: dietLogsData } = await dietLogsQuery.limit(10);
 
       const feedUserIds = Array.from(new Set([
         ...(workoutsData || []).map(w => w.user_id),
@@ -1925,22 +1964,7 @@ export default function DesktopCoachPortal() {
 
     const toastId = toast.loading('Deleting athlete account...');
     try {
-      // 1. Delete user from auth via API
-      const res = await fetch('/api/delete-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({ uid: managementSelectedClientId })
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        console.warn('Auth deletion warning:', errData.error);
-      }
-
-      // 2. Cascade delete from workouts & exercises
+      // 1. Cascade delete from workouts & exercises
       try {
         const { data: userWorkouts } = await supabase
           .from('workouts')
@@ -1955,7 +1979,7 @@ export default function DesktopCoachPortal() {
         console.warn('Failed to delete workouts cascade:', err);
       }
 
-      // 3. Cascade delete from diet logs & meals
+      // 2. Cascade delete from diet logs & meals
       try {
         const { data: userDietLogs } = await supabase
           .from('diet_logs')
@@ -1970,33 +1994,48 @@ export default function DesktopCoachPortal() {
         console.warn('Failed to delete diet logs cascade:', err);
       }
 
-      // 4. Delete progress notes
+      // 3. Delete progress notes
       try {
         await supabase.from('progress_notes').delete().eq('user_id', managementSelectedClientId);
       } catch (err) { console.warn(err); }
 
-      // 5. Delete water logs
+      // 4. Delete water logs
       try {
         await supabase.from('water_logs').delete().eq('user_id', managementSelectedClientId);
       } catch (err) { console.warn(err); }
 
-      // 6. Delete InBody scans
+      // 5. Delete InBody scans
       try {
         await supabase.from('inbody_scans').delete().eq('user_id', managementSelectedClientId);
       } catch (err) { console.warn(err); }
 
-      // 7. Delete workout plans / split templates
+      // 6. Delete workout plans / split templates
       try {
         await supabase.from('user_workout_plans').delete().eq('user_id', managementSelectedClientId);
       } catch (err) { console.warn(err); }
 
-      // 8. Delete client profiles
+      // 7. Delete client profiles
       try {
         await supabase.from('client_profiles').delete().eq('user_id', managementSelectedClientId);
       } catch (err) { console.warn(err); }
 
-      // 9. Delete base profile
+      // 8. Delete base profile
       await supabase.from('profiles').delete().eq('id', managementSelectedClientId);
+
+      // 9. Delete user from auth via API LAST
+      const res = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ uid: managementSelectedClientId })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.warn('Auth deletion warning:', errData.error);
+      }
 
       toast.success('Athlete wiped successfully.', { id: toastId });
       
@@ -2723,6 +2762,28 @@ export default function DesktopCoachPortal() {
                   </p>
                 </Card>
               </div>
+
+              {/* Feed Activity Filter Toggle - Owner / Admin Only */}
+              {coachUserId === OWNER_ID && (
+                <div className="flex justify-between bg-gradient-to-r from-blue-500/[0.03] to-indigo-500/[0.03] border border-gray-850 p-4 rounded-2xl gap-4 items-center">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-white uppercase tracking-wider">Feed Activity Filter</p>
+                    <p className="text-[9px] text-gray-500 mt-0.5 leading-normal font-bold">
+                      Toggle between monitoring all athlete activity across the platform or narrowing it down to your assigned clients.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setFeedFilterMineOnly(!feedFilterMineOnly)}
+                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
+                      feedFilterMineOnly
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/25'
+                        : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 font-bold'
+                    }`}
+                  >
+                    {feedFilterMineOnly ? 'My Athletes Only' : 'All System Activity'}
+                  </button>
+                </div>
+              )}
 
               {/* Feed & Systems Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -5684,7 +5745,24 @@ export default function DesktopCoachPortal() {
 
                         const toastId = toast.loading('Deleting coach account...');
                         try {
-                          // 1. Delete user from auth via API
+                          // 1. Reassign clients to OWNER_ID
+                          await supabase
+                            .from('profiles')
+                            .update({ coach_id: OWNER_ID })
+                            .eq('coach_id', currentCoach.id);
+
+                          await supabase
+                            .from('client_profiles')
+                            .update({ coach_id: OWNER_ID })
+                            .eq('coach_id', currentCoach.id);
+
+                          // 2. Delete coach profile
+                          await supabase
+                            .from('profiles')
+                            .delete()
+                            .eq('id', currentCoach.id);
+
+                          // 3. Delete user from auth via API LAST
                           const res = await fetch('/api/delete-user', {
                             method: 'POST',
                             headers: {
@@ -5698,23 +5776,6 @@ export default function DesktopCoachPortal() {
                             const errData = await res.json().catch(() => ({}));
                             console.warn('Auth deletion warning:', errData.error);
                           }
-
-                          // 2. Reassign clients to OWNER_ID
-                          await supabase
-                            .from('profiles')
-                            .update({ coach_id: OWNER_ID })
-                            .eq('coach_id', currentCoach.id);
-
-                          await supabase
-                            .from('client_profiles')
-                            .update({ coach_id: OWNER_ID })
-                            .eq('coach_id', currentCoach.id);
-
-                          // 3. Delete coach profile
-                          await supabase
-                            .from('profiles')
-                            .delete()
-                            .eq('id', currentCoach.id);
 
                           toast.success('Coach deleted successfully.', { id: toastId });
                           setSelectedSystemCoach(null);
