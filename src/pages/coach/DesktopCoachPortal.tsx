@@ -6,7 +6,7 @@ import {
   Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
-  ChevronDown, ChevronUp, FileText, Settings, Sparkles
+  ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -2054,6 +2054,19 @@ export default function DesktopCoachPortal() {
             title="Force browser update and clear cache"
           >
             <RefreshCw size={11} /> Force Update (Hard Reload)
+          </button>
+
+          <button 
+            onClick={async () => {
+              if (window.confirm("Are you sure you want to sign out?")) {
+                await supabase.auth.signOut();
+                window.location.href = '/coach-portal';
+              }
+            }}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-red-900/40 hover:border-red-700 bg-red-950/20 text-[10px] font-bold text-red-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title="Log Out"
+          >
+            <LogOut size={11} /> Log Out
           </button>
         </div>
       </header>
