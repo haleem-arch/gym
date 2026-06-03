@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co'
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjAwMjYsImV4cCI6MjA5NDE5NjAyNn0.BO_dTDWp2-vV_JUUYsxVl2TaLFUdX2LsuA_8o8DYOkg'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYyMDAyNiwiZXhwIjoyMDk0MTk2MDI2fQ.od8whZoEL0AgKr7NEI0EMxfo7BgHC9RBsyCKPBwltKY' // will fall back to process env in Vercel
+const supabaseUrl = 'https://hppzxppssmhhaefwqffg.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjAwMjYsImV4cCI6MjA5NDE5NjAyNn0.BO_dTDWp2-vV_JUUYsxVl2TaLFUdX2LsuA_8o8DYOkg'
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYyMDAyNiwiZXhwIjoyMDk0MTk2MDI2fQ.od8whZoEL0AgKr7NEI0EMxfo7BgHC9RBsyCKPBwltKY'
 
 const TELEGRAM_BOT_TOKEN = '8802232137:AAEdXRO2LXC0GtR_coXMh6bM_0ATpJd4G0Q';
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
@@ -29,7 +29,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(450).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -125,26 +125,11 @@ export default async function handler(req: any, res: any) {
     }
 
     // 5. Send message to Telegram
-    const detailsHtml = method === 'telda' 
-      ? `<b>Telda Username:</b> ${sender_details.telda_username || 'N/A'}\n<b>Phone:</b> ${sender_details.phone || 'N/A'}`
-      : `<b>Wallet Phone:</b> ${sender_details.phone || 'N/A'}`;
+    const detailsText = method === 'telda' 
+      ? `Telda Username: ${sender_details.telda_username || 'N/A'}\nPhone: ${sender_details.phone || 'N/A'}`
+      : `Wallet Phone: ${sender_details.phone || 'N/A'}`;
 
-    const captionText = `
-🔔 <b>New Coach Subscription Request</b>
-
-👤 <b>Coach Details:</b>
-• <b>Name:</b> ${profile.display_name || 'N/A'}
-• <b>Email:</b> ${profile.email || 'N/A'}
-• <b>ID:</b> <code>${user.id}</code>
-
-💳 <b>Payment Details:</b>
-• <b>Chosen Plan:</b> ${period}
-• <b>Price:</b> ${planPrice}
-• <b>Method:</b> ${method === 'telda' ? 'Telda' : 'Mobile Wallet'}
-${detailsHtml}
-
-⚡️ <i>Click approve below to extend the coach's plan immediately.</i>
-`;
+    const captionText = `🔔 New Coach Subscription Request\n\n👤 Coach Details:\n• Name: ${profile.display_name || 'N/A'}\n• Email: ${profile.email || 'N/A'}\n• ID: ${user.id}\n\n💳 Payment Details:\n• Plan: ${period}\n• Price: ${planPrice}\n• Method: ${method === 'telda' ? 'Telda' : 'Mobile Wallet'}\n${detailsText}\n\n⚡️ Tap approve to extend the coach plan.`;
 
     const inlineKeyboard = {
       inline_keyboard: [
@@ -156,57 +141,96 @@ ${detailsHtml}
     };
 
     if (method === 'wallet' && screenshot) {
-      // If we have a base64 screenshot, parse and send as file
-      const base64Data = screenshot.replace(/^data:image\/\w+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
-      const parts = [
-        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${telegramChatId}\r\n`),
-        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${captionText}\r\n`),
-        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="parse_mode"\r\n\r\nHTML\r\n`),
-        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="reply_markup"\r\n\r\n${JSON.stringify(inlineKeyboard)}\r\n`),
-        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="screenshot.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`),
-        buffer,
-        Buffer.from(`\r\n--${boundary}--\r\n`)
-      ];
-      
-      const multipartBody = Buffer.concat(parts);
+      // If we have a base64 screenshot, decode and send as photo via multipart
+      try {
+        const base64Data = screenshot.replace(/^data:image\/\w+;base64,/, '');
+        // Decode base64 to binary using atob (available in Node 18+)
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
 
-      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': `multipart/form-data; boundary=${boundary}`
-        },
-        body: multipartBody
-      });
+        const te = new TextEncoder();
+        const boundary = '----FormBoundary' + Math.random().toString(36).substring(2);
+        const crlf = '\r\n';
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Telegram bot photo sending error:', errorText);
+        const headerPart = (name: string, value: string) =>
+          te.encode(`--${boundary}${crlf}Content-Disposition: form-data; name="${name}"${crlf}${crlf}${value}${crlf}`);
+
+        const parts: Uint8Array[] = [
+          headerPart('chat_id', String(telegramChatId)),
+          headerPart('caption', captionText),
+          headerPart('parse_mode', 'HTML'),
+          headerPart('reply_markup', JSON.stringify(inlineKeyboard)),
+          te.encode(`--${boundary}${crlf}Content-Disposition: form-data; name="photo"; filename="screenshot.jpg"${crlf}Content-Type: image/jpeg${crlf}${crlf}`),
+          bytes,
+          te.encode(`${crlf}--${boundary}--${crlf}`)
+        ];
+
+        // Concatenate all parts
+        const totalLength = parts.reduce((acc, p) => acc + p.length, 0);
+        const body = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const part of parts) {
+          body.set(part, offset);
+          offset += part.length;
+        }
+
+        const photoResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+          method: 'POST',
+          headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+          body: body
+        });
+
+        if (!photoResp.ok) {
+          const errText = await photoResp.text();
+          console.error('Telegram sendPhoto error:', errText);
+          // Fall back to text message
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: telegramChatId,
+              text: captionText + '\n\n(Screenshot upload failed)',
+              reply_markup: inlineKeyboard
+            })
+          });
+        }
+      } catch (photoErr) {
+        console.error('Photo processing error:', photoErr);
+        // Fall back to text message
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: telegramChatId,
+            text: captionText + '\n\n(Photo could not be sent)',
+            reply_markup: inlineKeyboard
+          })
+        });
       }
     } else {
-      // If Telda or no screenshot, send simple message
-      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      // Telda or no screenshot — send a plain text message
+      const msgResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: telegramChatId,
           text: captionText,
-          parse_mode: 'HTML',
           reply_markup: inlineKeyboard
         })
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Telegram bot text message sending error:', errorText);
+      if (!msgResp.ok) {
+        const errText = await msgResp.text();
+        console.error('Telegram sendMessage error:', errText);
       }
     }
 
     return res.status(200).json({ success: true });
   } catch (err: any) {
     console.error('Submit Payment API Error:', err);
-    return res.status(500).json({ error: 'Internal Server Error: ' + err.message });
+    return res.status(500).json({ error: 'Internal Server Error: ' + (err?.message || String(err)) });
   }
 }
