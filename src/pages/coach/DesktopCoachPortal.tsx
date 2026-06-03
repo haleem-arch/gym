@@ -256,6 +256,7 @@ export default function DesktopCoachPortal() {
   const [subOverlayTermsChecked, setSubOverlayTermsChecked] = useState(false);
   const [subOverlayRefundChecked, setSubOverlayRefundChecked] = useState(false);
   const [subOverlaySubmitting, setSubOverlaySubmitting] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   // History ledger modal state
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -5435,6 +5436,17 @@ export default function DesktopCoachPortal() {
                         </p>
                       </div>
                     </div>
+
+                    {coachUserId !== OWNER_ID && (
+                      <div className="mt-6 p-4 rounded-2xl bg-[#090b14]/60 border border-gray-800/80 space-y-1.5 text-[11px] leading-relaxed text-gray-400 font-medium font-sans">
+                        <p className="font-extrabold text-white text-xs uppercase tracking-wider">🌟 Premium Coach License Privileges:</p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all client feeds, workouts, diet plans, and body composition logs.</li>
+                          <li>Allows hosting and managing <span className="text-white font-bold">up to 50 active athletes</span>.</li>
+                          <li>Unlocks the AI Workout Generator, custom workout scheduling, and InBody assessment parsers.</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   {/* Nice visual bar for remaining time (Coach only, Owner doesn't need it) */}
@@ -5611,6 +5623,18 @@ export default function DesktopCoachPortal() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                 {/* Left Column */}
                 <div className="space-y-5">
+                  
+                  {/* COMPELING SELLING POINTS */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 space-y-2">
+                    <p className="font-extrabold text-emerald-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                      <span>💎 Premium License Guarantees:</span>
+                    </p>
+                    <ul className="space-y-1.5 text-[10px] text-gray-400 font-medium list-disc pl-4 font-sans leading-relaxed">
+                      <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all training plans, diet sheets, client records, and analytics.</li>
+                      <li>Allows you to manage <span className="text-white font-bold">up to 50 active athletes</span> concurrently.</li>
+                      <li>Unlocks advanced features: AI workout logs generator, InBody assessments parser, custom client progress tracking dashboard.</li>
+                    </ul>
+                  </div>
               
               {/* Plan Choice Grid */}
               <div className="space-y-2">
@@ -5814,31 +5838,9 @@ export default function DesktopCoachPortal() {
                       onClick={e => {
                         e.preventDefault();
                         e.stopPropagation();
-                        toast(
-                          (t) => (
-                            <div className="text-[10px] text-gray-300 font-medium space-y-2 pr-1 max-h-[300px] overflow-y-auto no-scrollbar">
-                              <p className="font-extrabold text-xs text-white uppercase border-b border-gray-850 pb-1">Life Gym Privacy Policy Summary</p>
-                              <p>We process the following data categories securely to manage your Coach Portal access:</p>
-                              <ul className="list-disc pl-4 space-y-1">
-                                <li><b>Profile Data:</b> Email address, username, display name, account passwords.</li>
-                                <li><b>Athletes Logged:</b> Assigned client names, height/weight logs, experience metrics, schedules.</li>
-                                <li><b>Diet & Training:</b> Nutrition target settings, exercise sets logged, muscle maps.</li>
-                                <li><b>Composition:</b> Body fat, muscle mass measurements, and uploaded InBody PDF/CSV reports.</li>
-                                <li><b>Transaction Ledger:</b> Sender names, transfer phone numbers, and screenshot receipts.</li>
-                              </ul>
-                              <p>Data is stored securely in encrypted cloud instances. Transaction screenshots are sent to administrative channels solely for validation and are not retained in public database buckets.</p>
-                              <button 
-                                onClick={() => toast.dismiss(t.id)} 
-                                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] uppercase px-3 py-1.5 rounded-lg cursor-pointer mt-1"
-                              >
-                                Close Summary
-                              </button>
-                            </div>
-                          ),
-                          { duration: 15000, style: { background: '#0b0c16', border: '1px solid #1e293b', minWidth: '320px' } }
-                        );
+                        setShowPrivacyModal(true);
                       }}
-                      className="text-blue-400 hover:underline font-extrabold"
+                      className="text-blue-400 hover:underline font-extrabold cursor-pointer"
                     >
                       Privacy Policy Summary (View Data Details)
                     </span>{' '}
@@ -5867,13 +5869,13 @@ export default function DesktopCoachPortal() {
                     setShowSubscriptionOverlay(false);
                     setSubOverlayScreenshot('');
                   }}
-                  className="flex-1 bg-gray-900 hover:bg-gray-850 border border-gray-850 text-gray-300 font-bold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-gray-900 hover:bg-gray-855 border border-gray-850 text-gray-300 font-bold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
                 >
                   <X size={13} /> Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={subOverlaySubmitting || !subOverlayTermsChecked || !subOverlayRefundChecked}
+                  disabled={subOverlaySubmitting}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   {subOverlaySubmitting ? 'Submitting...' : <><Save size={13} /> Submit Renewal</>}
@@ -5881,6 +5883,69 @@ export default function DesktopCoachPortal() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* COACH PRIVACY POLICY MODAL */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 bg-[#05050b]/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl animate-fade-in no-scrollbar max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-850 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                  <Shield size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Privacy Policy</h3>
+                  <p className="text-[10px] text-gray-500">How LIFE GYM processes and secures your data</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs text-gray-300 font-bold leading-relaxed font-sans">
+              <p>We process the following categories of data securely to manage your Coach Portal access and provide administrative services:</p>
+              
+              <div className="space-y-3 pt-2">
+                <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">🔑 Account & Profile Information</h4>
+                  <p className="text-gray-400 font-medium font-sans">Your email address, username, display name, and encrypted access credentials.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">👥 Client & Athlete Rosters</h4>
+                  <p className="text-gray-400 font-medium font-sans">Assigned client names, training stats, target logs, schedules, and active workout sheets.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">🍏 Nutrition & Fitness Templates</h4>
+                  <p className="text-gray-400 font-medium font-sans">Dietary calculations, target nutrition plans, customized exercises, and physical muscle maps.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">📊 Composition & InBody Analytics</h4>
+                  <p className="text-gray-400 font-medium font-sans">Calculations of body fat percentage, lean mass ratios, and uploaded InBody assessment charts.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">💳 Billing & Transactions</h4>
+                  <p className="text-gray-400 font-medium font-sans">Payment sender names, transfer telephone numbers, and uploaded transaction receipts. Receipt files are handled locally and are deleted immediately after verification.</p>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-gray-500 font-medium font-sans">By accepting these terms, you consent to securely store and process this information under encrypted hosting. We do not sell or share your data with third parties.</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPrivacyModal(false)}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              Understand & Accept
+            </button>
           </div>
         </div>
       )}
