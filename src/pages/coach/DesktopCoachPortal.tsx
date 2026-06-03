@@ -2522,12 +2522,12 @@ export default function DesktopCoachPortal() {
                                 </button>
                               ))}
                             </div>
-                            <div className="flex gap-2 mt-2">
+                            <div className="flex flex-col gap-2 mt-2">
                               <input 
                                 type="number" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
-                                className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
+                                className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
                               />
-                              <button onClick={() => handleAddWater()} className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider whitespace-nowrap active:scale-95 transition-all">+ Log</button>
+                              <button onClick={() => handleAddWater()} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all">+ Log Custom Amount</button>
                             </div>
                           </Card>
 
@@ -3400,17 +3400,17 @@ export default function DesktopCoachPortal() {
                         <Activity size={16} />
                       </div>
                       <div>
-                        <h3 className="text-xs font-black uppercase text-indigo-400">Granular Feature Locks</h3>
-                        <p className="text-[10px] text-gray-500">Enable or disable specific tabs in the athlete PWA workspace.</p>
+                        <h3 className="text-xs font-black uppercase text-indigo-400">Feature Access Toggles</h3>
+                        <p className="text-[10px] text-gray-500">Enable or disable specific features inside the athlete PWA workspace.</p>
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       {([
-                        { key: 'disable_workout', label: 'Workout Tracking Tab', desc: 'Allows athlete to view workout splits and log weights/sets.' },
-                        { key: 'disable_diet', label: 'Diet & Nutrition Dashboard', desc: 'Allows athlete to view calorie budgets and track food/water logs.' },
+                        { key: 'disable_workout_templates', label: 'Hide Workout Templates', desc: 'Removes templates & programs button for clients.' },
+                        { key: 'disable_nutrition_targets', label: 'Hide Nutrition Targets', desc: 'Removes daily targets setup menu for clients.' },
                       ] as const).map(({ key, label, desc }) => {
-                        const isDisabled = !!managementClientProfile.user?.targets?.[key];
+                        const isHidden = !!managementClientProfile.user?.targets?.[key];
                         return (
                           <div key={key} className="flex items-center justify-between bg-gray-900/40 p-4 border border-gray-850 rounded-2xl gap-4">
                             <div className="flex-1 min-w-0">
@@ -3418,15 +3418,15 @@ export default function DesktopCoachPortal() {
                               <p className="text-[9px] text-gray-500 mt-0.5 leading-normal">{desc}</p>
                             </div>
                             <button
-                              onClick={() => handleToggleManagementFeature(key, isDisabled)}
+                              onClick={() => handleToggleManagementFeature(key, isHidden)}
                               disabled={managementUpdatingFeatures}
                               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
-                                isDisabled
+                                isHidden
                                   ? 'bg-red-950/20 border-red-900/25 text-red-400'
                                   : 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400'
                               }`}
                             >
-                              {isDisabled ? 'LOCKED' : 'ENABLED'}
+                              {isHidden ? 'HIDDEN' : 'VISIBLE'}
                             </button>
                           </div>
                         );
