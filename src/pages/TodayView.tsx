@@ -289,6 +289,18 @@ const TodayView = () => {
     };
   }, []);
 
+  // Automatically align dayType with a valid plan type if it's not currently set to a valid option
+  useEffect(() => {
+    if (workoutTemplates.length > 0) {
+      const types = workoutTemplates.map(t => t.plan_type);
+      const validOptions = ['REST', 'RUN', 'RUN + GYM', ...types];
+      if (!validOptions.includes(dayType)) {
+        const fallback = types.find(t => t === 'PUSH') || types[0] || 'REST';
+        setDayType(fallback);
+      }
+    }
+  }, [dayType, workoutTemplates]);
+
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
   

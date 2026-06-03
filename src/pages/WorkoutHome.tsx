@@ -16,7 +16,7 @@ const WorkoutHome = () => {
   const location = useLocation();
   const selectedDateStr = location.state?.activeDateStr || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const getLocalDateString = () => selectedDateStr;
-  const { dayType } = useSchedule(getLocalDateString());
+  const { dayType, setDayType } = useSchedule(getLocalDateString());
 
   const [hybridLiftingType, setHybridLiftingType] = useState(location.state?.forceLiftingType || 'PUSH');
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
@@ -455,6 +455,18 @@ const WorkoutHome = () => {
       window.removeEventListener('plan_updated', handlePlanUpdated);
     };
   }, [dayType, hybridLiftingType]);
+
+  // Automatically align dayType with a valid plan type if it's not currently set to a valid option
+  useEffect(() => {
+    if (savedTemplates.length > 0) {
+      const types = savedTemplates.map(t => t.plan_type);
+      const validOptions = ['REST', 'RUN', 'RUN + GYM', ...types];
+      if (!validOptions.includes(dayType)) {
+        const fallback = types.find(t => t === 'PUSH') || types[0] || 'REST';
+        setDayType(fallback);
+      }
+    }
+  }, [dayType, savedTemplates]);
 
   const handleStartWorkout = async () => {
     if (workout) {
