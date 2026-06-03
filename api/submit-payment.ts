@@ -82,7 +82,7 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'You already have a pending transaction awaiting verification.' });
     }
 
-    const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const paymentId = `pay_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 6)}`;
 
     // 3. Write pending payment info to Coach targets
     const updatedTargets = {
@@ -149,8 +149,8 @@ ${detailsHtml}
     const inlineKeyboard = {
       inline_keyboard: [
         [
-          { text: '✅ Approve & Add Plan', callback_data: `approve:${user.id}:${paymentId}:${period}` },
-          { text: '❌ Reject Payment', callback_data: `reject:${user.id}:${paymentId}` }
+          { text: '✅ Approve & Add Plan', callback_data: `approve:${paymentId}:${period}` },
+          { text: '❌ Reject Payment', callback_data: `reject:${paymentId}` }
         ]
       ]
     };
