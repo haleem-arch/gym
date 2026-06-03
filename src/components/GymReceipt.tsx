@@ -31,6 +31,10 @@ function useCountUp(target: number, duration: number, decimals: number = 0) {
   const rafRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
+    if (typeof target !== 'number' || isNaN(target)) {
+      setValue(0);
+      return;
+    }
     const start = performance.now();
     const step = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
@@ -50,21 +54,113 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
   const dayType = stats.dayType || stats.day_type || 'GYM';
   const workoutName = stats.workoutName || stats.name || `${dayType} Session`;
   
-  // Total volume
-  const rawTotalVolume = typeof stats.totalVolume === 'number' 
-    ? stats.totalVolume 
-    : (typeof stats.total_volume === 'number' ? stats.total_volume : 0);
+  const [dbWorkout, setDbWorkout] = useState<any>(null);
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchedTotalSets, setFetchedTotalSets] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!workoutId) return;
+      
+      setLoading(true);
+      try {
+        // 1. Fetch workout details from the DB
+        const { data: wData, error: wError } = await supabase
+          .from('workouts')
+          .select('*')
+          .eq('id', workoutId)
+          .maybeSingle();
+          
+        if (wError) throw wError;
+        if (wData) {
+          setDbWorkout(wData);
+        }
+        
+        // 2. Fetch workout exercises from the DB
+        if (dayType !== 'RUN') {
+          const { data: exData, error: exError } = await supabase
+            .from('workout_exercises')
+            .select('*, exercises(name, tier)')
+            .eq('workout_id', workoutId)
+            .order('id', { ascending: true });
+            
+          if (exError) throw exError;
+          if (exData) {
+            setExercises(exData);
+            
+            let count = 0;
+            exData.forEach((ex: any) => {
+              if (ex.sets && Array.isArray(ex.sets)) {
+                ex.sets.forEach((s: any) => {
+                  if (s.done) count++;
+                });
+              }
+            });
+            setFetchedTotalSets(count);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching workout details in receipt:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [workoutId, dayType]);
+
+  const mergedStats = {
+    ...stats,
+    ...(dbWorkout || {})
+  };
+
+  // Total volume calculation
+  const computedVolume = (() => {
+    if (dayType === 'RUN') return 0;
+    let vol = 0;
+    exercises.forEach(ex => {
+      if (ex.sets && Array.isArray(ex.sets)) {
+        ex.sets.forEach((s: any) => {
+          if (s.done && s.weight && s.reps) {
+            const w = parseFloat(s.weight);
+            const r = parseInt(s.reps);
+            if (!isNaN(w) && !isNaN(r)) {
+              vol += (w * r);
+            }
+          }
+        });
+      }
+    });
+    return vol;
+  })();
+
+  const rawTotalVolume = computedVolume > 0 
+    ? computedVolume 
+    : (() => {
+        const val = mergedStats.totalVolume ?? mergedStats.total_volume;
+        if (val === undefined || val === null) return 0;
+        const num = Number(val);
+        return isNaN(num) ? 0 : num;
+      })();
   
   // Duration in minutes
-  let rawDurationMinutes = 0;
-  if (typeof stats.durationMinutes === 'number') {
-    rawDurationMinutes = stats.durationMinutes;
-  } else if (typeof stats.duration === 'number') {
-    rawDurationMinutes = Math.round(stats.duration / 60);
-  }
+  const rawDurationMinutes = (() => {
+    const dm = mergedStats.durationMinutes;
+    if (dm !== undefined && dm !== null) {
+      const num = Number(dm);
+      if (!isNaN(num)) return num;
+    }
+    const d = mergedStats.duration;
+    if (d !== undefined && d !== null) {
+      const num = Number(d);
+      if (!isNaN(num)) return Math.round(num / 60);
+    }
+    return 0;
+  })();
 
   // Display Date
-  const rawDate = stats.date || stats.created_at;
+  const rawDate = mergedStats.date || mergedStats.created_at;
   const displayDateStr = (() => {
     if (rawDate) {
       try {
@@ -79,48 +175,6 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
     });
   })();
 
-  const [exercises, setExercises] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetchedTotalSets, setFetchedTotalSets] = useState<number | null>(null);
-
-  useEffect(() => {
-    const fetchDetails = async () => {
-      if (!workoutId) return;
-      if (dayType === 'RUN') return;
-      
-      setLoading(true);
-      try {
-        const { data: exData, error } = await supabase
-          .from('workout_exercises')
-          .select('*, exercises(name, tier)')
-          .eq('workout_id', workoutId)
-          .order('id', { ascending: true });
-          
-        if (error) throw error;
-        
-        if (exData) {
-          setExercises(exData);
-          
-          let count = 0;
-          exData.forEach((ex: any) => {
-            if (ex.sets && Array.isArray(ex.sets)) {
-              ex.sets.forEach((s: any) => {
-                if (s.done) count++;
-              });
-            }
-          });
-          setFetchedTotalSets(count);
-        }
-      } catch (err) {
-        console.error('Error fetching workout details in receipt:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchDetails();
-  }, [workoutId, dayType]);
-
   // Compute best set if prExercise is missing
   let computedBestSet = '';
   if (exercises.length > 0) {
@@ -131,10 +185,14 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
       if (ex.sets && Array.isArray(ex.sets)) {
         ex.sets.forEach((s: any) => {
           if (s.done) {
-            if (s.weight > maxWeight || (s.weight === maxWeight && s.reps > bestRep)) {
-              maxWeight = s.weight;
-              bestRep = s.reps;
-              bestExName = ex.exercises?.name || 'Exercise';
+            const w = parseFloat(s.weight);
+            const r = parseInt(s.reps);
+            if (!isNaN(w) && !isNaN(r)) {
+              if (w > maxWeight || (w === maxWeight && r > bestRep)) {
+                maxWeight = w;
+                bestRep = r;
+                bestExName = ex.exercises?.name || 'Exercise';
+              }
             }
           }
         });
@@ -146,7 +204,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
   }
 
   // Parse Run statistics if dayType is RUN and notes has JSON
-  const notesText = stats.notes || '';
+  const notesText = mergedStats.notes || '';
   let runStats: any = null;
   if (dayType === 'RUN' && notesText.includes('"type":"run_stats"')) {
     try {
@@ -156,11 +214,16 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
     }
   }
 
-  const displayTotalSets = typeof stats.totalSets === 'number' 
-    ? stats.totalSets 
-    : (fetchedTotalSets ?? 0);
+  const displayTotalSets = (() => {
+    const ts = mergedStats.totalSets;
+    if (ts !== undefined && ts !== null) {
+      const num = Number(ts);
+      if (!isNaN(num)) return num;
+    }
+    return fetchedTotalSets ?? 0;
+  })();
 
-  const prHighlight = stats.prExercise || stats.pr_exercise || computedBestSet;
+  const prHighlight = mergedStats.prExercise || mergedStats.pr_exercise || computedBestSet;
 
   const volume = useCountUp(rawTotalVolume, 1400, 0);
   const sets = useCountUp(displayTotalSets, 1000, 0);

@@ -85,7 +85,7 @@ const TodayView = () => {
   };
   const activeDateStr = getLocalDateString(activeDate);
 
-  const { dayType, setDayType } = useSchedule(activeDateStr);
+  const { dayType, setDayType, loading: scheduleLoading } = useSchedule(activeDateStr);
   const [showTargetsModal, setShowTargetsModal] = useState(false);
   const isToday = activeDate.toDateString() === new Date().toDateString();
 
@@ -175,14 +175,14 @@ const TodayView = () => {
       if (activeStr) {
         try {
           const parsed = JSON.parse(activeStr);
-          if (parsed && isToday) {
+          if (parsed && parsed.date === activeDateStr) {
             if (active) setWorkoutStatus(0.5);
             return;
           }
         } catch (e) {}
       }
 
-      if (workout && isToday) {
+      if (workout && workout.date === activeDateStr) {
         setWorkoutStatus(0.5);
       } else {
         setWorkoutStatus(0.0);
@@ -291,6 +291,7 @@ const TodayView = () => {
 
   // Automatically align dayType with a valid plan type if it's not currently set to a valid option
   useEffect(() => {
+    if (scheduleLoading) return;
     if (workoutTemplates.length > 0) {
       const types = workoutTemplates.map(t => t.plan_type);
       const validOptions = ['REST', 'RUN', 'RUN + GYM', ...types];
@@ -304,7 +305,7 @@ const TodayView = () => {
         setDayType(matchedOption);
       }
     }
-  }, [dayType, workoutTemplates]);
+  }, [dayType, workoutTemplates, scheduleLoading]);
 
   const handlePrevDay = () => setActiveDate(new Date(activeDate.getTime() - 86400000));
   const handleNextDay = () => setActiveDate(new Date(activeDate.getTime() + 86400000));
@@ -425,7 +426,11 @@ const TodayView = () => {
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-bold text-primary uppercase tracking-wider">Scheduled Plan</span>
           <select 
-            value={['REST', 'RUN', 'RUN + GYM', ...workoutTemplates.map(t => t.plan_type)].includes(dayType) ? dayType : (workoutTemplates.find(t => t.plan_type === 'PUSH')?.plan_type || workoutTemplates[0]?.plan_type || 'REST')}
+            value={(() => {
+              const options = ['REST', 'RUN', 'RUN + GYM', ...workoutTemplates.map(t => t.plan_type)];
+              const matched = options.find(x => x.toUpperCase() === dayType.toUpperCase());
+              return matched || (workoutTemplates.find(t => t.plan_type.toUpperCase() === 'PUSH')?.plan_type || workoutTemplates[0]?.plan_type || 'REST');
+            })()}
             onChange={(e) => setDayType(e.target.value)}
             className="bg-gray-800 text-xs font-bold text-white border border-gray-700 rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
           >
@@ -510,19 +515,19 @@ const TodayView = () => {
             <div className="w-full flex flex-col items-center gap-2">
               <button 
                 onClick={() => {
-                  if (workout && isToday) {
+                  if (workout && workout.date === activeDateStr) {
                     navigate('/workout/active');
                   } else {
                     navigate('/workout', { state: { activeDateStr } });
                   }
                 }}
-                className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && isToday) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
+                className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && workout.date === activeDateStr) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
               >
                 <Play size={18} fill="currentColor" />
-                {(workout && isToday) ? 'RESUME SESSION' : 'START WORKOUT'}
+                {(workout && workout.date === activeDateStr) ? 'RESUME SESSION' : 'START WORKOUT'}
               </button>
               
-              {workout && (
+              {workout && workout.date === activeDateStr && (
                 <button
                   onClick={async () => {
                     if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {

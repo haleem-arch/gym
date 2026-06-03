@@ -7,7 +7,7 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check
+  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send, Bell
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -241,7 +241,20 @@ export default function DesktopCoachPortal() {
   // Profile settings password updating state
   const [ownNewPassword, setOwnNewPassword] = useState('');
   const [ownConfirmPassword, setOwnConfirmPassword] = useState('');
-  const [updatingOwnPassword, setUpdatingOwnPassword] = useState(false);
+  // Owner Telegram Approvals Configuration states
+  const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
+  const [savingTelegramId, setSavingTelegramId] = useState(false);
+
+  // Coach Subscription Renewal Flow states
+  const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
+  const [subOverlayPlan, setSubOverlayPlan] = useState('4 weeks');
+  const [subOverlayMethod, setSubOverlayMethod] = useState('wallet');
+  const [subOverlayPhone, setSubOverlayPhone] = useState('');
+  const [subOverlayTeldaUser, setSubOverlayTeldaUser] = useState('');
+  const [subOverlayScreenshot, setSubOverlayScreenshot] = useState('');
+  const [subOverlayTermsChecked, setSubOverlayTermsChecked] = useState(false);
+  const [subOverlayRefundChecked, setSubOverlayRefundChecked] = useState(false);
+  const [subOverlaySubmitting, setSubOverlaySubmitting] = useState(false);
 
   // Subscriptions Tab Reactivation Modal state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
@@ -499,6 +512,44 @@ export default function DesktopCoachPortal() {
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [myCoachProfile, coachUserId]);
+
+  // Prefill Owner Telegram ID
+  useEffect(() => {
+    if (myCoachProfile?.targets?.telegram_chat_id) {
+      setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
+    }
+  }, [myCoachProfile]);
+
+  const handleSaveTelegramChatId = async () => {
+    if (!coachUserId) return;
+    try {
+      setSavingTelegramId(true);
+      const currentTargets = myCoachProfile?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        telegram_chat_id: ownerTelegramChatId.trim()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachUserId);
+
+      if (error) throw error;
+
+      toast.success('Telegram Chat ID updated successfully.');
+      // Refresh local profile
+      setMyCoachProfile((prev: any) => ({
+        ...prev,
+        targets: updatedTargets
+      }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update Telegram Chat ID: ' + err.message);
+    } finally {
+      setSavingTelegramId(false);
+    }
+  };
 
   const fetchBaseData = async (silent = false) => {
     try {
@@ -5025,37 +5076,37 @@ export default function DesktopCoachPortal() {
           )}
 
           {activeTab === 'profile' && (
-            <div className="space-y-8 max-w-3xl">
-              <div className="border-b border-gray-800 pb-5">
-                <h2 className="text-2xl font-black text-white uppercase tracking-wider bg-gradient-to-r from-white via-gray-300 to-gray-500 bg-clip-text text-transparent">
+            <div className="space-y-8 max-w-4xl">
+              <div className="border-b border-gray-800/80 pb-6">
+                <h2 className="text-3xl font-black text-white uppercase tracking-wider bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
                   Coach Portal Profile Settings
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">Review your administrative access credentials, manage your portal account password, and check subscription licenses.</p>
+                <p className="text-sm text-gray-400 mt-2">Review your administrative access credentials, manage your portal account password, and check subscription licenses.</p>
               </div>
 
               {/* Login Credentials & Info Card */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 {/* Visual Glassmorphic Credentials Card */}
-                <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/90 via-[#0d1228]/85 to-[#0b0c1b]/95 p-6 shadow-2xl backdrop-blur-md">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/95 via-[#0d1228]/90 to-[#0b0c1b]/98 p-8 shadow-2xl backdrop-blur-md">
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
                   
-                  <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner">
-                      <Key size={18} />
+                  <div className="flex items-center gap-4 border-b border-gray-800/80 pb-5 mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
+                      <Key size={20} />
                     </div>
                     <div>
-                      <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">Web Portal Login Credentials</h3>
-                      <p className="text-[10px] text-gray-500">Your credentials to access the LIFE GYM system.</p>
+                      <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Web Portal Login Credentials</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">Your credentials to access the LIFE GYM system.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-gray-500 block">Login User Email</span>
-                      <div className="flex items-center justify-between bg-[#090b14] border border-gray-850 px-3 py-2 rounded-xl transition-all duration-300 hover:border-blue-500/30">
-                        <span className="text-xs font-mono font-bold text-white select-all break-all pr-2">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-400 block">Login User Email</span>
+                      <div className="flex items-center justify-between bg-[#080910] border border-gray-800/80 px-4 py-3 rounded-2xl transition-all duration-300 hover:border-blue-500/40">
+                        <span className="text-sm font-mono font-bold text-white select-all break-all pr-3">
                           {myCoachProfile?.email || 'Loading email...'}
                         </span>
                         {myCoachProfile?.email && (
@@ -5067,31 +5118,31 @@ export default function DesktopCoachPortal() {
                               setTimeout(() => setCopiedEmail(false), 2000);
                               toast.success('Email copied to clipboard');
                             }}
-                            className="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all flex-shrink-0"
+                            className="p-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all flex-shrink-0 cursor-pointer"
                             title="Copy email"
                           >
-                            {copiedEmail ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                            {copiedEmail ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                           </button>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-gray-500 block">Access Passcode / Password</span>
-                      <div className="flex items-center justify-between bg-[#090b14] border border-gray-850 px-3 py-2 rounded-xl transition-all duration-300 hover:border-blue-500/30">
-                        <span className="text-xs font-mono font-extrabold text-yellow-500 tracking-wide select-all">
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-400 block">Access Passcode / Password</span>
+                      <div className="flex items-center justify-between bg-[#080910] border border-gray-800/80 px-4 py-3 rounded-2xl transition-all duration-300 hover:border-blue-500/40">
+                        <span className="text-sm font-mono font-extrabold text-yellow-500 tracking-wider select-all">
                           {showPasscode 
                             ? (myCoachProfile?.targets?.generated_passcode || '******')
                             : '••••••••'}
                         </span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             type="button"
                             onClick={() => setShowPasscode(!showPasscode)}
-                            className="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all"
+                            className="p-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all cursor-pointer"
                             title={showPasscode ? "Hide Passcode" : "Show Passcode"}
                           >
-                            {showPasscode ? <EyeOff size={12} /> : <Eye size={12} />}
+                            {showPasscode ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
                           {myCoachProfile?.targets?.generated_passcode && (
                             <button
@@ -5102,10 +5153,10 @@ export default function DesktopCoachPortal() {
                                 setTimeout(() => setCopiedPasscode(false), 2000);
                                 toast.success('Passcode copied to clipboard');
                               }}
-                              className="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all"
+                              className="p-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all cursor-pointer"
                               title="Copy passcode"
                             >
-                              {copiedPasscode ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                              {copiedPasscode ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                             </button>
                           )}
                         </div>
@@ -5115,24 +5166,24 @@ export default function DesktopCoachPortal() {
                 </div>
 
                 {/* Subscription Card */}
-                <div className="relative overflow-hidden rounded-3xl border border-gray-850 bg-[#0d1222]/50 p-6 shadow-xl backdrop-blur-sm flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative overflow-hidden rounded-3xl border border-gray-800/80 bg-[#0d1222]/40 p-8 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
                   
                   <div>
-                    <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-5">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
-                        <CreditCard size={18} />
+                    <div className="flex items-center gap-4 border-b border-gray-800/80 pb-5 mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shadow-inner flex-shrink-0">
+                        <CreditCard size={20} />
                       </div>
                       <div>
-                        <h3 className="text-xs font-black uppercase text-emerald-400 tracking-wider">Subscription Plan Details</h3>
-                        <p className="text-[10px] text-gray-500">Details about your active coaching subscription plan.</p>
+                        <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider">Subscription Plan Details</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">Details about your active coaching subscription plan.</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Account License</p>
-                        <p className="text-white font-extrabold">
+                    <div className="grid grid-cols-2 gap-6 text-sm">
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Account License</p>
+                        <p className="text-white font-extrabold text-base">
                           {coachUserId === OWNER_ID ? (
                             <span className="text-indigo-400 font-mono font-black uppercase tracking-wider">Lifetime Creator Admin</span>
                           ) : isTrialActive ? (
@@ -5143,9 +5194,9 @@ export default function DesktopCoachPortal() {
                         </p>
                       </div>
 
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Remaining Duration</p>
-                        <p className="text-white font-bold font-mono">
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Remaining Duration</p>
+                        <p className="text-white font-bold font-mono text-base">
                           {coachUserId === OWNER_ID ? (
                             <span className="text-indigo-400 font-extrabold">Never Expires</span>
                           ) : (
@@ -5169,14 +5220,14 @@ export default function DesktopCoachPortal() {
 
                   {/* Nice visual bar for remaining time (Coach only, Owner doesn't need it) */}
                   {coachUserId !== OWNER_ID && myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date ? (
-                    <div className="space-y-2 mt-6">
-                      <div className="flex justify-between text-[9px] text-gray-500 font-mono">
+                    <div className="space-y-3 mt-8">
+                      <div className="flex justify-between text-xs text-gray-400 font-mono">
                         <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
                         <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
                       </div>
-                      <div className="h-1.5 bg-gray-900 border border-gray-850 rounded-full overflow-hidden">
+                      <div className="h-2 bg-[#090b14] border border-gray-800 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                           style={{
                             width: `${(() => {
                               const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
@@ -5193,7 +5244,7 @@ export default function DesktopCoachPortal() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-[10px] text-indigo-400/80 bg-indigo-500/5 border border-indigo-500/10 px-3 py-2 rounded-xl mt-6 font-semibold flex items-center justify-center gap-1.5">
+                    <div className="text-xs text-indigo-400/90 bg-indigo-500/5 border border-indigo-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
                       👑 Unlimited Premium Admin Privileges
                     </div>
                   )}
@@ -5201,38 +5252,38 @@ export default function DesktopCoachPortal() {
               </div>
 
               {/* Password Editing Form Card */}
-              <div className="rounded-3xl border border-gray-850 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-6 shadow-xl space-y-6">
-                <div className="flex items-center gap-3 border-b border-gray-855 pb-4">
-                  <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-inner">
-                    <Shield size={18} />
+              <div className="rounded-3xl border border-gray-800/80 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-8 shadow-xl space-y-6">
+                <div className="flex items-center gap-4 border-b border-gray-800/60 pb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-inner flex-shrink-0">
+                    <Shield size={20} />
                   </div>
                   <div>
-                    <h3 className="text-xs font-black uppercase text-yellow-500 tracking-wider">Change Portal Access Password</h3>
-                    <p className="text-[10px] text-gray-500">Update the administrative password used to log in to your coach account.</p>
+                    <h3 className="text-sm font-black uppercase text-yellow-500 tracking-wider">Change Portal Access Password</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Update the administrative password used to log in to your coach account.</p>
                   </div>
                 </div>
 
-                <form onSubmit={handleUpdateOwnPassword} className="space-y-5 font-bold">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">New Access Password</label>
+                <form onSubmit={handleUpdateOwnPassword} className="space-y-6 font-bold">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">New Access Password</label>
                       <input
                         type="password"
                         value={ownNewPassword}
                         onChange={e => setOwnNewPassword(e.target.value)}
                         placeholder="Minimum 6 characters"
-                        className="w-full bg-[#121624] border border-gray-805 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)]"
+                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-650 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)]"
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Confirm Password</label>
+                    <div className="space-y-2">
+                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">Confirm Password</label>
                       <input
                         type="password"
                         value={ownConfirmPassword}
                         onChange={e => setOwnConfirmPassword(e.target.value)}
                         placeholder="Confirm your new password"
-                        className="w-full bg-[#121624] border border-gray-805 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)]"
+                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-655 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)]"
                       />
                     </div>
                   </div>
@@ -5240,9 +5291,9 @@ export default function DesktopCoachPortal() {
                   <button
                     type="submit"
                     disabled={updatingOwnPassword || !ownNewPassword || !ownConfirmPassword}
-                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-855 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-4 rounded-2xl text-sm uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {updatingOwnPassword ? 'Updating Password...' : <><Save size={13} /> Update Password</>}
+                    {updatingOwnPassword ? 'Updating Password...' : <><Save size={15} /> Update Password</>}
                   </button>
                 </form>
               </div>

@@ -16,7 +16,7 @@ const WorkoutHome = () => {
   const location = useLocation();
   const selectedDateStr = location.state?.activeDateStr || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const getLocalDateString = () => selectedDateStr;
-  const { dayType, setDayType } = useSchedule(getLocalDateString());
+  const { dayType, setDayType, loading: scheduleLoading } = useSchedule(getLocalDateString());
 
   const [hybridLiftingType, setHybridLiftingType] = useState(location.state?.forceLiftingType || 'PUSH');
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
@@ -454,10 +454,11 @@ const WorkoutHome = () => {
       clearTimeout(timeout);
       window.removeEventListener('plan_updated', handlePlanUpdated);
     };
-  }, [dayType, hybridLiftingType]);
+  }, [dayType, hybridLiftingType, selectedDateStr]);
 
   // Automatically align dayType with a valid plan type if it's not currently set to a valid option
   useEffect(() => {
+    if (scheduleLoading) return;
     if (savedTemplates.length > 0) {
       const types = savedTemplates.map(t => t.plan_type);
       const validOptions = ['REST', 'RUN', 'RUN + GYM', ...types];
@@ -471,15 +472,28 @@ const WorkoutHome = () => {
         setDayType(matchedOption);
       }
     }
-  }, [dayType, savedTemplates]);
+  }, [dayType, savedTemplates, scheduleLoading]);
 
   const handleStartWorkout = async () => {
+    const targetSplit = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
+
     if (workout) {
-      navigate('/workout/active');
-      return;
+      if (workout.date === selectedDateStr && workout.dayType.toUpperCase() === targetSplit.toUpperCase()) {
+        navigate('/workout/active');
+        return;
+      }
+      
+      const confirmMsg = workout.date !== selectedDateStr
+        ? "You have an unfinished workout from a previous day. Do you want to discard it and start today's workout?"
+        : `You have an active ${workout.dayType} workout in progress. Do you want to discard it and start a new ${targetSplit} workout?`;
+        
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
+      endWorkout();
     } 
     
-    if (inProgressWorkout) {
+    if (inProgressWorkout && inProgressWorkout.date === selectedDateStr && inProgressWorkout.day_type?.toUpperCase() === targetSplit.toUpperCase()) {
       const { data: exercisesData } = await supabase
         .from('workout_exercises')
         .select(`*, exercises(*)`)
