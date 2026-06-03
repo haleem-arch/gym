@@ -15,10 +15,19 @@ const DietHome = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [disableNutritionTargets, setDisableNutritionTargets] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id || null);
+      const uid = session?.user?.id || null;
+      setUserId(uid);
+      if (uid) {
+        supabase.from('profiles').select('targets').eq('id', uid).maybeSingle().then(({ data }) => {
+          if (data?.targets?.disable_diet) {
+            setIsLocked(true);
+          }
+        });
+      }
     });
 
     supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle().then(({ data }) => {
@@ -69,6 +78,20 @@ const DietHome = () => {
     return totals;
   };
 
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-background text-gray-200">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+          <Utensils size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-black text-white">Section Locked</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+          This section has been locked by your coach. Please contact your coach if you need access.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -81,7 +104,7 @@ const DietHome = () => {
 
   return (
     <>
-    <div className="p-5 flex flex-col gap-6 min-h-full pb-20">
+    <div className="p-5 flex flex-col gap-6 min-h-full pb-28">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nutrition</h1>

@@ -6,14 +6,36 @@ import { supabase } from '../lib/supabase';
 const BottomNav = () => {
   const location = useLocation();
   const [userId, setUserId] = useState<string | null>(null);
+  const [targets, setTargets] = useState<any>(null);
 
   useEffect(() => {
+    const fetchTargets = async (uid: string) => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('targets')
+        .eq('id', uid)
+        .maybeSingle();
+      if (data?.targets) {
+        setTargets(data.targets);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id || null);
+      const uid = session?.user?.id || null;
+      setUserId(uid);
+      if (uid) fetchTargets(uid);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id || null);
+      const uid = session?.user?.id || null;
+      setUserId(uid);
+      if (uid) {
+        fetchTargets(uid);
+      } else {
+        setTargets(null);
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
   
@@ -24,15 +46,20 @@ const BottomNav = () => {
 
   const allNavItems = [
     { to: '/', icon: <Home size={24} />, label: 'Today' },
-    { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout' },
-    { to: '/diet', icon: <Apple size={24} />, label: 'Diet' },
+    { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout', lockKey: 'disable_workout' },
+    { to: '/diet', icon: <Apple size={24} />, label: 'Diet', lockKey: 'disable_diet' },
     { to: '/strava', icon: <MapPin size={24} />, label: 'Strava', restrict: true },
-    { to: '/inbody', icon: <Activity size={24} />, label: 'InBody' },
-    { to: '/ai', icon: <MessageSquare size={24} />, label: 'Coach' },
+    { to: '/inbody', icon: <Activity size={24} />, label: 'InBody', lockKey: 'disable_inbody' },
+    { to: '/ai', icon: <MessageSquare size={24} />, label: 'Coach', lockKey: 'disable_ai' },
   ];
 
   const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-  const navItems = allNavItems.filter(item => !item.restrict || userId === OWNER_ID);
+  
+  const navItems = allNavItems.filter(item => {
+    if (item.restrict && userId !== OWNER_ID) return false;
+    if (item.lockKey && targets?.[item.lockKey] === true) return false;
+    return true;
+  });
 
   return (
     <nav 

@@ -6,7 +6,7 @@ import {
   Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
-  ChevronDown, ChevronUp, FileText
+  ChevronDown, ChevronUp, FileText, Settings
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -63,7 +63,7 @@ function dayColor(dt: string) {
 
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system'>('overview');
   const [coachUserId, setCoachUserId] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,6 +132,7 @@ export default function DesktopCoachPortal() {
   const [targetFat, setTargetFat] = useState(70);
   const [targetWaterLiters, setTargetWaterLiters] = useState(3.5);
   const [savingTargets, setSavingTargets] = useState(false);
+  const [unsavedChangesPendingAction, setUnsavedChangesPendingAction] = useState<{ type: 'sidebar' | 'subtab' | 'client', payload: any } | null>(null);
 
   // Day nutrition templates target map
   const [dayNutrition, setDayNutrition] = useState<Record<string, { kcal: number; protein: number; carbs: number; fat: number }>>({});
@@ -147,6 +148,16 @@ export default function DesktopCoachPortal() {
   const [updatingSuspension, setUpdatingSuspension] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+
+  // Athlete Control Tab states
+  const [managementSelectedClientId, setManagementSelectedClientId] = useState<string>('');
+  const [managementClientProfile, setManagementClientProfile] = useState<any | null>(null);
+  const [managementNewPassword, setManagementNewPassword] = useState('');
+  const [managementUpdatingPassword, setManagementUpdatingPassword] = useState(false);
+  const [managementUpdatingSuspension, setManagementUpdatingSuspension] = useState(false);
+  const [managementUpdatingQuota, setManagementUpdatingQuota] = useState(false);
+  const [managementUpdatingFeatures, setManagementUpdatingFeatures] = useState(false);
+  const [managementAiQuotaInput, setManagementAiQuotaInput] = useState<number>(20);
 
   // Search queries
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -401,8 +412,62 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  // ─── UNSAVED CHANGES NAVIGATION GUARD ───────────────────────
+  const clientTargets = selectedClientProfile?.user?.targets || {};
+  const hasUnsavedChanges = selectedClientId !== null && activeTab === 'clients' && (
+    targetKcal !== (clientTargets.kcal || 2400) ||
+    targetProtein !== (clientTargets.protein || 160) ||
+    targetCarbs !== (clientTargets.carbs || 240) ||
+    targetFat !== (clientTargets.fat || 70) ||
+    targetWaterLiters !== ((clientTargets.water_goal_ml || 3500) / 1000)
+  );
+
+  const resetTargetsToDb = () => {
+    if (!selectedClientProfile) return;
+    const targets = selectedClientProfile.user?.targets || {};
+    setTargetKcal(targets.kcal || 2400);
+    setTargetProtein(targets.protein || 160);
+    setTargetCarbs(targets.carbs || 240);
+    setTargetFat(targets.fat || 70);
+    setTargetWaterLiters((targets.water_goal_ml || 3500) / 1000);
+  };
+
+  const executePendingAction = (action: { type: 'sidebar' | 'subtab' | 'client', payload: any }) => {
+    if (action.type === 'sidebar') {
+      setActiveTab(action.payload);
+    } else if (action.type === 'subtab') {
+      setClientActiveTab(action.payload);
+    } else if (action.type === 'client') {
+      fetchClientDetails(action.payload, true);
+    }
+  };
+
+  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system') => {
+    if (hasUnsavedChanges) {
+      setUnsavedChangesPendingAction({ type: 'sidebar', payload: newTab });
+    } else {
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleClientSubTabClick = (newSubTab: 'overview' | 'diet' | 'water' | 'workouts' | 'inbody') => {
+    if (hasUnsavedChanges) {
+      setUnsavedChangesPendingAction({ type: 'subtab', payload: newSubTab });
+    } else {
+      setClientActiveTab(newSubTab);
+    }
+  };
+
+  const handleClientSelectClick = (newClientId: string) => {
+    if (hasUnsavedChanges) {
+      setUnsavedChangesPendingAction({ type: 'client', payload: newClientId });
+    } else {
+      fetchClientDetails(newClientId, true);
+    }
+  };
+
   // ─── FETCH CLIENT DETAILS ──────────────────────────────────
-  const fetchClientDetails = async (clientId: string) => {
+  const fetchClientDetails = async (clientId: string, forceReset = false) => {
     try {
       setLoadingClientDetails(true);
       setSelectedClientId(clientId);
@@ -427,13 +492,27 @@ export default function DesktopCoachPortal() {
       setSelectedClientProfile(clientProfile);
       setAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
 
-      // Set initial macro states
+      // Set initial macro states only if we are forced to reset, or if the user doesn't have unsaved changes
       const targets = clientProfile.user?.targets || {};
-      setTargetKcal(targets.kcal || 2400);
-      setTargetProtein(targets.protein || 160);
-      setTargetCarbs(targets.carbs || 240);
-      setTargetFat(targets.fat || 70);
-      setTargetWaterLiters((targets.water_goal_ml || 3500) / 1000);
+      const dbKcal = targets.kcal || 2400;
+      const dbProtein = targets.protein || 160;
+      const dbCarbs = targets.carbs || 240;
+      const dbFat = targets.fat || 70;
+      const dbWater = (targets.water_goal_ml || 3500) / 1000;
+
+      if (forceReset || (
+        targetKcal === (selectedClientProfile?.user?.targets?.kcal || 2400) &&
+        targetProtein === (selectedClientProfile?.user?.targets?.protein || 160) &&
+        targetCarbs === (selectedClientProfile?.user?.targets?.carbs || 240) &&
+        targetFat === (selectedClientProfile?.user?.targets?.fat || 70) &&
+        targetWaterLiters === ((selectedClientProfile?.user?.targets?.water_goal_ml || 3500) / 1000)
+      )) {
+        setTargetKcal(dbKcal);
+        setTargetProtein(dbProtein);
+        setTargetCarbs(dbCarbs);
+        setTargetFat(dbFat);
+        setTargetWaterLiters(dbWater);
+      }
       setDayNutrition(targets.day_nutrition || {});
 
     } catch (err) {
@@ -507,26 +586,26 @@ export default function DesktopCoachPortal() {
 
     const channel = supabase
       .channel(`desktop-coach-realtime-${selectedClientId}-${clientActiveDateStr}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'water_logs', filter: `user_id=eq.${selectedClientId}` }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'diet_meals' }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'diet_logs' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'diet_logs', filter: `user_id=eq.${selectedClientId}` }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts', filter: `user_id=eq.${selectedClientId}` }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inbody_scans' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inbody_scans', filter: `user_id=eq.${selectedClientId}` }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchClientDetails(selectedClientId);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${selectedClientId}` }, () => {
+        fetchClientDetails(selectedClientId, false);
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans', filter: `user_id=eq.${selectedClientId}` }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
       .subscribe();
@@ -1011,7 +1090,7 @@ export default function DesktopCoachPortal() {
 
       toast.success('Athlete access passcode reset successfully!');
       setNewPassword('');
-      fetchClientDetails(selectedClientId);
+      fetchClientDetails(selectedClientId, true);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to update password.');
@@ -1057,6 +1136,216 @@ export default function DesktopCoachPortal() {
       toast.success('Athlete wiped successfully.', { id: toastId });
       setSelectedClientId(null);
       setSelectedClientProfile(null);
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Wipe failed: ' + err.message, { id: toastId });
+    }
+  };
+
+  // ─── ATHLETE CONTROL TAB ACTIONS ───────────────────────────
+  useEffect(() => {
+    if (managementSelectedClientId) {
+      fetchManagementClientDetails(managementSelectedClientId);
+    } else {
+      setManagementClientProfile(null);
+    }
+  }, [managementSelectedClientId]);
+
+  useEffect(() => {
+    if (clientsList.length > 0 && !managementSelectedClientId) {
+      setManagementSelectedClientId(clientsList[0].id);
+    }
+  }, [clientsList]);
+
+  const fetchManagementClientDetails = async (clientId: string) => {
+    try {
+      const { data: clientProfile } = await supabase
+        .from('client_profiles')
+        .select(`
+          *,
+          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, created_at)
+        `)
+        .eq('user_id', clientId)
+        .maybeSingle();
+
+      if (clientProfile) {
+        setManagementClientProfile(clientProfile);
+        setManagementAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load client management file.');
+    }
+  };
+
+  const handleToggleManagementSuspension = async () => {
+    if (!managementSelectedClientId || !managementClientProfile) return;
+    const isSuspended = managementClientProfile.user?.targets?.is_deactivated === true;
+    const msg = isSuspended ? 'Reactivate athlete access?' : 'Suspend athlete access immediately?';
+    if (!window.confirm(msg)) return;
+
+    setManagementUpdatingSuspension(true);
+    try {
+      const currentTargets = managementClientProfile.user?.targets || {};
+      const updatedTargets = { ...currentTargets, is_deactivated: !isSuspended };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', managementSelectedClientId);
+
+      if (error) throw error;
+      toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
+      setManagementClientProfile((prev: any) => ({
+        ...prev,
+        user: { ...prev.user, targets: updatedTargets }
+      }));
+      fetchBaseData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update suspension status.');
+    } finally {
+      setManagementUpdatingSuspension(false);
+    }
+  };
+
+  const handleUpdateManagementPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managementSelectedClientId || !managementNewPassword.trim()) return;
+    if (managementNewPassword.length < 6) {
+      toast.error('Passcode must be at least 6 characters.');
+      return;
+    }
+    setManagementUpdatingPassword(true);
+    try {
+      const res = await fetch('/api/update-user-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ uid: managementSelectedClientId, password: managementNewPassword.trim() })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Server error');
+      }
+      await supabase
+        .from('client_profiles')
+        .update({ generated_passcode: managementNewPassword.trim() })
+        .eq('user_id', managementSelectedClientId);
+
+      toast.success('Passcode updated successfully!');
+      setManagementNewPassword('');
+      fetchManagementClientDetails(managementSelectedClientId);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to update passcode.');
+    } finally {
+      setManagementUpdatingPassword(false);
+    }
+  };
+
+  const handleSaveManagementQuota = async () => {
+    if (!managementSelectedClientId || !managementClientProfile) return;
+    setManagementUpdatingQuota(true);
+    try {
+      const currentTargets = managementClientProfile.user?.targets || {};
+      const updatedTargets = { ...currentTargets, ai_quota_limit: managementAiQuotaInput };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', managementSelectedClientId);
+
+      if (error) throw error;
+      toast.success('AI Coach quota updated!');
+      setManagementClientProfile((prev: any) => ({
+        ...prev,
+        user: { ...prev.user, targets: updatedTargets }
+      }));
+      fetchBaseData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update quota.');
+    } finally {
+      setManagementUpdatingQuota(false);
+    }
+  };
+
+  const handleToggleManagementFeature = async (featureKey: string, currentValue: boolean) => {
+    if (!managementSelectedClientId || !managementClientProfile) return;
+    setManagementUpdatingFeatures(true);
+    try {
+      const currentTargets = managementClientProfile.user?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        [featureKey]: !currentValue
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', managementSelectedClientId);
+
+      if (error) throw error;
+      toast.success('Feature permissions updated.');
+      setManagementClientProfile((prev: any) => ({
+        ...prev,
+        user: { ...prev.user, targets: updatedTargets }
+      }));
+      fetchBaseData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update feature accessibility.');
+    } finally {
+      setManagementUpdatingFeatures(false);
+    }
+  };
+
+  const handleDeleteManagementClient = async () => {
+    if (!managementSelectedClientId || !managementClientProfile) return;
+    const name = managementClientProfile.user?.display_name || 'this client';
+    const conf = window.prompt(`Type "${name}" to confirm complete account deletion (workouts, InBody, and auth logs will be wiped):`);
+    if (conf !== name) {
+      if (conf !== null) toast.error('Verification failed. Deletion cancelled.');
+      return;
+    }
+
+    const toastId = toast.loading('Deleting athlete account...');
+    try {
+      const res = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ uid: managementSelectedClientId })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.warn('Auth deletion warning:', errData.error);
+      }
+
+      await supabase.from('inbody_scans').delete().eq('user_id', managementSelectedClientId);
+      await supabase.from('client_workout_days').delete().eq('user_id', managementSelectedClientId);
+      await supabase.from('user_workout_plans').delete().eq('user_id', managementSelectedClientId);
+      await supabase.from('progress_notes').delete().eq('user_id', managementSelectedClientId);
+      await supabase.from('water_logs').delete().eq('user_id', managementSelectedClientId);
+      await supabase.from('client_profiles').delete().eq('user_id', managementSelectedClientId);
+      await supabase.from('profiles').delete().eq('id', managementSelectedClientId);
+
+      toast.success('Athlete wiped successfully.', { id: toastId });
+      
+      const remainingClients = clientsList.filter(c => c.id !== managementSelectedClientId);
+      if (remainingClients.length > 0) {
+        setManagementSelectedClientId(remainingClients[0].id);
+      } else {
+        setManagementSelectedClientId('');
+        setManagementClientProfile(null);
+      }
       fetchBaseData();
     } catch (err: any) {
       console.error(err);
@@ -1744,7 +2033,7 @@ export default function DesktopCoachPortal() {
           <p className="text-[8px] font-black uppercase tracking-widest text-gray-500 px-3.5 mb-2">Main Navigation</p>
           
           <button 
-            onClick={() => setActiveTab('overview')}
+            onClick={() => handleSidebarTabClick('overview')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'overview' 
                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
@@ -1755,7 +2044,7 @@ export default function DesktopCoachPortal() {
           </button>
 
           <button 
-            onClick={() => setActiveTab('clients')}
+            onClick={() => handleSidebarTabClick('clients')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'clients' 
                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
@@ -1766,7 +2055,7 @@ export default function DesktopCoachPortal() {
           </button>
 
           <button 
-            onClick={() => setActiveTab('deploy')}
+            onClick={() => handleSidebarTabClick('deploy')}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'deploy' 
                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
@@ -1776,9 +2065,20 @@ export default function DesktopCoachPortal() {
             <UserPlus size={15} /> Deploy New Athlete
           </button>
 
+          <button 
+            onClick={() => handleSidebarTabClick('management')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+              activeTab === 'management' 
+                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
+            }`}
+          >
+            <Settings size={15} /> Athlete Control
+          </button>
+
           {coachUserId === OWNER_ID && (
             <button 
-              onClick={() => setActiveTab('system')}
+              onClick={() => handleSidebarTabClick('system')}
               className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
                 activeTab === 'system' 
                   ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
@@ -1907,7 +2207,7 @@ export default function DesktopCoachPortal() {
                   {filteredClients.map(client => (
                     <button
                       key={client.id}
-                      onClick={() => fetchClientDetails(client.id)}
+                      onClick={() => handleClientSelectClick(client.id)}
                       className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
                         selectedClientId === client.id 
                           ? 'bg-blue-600/10 border-blue-500/50' 
@@ -1989,7 +2289,7 @@ export default function DesktopCoachPortal() {
                       ] as const).map(tab => (
                         <button
                           key={tab.id}
-                          onClick={() => setClientActiveTab(tab.id)}
+                          onClick={() => handleClientSubTabClick(tab.id)}
                           className={`pb-2 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
                             clientActiveTab === tab.id
                               ? 'border-blue-500 text-blue-400 font-extrabold'
@@ -2026,7 +2326,7 @@ export default function DesktopCoachPortal() {
                         </div>
 
                         {/* Nutrition targets editor */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                        <div className="flex flex-col gap-6">
                           <Card className="p-5 space-y-4">
                             <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-gray-800 pb-2 flex items-center gap-2">
                               <Apple size={14} /> Macro &amp; Hydration Targets
@@ -2080,29 +2380,29 @@ export default function DesktopCoachPortal() {
                           </Card>
 
                           {/* Nutrition by day type */}
-                          <div className="bg-[#121624] border border-gray-800 rounded-2xl p-5 space-y-4">
-                            <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-800 pb-2 flex items-center gap-1.5">📋 Day-Type Custom Targets</h3>
-                            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
+                          <div className="bg-[#121624] border border-gray-800 rounded-2xl p-6 space-y-5">
+                            <h3 className="text-sm font-black uppercase tracking-wide text-blue-400 border-b border-gray-800 pb-3 flex items-center gap-1.5">📋 Day-Type Custom Targets</h3>
+                            <div className="space-y-3.5 max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
                               {athleteDayTypes.map(dt => {
                                 const dn = dayNutrition[dt];
                                 const isEditing = editingDayType === dt;
                                 return (
-                                  <div key={dt} className="bg-gray-900/60 border border-gray-850 rounded-xl overflow-hidden">
+                                  <div key={dt} className="bg-gray-900/60 border border-gray-850 rounded-xl overflow-hidden shadow-sm">
                                     <button
                                       onClick={() => isEditing ? setEditingDayType(null) : handleOpenDayEdit(dt)}
-                                      className="w-full flex items-center justify-between p-3.5 hover:bg-gray-800/20 transition-colors"
+                                      className="w-full flex items-center justify-between py-4 px-5 hover:bg-gray-800/20 transition-colors"
                                     >
-                                      <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${dayColor(dt)}`}>{dt}</span>
+                                      <span className={`text-[10px] font-black px-2.5 py-1 rounded border uppercase ${dayColor(dt)}`}>{dt}</span>
                                       {dn ? (
-                                        <span className="text-[10px] text-gray-400 font-bold">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
+                                        <span className="text-xs md:text-sm text-gray-300 font-bold">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
                                       ) : (
-                                        <span className="text-[10px] text-gray-600 italic">Default Work Macros</span>
+                                        <span className="text-xs text-gray-500 italic font-medium">Default Work Macros</span>
                                       )}
                                     </button>
 
                                     {isEditing && (
-                                      <div className="border-t border-gray-800 p-3 space-y-3 bg-[#0a0f1a]">
-                                        <div className="grid grid-cols-2 gap-2">
+                                      <div className="border-t border-gray-800 p-6 space-y-5 bg-[#0a0f1a]">
+                                        <div className="grid grid-cols-4 gap-4">
                                           {[
                                             { label: 'Kcal', val: editDayKcal, set: setEditDayKcal },
                                             { label: 'Prot (g)', val: editDayProtein, set: setEditDayProtein },
@@ -2110,17 +2410,17 @@ export default function DesktopCoachPortal() {
                                             { label: 'Fat (g)', val: editDayFat, set: setEditDayFat },
                                           ].map(({ label, val, set }) => (
                                             <div key={label}>
-                                              <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">{label}</label>
+                                              <label className="text-[10px] text-gray-400 block mb-1.5 font-bold uppercase tracking-wider">{label}</label>
                                               <input
                                                 type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
-                                                className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2 text-xs text-white text-center font-bold"
+                                                className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-sm text-white text-center font-extrabold shadow-inner focus:border-blue-500 outline-none"
                                               />
                                             </div>
                                           ))}
                                         </div>
-                                        <div className="flex gap-2">
-                                          <button onClick={handleSaveDayNutrition} className="flex-1 bg-blue-600 text-white font-bold text-xs uppercase py-2 rounded-xl">Save</button>
-                                          <button onClick={() => setEditingDayType(null)} className="px-3 bg-gray-800 text-gray-400 font-bold text-xs rounded-xl">Cancel</button>
+                                        <div className="flex gap-3">
+                                          <button onClick={handleSaveDayNutrition} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-3 rounded-xl transition-all shadow-md">Save Changes</button>
+                                          <button onClick={() => setEditingDayType(null)} className="px-4 bg-gray-800 text-gray-400 font-bold text-xs rounded-xl transition-all">Cancel</button>
                                         </div>
                                       </div>
                                     )}
@@ -2216,37 +2516,34 @@ export default function DesktopCoachPortal() {
                           <Card className="p-5 space-y-4">
                             <div className="flex justify-between items-center border-b border-gray-850 pb-2">
                               <h3 className="text-xs font-black uppercase text-blue-400">Log Custom Meal</h3>
-                              <button onClick={() => setShowAddMealForm(!showAddMealForm)} className="text-[10px] text-blue-400 font-extrabold uppercase">{showAddMealForm ? 'Close Form' : 'Log Food'}</button>
                             </div>
 
-                            {showAddMealForm && (
-                              <div className="space-y-3">
-                                <input 
-                                  type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
-                                  placeholder="Meal Name (e.g. Oatmeal & Eggs)"
-                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                                />
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="text-[8px] text-gray-500 uppercase font-black">Calories (kcal)</label>
-                                    <input type="number" value={newMealKcal} onChange={e => setNewMealKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
-                                  </div>
-                                  <div>
-                                    <label className="text-[8px] text-gray-500 uppercase font-black">Protein (g)</label>
-                                    <input type="number" value={newMealProtein} onChange={e => setNewMealProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
-                                  </div>
-                                  <div>
-                                    <label className="text-[8px] text-gray-500 uppercase font-black">Carbs (g)</label>
-                                    <input type="number" value={newMealCarbs} onChange={e => setNewMealCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
-                                  </div>
-                                  <div>
-                                    <label className="text-[8px] text-gray-500 uppercase font-black">Fat (g)</label>
-                                    <input type="number" value={newMealFat} onChange={e => setNewMealFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white" />
-                                  </div>
+                            <div className="space-y-3">
+                              <input 
+                                type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
+                                placeholder="Meal Name (e.g. Oatmeal & Eggs)"
+                                className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                              />
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[8px] text-gray-500 uppercase font-black">Calories (kcal)</label>
+                                  <input type="number" value={newMealKcal} onChange={e => setNewMealKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
                                 </div>
-                                <button onClick={handleAddMealLog} className="w-full bg-blue-600 text-white font-bold text-xs uppercase py-3 rounded-xl">Save Meal Entry</button>
+                                <div>
+                                  <label className="text-[8px] text-gray-500 uppercase font-black">Protein (g)</label>
+                                  <input type="number" value={newMealProtein} onChange={e => setNewMealProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-gray-500 uppercase font-black">Carbs (g)</label>
+                                  <input type="number" value={newMealCarbs} onChange={e => setNewMealCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-gray-500 uppercase font-black">Fat (g)</label>
+                                  <input type="number" value={newMealFat} onChange={e => setNewMealFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                                </div>
                               </div>
-                            )}
+                              <button onClick={handleAddMealLog} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-3 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer">Save Meal Entry</button>
+                            </div>
                           </Card>
 
                           {/* Logged Meals List */}
@@ -3089,6 +3386,240 @@ export default function DesktopCoachPortal() {
             </div>
           )}
 
+          {/* TAB: ATHLETE CONTROL */}
+          {activeTab === 'management' && (
+            <div className="space-y-8 max-w-5xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                <div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-wider">Athlete Control Center</h2>
+                  <p className="text-xs text-gray-500 mt-1">Manage athlete access, security credentials, quotas, and feature permissions.</p>
+                </div>
+                
+                {/* Select Client Dropdown */}
+                <div className="flex items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl px-4 py-2">
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Athlete:</span>
+                  <select
+                    value={managementSelectedClientId}
+                    onChange={e => setManagementSelectedClientId(e.target.value)}
+                    className="bg-transparent text-xs font-black text-white outline-none cursor-pointer"
+                  >
+                    <option value="" disabled className="bg-[#0b0c16]">Select client...</option>
+                    {clientsList.map(c => (
+                      <option key={c.id} value={c.id} className="bg-[#0b0c16]">
+                        {c.display_name} (@{c.username})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {!managementClientProfile ? (
+                <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-12 text-center text-gray-500">
+                  <p className="text-sm font-bold">No Client Selected or Loaded</p>
+                  <p className="text-xs text-gray-400 mt-2">Please select an athlete from the dropdown above to load management controls.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  
+                  {/* Card 1: Credentials & Status */}
+                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+                      <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
+                        <Shield size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-yellow-500">Security &amp; Account Status</h3>
+                        <p className="text-[10px] text-gray-500">Suspend access, update passcodes, or delete the profile.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Current Status Info */}
+                      <div className="flex justify-between items-center bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl">
+                        <div>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Account Access</p>
+                          <p className="text-xs font-black text-white mt-1">
+                            {managementClientProfile.user?.targets?.is_deactivated === true ? '🚨 SUSPENDED' : '✓ ACTIVE ACCESS'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleToggleManagementSuspension}
+                          disabled={managementUpdatingSuspension}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
+                            managementClientProfile.user?.targets?.is_deactivated === true
+                              ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white'
+                              : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                          }`}
+                        >
+                          {managementUpdatingSuspension ? 'Updating...' : (managementClientProfile.user?.targets?.is_deactivated === true ? 'Reactivate' : 'Suspend')}
+                        </button>
+                      </div>
+
+                      {/* Password Reset */}
+                      <form onSubmit={handleUpdateManagementPassword} className="bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl space-y-3">
+                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Reset Access Passcode</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={managementNewPassword}
+                            onChange={e => setManagementNewPassword(e.target.value)}
+                            placeholder="New passcode (Min 6 chars)"
+                            className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                          />
+                          <button
+                            type="submit"
+                            disabled={managementUpdatingPassword || !managementNewPassword.trim()}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase px-4 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            Update
+                          </button>
+                        </div>
+                        {managementClientProfile.generated_passcode && (
+                          <p className="text-[9px] text-gray-500">
+                            Current passcode in database: <span className="text-yellow-500 font-mono font-bold">{managementClientProfile.generated_passcode}</span>
+                          </p>
+                        )}
+                      </form>
+
+                      {/* Wipe/Delete */}
+                      <div className="bg-red-950/5 border border-red-950/20 p-4 rounded-2xl space-y-3">
+                        <h4 className="text-[10px] text-red-400 font-black uppercase">Dangerous Actions</h4>
+                        <p className="text-[9px] text-red-400/60 leading-relaxed">
+                          Permanently delete the user's login, workouts list, InBody scans, and nutrition logs. This cannot be undone.
+                        </p>
+                        <button
+                          onClick={handleDeleteManagementClient}
+                          className="w-full bg-red-650 hover:bg-red-650 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Trash2 size={13} /> Complete Cascade Wipe
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Card 2: Feature Toggles */}
+                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <Activity size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-indigo-400">Granular Feature Locks</h3>
+                        <p className="text-[10px] text-gray-500">Enable or disable specific tabs in the athlete PWA workspace.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {([
+                        { key: 'disable_workout', label: 'Workout Tracking Tab', desc: 'Allows athlete to view workout splits and log weights/sets.' },
+                        { key: 'disable_diet', label: 'Diet & Nutrition Dashboard', desc: 'Allows athlete to view calorie budgets and track food/water logs.' },
+                        { key: 'disable_inbody', label: 'InBody Composition Scans', desc: 'Allows athlete to upload InBody CSV charts and track skeletal mass.' },
+                        { key: 'disable_ai', label: 'AI Alberto Coach Agent', desc: 'Allows athlete to chat with the AI assistant for meal logs and feedback.' },
+                      ] as const).map(({ key, label, desc }) => {
+                        const isDisabled = managementClientProfile.user?.targets?.[key] === true;
+                        return (
+                          <div key={key} className="flex items-center justify-between bg-gray-900/40 p-4 border border-gray-850 rounded-2xl gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white">{label}</p>
+                              <p className="text-[9px] text-gray-500 mt-0.5 leading-normal">{desc}</p>
+                            </div>
+                            <button
+                              onClick={() => handleToggleManagementFeature(key, isDisabled)}
+                              disabled={managementUpdatingFeatures}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
+                                isDisabled
+                                  ? 'bg-red-950/20 border-red-900/25 text-red-400'
+                                  : 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400'
+                              }`}
+                            >
+                              {isDisabled ? 'LOCKED' : 'ENABLED'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+
+                  {/* Card 3: AI Quota & Global usage stats (Col Span 2) */}
+                  <Card className="lg:col-span-2 p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] space-y-6">
+                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                        <Sparkles size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-blue-400">AI Coach Assistant Quota &amp; usage statistics</h3>
+                        <p className="text-[10px] text-gray-500">Configure client message limits and view system-wide dashboard aggregate totals.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Individual limit config */}
+                      <div className="bg-gray-900/40 border border-gray-850 p-4 rounded-2xl flex flex-col justify-between gap-4">
+                        <div>
+                          <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Configure Individual Quota</h4>
+                          <p className="text-[9px] text-gray-400 mt-0.5">Set the maximum daily message limit for this athlete.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={managementAiQuotaInput}
+                            onChange={e => setManagementAiQuotaInput(parseInt(e.target.value) || 0)}
+                            className="flex-1 bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs text-white text-center font-bold"
+                          />
+                          <button
+                            onClick={handleSaveManagementQuota}
+                            disabled={managementUpdatingQuota}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            Set Limit
+                          </button>
+                        </div>
+                        <p className="text-[9px] text-gray-500 font-medium">
+                          Active Daily limit: <span className="text-blue-400 font-black">{managementClientProfile.user?.targets?.ai_quota_limit ?? 20} messages</span>
+                        </p>
+                      </div>
+
+                      {/* Global AI quota indicator */}
+                      {(() => {
+                        const todayStr = getLocalDateString();
+                        let totalAiToday = 0;
+                        profiles.forEach(p => {
+                          if (p.targets?.ai_usage?.date === todayStr) {
+                            totalAiToday += p.targets.ai_usage.count || 0;
+                          }
+                        });
+                        const limit = 1500;
+                        const remaining = Math.max(0, limit - totalAiToday);
+                        const pct = Math.min((totalAiToday / limit) * 100, 100);
+
+                        return (
+                          <div className="bg-gray-900/40 border border-gray-850 p-4 rounded-2xl flex flex-col justify-between gap-4">
+                            <div>
+                              <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">System-Wide Quota (Today)</h4>
+                              <p className="text-[9px] text-gray-400 mt-0.5">Total API queries processed across all dashboard clients.</p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-xs font-black text-gray-300">
+                                <span>{totalAiToday} messages</span>
+                                <span className="text-blue-400">{remaining} remaining</span>
+                              </div>
+                              <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <p className="text-[8px] text-gray-500 text-right">Aggregate Limit: 1500 / day</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </Card>
+
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 4: SYSTEM CONSOLE */}
           {activeTab === 'system' && (
             <div className="space-y-8 max-w-6xl">
@@ -3318,6 +3849,50 @@ export default function DesktopCoachPortal() {
           stats={selectedReceiptWorkout}
           onClose={() => setSelectedReceiptWorkout(null)}
         />
+      )}
+
+      {/* UNSAVED CHANGES WARNING DIALOG MODAL */}
+      {unsavedChangesPendingAction && (
+        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0d1220] border border-gray-800 rounded-3xl p-6 max-w-sm w-full space-y-6 shadow-2xl">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5 text-yellow-500">
+              ⚠️ Unsaved Nutrition Changes
+            </h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              You have modified this athlete's nutrition targets but have not saved them yet. Do you want to save them now, discard the changes, or cancel navigation?
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button 
+                onClick={async () => {
+                  await handleSaveTargets();
+                  const action = unsavedChangesPendingAction;
+                  setUnsavedChangesPendingAction(null);
+                  executePendingAction(action);
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Save &amp; Continue
+              </button>
+              <button 
+                onClick={() => {
+                  const action = unsavedChangesPendingAction;
+                  setUnsavedChangesPendingAction(null);
+                  resetTargetsToDb();
+                  executePendingAction(action);
+                }}
+                className="w-full bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Discard Changes
+              </button>
+              <button 
+                onClick={() => setUnsavedChangesPendingAction(null)}
+                className="w-full bg-transparent hover:bg-gray-900/40 text-gray-500 hover:text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

@@ -280,6 +280,8 @@ const WorkoutHome = () => {
 
   const [disableWorkoutTemplates, setDisableWorkoutTemplates] = useState(false);
 
+  const [isLocked, setIsLocked] = useState(false);
+
   // Sync todayPlan type with dayType from schedule (handling RUN + GYM hybrid split)
   useEffect(() => {
     const targetType = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
@@ -291,6 +293,12 @@ const WorkoutHome = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       setCurrentUserId(session.user.id);
+
+      // Fetch own profile targets to check lock status
+      const { data: myProfile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+      if (myProfile?.targets?.disable_workout) {
+        setIsLocked(true);
+      }
 
       // Load Haleem's toggles
       const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
@@ -508,8 +516,22 @@ const WorkoutHome = () => {
     }
   }, [pastWorkouts, selectedDateStr]);
 
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-background text-gray-200">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+          <Layers size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-black text-white">Section Locked</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+          This section has been locked by your coach. Please contact your coach if you need access.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full max-w-lg mx-auto w-full overflow-x-hidden">
+    <div className="p-5 flex flex-col gap-6 min-h-full pb-28 max-w-lg mx-auto w-full overflow-x-hidden">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Workouts</h1>
         <div className="flex items-center gap-2">

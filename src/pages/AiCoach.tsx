@@ -133,8 +133,27 @@ const AiCoach = () => {
   } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [isLocked, setIsLocked] = useState(false);
 
-  useEffect(() => { initChat(); }, []);
+  useEffect(() => { 
+    initChat(); 
+    
+    // Check lock status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        supabase
+          .from('profiles')
+          .select('targets')
+          .eq('id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.targets?.disable_ai) {
+              setIsLocked(true);
+            }
+          });
+      }
+    });
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -150,6 +169,20 @@ const AiCoach = () => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); }
   };
+
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-background text-gray-200">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+          <Bot size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-black text-white">Section Locked</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+          This section has been locked by your coach. Please contact your coach if you need access.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background relative" style={{ height: '100dvh' }}>
@@ -248,7 +281,7 @@ const AiCoach = () => {
       )}
 
       {/* Input — sticky at bottom */}
-      <div className="p-3 bg-background border-t border-gray-800 sticky bottom-0 z-30 flex-shrink-0">
+      <div className="p-3 bg-background border-t border-gray-800 sticky bottom-0 z-30 flex-shrink-0 pb-20">
         <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}

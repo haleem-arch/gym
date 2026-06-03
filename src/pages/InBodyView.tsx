@@ -13,6 +13,7 @@ export default function InBodyView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
@@ -44,6 +45,17 @@ export default function InBodyView() {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+
+    // Check lock status
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('targets')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (profile?.targets?.disable_inbody) {
+      setIsLocked(true);
+    }
 
     const { data } = await supabase
       .from('inbody_scans')
@@ -227,8 +239,22 @@ export default function InBodyView() {
     return null;
   };
 
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-background text-gray-200">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+          <Scale size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-black text-white">Section Locked</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+          This section has been locked by your coach. Please contact your coach if you need access.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full pb-24">
+    <div className="p-5 flex flex-col gap-6 min-h-full pb-28">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
