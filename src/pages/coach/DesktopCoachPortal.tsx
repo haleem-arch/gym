@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { 
   Users, UserPlus, Database, ShieldAlert, Activity, Search, 
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
-  Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw,
+  Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut
 } from 'lucide-react';
@@ -154,7 +154,15 @@ export default function DesktopCoachPortal() {
 
   // Search queries
   const [clientSearchQuery, setClientSearchQuery] = useState('');
-  const [systemSearchQuery, setSystemSearchQuery] = useState('');
+
+  // Coach portal login suspension check
+  const [isCoachSuspended, setIsCoachSuspended] = useState(false);
+
+  // System Tab - Coach Management refactored states
+  const [systemSelectedCoachId, setSystemSelectedCoachId] = useState<string | null>(null);
+  const [coachSearchQuery, setCoachSearchQuery] = useState('');
+  const [reassignCoachTargetId, setReassignCoachTargetId] = useState<Record<string, string>>({});
+  const [updatingCoachStatus, setUpdatingCoachStatus] = useState(false);
 
   // Deploy Athlete Multi-step Wizard
   const [deployStep, setDeployStep] = useState(1);
@@ -242,18 +250,7 @@ export default function DesktopCoachPortal() {
   const [deployInbodyScore, setDeployInbodyScore] = useState(75);
   const [deployCsvScans, setDeployCsvScans] = useState<any[]>([]);
 
-  // System Tab: Coach creation form
-  const [coachName, setCoachName] = useState('');
-  const [coachEmail, setCoachEmail] = useState('');
-  const [coachPassword, setCoachPassword] = useState('');
-  const [isCreatingCoach, setIsCreatingCoach] = useState(false);
-  const [createdCoachCredentials, setCreatedCoachCredentials] = useState<any | null>(null);
 
-  // System Tab: Selected User for detail popup / controls
-  const [systemSelectedUser, setSystemSelectedUser] = useState<any | null>(null);
-  const [systemSelectedUserPassword, setSystemSelectedUserPassword] = useState('');
-  const [systemUpdatingPassword, setSystemUpdatingPassword] = useState(false);
-  const [systemDeletingUser, setSystemDeletingUser] = useState(false);
 
   // Day-type auto rest updates inside Deploy Athlete Form
   useEffect(() => {
@@ -341,12 +338,19 @@ export default function DesktopCoachPortal() {
 
       const { data: myProfile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, targets')
         .eq('id', session.user.id)
         .maybeSingle();
 
       if (myProfile?.role !== 'coach' && session.user.id !== OWNER_ID) {
         setIsNotCoach(true);
+        if (!silent) setLoading(false);
+        return;
+      }
+
+      // Check if coach is suspended (Owner cannot be suspended)
+      if (session.user.id !== OWNER_ID && myProfile?.targets?.is_deactivated === true) {
+        setIsCoachSuspended(true);
         if (!silent) setLoading(false);
         return;
       }
@@ -1233,6 +1237,56 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  const handleReassignClient = async (clientId: string, newCoachId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ coach_id: newCoachId })
+        .eq('id', clientId);
+
+      if (error) throw error;
+      toast.success("Athlete re-assigned successfully!");
+      // Update local profiles list to reflect changes instantly
+      setProfiles(prev => prev.map(p => p.id === clientId ? { ...p, coach_id: newCoachId } : p));
+      // Clear reassign selection for this client
+      setReassignCoachTargetId(prev => {
+        const copy = { ...prev };
+        delete copy[clientId];
+        return copy;
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to re-assign athlete. Please try again.");
+    }
+  };
+
+  const handleToggleCoachSuspension = async (coachId: string, currentDeactivated: boolean) => {
+    if (coachId === OWNER_ID) {
+      toast.error("Owner account cannot be suspended.");
+      return;
+    }
+    setUpdatingCoachStatus(true);
+    try {
+      const coachProfile = profiles.find(p => p.id === coachId);
+      const currentTargets = coachProfile?.targets || {};
+      const updatedTargets = { ...currentTargets, is_deactivated: !currentDeactivated };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachId);
+
+      if (error) throw error;
+      toast.success(currentDeactivated ? "Coach reactivated!" : "Coach suspended!");
+      setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to update coach suspension status.");
+    } finally {
+      setUpdatingCoachStatus(false);
+    }
+  };
+
   const handleDeleteManagementClient = async () => {
     if (!managementSelectedClientId || !managementClientProfile) return;
     const name = managementClientProfile.user?.display_name || 'this client';
@@ -1638,185 +1692,6 @@ export default function DesktopCoachPortal() {
     setDeploySplits(prev => prev.filter(s => s.key !== key));
     if (deployActiveSplitKey === key) setDeployActiveSplitKey(null);
   };
-
-  // ─── SYSTEM TAB: COACH GENERATION ─────────────────────────
-  const handleCreateCoach = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coachName || !coachEmail || !coachPassword) {
-      toast.error('Coach Name, Email and Password are required.');
-      return;
-    }
-    setIsCreatingCoach(true);
-    setCreatedCoachCredentials(null);
-
-    try {
-      const response = await fetch('/api/create-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({
-          email: coachEmail,
-          password: coachPassword,
-          display_name: coachName,
-          gender: 'male',
-          role: 'coach'
-        })
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create coach account');
-      }
-
-      setCreatedCoachCredentials({
-        name: coachName,
-        email: coachEmail,
-        password: coachPassword
-      });
-
-      toast.success('Coach registered successfully!');
-      setCoachName('');
-      setCoachEmail('');
-      setCoachPassword('');
-      fetchBaseData();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to register coach.');
-    } finally {
-      setIsCreatingCoach(false);
-    }
-  };
-
-  // ─── SYSTEM TAB: USER/COACH DETAIL & MANAGEMENT ───────────
-  const handleUpdateSystemUserStatus = async (uid: string, fields: { role?: string; is_deactivated?: boolean }) => {
-    try {
-      const response = await fetch('/api/update-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({ uid, ...fields })
-      });
-
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || 'Failed to update user');
-      }
-
-      toast.success('User details updated!');
-      
-      setProfiles((prev: any[]) => prev.map(p => {
-        if (p.id === uid) {
-          const updatedTargets = { ...(p.targets || {}) };
-          if (fields.is_deactivated !== undefined) {
-            updatedTargets.is_deactivated = fields.is_deactivated;
-          }
-          return {
-            ...p,
-            role: fields.role !== undefined ? fields.role : p.role,
-            targets: updatedTargets
-          };
-        }
-        return p;
-      }));
-
-      if (systemSelectedUser && systemSelectedUser.id === uid) {
-        setSystemSelectedUser((prev: any) => {
-          const updatedTargets = { ...(prev.targets || {}) };
-          if (fields.is_deactivated !== undefined) {
-            updatedTargets.is_deactivated = fields.is_deactivated;
-          }
-          return {
-            ...prev,
-            role: fields.role !== undefined ? fields.role : prev.role,
-            targets: updatedTargets
-          };
-        });
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to update status: ' + err.message);
-    }
-  };
-
-  const handleChangeSystemUserPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!systemSelectedUser || !systemSelectedUserPassword) return;
-    setSystemUpdatingPassword(true);
-    try {
-      const response = await fetch('/api/update-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({ uid: systemSelectedUser.id, password: systemSelectedUserPassword })
-      });
-
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || 'Password update failed');
-      }
-
-      toast.success('User password changed successfully!');
-      setSystemSelectedUserPassword('');
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to change password: ' + err.message);
-    } finally {
-      setSystemUpdatingPassword(false);
-    }
-  };
-
-  const handleDeleteSystemUser = async (uid: string) => {
-    if (!systemSelectedUser) return;
-    const name = systemSelectedUser.display_name || systemSelectedUser.email.split('@')[0];
-    const confirmName = window.prompt(`WARNING: This action is permanent and will completely delete the user/coach account "${name}" from the system. \n\nType the user's name to confirm:`);
-    
-    if (confirmName !== name) {
-      if (confirmName !== null) toast.error('Verification failed. Deletion cancelled.');
-      return;
-    }
-
-    setSystemDeletingUser(true);
-    const toastId = toast.loading('Deleting account...');
-    try {
-      const response = await fetch('/api/delete-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({ uid })
-      });
-
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || 'API deletion failed.');
-      }
-
-      await supabase.from('inbody_scans').delete().eq('user_id', uid);
-      await supabase.from('client_workout_days').delete().eq('user_id', uid);
-      await supabase.from('user_workout_plans').delete().eq('user_id', uid);
-      await supabase.from('progress_notes').delete().eq('user_id', uid);
-      await supabase.from('water_logs').delete().eq('user_id', uid);
-      await supabase.from('client_profiles').delete().eq('user_id', uid);
-      await supabase.from('profiles').delete().eq('id', uid);
-
-      toast.success('Account wiped successfully.', { id: toastId });
-      setSystemSelectedUser(null);
-      fetchBaseData();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to delete account.', { id: toastId });
-    } finally {
-      setSystemDeletingUser(false);
-    }
-  };
-
   // Helper date preseters
   const shiftClientDate = (days: number) => {
     const d = new Date(clientActiveDateStr + 'T00:00:00');
@@ -1843,10 +1718,23 @@ export default function DesktopCoachPortal() {
     c.username?.toLowerCase().includes(clientSearchQuery.toLowerCase())
   );
 
-  const filteredSystemUsers = profiles.filter(p => 
-    p.display_name?.toLowerCase().includes(systemSearchQuery.toLowerCase()) ||
-    p.email?.toLowerCase().includes(systemSearchQuery.toLowerCase())
-  );
+  const systemCoaches = profiles.filter(p => p.role === 'coach' || p.id === OWNER_ID);
+  const filteredSystemCoaches = systemCoaches.filter(coach => {
+    const q = coachSearchQuery.toLowerCase();
+    return (
+      coach.display_name?.toLowerCase().includes(q) ||
+      coach.username?.toLowerCase().includes(q) ||
+      (coach.email && coach.email.toLowerCase().includes(q))
+    );
+  });
+
+  const selectedCoachProfile = systemSelectedCoachId 
+    ? systemCoaches.find(c => c.id === systemSelectedCoachId) 
+    : null;
+
+  const selectedCoachClients = selectedCoachProfile 
+    ? profiles.filter(p => p.role === 'client' && p.coach_id === selectedCoachProfile.id) 
+    : [];
 
   // Filter Catalog exercises inside Directory template split builder
   const filteredCatalog = exerciseDb.filter(ex => {
@@ -1910,6 +1798,20 @@ export default function DesktopCoachPortal() {
         <h1 className="text-xl font-black text-white">Access Denied</h1>
         <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
           Only authorized coaches and system administrators can access the Desktop Coach Portal.
+        </p>
+      </div>
+    );
+  }
+
+  if (isCoachSuspended) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
+          <ShieldAlert size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-black text-white">Account Suspended</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[320px] leading-relaxed">
+          Your administrative coach access has been suspended by the system administrator. Please contact the owner if you believe this is an error.
         </p>
       </div>
     );
@@ -3517,221 +3419,203 @@ export default function DesktopCoachPortal() {
 
           {/* TAB 4: SYSTEM CONSOLE */}
           {activeTab === 'system' && (
-            <div className="space-y-8 max-w-6xl">
-              
-              {/* Copy Portal Link Banner */}
-              <div className="bg-[#0b0c16] border border-gray-805 rounded-3xl p-5 flex items-center justify-between relative overflow-hidden bg-gradient-to-r from-blue-950/10 to-indigo-950/5">
-                <div className="absolute top-[-30%] left-[-10%] w-36 h-36 bg-blue-500/5 rounded-full blur-2xl" />
-                <div className="space-y-1 relative z-10">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Desktop Coach Portal URL</h3>
-                  <p className="text-xs text-gray-400">Provide this link to coaches to access the desktop hub directly:</p>
-                  <p className="text-xs text-white font-mono select-all bg-gray-950/40 px-3 py-1.5 rounded-xl border border-gray-800 inline-block mt-2">
-                    {window.location.origin}/coach-portal
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/coach-portal`);
-                    toast.success('Desktop Coach Portal link copied!');
-                  }}
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-extrabold px-3 py-2.5 rounded-xl uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-500/10"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                  Copy Link
-                </button>
-              </div>
-              
-              {/* Top Warning block (If not owner) */}
+            <div className="space-y-6">
+              {/* Header warning if not Owner */}
               {coachUserId && coachUserId !== OWNER_ID && (
-                <div className="bg-red-950/20 border border-red-900/30 p-5 rounded-3xl flex items-start gap-4">
+                <div className="bg-red-950/20 border border-red-900/30 p-5 rounded-3xl flex items-start gap-4 max-w-2xl mx-auto mt-8">
                   <ShieldAlert className="text-red-400 shrink-0 mt-0.5" size={24} />
                   <div>
                     <h3 className="text-sm font-black text-white uppercase tracking-wider">Access Restricted</h3>
                     <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                      You are logged in as a standard coach account. Only the system owner has access to create/delete other coach accounts and toggle global feature options.
+                      You are logged in as a standard coach account. Only the system owner has access to view other coaches, inspect their clients, and reassign athletes.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Grid: Create Coach (Owner Only) vs User Directory */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-                
-                {/* Create Coach Account (Owner Only) */}
-                <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 space-y-5">
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">👑 Register Coach Profile</h3>
-                    <p className="text-[10px] text-gray-500 mt-0.5">Register administrative access accounts (Owner credentials required).</p>
-                  </div>
-
-                  <form onSubmit={handleCreateCoach} className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-500 ml-1">Coach Display Name</label>
-                      <input 
-                        type="text" required value={coachName} onChange={e => setCoachName(e.target.value)}
-                        placeholder="e.g. Coach Captain"
-                        disabled={coachUserId !== OWNER_ID}
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-500 ml-1">Email / Account Username</label>
-                      <input 
-                        type="email" required value={coachEmail} onChange={e => setCoachEmail(e.target.value)}
-                        placeholder="e.g. coach@stride.fit"
-                        disabled={coachUserId !== OWNER_ID}
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-500 ml-1">Default Password</label>
-                      <input 
-                        type="password" required value={coachPassword} onChange={e => setCoachPassword(e.target.value)}
-                        placeholder="••••••••"
-                        disabled={coachUserId !== OWNER_ID}
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isCreatingCoach || coachUserId !== OWNER_ID}
-                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-lg shadow-blue-500/10"
-                    >
-                      {isCreatingCoach ? 'Creating Coach...' : 'Register Coach Account'}
-                    </button>
-                  </form>
-
-                  {createdCoachCredentials && (
-                    <div className="bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl space-y-2 mt-4">
-                      <h4 className="text-xs font-bold text-emerald-400">Account Deployed successfully!</h4>
-                      <div className="bg-gray-950/60 p-3 rounded-xl font-mono text-[10px] space-y-1 text-gray-300">
-                        <p><span className="text-gray-500">Name:</span> {createdCoachCredentials.name}</p>
-                        <p><span className="text-gray-500">Email:</span> {createdCoachCredentials.email}</p>
-                        <p><span className="text-gray-500">Password:</span> {createdCoachCredentials.password}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Directory List & Detail Controls */}
-                <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 flex flex-col justify-between gap-5">
-                  <div className="space-y-4 flex-1 flex flex-col justify-start">
-                    <div>
-                      <h3 className="text-xs font-black uppercase tracking-widest text-indigo-400">👥 User Directory &amp; Toggles</h3>
-                      <p className="text-[10px] text-gray-500 mt-0.5">Toggle active statuses, change passwords, and promote roles.</p>
-                    </div>
-
+              {coachUserId === OWNER_ID && (
+                <div className="flex gap-6 h-[calc(100vh-140px)] items-stretch">
+                  
+                  {/* Left Column: Coaches List */}
+                  <div className="w-[320px] flex flex-col gap-4 bg-[#0b0c16] border border-gray-800 rounded-3xl p-4 shrink-0">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
                       <input 
                         type="text"
-                        value={systemSearchQuery}
-                        onChange={e => setSystemSearchQuery(e.target.value)}
-                        placeholder="Search profiles..."
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none"
+                        value={coachSearchQuery}
+                        onChange={e => setCoachSearchQuery(e.target.value)}
+                        placeholder="Search coaches..."
+                        className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
                       />
                     </div>
 
-                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 no-scrollbar flex-1">
-                      {filteredSystemUsers.map(u => {
-                        const isSuspended = u.targets?.is_deactivated === true;
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
+                      {filteredSystemCoaches.map(coach => {
+                        const isDeact = coach.targets?.is_deactivated === true;
+                        const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === coach.id);
+                        const isSelf = coach.id === OWNER_ID;
                         return (
-                          <div 
-                            key={u.id}
-                            onClick={() => setSystemSelectedUser(systemSelectedUser?.id === u.id ? null : u)}
-                            className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                              systemSelectedUser?.id === u.id 
+                          <button
+                            key={coach.id}
+                            type="button"
+                            onClick={() => setSystemSelectedCoachId(systemSelectedCoachId === coach.id ? null : coach.id)}
+                            className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                              systemSelectedCoachId === coach.id 
                                 ? 'bg-blue-600/10 border-blue-500/50' 
-                                : 'bg-[#121624]/40 border-gray-850/80 hover:border-gray-850'
+                                : 'bg-[#121624]/40 border-gray-850/80 hover:border-gray-750'
                             }`}
                           >
-                            <div>
-                              <p className="text-xs font-extrabold text-white flex items-center gap-2">
-                                {u.display_name}
-                                {u.role === 'coach' && (
-                                  <span className="text-[8px] bg-blue-950 text-blue-400 font-extrabold px-1.5 py-0.5 rounded border border-blue-900/50 uppercase">
-                                    Coach
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-[10px] text-gray-500 mt-0.5">{u.email}</p>
-                            </div>
-                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                              isSuspended ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'
+                            <div className={`w-9 h-9 rounded-xl font-black flex items-center justify-center text-xs uppercase ${
+                              isSelf ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-900/40 text-blue-300'
                             }`}>
-                              {isSuspended ? 'Suspended' : 'Active'}
-                            </span>
-                          </div>
+                              {coach.display_name?.charAt(0) || '?'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                                {coach.display_name || 'Unnamed Coach'}
+                                {isSelf && <span className="text-[7px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-1 rounded uppercase tracking-wider font-mono">Owner</span>}
+                              </p>
+                              <p className="text-[10px] text-gray-500 truncate">@{coach.username || 'no-username'}</p>
+                            </div>
+                            <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                              <span className="text-[10px] font-black text-gray-300">{coachClients.length} clients</span>
+                              {!isSelf && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                                  isDeact ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                }`}>
+                                  {isDeact ? 'SUSPENDED' : 'ACTIVE'}
+                                </span>
+                              )}
+                            </div>
+                          </button>
                         );
                       })}
+                      {filteredSystemCoaches.length === 0 && (
+                        <p className="text-xs text-gray-500 italic text-center py-12">No coaches found.</p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Detail Panel overlay */}
-                  {systemSelectedUser && (
-                    <div className="bg-[#121624] border border-gray-800 rounded-2xl p-4 space-y-4">
-                      <div className="flex justify-between items-start border-b border-gray-800 pb-2">
-                        <div>
-                          <h4 className="text-xs font-black text-white uppercase">{systemSelectedUser.display_name}</h4>
-                          <p className="text-[10px] text-gray-500">{systemSelectedUser.email}</p>
-                        </div>
-                        <button onClick={() => setSystemSelectedUser(null)} className="text-gray-500 hover:text-white text-xs font-bold">
-                          Close
-                        </button>
+                  {/* Right Column: Coach Dossier & Analytics */}
+                  <div className="flex-1 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 overflow-y-auto no-scrollbar relative flex flex-col justify-start">
+                    
+                    {!selectedCoachProfile ? (
+                      <div className="h-full flex-1 flex flex-col justify-center items-center text-center text-gray-500 space-y-2 py-16">
+                        <Shield size={48} className="text-gray-700" />
+                        <p className="text-sm font-bold">No Coach Selected</p>
+                        <p className="text-xs max-w-[280px] leading-relaxed">Select a coach profile from the directory on the left to view active managed clients, inspect platform metrics, or reassign users.</p>
                       </div>
-
-                      {/* Deactivation / Deletion actions */}
-                      <div className="grid grid-cols-2 gap-2.5">
+                    ) : (
+                      <div className="space-y-6">
                         
-                        {/* Suspend Toggle */}
-                        {systemSelectedUser.targets?.is_deactivated === true ? (
-                          <button
-                            onClick={() => handleUpdateSystemUserStatus(systemSelectedUser.id, { is_deactivated: false })}
-                            className="flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold py-2.5 rounded-xl text-[10px] uppercase transition-all cursor-pointer"
-                          >
-                            <UserCheck size={11} /> Activate
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleUpdateSystemUserStatus(systemSelectedUser.id, { is_deactivated: true })}
-                            className="flex items-center justify-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 font-bold py-2.5 rounded-xl text-[10px] uppercase transition-all cursor-pointer"
-                          >
-                            <UserX size={11} /> Suspend
-                          </button>
-                        )}
+                        {/* Dossier Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase">
+                              {selectedCoachProfile.display_name?.charAt(0) || '?'}
+                            </div>
+                            <div>
+                              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                                {selectedCoachProfile.display_name}
+                                {selectedCoachProfile.id === OWNER_ID && (
+                                  <span className="text-[9px] bg-indigo-500/20 border border-indigo-500/25 text-indigo-400 px-2 py-0.5 rounded font-black tracking-normal uppercase">
+                                    System Owner
+                                  </span>
+                                )}
+                              </h2>
+                              <p className="text-xs text-gray-500">Handle: @{selectedCoachProfile.username || 'no-username'} | Email: {selectedCoachProfile.email || 'no-email'}</p>
+                            </div>
+                          </div>
 
-                        {/* Delete Account Completely */}
-                        <button
-                          onClick={() => handleDeleteSystemUser(systemSelectedUser.id)}
-                          disabled={systemDeletingUser}
-                          className="flex items-center justify-center gap-1.5 bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-650 hover:text-white font-bold py-2.5 rounded-xl text-[10px] uppercase transition-all cursor-pointer"
-                        >
-                          <Trash2 size={11} /> Delete User
-                        </button>
+                          {selectedCoachProfile.id !== OWNER_ID && (
+                            <button
+                              onClick={() => handleToggleCoachSuspension(selectedCoachProfile.id, selectedCoachProfile.targets?.is_deactivated === true)}
+                              disabled={updatingCoachStatus}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
+                                selectedCoachProfile.targets?.is_deactivated === true 
+                                  ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white' 
+                                  : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                              }`}
+                            >
+                              {updatingCoachStatus ? 'Updating...' : (selectedCoachProfile.targets?.is_deactivated === true ? 'Reactivate Coach' : 'Suspend Coach')}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Analytics Cards Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <Card className="p-5 flex flex-col gap-1 relative overflow-hidden bg-[#121624]/60">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Clients Managed</p>
+                            <p className="text-3xl font-black text-white mt-1.5">{selectedCoachClients.length}</p>
+                          </Card>
+                          <Card className="p-5 flex flex-col gap-1 relative overflow-hidden bg-[#121624]/60">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Active Athletes</p>
+                            <p className="text-3xl font-black text-emerald-400 mt-1.5">
+                              {selectedCoachClients.filter(c => c.targets?.is_deactivated !== true).length}
+                            </p>
+                          </Card>
+                          <Card className="p-5 flex flex-col gap-1 relative overflow-hidden bg-[#121624]/60">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Suspended Athletes</p>
+                            <p className="text-3xl font-black text-red-400 mt-1.5">
+                              {selectedCoachClients.filter(c => c.targets?.is_deactivated === true).length}
+                            </p>
+                          </Card>
+                        </div>
+
+                        {/* Interactive Client re-assignment list */}
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
+                          <div className="border-b border-gray-850 pb-2 flex justify-between items-center">
+                            <h3 className="text-xs font-black uppercase tracking-wide text-blue-400">Assigned Clients &amp; Re-assignment</h3>
+                            <span className="text-[10px] text-gray-500 font-bold">{selectedCoachClients.length} users</span>
+                          </div>
+
+                          <div className="divide-y divide-gray-850 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                            {selectedCoachClients.length === 0 ? (
+                              <p className="text-xs text-gray-500 italic py-12 text-center">No athletes assigned to this coach.</p>
+                            ) : (
+                              selectedCoachClients.map(client => {
+                                const selectedDestCoachId = reassignCoachTargetId[client.id] || '';
+                                return (
+                                  <div key={client.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                    <div>
+                                      <p className="font-extrabold text-white">{client.display_name || 'Unnamed Client'}</p>
+                                      <p className="text-[10px] text-gray-500">@{client.username}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <select
+                                        value={selectedDestCoachId}
+                                        onChange={e => setReassignCoachTargetId(prev => ({ ...prev, [client.id]: e.target.value }))}
+                                        className="bg-[#131b2e] border border-gray-700 rounded-xl px-2 py-1.5 text-[10px] text-white outline-none font-bold"
+                                      >
+                                        <option value="" disabled>Select destination coach...</option>
+                                        {systemCoaches
+                                          .filter(c => c.id !== selectedCoachProfile.id)
+                                          .map(c => (
+                                            <option key={c.id} value={c.id}>Move to {c.display_name}</option>
+                                          ))
+                                        }
+                                      </select>
+                                      <button
+                                        onClick={() => handleReassignClient(client.id, selectedDestCoachId)}
+                                        disabled={!selectedDestCoachId}
+                                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                                      >
+                                        Move
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+
                       </div>
-
-                      {/* Change Password */}
-                      <form onSubmit={handleChangeSystemUserPassword} className="flex gap-2">
-                        <input 
-                          type="password" required value={systemSelectedUserPassword} onChange={e => setSystemSelectedUserPassword(e.target.value)}
-                          placeholder="New password"
-                          className="flex-1 bg-[#181d29] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                        />
-                        <button
-                          type="submit" disabled={systemUpdatingPassword}
-                          className="bg-blue-600 hover:bg-blue-500 text-white px-3.5 rounded-xl font-bold text-xs"
-                        >
-                          Reset
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
+                    )}
+                  </div>
+                  
                 </div>
-
-              </div>
-
+              )}
             </div>
           )}
 
