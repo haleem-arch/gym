@@ -239,6 +239,16 @@ export default function DesktopCoachPortal() {
   const [selectedSubClient, setSelectedSubClient] = useState<any | null>(null);
   const [selectedSystemCoach, setSelectedSystemCoach] = useState<any | null>(null);
 
+  // Coach Reactivation Modal state
+  const [coachReactivateModalOpen, setCoachReactivateModalOpen] = useState(false);
+  const [coachReactivateId, setCoachReactivateId] = useState<string | null>(null);
+  const [coachReactivateName, setCoachReactivateName] = useState('');
+  const [coachReactivatePeriod, setCoachReactivatePeriod] = useState('1 month');
+  const [coachReactivateDelay, setCoachReactivateDelay] = useState('0');
+  const [coachReactivateCustomEnd, setCoachReactivateCustomEnd] = useState(getLocalDateTimeString());
+  const [coachReactivateIsFreeTrial, setCoachReactivateIsFreeTrial] = useState(false);
+  const [coachReactivateSaving, setCoachReactivateSaving] = useState(false);
+
   // Search queries
   const [clientSearchQuery, setClientSearchQuery] = useState('');
 
@@ -1497,6 +1507,83 @@ export default function DesktopCoachPortal() {
       toast.error('Failed to reactivate subscription.');
     } finally {
       setReactivateSaving(false);
+    }
+  };
+
+  const handleSaveCoachReactivation = async () => {
+    if (!coachReactivateId) return;
+    setCoachReactivateSaving(true);
+    try {
+      const coachProfile = profiles.find(p => p.id === coachReactivateId);
+      const currentTargets = coachProfile?.targets || {};
+      
+      const delayDays = parseInt(coachReactivateDelay) || 0;
+      const startDate = new Date(Date.now() + delayDays * 24 * 60 * 60 * 1000);
+      
+      let endDate: Date | null = null;
+      if (coachReactivatePeriod === 'none') {
+        endDate = null;
+      } else if (coachReactivatePeriod === 'custom') {
+        endDate = coachReactivateCustomEnd ? new Date(coachReactivateCustomEnd) : null;
+      } else {
+        let durationMs = 30 * 24 * 60 * 60 * 1000;
+        if (coachReactivatePeriod === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+        else if (coachReactivatePeriod === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+        else if (coachReactivatePeriod === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+        else if (coachReactivatePeriod === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+        else if (coachReactivatePeriod === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+        else if (coachReactivatePeriod === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+        
+        endDate = new Date(startDate.getTime() + durationMs);
+      }
+
+      let isDeactivated = false;
+      if (startDate && endDate) {
+        const nowObj = new Date();
+        if (nowObj < startDate || nowObj >= endDate) {
+          isDeactivated = true;
+        }
+      }
+
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        action: 'coach_reactivation',
+        period: coachReactivatePeriod,
+        delay_days: delayDays,
+        is_free_trial: coachReactivateIsFreeTrial,
+        start_date: startDate.toISOString(),
+        end_date: endDate ? endDate.toISOString() : null
+      };
+
+      const updatedHistory = Array.isArray(currentTargets.subscription_history)
+        ? [...currentTargets.subscription_history, logEntry]
+        : [logEntry];
+
+      const updatedTargets = {
+        ...currentTargets,
+        is_deactivated: isDeactivated,
+        is_free_trial: coachReactivateIsFreeTrial,
+        subscription_start_date: startDate.toISOString(),
+        subscription_end_date: endDate ? endDate.toISOString() : null,
+        subscription_duration: coachReactivatePeriod,
+        subscription_delay: coachReactivateDelay,
+        subscription_history: updatedHistory
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachReactivateId);
+
+      if (error) throw error;
+      toast.success(`${coachReactivateName} reactivated successfully!`);
+      setCoachReactivateModalOpen(false);
+      setProfiles(prev => prev.map(p => p.id === coachReactivateId ? { ...p, targets: updatedTargets } : p));
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to reactivate coach.");
+    } finally {
+      setCoachReactivateSaving(false);
     }
   };
 
@@ -4801,6 +4888,141 @@ export default function DesktopCoachPortal() {
         </div>
       )}
 
+      {/* REACTIVATE COACH SUBSCRIPTION DIALOG MODAL */}
+      {coachReactivateModalOpen && (
+        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0d1220] border border-gray-800 rounded-3xl p-6 max-w-md w-full space-y-6 shadow-2xl animate-fade-in font-bold">
+            <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <CreditCard size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                  Reactivate Coach Access
+                </h3>
+                <p className="text-[10px] text-gray-500 font-bold">For {coachReactivateName}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Duration selection */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-500 font-black uppercase block">Reactivation Plan / Period</label>
+                <select 
+                  value={coachReactivatePeriod} 
+                  onChange={e => setCoachReactivatePeriod(e.target.value)} 
+                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500 cursor-pointer font-bold"
+                >
+                  <option value="none">No Expiry (Lifetime)</option>
+                  <option value="2 weeks">2 Weeks</option>
+                  <option value="1 month">1 Month</option>
+                  <option value="3 months">3 Months</option>
+                  <option value="6 months">6 Months</option>
+                  <option value="12 months">12 Months</option>
+                  <option value="2 years">2 Years</option>
+                  <option value="custom">Custom Date</option>
+                </select>
+              </div>
+
+              {coachReactivatePeriod === 'custom' && (
+                <div className="space-y-1">
+                  <label className="text-[10px] text-gray-500 font-black uppercase block">Custom Expiration Date &amp; Time</label>
+                  <input 
+                    type="datetime-local" 
+                    value={coachReactivateCustomEnd} 
+                    onChange={e => setCoachReactivateCustomEnd(e.target.value)} 
+                    className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500 cursor-pointer font-bold" 
+                  />
+                </div>
+              )}
+
+              {/* Start Date Delay Selection */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-500 font-black uppercase block">Start Date Delay</label>
+                <select 
+                  value={coachReactivateDelay} 
+                  onChange={e => setCoachReactivateDelay(e.target.value)} 
+                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500 cursor-pointer font-bold"
+                >
+                  <option value="0">Immediately (Today)</option>
+                  <option value="1">1 Day Delay</option>
+                  <option value="3">3 Days Delay</option>
+                  <option value="7">7 Days Delay</option>
+                  <option value="14">14 Days Delay</option>
+                  <option value="30">30 Days Delay</option>
+                </select>
+              </div>
+
+              {/* Free Trial selection */}
+              <div className="space-y-1.5 flex flex-col">
+                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block">Free Trial Plan</label>
+                <button
+                  type="button"
+                  onClick={() => setCoachReactivateIsFreeTrial(!coachReactivateIsFreeTrial)}
+                  className={`w-full flex items-center justify-between border px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
+                    coachReactivateIsFreeTrial 
+                      ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-extrabold' 
+                      : 'bg-[#121624] border-gray-800 text-gray-400 font-bold hover:border-gray-700'
+                  }`}
+                >
+                  <span>Free Trial</span>
+                  <span className="text-[9px] font-black uppercase font-mono bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">{coachReactivateIsFreeTrial ? "ON" : "OFF"}</span>
+                </button>
+              </div>
+
+              <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-3.5 space-y-2">
+                <h4 className="text-[9px] font-black text-blue-400 uppercase tracking-wider">Calculated Access Schedule</h4>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400 font-bold">
+                  <div>
+                    <span className="text-gray-500">Starts:</span>{' '}
+                    {(() => {
+                      const delayDays = parseInt(coachReactivateDelay) || 0;
+                      const start = new Date(Date.now() + delayDays * 24 * 60 * 60 * 1000);
+                      return start.toLocaleDateString();
+                    })()}
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Expires:</span>{' '}
+                    {(() => {
+                      if (coachReactivatePeriod === 'none') return 'Never (Lifetime)';
+                      const delayDays = parseInt(coachReactivateDelay) || 0;
+                      const start = new Date(Date.now() + delayDays * 24 * 60 * 60 * 1000);
+                      if (coachReactivatePeriod === 'custom') {
+                        return coachReactivateCustomEnd ? new Date(coachReactivateCustomEnd).toLocaleDateString() : 'N/A';
+                      }
+                      let durationMs = 0;
+                      if (coachReactivatePeriod === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+                      else if (coachReactivatePeriod === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+                      else if (coachReactivatePeriod === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+                      else if (coachReactivatePeriod === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+                      else if (coachReactivatePeriod === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+                      else if (coachReactivatePeriod === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+                      return new Date(start.getTime() + durationMs).toLocaleDateString();
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setCoachReactivateModalOpen(false)}
+                className="flex-1 bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveCoachReactivation}
+                disabled={coachReactivateSaving}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
+              >
+                {coachReactivateSaving ? 'Saving...' : 'Confirm Reactivation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* UNSAVED CHANGES WARNING DIALOG MODAL */}
       {unsavedChangesPendingAction && (
         <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -5282,9 +5504,10 @@ export default function DesktopCoachPortal() {
         }`}
       >
         {selectedSystemCoach && (() => {
-          const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === selectedSystemCoach.id);
-          const isSelf = selectedSystemCoach.id === OWNER_ID;
-          const tg = selectedSystemCoach.targets || {};
+          const currentCoach = profiles.find(p => p.id === selectedSystemCoach.id) || selectedSystemCoach;
+          const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === currentCoach.id);
+          const isSelf = currentCoach.id === OWNER_ID;
+          const tg = currentCoach.targets || {};
           
           return (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -5294,14 +5517,14 @@ export default function DesktopCoachPortal() {
                   <div className={`w-10 h-10 rounded-xl font-black flex items-center justify-center text-sm uppercase ${
                     isSelf ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-900/40 text-blue-300'
                   }`}>
-                    {selectedSystemCoach.display_name?.charAt(0) || '?'}
+                    {currentCoach.display_name?.charAt(0) || '?'}
                   </div>
                   <div>
                     <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                      {selectedSystemCoach.display_name}
+                      {currentCoach.display_name}
                       {isSelf && <span className="text-[7px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-1 rounded uppercase tracking-wider font-mono">Owner</span>}
                     </h2>
-                    <p className="text-[10px] text-gray-500 lowercase mt-0.5">@{selectedSystemCoach.username} | Login: {selectedSystemCoach.email}</p>
+                    <p className="text-[10px] text-gray-500 lowercase mt-0.5">@{currentCoach.username} | Login: {currentCoach.email}</p>
                   </div>
                 </div>
                 <button 
@@ -5340,7 +5563,23 @@ export default function DesktopCoachPortal() {
                       <p className="text-[10px] text-gray-500 mt-0.5">Temporarily block this coach from logging in.</p>
                     </div>
                     <button
-                      onClick={() => handleToggleCoachSuspension(selectedSystemCoach.id, tg.is_deactivated === true)}
+                      onClick={() => {
+                        if (tg.is_deactivated === true) {
+                          // Reactivate -> Open Duration Dialog/Modal
+                          setCoachReactivateId(currentCoach.id);
+                          setCoachReactivateName(currentCoach.display_name);
+                          setCoachReactivatePeriod('1 month');
+                          setCoachReactivateDelay('0');
+                          setCoachReactivateIsFreeTrial(false);
+                          setCoachReactivateCustomEnd(getLocalDateTimeString());
+                          setCoachReactivateModalOpen(true);
+                        } else {
+                          // Suspend -> Prompt confirmation
+                          if (window.confirm(`Are you sure you want to suspend coach ${currentCoach.display_name}?`)) {
+                            handleToggleCoachSuspension(currentCoach.id, false);
+                          }
+                        }
+                      }}
                       disabled={updatingCoachStatus}
                       className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
                         tg.is_deactivated === true 
@@ -5492,9 +5731,9 @@ export default function DesktopCoachPortal() {
                     <button
                       type="button"
                       onClick={async () => {
-                        await handleUpdateCoachSubscription(selectedSystemCoach.id);
+                        await handleUpdateCoachSubscription(currentCoach.id);
                         // Refresh the local drawer copy so stats update
-                        const updatedCoach = systemCoaches.find(c => c.id === selectedSystemCoach.id);
+                        const updatedCoach = systemCoaches.find(c => c.id === currentCoach.id);
                         if (updatedCoach) {
                           setSelectedSystemCoach(updatedCoach);
                         }
@@ -5535,7 +5774,7 @@ export default function DesktopCoachPortal() {
                               >
                                 <option value="" disabled>Select destination...</option>
                                 {systemCoaches
-                                  .filter(c => c.id !== selectedSystemCoach.id)
+                                  .filter(c => c.id !== currentCoach.id)
                                   .map(c => (
                                     <option key={c.id} value={c.id}>Move to {c.display_name}</option>
                                   ))
@@ -5545,7 +5784,7 @@ export default function DesktopCoachPortal() {
                                 onClick={async () => {
                                   await handleReassignClient(client.id, selectedDestCoachId);
                                   // Re-fetch to sync
-                                  const updatedCoach = systemCoaches.find(c => c.id === selectedSystemCoach.id);
+                                  const updatedCoach = systemCoaches.find(c => c.id === currentCoach.id);
                                   if (updatedCoach) {
                                     setSelectedSystemCoach(updatedCoach);
                                   }
