@@ -513,7 +513,7 @@ export default function DesktopCoachPortal() {
 
       const { data: myProfile } = await supabase
         .from('profiles')
-        .select('role, targets, email, username, display_name')
+        .select('role, targets, email, username, display_name, generated_passcode')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -2677,14 +2677,24 @@ export default function DesktopCoachPortal() {
       {/* Main Top Header Navbar */}
       <header className="border-b border-gray-800 bg-[#070710]/80 backdrop-blur-xl px-8 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3.5">
-          <img 
-            src="/icon-transparent.png" 
-            alt="Life Gym Logo" 
-            className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/favicon.svg';
-            }}
-          />
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 512 512" 
+            className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.3)] select-none"
+          >
+            <g transform="translate(256 256) rotate(-45)">
+              {/* Rod */}
+              <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+              {/* Left weights */}
+              <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+              <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+              <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+              {/* Right weights */}
+              <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+              <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+              <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            </g>
+          </svg>
           <div>
             <h1 className="text-base font-black uppercase tracking-widest bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
               LIFE GYM
@@ -5053,7 +5063,7 @@ export default function DesktopCoachPortal() {
                       <div className="flex items-center justify-between bg-[#090b14] border border-gray-850 px-3 py-2 rounded-xl transition-all duration-300 hover:border-blue-500/30">
                         <span className="text-xs font-mono font-extrabold text-yellow-500 tracking-wide select-all">
                           {showPasscode 
-                            ? (myCoachProfile?.targets?.generated_passcode || '******')
+                            ? (myCoachProfile?.generated_passcode || '******')
                             : '••••••••'}
                         </span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -5065,11 +5075,11 @@ export default function DesktopCoachPortal() {
                           >
                             {showPasscode ? <EyeOff size={12} /> : <Eye size={12} />}
                           </button>
-                          {myCoachProfile?.targets?.generated_passcode && (
+                          {myCoachProfile?.generated_passcode && (
                             <button
                               type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(myCoachProfile.targets.generated_passcode);
+                                navigator.clipboard.writeText(myCoachProfile.generated_passcode);
                                 setCopiedPasscode(true);
                                 setTimeout(() => setCopiedPasscode(false), 2000);
                                 toast.success('Passcode copied to clipboard');
