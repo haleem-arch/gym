@@ -1806,9 +1806,9 @@ export default function DesktopCoachPortal() {
 
     setSubOverlaySubmitting(true);
     try {
-      // 1. Get session access token for authorization header
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      // 1. Use the sessionToken already stored in component state (avoids re-triggering auth listeners)
+      const token = sessionToken;
+      if (!token) {
         toast.error('No active session. Please log in again.');
         return;
       }
@@ -1822,7 +1822,7 @@ export default function DesktopCoachPortal() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           period: subOverlayPlan,
