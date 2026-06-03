@@ -5573,7 +5573,7 @@ export default function DesktopCoachPortal() {
       {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
       {showSubscriptionOverlay && (
         <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
-          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-xl w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-4xl w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-gray-850 pb-4">
@@ -5607,7 +5607,10 @@ export default function DesktopCoachPortal() {
               </button>
             </div>
 
-            <form onSubmit={handleRenewSubscription} className="space-y-5 text-xs font-bold text-gray-300">
+            <form onSubmit={handleRenewSubscription} className="space-y-6 text-xs font-bold text-gray-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                {/* Left Column */}
+                <div className="space-y-5">
               
               {/* Plan Choice Grid */}
               <div className="space-y-2">
@@ -5675,6 +5678,23 @@ export default function DesktopCoachPortal() {
                 <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
               </div>
 
+              {/* Total checkout amount display */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
+                <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
+                <span className="text-base font-black text-white font-mono">
+                  {(() => {
+                    if (subOverlayPlan === '2 weeks') return '2,000 EGP';
+                    if (subOverlayPlan === '1 month') return '3,500 EGP';
+                    if (subOverlayPlan === '3 months') return '8,500 EGP';
+                    if (subOverlayPlan === '6 months') return '14,000 EGP';
+                    return '0 EGP';
+                  })()}
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-5">
               {/* Dynamic Inputs depending on Method */}
               <div className="space-y-4">
                 {subOverlayMethod === 'telda' ? (
@@ -5774,20 +5794,10 @@ export default function DesktopCoachPortal() {
                   </div>
                 )}
               </div>
+            </div> {/* Close Right Column */}
+          </div> {/* Close Grid Row */}
 
-              {/* Total checkout amount display */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
-                <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
-                <span className="text-base font-black text-white font-mono">
-                  {(() => {
-                    if (subOverlayPlan === '2 weeks') return '2,000 EGP';
-                    if (subOverlayPlan === '1 month') return '3,500 EGP';
-                    if (subOverlayPlan === '3 months') return '8,500 EGP';
-                    if (subOverlayPlan === '6 months') return '14,000 EGP';
-                    return '0 EGP';
-                  })()}
-                </span>
-              </div>
+
 
               {/* Privacy Policy & Terms acceptance checklists */}
               <div className="space-y-3 pt-2 border-t border-gray-800/80">
