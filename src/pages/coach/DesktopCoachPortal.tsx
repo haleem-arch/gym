@@ -141,6 +141,7 @@ export default function DesktopCoachPortal() {
   // Client sub-tabs layout
   const [clientActiveTab, setClientActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody'>('overview');
   const [clientActiveDateStr, setClientActiveDateStr] = useState<string>(() => getLocalDateString());
+  const [myCoachProfile, setMyCoachProfile] = useState<any | null>(null);
 
   // Client daily data records (for selected date and client)
   const [clientDietLog, setClientDietLog] = useState<any>(null);
@@ -160,6 +161,14 @@ export default function DesktopCoachPortal() {
   const [selectedReceiptWorkout, setSelectedReceiptWorkout] = useState<any>(null);
   const [showAddScanForm, setShowAddScanForm] = useState(false);
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
+
+  const [subTabMode, setSubTabMode] = useState<'clients' | 'coaches'>('clients');
+  const [newCoachSubPeriod, setNewCoachSubPeriod] = useState('1 month');
+  const [newCoachSubDelay, setNewCoachSubDelay] = useState('0');
+  const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
+  const [coachCountdownText, setCoachCountdownText] = useState('');
+  const [isTrialActive, setIsTrialActive] = useState(false);
+  const [showCoachWarningBanner, setShowCoachWarningBanner] = useState(false);
 
   const [newWaterAmount, setNewWaterAmount] = useState(500);
 
@@ -403,6 +412,55 @@ export default function DesktopCoachPortal() {
     return () => clearInterval(interval);
   }, []);
 
+  // Coach subscription warning and free trial countdown timer
+  useEffect(() => {
+    if (!myCoachProfile || coachUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c') {
+      setShowCoachWarningBanner(false);
+      return;
+    }
+
+    const endDateStr = myCoachProfile.targets?.subscription_end_date;
+    if (!endDateStr) {
+      setShowCoachWarningBanner(false);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const nowVal = new Date().getTime();
+      const endVal = new Date(endDateStr).getTime();
+      const diffVal = endVal - nowVal;
+
+      if (diffVal <= 0) {
+        setCoachCountdownText('Expired');
+        setShowCoachWarningBanner(false);
+        return;
+      }
+
+      const daysVal = Math.floor(diffVal / (24 * 60 * 60 * 1000));
+      const hoursVal = Math.floor((diffVal % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const minutesVal = Math.floor((diffVal % (60 * 60 * 1000)) / (60 * 1000));
+      const secondsVal = Math.floor((diffVal % (60 * 1000)) / 1000);
+
+      const timeStr = `${daysVal}d ${hoursVal}h ${minutesVal}m ${secondsVal}s`;
+      setCoachCountdownText(timeStr);
+
+      const trial = myCoachProfile.targets?.is_free_trial === true;
+      setIsTrialActive(trial);
+
+      // Warning banner is displayed for Free Trials OR if subscription is under 5 days (5 * 24 * 3600 * 1000)
+      const isUnder5Days = diffVal < 5 * 24 * 60 * 60 * 1000;
+      if (trial || isUnder5Days) {
+        setShowCoachWarningBanner(true);
+      } else {
+        setShowCoachWarningBanner(false);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [myCoachProfile, coachUserId]);
+
   const fetchBaseData = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -420,17 +478,34 @@ export default function DesktopCoachPortal() {
         .eq('id', session.user.id)
         .maybeSingle();
 
+      setMyCoachProfile(myProfile);
+
       if (myProfile?.role !== 'coach' && session.user.id !== OWNER_ID) {
         setIsNotCoach(true);
         if (!silent) setLoading(false);
         return;
       }
 
-      // Check if coach is suspended (Owner cannot be suspended)
-      if (session.user.id !== OWNER_ID && myProfile?.targets?.is_deactivated === true) {
+      // Check if coach is suspended or subscription is expired/not-started (Owner cannot be suspended)
+      const now = new Date();
+      const myTargets = myProfile?.targets || {};
+      const isDeactivated = myTargets.is_deactivated === true;
+      const isExpired = myTargets.subscription_end_date && now >= new Date(myTargets.subscription_end_date);
+      const isPending = myTargets.subscription_start_date && now < new Date(myTargets.subscription_start_date);
+
+      if (session.user.id !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
         setIsCoachSuspended(true);
+        let reason = 'Your administrative coach access has been suspended by the system administrator. Please contact the owner if you believe this is an error.';
+        if (isExpired) {
+          reason = 'Your coach subscription has expired. Please contact Haleem to renew your plan.';
+        } else if (isPending) {
+          reason = `Your coach subscription starts on ${new Date(myTargets.subscription_start_date).toLocaleDateString()}.`;
+        }
+        setCoachSuspensionReason(reason);
         if (!silent) setLoading(false);
         return;
+      } else {
+        setIsCoachSuspended(false);
       }
 
       const isOwner = session.user.id === OWNER_ID;
@@ -2192,7 +2267,7 @@ export default function DesktopCoachPortal() {
         </div>
         <h1 className="text-xl font-black text-white">Account Suspended</h1>
         <p className="text-gray-400 text-xs mt-3 max-w-[320px] leading-relaxed">
-          Your administrative coach access has been suspended by the system administrator. Please contact the owner if you believe this is an error.
+          {coachSuspensionReason}
         </p>
       </div>
     );
@@ -2200,6 +2275,24 @@ export default function DesktopCoachPortal() {
 
   return (
     <div className="min-h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-x-hidden">
+      {/* Warning banner for trials / low remaining duration */}
+      {showCoachWarningBanner && (
+        <div className={`w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 ${isTrialActive ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/90 text-white' : 'bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white'}`}>
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="animate-spin-slow" />
+            <span>
+              {isTrialActive 
+                ? `FREE TRIAL ACTIVE: Your free trial period is running. Access will end in: ` 
+                : `SUBSCRIPTION EXPIRING SOON: Your administrative coach subscription is expiring in: `}
+              <span className="font-mono text-sm underline bg-black/20 px-2 py-0.5 rounded ml-1">{coachCountdownText}</span>
+            </span>
+          </div>
+          <span className="text-[10px] uppercase bg-white/20 px-2 py-0.5 rounded font-bold tracking-wider">
+            {isTrialActive ? 'Free Trial' : 'Subscription'}
+          </span>
+        </div>
+      )}
+
       {/* Visual background glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-indigo-600/5 rounded-full blur-[140px] pointer-events-none" />

@@ -55,7 +55,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // 2. Perform Admin Action (Create User)
-  const { email, password, display_name, gender, role } = req.body;
+  const { email, password, display_name, gender, role, targets } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing email or password' });
   }
@@ -84,7 +84,7 @@ export default async function handler(req: any, res: any) {
       display_name: display_name || email.split('@')[0],
       role: userRole,
       coach_id: user.id,
-      targets: { gender: gender || 'male' }
+      targets: { gender: gender || 'male', ...(targets || {}) }
     });
 
   if (profileError) {
