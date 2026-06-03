@@ -94,13 +94,14 @@ Your unique Telegram Chat ID is:
 
       // Action 1: Approve
       if (action === 'approve') {
-        const paymentId = tokens[1];
-        const period = tokens[2];
+        const coachId = tokens[1];
+        const paymentId = tokens[2];
+        const period = tokens[3];
 
         const { data: coach, error: fetchErr } = await supabaseAdmin
           .from('profiles')
           .select('id, display_name, email, targets')
-          .eq('targets->pending_payment->>id', paymentId)
+          .eq('id', coachId)
           .maybeSingle();
 
         if (fetchErr || !coach) {
@@ -223,18 +224,19 @@ Your unique Telegram Chat ID is:
 
       // Action 2: Show Rejection Reasons Options
       else if (action === 'reject') {
-        const paymentId = tokens[1];
+        const coachId = tokens[1];
+        const paymentId = tokens[2];
 
         // Edit Telegram message inline keyboard markup to present options
         const inlineKeyboard = {
           inline_keyboard: [
             [
-              { text: '❌ Invalid Screenshot', callback_data: `reject_reason:${paymentId}:invalid_screenshot` },
-              { text: '❌ Wrong Amount', callback_data: `reject_reason:${paymentId}:wrong_amount` }
+              { text: '❌ Invalid Screenshot', callback_data: `reject_reason:${coachId}:${paymentId}:invalid_screenshot` },
+              { text: '❌ Wrong Amount', callback_data: `reject_reason:${coachId}:${paymentId}:wrong_amount` }
             ],
             [
-              { text: '❌ Not Received', callback_data: `reject_reason:${paymentId}:not_received` },
-              { text: '🔙 Cancel', callback_data: `reject_reason:${paymentId}:back_to_menu` }
+              { text: '❌ Not Received', callback_data: `reject_reason:${coachId}:${paymentId}:not_received` },
+              { text: '🔙 Cancel', callback_data: `reject_reason:${coachId}:${paymentId}:back_to_menu` }
             ]
           ]
         };
@@ -254,13 +256,14 @@ Your unique Telegram Chat ID is:
 
       // Action 3: Handle Final Selection of Rejection Reason
       else if (action === 'reject_reason') {
-        const paymentId = tokens[1];
-        const reasonCode = tokens[2];
+        const coachId = tokens[1];
+        const paymentId = tokens[2];
+        const reasonCode = tokens[3];
 
         const { data: coach, error: fetchErr } = await supabaseAdmin
           .from('profiles')
           .select('id, display_name, email, targets')
-          .eq('targets->pending_payment->>id', paymentId)
+          .eq('id', coachId)
           .maybeSingle();
 
         if (fetchErr || !coach) {
@@ -275,8 +278,8 @@ Your unique Telegram Chat ID is:
           const inlineKeyboard = {
             inline_keyboard: [
               [
-                { text: '✅ Approve & Add Plan', callback_data: `approve:${paymentId}:${targets.pending_payment?.period || '1 month'}` },
-                { text: '❌ Reject Payment', callback_data: `reject:${paymentId}` }
+                { text: '✅ Approve & Add Plan', callback_data: `approve:${coachId}:${paymentId}:${targets.pending_payment?.period || '1 month'}` },
+                { text: '❌ Reject Payment', callback_data: `reject:${coachId}:${paymentId}` }
               ]
             ]
           };

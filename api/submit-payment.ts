@@ -134,8 +134,8 @@ export default async function handler(req: any, res: any) {
     const inlineKeyboard = {
       inline_keyboard: [
         [
-          { text: '✅ Approve & Add Plan', callback_data: `approve:${paymentId}:${period}` },
-          { text: '❌ Reject Payment', callback_data: `reject:${paymentId}` }
+          { text: '✅ Approve & Add Plan', callback_data: `approve:${user.id}:${paymentId}:${period}` },
+          { text: '❌ Reject Payment', callback_data: `reject:${user.id}:${paymentId}` }
         ]
       ]
     };
