@@ -1722,7 +1722,9 @@ export default function DesktopCoachPortal() {
         height: '',
         experience_level: 'beginner',
         goals: '',
-        injuries_notes: ''
+        injuries_notes: '',
+        subscriptionPeriod: '1 month',
+        subscriptionStartDelay: '0'
       });
       setDeployStep(1);
       setDeployWeight('');
@@ -3534,7 +3536,6 @@ export default function DesktopCoachPortal() {
                           <Trash2 size={13} /> Complete Cascade Wipe
                         </button>
                       </div>
-                    </div>
                     </div>
                   </Card>
 
