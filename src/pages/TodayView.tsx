@@ -364,7 +364,7 @@ const TodayView = () => {
           </button>
           {isHaleem && (
             <button 
-              onClick={() => navigate('/coach/dashboard')} 
+              onClick={() => navigate('/coach-portal')} 
               className="flex items-center gap-1.5 bg-blue-950/40 hover:bg-blue-900/50 border border-blue-800/60 text-[10px] font-bold px-3 py-2 rounded-xl text-blue-400 hover:text-blue-300 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
             >
               <Shield size={14} />
