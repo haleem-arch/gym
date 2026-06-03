@@ -107,6 +107,8 @@ export default function DesktopCoachPortal() {
   const [showAddScanForm, setShowAddScanForm] = useState(false);
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
+  const [managementNewWaterAmount, setManagementNewWaterAmount] = useState(500);
+
   // Preset/Form states
   const [newMealName, setNewMealName] = useState('');
   const [newMealKcal, setNewMealKcal] = useState(400);
@@ -140,13 +142,6 @@ export default function DesktopCoachPortal() {
   const [editDayProtein, setEditDayProtein] = useState(0);
   const [editDayCarbs, setEditDayCarbs] = useState(0);
   const [editDayFat, setEditDayFat] = useState(0);
-
-  // Quota & Suspension states (Clients Tab)
-  const [aiQuotaInput, setAiQuotaInput] = useState<number>(20);
-  const [updatingQuota, setUpdatingQuota] = useState(false);
-  const [updatingSuspension, setUpdatingSuspension] = useState(false);
-  const [updatingPassword, setUpdatingPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
 
   // Athlete Control Tab states
   const [managementSelectedClientId, setManagementSelectedClientId] = useState<string>('');
@@ -322,17 +317,24 @@ export default function DesktopCoachPortal() {
     window.location.reload();
   };
 
-  // ─── INITIAL BOOTSTRAP ─────────────────────────────────────
+  // ─── INITIAL BOOTSTRAP & PERIODIC SYNC ─────────────────────
   useEffect(() => {
     fetchBaseData();
+
+    // Poll base data every 10 seconds to ensure client counts and quota indicators refresh dynamically
+    const interval = setInterval(() => {
+      fetchBaseData(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchBaseData = async () => {
+  const fetchBaseData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
       setCoachUserId(session.user.id);
@@ -346,7 +348,7 @@ export default function DesktopCoachPortal() {
 
       if (myProfile?.role !== 'coach' && session.user.id !== OWNER_ID) {
         setIsNotCoach(true);
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
 
@@ -377,7 +379,7 @@ export default function DesktopCoachPortal() {
       console.error(err);
       setDbHealthy(false);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -514,7 +516,6 @@ export default function DesktopCoachPortal() {
       }
 
       setSelectedClientProfile(clientProfile);
-      setAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
 
       // Set initial macro states only if we are forced to reset, or if the user doesn't have unsaved changes
       const targets = clientProfile.user?.targets || {};
@@ -638,6 +639,44 @@ export default function DesktopCoachPortal() {
       supabase.removeChannel(channel);
     };
   }, [selectedClientId, clientActiveDateStr]);
+
+  // Real-time listener for profiles (system-wide and management)
+  useEffect(() => {
+    const channel = supabase
+      .channel('coach-global-profiles-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          // Update profiles list
+          setProfiles(prev => {
+            const index = prev.findIndex(p => p.id === payload.new.id);
+            if (index !== -1) {
+              const updated = [...prev];
+              updated[index] = payload.new;
+              return updated;
+            } else {
+              return [...prev, payload.new];
+            }
+          });
+          // Update management selected client details if updated profile matches
+          if (payload.new.id === managementSelectedClientId) {
+            setManagementClientProfile((prev: any) => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                user: payload.new
+              };
+            });
+          }
+          // Update clientsList if it matches
+          setClientsList(prev => prev.map(c => c.id === payload.new.id ? payload.new : c));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [managementSelectedClientId]);
 
   // ─── SAVE TARGETS ──────────────────────────────────────────
   const handleSaveTargets = async () => {
@@ -1028,145 +1067,6 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  // ─── CLIENT ADMINISTRATIVE PARAMETERS ─────────────────────
-  const handleSaveQuota = async () => {
-    if (!selectedClientId || !selectedClientProfile) return;
-    setUpdatingQuota(true);
-    try {
-      const currentTargets = selectedClientProfile.user?.targets || {};
-      const updatedTargets = { ...currentTargets, ai_quota_limit: aiQuotaInput };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ targets: updatedTargets })
-        .eq('id', selectedClientId);
-
-      if (error) throw error;
-      toast.success('AI Coach quota updated!');
-      setSelectedClientProfile((prev: any) => ({
-        ...prev,
-        user: { ...prev.user, targets: updatedTargets }
-      }));
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to update quota.');
-    } finally {
-      setUpdatingQuota(false);
-    }
-  };
-
-  const handleToggleSuspension = async () => {
-    if (!selectedClientId || !selectedClientProfile) return;
-    const isSuspended = selectedClientProfile.user?.targets?.is_deactivated === true;
-    const msg = isSuspended ? 'Reactivate athlete access?' : 'Suspend athlete access immediately?';
-    if (!window.confirm(msg)) return;
-
-    setUpdatingSuspension(true);
-    try {
-      const currentTargets = selectedClientProfile.user?.targets || {};
-      const updatedTargets = { ...currentTargets, is_deactivated: !isSuspended };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ targets: updatedTargets })
-        .eq('id', selectedClientId);
-
-      if (error) throw error;
-      toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
-      setSelectedClientProfile((prev: any) => ({
-        ...prev,
-        user: { ...prev.user, targets: updatedTargets }
-      }));
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update suspension status.');
-    } finally {
-      setUpdatingSuspension(false);
-    }
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedClientId || newPassword.trim().length < 6) {
-      toast.error('Password must be at least 6 characters.');
-      return;
-    }
-    setUpdatingPassword(true);
-    try {
-      const res = await fetch('/api/update-user-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({ uid: selectedClientId, password: newPassword.trim() })
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to update passcode in auth server');
-      }
-
-      await supabase
-        .from('client_profiles')
-        .update({ generated_passcode: newPassword.trim() })
-        .eq('user_id', selectedClientId);
-
-      toast.success('Athlete access passcode reset successfully!');
-      setNewPassword('');
-      fetchClientDetails(selectedClientId, true);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to update password.');
-    } finally {
-      setUpdatingPassword(false);
-    }
-  };
-
-  const handleDeleteClient = async () => {
-    if (!selectedClientId || !selectedClientProfile) return;
-    const name = selectedClientProfile.user?.display_name || 'this client';
-    const conf = window.prompt(`Type "${name}" to confirm complete account deletion (workouts, InBody, and auth logs will be wiped):`);
-    if (conf !== name) {
-      if (conf !== null) toast.error('Verification failed. Deletion cancelled.');
-      return;
-    }
-
-    const toastId = toast.loading('Deleting athlete account...');
-    try {
-      const res = await fetch('/api/delete-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({ uid: selectedClientId })
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        console.warn('Auth deletion warning:', errData.error);
-      }
-
-      // Clear local database rows
-      await supabase.from('inbody_scans').delete().eq('user_id', selectedClientId);
-      await supabase.from('client_workout_days').delete().eq('user_id', selectedClientId);
-      await supabase.from('user_workout_plans').delete().eq('user_id', selectedClientId);
-      await supabase.from('progress_notes').delete().eq('user_id', selectedClientId);
-      await supabase.from('water_logs').delete().eq('user_id', selectedClientId);
-      await supabase.from('client_profiles').delete().eq('user_id', selectedClientId);
-      await supabase.from('profiles').delete().eq('id', selectedClientId);
-
-      toast.success('Athlete wiped successfully.', { id: toastId });
-      setSelectedClientId(null);
-      setSelectedClientProfile(null);
-      fetchBaseData();
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Wipe failed: ' + err.message, { id: toastId });
-    }
-  };
-
   // ─── ATHLETE CONTROL TAB ACTIONS ───────────────────────────
   useEffect(() => {
     if (managementSelectedClientId) {
@@ -1268,6 +1168,30 @@ export default function DesktopCoachPortal() {
       toast.error(err.message || 'Failed to update passcode.');
     } finally {
       setManagementUpdatingPassword(false);
+    }
+  };
+
+  const handleLogManagementWater = async (amountOverride?: number) => {
+    if (!managementSelectedClientId) return;
+    const amount = amountOverride !== undefined ? amountOverride : managementNewWaterAmount;
+    try {
+      const todayStr = getLocalDateString();
+      const now = new Date();
+      const { error } = await supabase.from('water_logs').insert({
+        user_id: managementSelectedClientId,
+        date: todayStr,
+        time: now.toISOString(),
+        amount_ml: amount
+      });
+      if (error) throw error;
+      toast.success(`${amount}ml hydration logged for athlete!`);
+      fetchBaseData();
+      if (selectedClientId === managementSelectedClientId) {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to log water intake.');
     }
   };
 
@@ -2476,66 +2400,6 @@ export default function DesktopCoachPortal() {
                             </div>
                           </div>
                         </div>
-
-                        {/* Danger zone / parameters controls */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-850 pt-6">
-                          {/* Admin Parameters */}
-                          <Card className="p-5 space-y-4 border-gray-850 bg-[#0d0f1a]/40">
-                            <h3 className="text-xs font-black uppercase tracking-wider text-yellow-500 border-b border-gray-800 pb-2">Administrative Parameters</h3>
-                            <form onSubmit={handleUpdatePassword} className="space-y-3">
-                              <div className="space-y-1">
-                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Reset Access Passcode</label>
-                                <div className="flex gap-2">
-                                  <input 
-                                    type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                    placeholder="Min 6 characters"
-                                    className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none"
-                                  />
-                                  <button type="submit" disabled={updatingPassword} className="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-2 rounded-xl text-xs uppercase"><Key size={13} /></button>
-                                </div>
-                              </div>
-                            </form>
-
-                            <div className="space-y-1">
-                              <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Daily AI Message Quota</label>
-                              <div className="flex gap-2">
-                                <input 
-                                  type="number" value={aiQuotaInput} onChange={e => setAiQuotaInput(parseInt(e.target.value) || 0)}
-                                  className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none"
-                                />
-                                <button onClick={handleSaveQuota} disabled={updatingQuota} className="bg-blue-600 text-white font-bold px-3 py-2 rounded-xl text-xs uppercase">Update</button>
-                              </div>
-                            </div>
-                          </Card>
-
-                          {/* Danger Zone */}
-                          <Card className="p-5 space-y-4 border-red-950/20 bg-red-950/5">
-                            <h3 className="text-xs font-black uppercase tracking-wider text-red-400 border-b border-red-950 pb-2">Danger Zone</h3>
-                            <div className="flex gap-3">
-                              <button
-                                onClick={handleToggleSuspension} disabled={updatingSuspension}
-                                className={`flex-1 py-3.5 rounded-xl text-xs font-extrabold uppercase tracking-wider border transition-all active:scale-[0.98] cursor-pointer ${
-                                  selectedClientProfile.user?.targets?.is_deactivated === true
-                                    ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white'
-                                    : 'bg-red-950/20 hover:bg-red-900 border-red-900/30 text-red-400'
-                                }`}
-                              >
-                                {updatingSuspension ? 'Updating...' : (selectedClientProfile.user?.targets?.is_deactivated === true ? 'Reactivate Access' : 'Suspend Account')}
-                              </button>
-
-                              <button
-                                onClick={handleDeleteClient}
-                                className="flex-1 py-3.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-[0.98] cursor-pointer transition-all flex items-center justify-center gap-1.5"
-                              >
-                                <Trash2 size={13} /> Delete Athlete
-                              </button>
-                            </div>
-                            <p className="text-[9px] text-red-400/60 leading-relaxed">
-                              ⚠️ Suspending restricts client PWA logins. Deleting wipes their workouts history, diet tracking, InBody scans, and credentials permanently.
-                            </p>
-                          </Card>
-                        </div>
-                      </div>
                     )}
 
                     {/* CLIENT TAB: DIET LOGS */}
@@ -2651,38 +2515,8 @@ export default function DesktopCoachPortal() {
                           </div>
                         </div>
 
-                        {/* Logger inputs & timeline logs */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-                          {/* Log Water presets */}
-                          <Card className="p-5 space-y-4">
-                            <div className="flex justify-between items-center border-b border-gray-850 pb-2">
-                              <h3 className="text-xs font-black uppercase text-blue-400">Log Hydration</h3>
-                              {clientWaterLogs.length > 0 && (
-                                <button onClick={handleClearWater} className="text-[9px] font-black uppercase text-red-400">Clear Day</button>
-                              )}
-                            </div>
-                            <div className="flex gap-2 flex-wrap">
-                              {[250, 330, 500, 750, 1000].map(ml => (
-                                <button 
-                                  key={ml} 
-                                  onClick={() => { setNewWaterAmount(ml); }}
-                                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border ${newWaterAmount === ml ? 'bg-sky-600 border-sky-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
-                                >
-                                  {ml}ml
-                                </button>
-                              ))}
-                            </div>
-                            <div className="flex gap-2 mt-2">
-                              <input 
-                                type="number" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
-                                className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
-                              />
-                              <button onClick={handleAddWater} className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider whitespace-nowrap">+ Log</button>
-                            </div>
-                          </Card>
-
-                          {/* Water log timeline */}
-                          <div className="lg:col-span-2 bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
+                        {/* Water log timeline */}
+                        <div className="w-full bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
                             <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Daily Timeline logs</h3>
                             <div className="divide-y divide-gray-850 mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
                               {clientWaterLogs.length === 0 ? (
@@ -3559,10 +3393,8 @@ export default function DesktopCoachPortal() {
                       {([
                         { key: 'disable_workout', label: 'Workout Tracking Tab', desc: 'Allows athlete to view workout splits and log weights/sets.' },
                         { key: 'disable_diet', label: 'Diet & Nutrition Dashboard', desc: 'Allows athlete to view calorie budgets and track food/water logs.' },
-                        { key: 'disable_inbody', label: 'InBody Composition Scans', desc: 'Allows athlete to upload InBody CSV charts and track skeletal mass.' },
-                        { key: 'disable_ai', label: 'AI Alberto Coach Agent', desc: 'Allows athlete to chat with the AI assistant for meal logs and feedback.' },
                       ] as const).map(({ key, label, desc }) => {
-                        const isDisabled = managementClientProfile.user?.targets?.[key] === true;
+                        const isDisabled = !!managementClientProfile.user?.targets?.[key];
                         return (
                           <div key={key} className="flex items-center justify-between bg-gray-900/40 p-4 border border-gray-850 rounded-2xl gap-4">
                             <div className="flex-1 min-w-0">
@@ -3583,6 +3415,51 @@ export default function DesktopCoachPortal() {
                           </div>
                         );
                       })}
+                    </div>
+                  </Card>
+
+                  {/* Card 4: Log Hydration */}
+                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+                      <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                        <span className="text-sm">💧</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-sky-400">Log Hydration</h3>
+                        <p className="text-[10px] text-gray-500">Log water intake entries directly for this athlete.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex gap-2 flex-wrap">
+                        {[250, 330, 500, 750, 1000].map(ml => (
+                          <button 
+                            key={ml} 
+                            type="button"
+                            onClick={() => { 
+                              setManagementNewWaterAmount(ml); 
+                              handleLogManagementWater(ml); 
+                            }}
+                            className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border ${managementNewWaterAmount === ml ? 'bg-sky-600 border-sky-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                          >
+                            {ml}ml
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          value={managementNewWaterAmount} 
+                          onChange={e => setManagementNewWaterAmount(parseInt(e.target.value) || 0)}
+                          className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
+                        />
+                        <button 
+                          onClick={() => handleLogManagementWater()} 
+                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider whitespace-nowrap active:scale-95 transition-all"
+                        >
+                          + Log
+                        </button>
+                      </div>
                     </div>
                   </Card>
 
