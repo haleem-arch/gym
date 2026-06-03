@@ -19,6 +19,17 @@ const getLocalDateString = (d: Date = new Date()) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 };
 
+const getLocalDateTimeString = (d: Date = new Date()) => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  const seconds = pad(d.getSeconds());
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
 const formatTimeLeft = (diffMs: number, showDetailed: boolean) => {
   if (diffMs <= 0) return '0 minutes';
   
@@ -194,6 +205,7 @@ export default function DesktopCoachPortal() {
   const [managementAiQuotaInput, setManagementAiQuotaInput] = useState<number>(20);
   const [editSubscriptionPeriod, setEditSubscriptionPeriod] = useState('1 month');
   const [editSubscriptionDelay, setEditSubscriptionDelay] = useState('0');
+  const [editCustomSubscriptionEnd, setEditCustomSubscriptionEnd] = useState(getLocalDateTimeString());
   const [showDetailedSubscriptionTime, setShowDetailedSubscriptionTime] = useState(false);
   const [updatingSubscriptionState, setUpdatingSubscriptionState] = useState(false);
 
@@ -231,7 +243,8 @@ export default function DesktopCoachPortal() {
     goals: '',
     injuries_notes: '',
     subscriptionPeriod: '1 month',
-    subscriptionStartDelay: '0'
+    subscriptionStartDelay: '0',
+    customSubscriptionEnd: getLocalDateTimeString()
   });
   const [deployGender, setDeployGender] = useState<'male' | 'female'>('male');
   
@@ -1158,6 +1171,11 @@ export default function DesktopCoachPortal() {
         setManagementAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
         setEditSubscriptionPeriod(clientProfile.user?.targets?.subscription_duration ?? '1 month');
         setEditSubscriptionDelay(String(clientProfile.user?.targets?.subscription_delay_days ?? '0'));
+        if (clientProfile.user?.targets?.subscription_end_date) {
+          setEditCustomSubscriptionEnd(getLocalDateTimeString(new Date(clientProfile.user.targets.subscription_end_date)));
+        } else {
+          setEditCustomSubscriptionEnd(getLocalDateTimeString());
+        }
       }
     } catch (err) {
       console.error(err);
@@ -1208,17 +1226,26 @@ export default function DesktopCoachPortal() {
       if (period && period !== 'none') {
         const now = new Date();
         const startDateObj = new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000);
-        let durationMs = 0;
-        if (period === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
-        else if (period === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
-        else if (period === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
-        else if (period === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
-        else if (period === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
-        else if (period === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
-
-        const endDateObj = new Date(startDateObj.getTime() + durationMs);
         subscription_start_date = startDateObj.toISOString();
-        subscription_end_date = endDateObj.toISOString();
+
+        if (period === 'custom') {
+          if (editCustomSubscriptionEnd) {
+            subscription_end_date = new Date(editCustomSubscriptionEnd).toISOString();
+          } else {
+            subscription_end_date = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+          }
+        } else {
+          let durationMs = 0;
+          if (period === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+          else if (period === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+          else if (period === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+          else if (period === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+          else if (period === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+          else if (period === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+
+          const endDateObj = new Date(startDateObj.getTime() + durationMs);
+          subscription_end_date = endDateObj.toISOString();
+        }
       }
 
       const currentTargets = managementClientProfile.user?.targets || {};
@@ -1587,17 +1614,26 @@ export default function DesktopCoachPortal() {
       if (period && period !== 'none') {
         const now = new Date();
         const startDateObj = new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000);
-        let durationMs = 0;
-        if (period === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
-        else if (period === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
-        else if (period === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
-        else if (period === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
-        else if (period === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
-        else if (period === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
-
-        const endDateObj = new Date(startDateObj.getTime() + durationMs);
         subscription_start_date = startDateObj.toISOString();
-        subscription_end_date = endDateObj.toISOString();
+
+        if (period === 'custom') {
+          if (formData.customSubscriptionEnd) {
+            subscription_end_date = new Date(formData.customSubscriptionEnd).toISOString();
+          } else {
+            subscription_end_date = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+          }
+        } else {
+          let durationMs = 0;
+          if (period === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+          else if (period === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+          else if (period === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+          else if (period === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+          else if (period === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+          else if (period === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+
+          const endDateObj = new Date(startDateObj.getTime() + durationMs);
+          subscription_end_date = endDateObj.toISOString();
+        }
       }
 
       // 4. Public Profiles setup
@@ -1724,7 +1760,8 @@ export default function DesktopCoachPortal() {
         goals: '',
         injuries_notes: '',
         subscriptionPeriod: '1 month',
-        subscriptionStartDelay: '0'
+        subscriptionStartDelay: '0',
+        customSubscriptionEnd: getLocalDateTimeString()
       });
       setDeployStep(1);
       setDeployWeight('');
@@ -3145,7 +3182,7 @@ export default function DesktopCoachPortal() {
                             <select 
                               value={formData.subscriptionPeriod} 
                               onChange={e => setFormData({ ...formData, subscriptionPeriod: e.target.value })} 
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none font-sans"
                             >
                               <option value="none">No Expiry (Always Active)</option>
                               <option value="2 weeks">2 Weeks (14 Days)</option>
@@ -3154,6 +3191,7 @@ export default function DesktopCoachPortal() {
                               <option value="6 months">6 Months (180 Days)</option>
                               <option value="12 months">12 Months (365 Days)</option>
                               <option value="2 years">2 Years (730 Days)</option>
+                              <option value="custom">Custom Date &amp; Time (Calendar)</option>
                             </select>
                           </div>
                           <div className="space-y-1">
@@ -3164,9 +3202,22 @@ export default function DesktopCoachPortal() {
                               value={formData.subscriptionStartDelay} 
                               onChange={e => setFormData({ ...formData, subscriptionStartDelay: e.target.value })} 
                               placeholder="e.g. 3 days" 
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none" 
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none font-sans" 
                             />
                           </div>
+
+                          {formData.subscriptionPeriod === 'custom' && (
+                            <div className="space-y-1 col-span-2 mt-1 animate-fadeIn">
+                              <label className="text-[9px] font-black uppercase text-indigo-400">Custom End Date &amp; Time (Includes Seconds)</label>
+                              <input 
+                                type="datetime-local" 
+                                step="1"
+                                value={formData.customSubscriptionEnd} 
+                                onChange={e => setFormData({ ...formData, customSubscriptionEnd: e.target.value })} 
+                                className="w-full bg-[#121624] border border-indigo-500/30 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-colors" 
+                              />
+                            </div>
+                          )}
                           <div className="space-y-1 col-span-2">
                             <label className="text-[9px] font-black uppercase text-gray-500">Injuries &amp; Medical Notes</label>
                             <textarea value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} placeholder="Enter details about any injuries, operations, or medical conditions..." className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none h-20" />
@@ -3612,6 +3663,7 @@ export default function DesktopCoachPortal() {
                               <option value="6 months">6 Months</option>
                               <option value="12 months">12 Months</option>
                               <option value="2 years">2 Years</option>
+                              <option value="custom">Custom Date &amp; Time (Calendar)</option>
                             </select>
                           </div>
                           
@@ -3626,6 +3678,19 @@ export default function DesktopCoachPortal() {
                               className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none" 
                             />
                           </div>
+
+                          {editSubscriptionPeriod === 'custom' && (
+                            <div className="space-y-1 col-span-2 mt-1 animate-fadeIn">
+                              <label className="text-[8px] text-indigo-400 font-bold uppercase">Custom End Date &amp; Time (Includes Seconds)</label>
+                              <input 
+                                type="datetime-local" 
+                                step="1"
+                                value={editCustomSubscriptionEnd} 
+                                onChange={e => setEditCustomSubscriptionEnd(e.target.value)} 
+                                className="w-full bg-[#121624] border border-indigo-500/30 rounded-xl p-2.5 text-xs text-white outline-none focus:border-indigo-500 transition-colors" 
+                              />
+                            </div>
+                          )}
                         </div>
 
                         <button
