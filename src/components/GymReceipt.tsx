@@ -210,13 +210,12 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
       >
         {/* Tap backdrop to close */}
         <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
-
         <motion.div
           initial={{ opacity: 0, scale: 0.88 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.92 }}
           transition={{ type: 'spring', stiffness: 340, damping: 28, delay: 0.05 }}
-          style={{ position: 'relative', width: '100%', maxWidth: 360, zIndex: 10 }}
+          style={{ position: 'relative', width: '100%', maxWidth: 580, zIndex: 10 }}
         >
           {/* Main Card */}
           <div style={{
@@ -290,27 +289,25 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
               </div>
 
               {/* Stats Columns */}
-              <div className="flex flex-col gap-3 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                 {statCards.map((card, i) => (
                   <motion.div
                     key={card.label}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + i * 0.08, type: 'spring', stiffness: 280, damping: 22 }}
                     style={{
                       background: 'rgba(255,255,255,0.02)',
                       border: `1px solid ${card.color}15`,
                       borderRadius: 16,
-                      padding: '12px 16px',
+                      padding: '14px 12px',
                     }}
-                    className="flex items-center justify-between"
+                    className="flex flex-col items-center justify-center text-center gap-1.5"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-white/5">{card.icon}</div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{card.label}</span>
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-black text-white">{card.value}</span>
+                    <div className="p-2 rounded-xl bg-white/5">{card.icon}</div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{card.label}</span>
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="text-base font-black text-white">{card.value}</span>
                       <span className="text-[10px] text-gray-500 font-semibold">{card.unit}</span>
                     </div>
                   </motion.div>

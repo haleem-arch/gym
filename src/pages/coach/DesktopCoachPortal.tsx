@@ -145,6 +145,7 @@ export default function DesktopCoachPortal() {
   // Client daily data records (for selected date and client)
   const [clientDietLog, setClientDietLog] = useState<any>(null);
   const [clientMeals, setClientMeals] = useState<any[]>([]);
+  const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [clientWaterLogs, setClientWaterLogs] = useState<any[]>([]);
   const [clientWorkoutsList, setClientWorkoutsList] = useState<any[]>([]);
   const [clientScans, setClientScans] = useState<any[]>([]);
@@ -632,6 +633,7 @@ export default function DesktopCoachPortal() {
   const fetchClientData = async (userId: string, dateStr: string, silent = false) => {
     if (!userId) return;
     if (!silent) setLoadingClientDetails(true);
+    setExpandedMealId(null);
     try {
       // 1. Diet log & meals
       const { data: dLog } = await supabase.from('diet_logs').select('*').eq('user_id', userId).eq('date', dateStr).maybeSingle();
@@ -2752,15 +2754,56 @@ export default function DesktopCoachPortal() {
                                     carbs: t.carbs + (i.macros?.carbs || 0),
                                     fat: t.fat + (i.macros?.fat || 0),
                                   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+                                  const isExpanded = expandedMealId === meal.id;
                                   return (
-                                    <div key={meal.id} className="flex justify-between items-center py-3.5 gap-4">
-                                      <div>
-                                        <p className="text-xs font-bold text-white">{meal.name}</p>
-                                        <p className="text-[10px] text-gray-500 mt-0.5">
-                                          {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
-                                        </p>
+                                    <div key={meal.id} className="py-3 border-b border-gray-850/40 last:border-0">
+                                      <div className="flex justify-between items-center gap-4">
+                                        <div 
+                                          onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
+                                          className="flex-1 cursor-pointer hover:opacity-85 transition-opacity"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-xs font-bold text-white hover:text-blue-400 transition-colors">{meal.name}</p>
+                                            {meal.items && meal.items.length > 0 && (
+                                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                                {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="text-[10px] text-gray-500 mt-0.5">
+                                            {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
+                                          </p>
+                                        </div>
+                                        <button 
+                                          onClick={() => handleDeleteMeal(meal.id)} 
+                                          className="p-2 text-gray-500 hover:text-red-400 rounded-xl transition-colors shrink-0 active:scale-95"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
                                       </div>
-                                      <button onClick={() => handleDeleteMeal(meal.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-xl transition-colors"><Trash2 size={14} /></button>
+
+                                      {isExpanded && meal.items && meal.items.length > 0 && (
+                                        <div className="mt-2.5 pl-3 border-l border-blue-500/30 space-y-1.5">
+                                          {meal.items.map((item: any, idx: number) => (
+                                            <div key={item.id || idx} className="bg-white/[0.01] border border-white/[0.02] p-2 rounded-xl flex justify-between items-center text-[10px] text-gray-300">
+                                              <div>
+                                                <p className="font-bold text-gray-200">{item.name}</p>
+                                                <p className="text-[9px] text-gray-500 mt-0.5">
+                                                  {item.serving_type === 'per_item' 
+                                                    ? (item.grams === 1 ? '1 serving' : `${item.grams} servings`) 
+                                                    : `${item.grams}g`}
+                                                </p>
+                                              </div>
+                                              <div className="text-right shrink-0 font-medium">
+                                                <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
+                                                <p className="text-[8px] text-gray-500 mt-0.5 font-mono">
+                                                  P{Math.round(item.macros?.protein || 0)}g · C{Math.round(item.macros?.carbs || 0)}g · F{Math.round(item.macros?.fat || 0)}g
+                                                </p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })
