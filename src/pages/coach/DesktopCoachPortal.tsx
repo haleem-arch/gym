@@ -152,9 +152,6 @@ export default function DesktopCoachPortal() {
   const [clientActiveTab, setClientActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody'>('overview');
   const [clientActiveDateStr, setClientActiveDateStr] = useState<string>(() => getLocalDateString());
   const [myCoachProfile, setMyCoachProfile] = useState<any | null>(null);
-  const [showPasscode, setShowPasscode] = useState(false);
-  const [copiedEmail, setCopiedEmail] = useState(false);
-  const [copiedPasscode, setCopiedPasscode] = useState(false);
 
   // Client daily data records (for selected date and client)
   const [clientDietLog, setClientDietLog] = useState<any>(null);
