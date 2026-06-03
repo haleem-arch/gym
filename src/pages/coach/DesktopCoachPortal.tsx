@@ -173,7 +173,7 @@ export default function DesktopCoachPortal() {
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
 
-  const [coachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
+  const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
   const [coachCountdownText, setCoachCountdownText] = useState('');
   const [isTrialActive, setIsTrialActive] = useState(false);
   const [coachSubPeriod, setCoachSubPeriod] = useState('1 month');
@@ -528,8 +528,27 @@ export default function DesktopCoachPortal() {
         return;
       }
 
-      // Coach deactivation checks disabled - coaches are never locked out
-      setIsCoachSuspended(false);
+      // Check if coach is suspended or subscription is expired/not-started (Owner cannot be suspended)
+      const nowObj = new Date();
+      const myTargets = myProfile?.targets || {};
+      const isDeactivated = myTargets.is_deactivated === true;
+      const isExpired = myTargets.subscription_end_date && nowObj >= new Date(myTargets.subscription_end_date);
+      const isPending = myTargets.subscription_start_date && nowObj < new Date(myTargets.subscription_start_date);
+
+      if (session.user.id !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
+        setIsCoachSuspended(true);
+        let reason = 'Your administrative coach access has been suspended by the system administrator. Please contact the owner if you believe this is an error.';
+        if (isExpired) {
+          reason = 'Your coach subscription has expired. Please contact Haleem to renew your plan.';
+        } else if (isPending) {
+          reason = `Your coach subscription starts on ${new Date(myTargets.subscription_start_date).toLocaleDateString()}.`;
+        }
+        setCoachSuspensionReason(reason);
+        if (!silent) setLoading(false);
+        return;
+      } else {
+        setIsCoachSuspended(false);
+      }
 
       const isOwner = session.user.id === OWNER_ID;
 
@@ -5350,7 +5369,14 @@ export default function DesktopCoachPortal() {
               </div>
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                  Reactivate Coach Access
+                  {(() => {
+                    const targetCoach = profiles.find(p => p.id === coachReactivateId);
+                    const tg = targetCoach?.targets || {};
+                    const isCurrentlySuspended = tg.is_deactivated === true || 
+                      (tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date)) ||
+                      (tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date));
+                    return isCurrentlySuspended ? 'Reactivate Coach Access' : 'Update Coach Subscription';
+                  })()}
                 </h3>
                 <p className="text-[10px] text-gray-500 font-bold">For {coachReactivateName}</p>
               </div>
@@ -5359,7 +5385,7 @@ export default function DesktopCoachPortal() {
             <div className="space-y-4 text-xs">
               {/* Duration selection */}
               <div className="space-y-1">
-                <label className="text-[10px] text-gray-500 font-black uppercase block">Reactivation Plan / Period</label>
+                <label className="text-[10px] text-gray-500 font-black uppercase block">Subscription Plan / Period</label>
                 <select 
                   value={coachReactivatePeriod} 
                   onChange={e => setCoachReactivatePeriod(e.target.value)} 
@@ -5468,7 +5494,15 @@ export default function DesktopCoachPortal() {
                 disabled={coachReactivateSaving}
                 className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
               >
-                {coachReactivateSaving ? 'Saving...' : 'Confirm Reactivation'}
+                {(() => {
+                  if (coachReactivateSaving) return 'Saving...';
+                  const targetCoach = profiles.find(p => p.id === coachReactivateId);
+                  const tg = targetCoach?.targets || {};
+                  const isCurrentlySuspended = tg.is_deactivated === true || 
+                    (tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date)) ||
+                    (tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date));
+                  return isCurrentlySuspended ? 'Confirm Reactivation' : 'Update Subscription';
+                })()}
               </button>
             </div>
           </div>
@@ -6006,6 +6040,83 @@ export default function DesktopCoachPortal() {
                     </div>
                   </div>
                 </div>
+
+                {/* Subscription Settings */}
+                {!isSelf && (
+                  <div className="bg-[#121624]/40 border border-gray-850 p-5 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <CreditCard size={12} /> Subscription Settings
+                      </h3>
+                      {(() => {
+                        const isSuspended = tg.is_deactivated === true;
+                        const now = new Date();
+                        const end = tg.subscription_end_date ? new Date(tg.subscription_end_date) : null;
+                        const start = tg.subscription_start_date ? new Date(tg.subscription_start_date) : null;
+                        let statusText = 'Active';
+                        let statusClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                        
+                        if (isSuspended) {
+                          statusText = 'Suspended';
+                          statusClass = 'text-red-400 bg-red-500/10 border-red-500/20';
+                        } else if (end && now >= end) {
+                          statusText = 'Expired';
+                          statusClass = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                        } else if (start && now < start) {
+                          statusText = 'Scheduled';
+                          statusClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                        }
+                        
+                        return (
+                          <span className={`text-[7px] uppercase tracking-wider font-mono border px-1.5 py-0.5 rounded font-black ${statusClass}`}>
+                            {statusText}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-xs font-bold">
+                      <div>
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Start Date</p>
+                        <p className="text-white font-mono">
+                          {tg.subscription_start_date 
+                            ? new Date(tg.subscription_start_date).toLocaleDateString(undefined, { dateStyle: 'medium' }) 
+                            : 'Immediate'
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">End Date</p>
+                        <p className="text-white font-mono">
+                          {tg.subscription_end_date 
+                            ? new Date(tg.subscription_end_date).toLocaleDateString(undefined, { dateStyle: 'medium' }) 
+                            : 'Lifetime'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoachReactivateId(currentCoach.id);
+                        setCoachReactivateName(currentCoach.display_name);
+                        setCoachReactivatePeriod(tg.subscription_duration || '1 month');
+                        setCoachReactivateDelay(tg.subscription_delay || '0');
+                        setCoachReactivateIsFreeTrial(tg.is_free_trial === true);
+                        if (tg.subscription_end_date) {
+                          setCoachReactivateCustomEnd(new Date(tg.subscription_end_date).toISOString().substring(0, 16));
+                        } else {
+                          setCoachReactivateCustomEnd(getLocalDateTimeString());
+                        }
+                        setCoachReactivateModalOpen(true);
+                      }}
+                      className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-500/20 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all active:scale-95 cursor-pointer text-center font-bold"
+                    >
+                      Update Subscription Dates
+                    </button>
+                  </div>
+                )}
 
                 {/* Suspension status */}
                 {!isSelf && (
