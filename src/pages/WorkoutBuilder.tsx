@@ -417,37 +417,29 @@ const WorkoutBuilder = () => {
           .select('*')
           .in('name', names);
 
-        let exercisesWithRichInfo: Exercise[] = [];
-        if (exData && exData.length > 0) {
-          const sorted = [...exData].sort((a, b) => names.indexOf(a.name) - names.indexOf(b.name));
-          exercisesWithRichInfo = sorted.map(ex => {
-            const matched = rawExercises.find(r => (typeof r === 'string' ? r : r.name) === ex.name);
-            return {
-              id: ex.id,
-              name: ex.name,
-              muscle_group: ex.muscle_group,
-              tier: ex.tier,
-              cue: ex.cue,
-              sets: matched && typeof matched !== 'string' ? matched.sets : 3,
-              rest: matched && typeof matched !== 'string' ? matched.rest : 120,
-            };
-          });
-        } else {
-          // Fallback stubs
-          exercisesWithRichInfo = rawExercises.map((r, i) => {
-            const name = typeof r === 'string' ? r : r.name;
-            const sets = typeof r === 'string' ? 3 : r.sets || 3;
-            const rest = typeof r === 'string' ? 120 : r.rest || 120;
-            return {
-              id: `stub-${split}-${i}`,
-              name,
-              muscle_group: '',
-              tier: '',
-              sets,
-              rest
-            };
+        const dbExMap = new Map();
+        if (exData) {
+          exData.forEach(ex => {
+            dbExMap.set(ex.name, ex);
           });
         }
+
+        const exercisesWithRichInfo: Exercise[] = rawExercises.map((r, i) => {
+          const name = typeof r === 'string' ? r : r.name;
+          const sets = typeof r === 'string' ? 3 : r.sets || 3;
+          const rest = typeof r === 'string' ? 120 : r.rest || 120;
+          
+          const dbEx = dbExMap.get(name);
+          return {
+            id: dbEx?.id || `stub-${split}-${i}-${Date.now()}`,
+            name,
+            muscle_group: dbEx?.muscle_group || 'Custom',
+            tier: dbEx?.tier || 'A',
+            cue: dbEx?.cue || '',
+            sets,
+            rest
+          };
+        });
 
         loadedTemplates[split] = {
           split,

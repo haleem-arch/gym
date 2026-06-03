@@ -410,18 +410,34 @@ const WorkoutHome = () => {
             .select('*')
             .in('name', namesOnly);
             
-          if (exData && exData.length > 0) {
-            const sorted = [...exData].sort((a, b) => namesOnly.indexOf(a.name) - namesOnly.indexOf(b.name));
-            const richExercises = sorted.map(ex => {
-              const matched = targetItems.find((t: any) => (typeof t === 'string' ? t : t.name) === ex.name);
-              return {
-                ...ex,
-                setsCount: (matched && typeof matched !== 'string') ? matched.sets : 3,
-                restTime: (matched && typeof matched !== 'string') ? matched.rest : 120,
-              };
+          const dbExMap = new Map();
+          if (exData) {
+            exData.forEach(ex => {
+              dbExMap.set(ex.name, ex);
             });
-            setTodayPlan((prev: any) => ({ ...prev, exercises: richExercises, type: targetSplit }));
           }
+
+          const richExercises = targetItems.map((item: any, idx: number) => {
+            const name = typeof item === 'string' ? item : item.name;
+            const setsCount = typeof item === 'string' ? 3 : item.sets || 3;
+            const restTime = typeof item === 'string' ? 120 : item.rest || 120;
+
+            const dbEx = dbExMap.get(name);
+            return {
+              id: dbEx?.id || `custom-ex-${idx}-${Date.now()}`,
+              name,
+              muscle_group: dbEx?.muscle_group || 'Custom',
+              tier: dbEx?.tier || 'A',
+              focus: dbEx?.focus || '',
+              cue: dbEx?.cue || '',
+              rationale: dbEx?.rationale || '',
+              equipment: dbEx?.equipment || '',
+              setsCount,
+              restTime
+            };
+          });
+
+          setTodayPlan((prev: any) => ({ ...prev, exercises: richExercises, type: targetSplit }));
         } else {
           setTodayPlan((prev: any) => ({ ...prev, exercises: [], type: targetSplit }));
         }
