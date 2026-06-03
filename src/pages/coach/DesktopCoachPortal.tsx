@@ -7,7 +7,7 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, AlertTriangle
+  CreditCard, AlertTriangle, History
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -218,6 +218,7 @@ export default function DesktopCoachPortal() {
   const [reactivateDelay, setReactivateDelay] = useState('0');
   const [reactivateCustomEnd, setReactivateCustomEnd] = useState(getLocalDateTimeString());
   const [reactivateSaving, setReactivateSaving] = useState(false);
+  const [selectedSubClient, setSelectedSubClient] = useState<any | null>(null);
 
   // Search queries
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -1271,13 +1272,24 @@ export default function DesktopCoachPortal() {
         }
       }
 
+      const history = currentTargets.subscription_history || [];
+      const newEntry = {
+        timestamp: new Date().toISOString(),
+        action: history.length === 0 ? 'initial_activation' : 'reactivation',
+        duration: period,
+        delay_days: delayDays,
+        start_date: subscription_start_date,
+        end_date: subscription_end_date
+      };
+
       const updatedTargets = {
         ...currentTargets,
         subscription_duration: period,
         subscription_delay_days: delayDays,
         subscription_start_date,
         subscription_end_date,
-        is_deactivated: isDeactivated
+        is_deactivated: isDeactivated,
+        subscription_history: [...history, newEntry]
       };
 
       const { error } = await supabase
@@ -1356,13 +1368,24 @@ export default function DesktopCoachPortal() {
         }
       }
 
+      const history = currentTargets.subscription_history || [];
+      const newEntry = {
+        timestamp: new Date().toISOString(),
+        action: history.length === 0 ? 'initial_activation' : 'reactivation',
+        duration: period,
+        delay_days: delayDays,
+        start_date: subscription_start_date,
+        end_date: subscription_end_date
+      };
+
       const updatedTargets = {
         ...currentTargets,
         subscription_duration: period,
         subscription_delay_days: delayDays,
         subscription_start_date,
         subscription_end_date,
-        is_deactivated: isDeactivated
+        is_deactivated: isDeactivated,
+        subscription_history: [...history, newEntry]
       };
 
       const { error } = await supabase
@@ -1750,7 +1773,17 @@ export default function DesktopCoachPortal() {
         subscription_duration: period,
         subscription_delay_days: delayDays,
         subscription_start_date,
-        subscription_end_date
+        subscription_end_date,
+        subscription_history: [
+          {
+            timestamp: new Date().toISOString(),
+            action: 'initial_activation',
+            duration: period,
+            delay_days: delayDays,
+            start_date: subscription_start_date,
+            end_date: subscription_end_date
+          }
+        ]
       };
 
       const { error: profileError } = await supabase.from('profiles').upsert({
@@ -3638,23 +3671,75 @@ export default function DesktopCoachPortal() {
                     <div className="space-y-4">
                       {/* Current Status Info */}
                       <div className="flex justify-between items-center bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl">
-                        <div>
-                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Account Access</p>
-                          <p className="text-xs font-black text-white mt-1">
-                            {managementClientProfile.user?.targets?.is_deactivated === true ? '🚨 SUSPENDED' : '✓ ACTIVE ACCESS'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={handleToggleManagementSuspension}
-                          disabled={managementUpdatingSuspension}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
-                            managementClientProfile.user?.targets?.is_deactivated === true
-                              ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white'
-                              : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
-                          }`}
-                        >
-                          {managementUpdatingSuspension ? 'Updating...' : (managementClientProfile.user?.targets?.is_deactivated === true ? 'Reactivate' : 'Suspend')}
-                        </button>
+                        {(() => {
+                          const targets = managementClientProfile.user?.targets || {};
+                          const now = new Date();
+                          const isManualDeactivated = targets.is_deactivated === true;
+                          
+                          let isExpired = false;
+                          let isPending = false;
+                          if (targets.subscription_start_date && targets.subscription_end_date) {
+                            const start = new Date(targets.subscription_start_date);
+                            const end = new Date(targets.subscription_end_date);
+                            isPending = now < start;
+                            isExpired = now >= end;
+                          }
+
+                          let statusText = '✓ ACTIVE ACCESS';
+                          let statusColorClass = 'text-emerald-400';
+                          if (isManualDeactivated) {
+                            statusText = '🚨 SUSPENDED (MANUAL)';
+                            statusColorClass = 'text-red-400';
+                          } else if (isExpired) {
+                            statusText = '🚨 SUSPENDED (EXPIRED)';
+                            statusColorClass = 'text-red-400';
+                          } else if (isPending) {
+                            statusText = '⏳ PENDING (INACTIVE)';
+                            statusColorClass = 'text-blue-400';
+                          }
+
+                          return (
+                            <>
+                              <div>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Account Access</p>
+                                <p className={`text-xs font-black mt-1 ${statusColorClass}`}>
+                                  {statusText}
+                                </p>
+                              </div>
+                              {isExpired ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const element = document.getElementById('subscription-edit-card');
+                                    if (element) {
+                                      element.scrollIntoView({ behavior: 'smooth' });
+                                      element.classList.add('ring-2', 'ring-blue-500');
+                                      setTimeout(() => {
+                                        element.classList.remove('ring-2', 'ring-blue-500');
+                                      }, 3000);
+                                    }
+                                  }}
+                                  className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border bg-blue-600 hover:bg-blue-500 border-blue-500/25 text-white transition-all active:scale-95 cursor-pointer"
+                                >
+                                  Reactivate
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={handleToggleManagementSuspension}
+                                  disabled={managementUpdatingSuspension}
+                                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
+                                    isManualDeactivated
+                                      ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white'
+                                      : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                                  }`}
+                                >
+                                  {managementUpdatingSuspension ? 'Updating...' : (isManualDeactivated ? 'Reactivate' : 'Suspend')}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
 
                       {/* Password Reset */}
@@ -3754,7 +3839,7 @@ export default function DesktopCoachPortal() {
                       </div>
 
                       {/* Update Subscription Plan Form */}
-                      <div className="bg-[#121624]/40 p-4 border border-gray-850 rounded-2xl space-y-4">
+                      <div id="subscription-edit-card" className="bg-[#121624]/40 p-4 border border-gray-850 rounded-2xl space-y-4">
                         <label className="text-[10px] text-gray-400 font-black uppercase tracking-wider block">Update Client Subscription</label>
                         
                         <div className="grid grid-cols-2 gap-3">
@@ -4053,7 +4138,11 @@ export default function DesktopCoachPortal() {
                           }
 
                           return (
-                            <tr key={c.id} className="hover:bg-gray-900/20 transition-colors">
+                            <tr 
+                              key={c.id} 
+                              onClick={() => setSelectedSubClient(c)}
+                              className="hover:bg-gray-900/40 transition-colors cursor-pointer"
+                            >
                               <td className="py-4 pl-2 flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-500/25 flex items-center justify-center font-black text-xs text-blue-400 uppercase">
                                   {c.full_name?.substring(0, 2) || 'AT'}
@@ -4077,33 +4166,29 @@ export default function DesktopCoachPortal() {
                                   {statusLabel}
                                 </span>
                               </td>
-                              <td className="py-4 text-right pr-2">
-                                {(isDeactivated || isExpired) ? (
-                                  <button
-                                    onClick={() => {
-                                      setReactivateClientId(c.id);
-                                      setReactivateClientName(c.full_name || 'Client');
-                                      setReactivatePeriod('1 month');
-                                      setReactivateDelay('0');
-                                      setReactivateModalOpen(true);
-                                    }}
-                                    className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/25 transition-all cursor-pointer"
-                                  >
-                                    Re-activate
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      // Switch to management tab and select client
-                                      setManagementSelectedClientId(c.id);
-                                      fetchManagementClientDetails(c.id);
-                                      setActiveTab('management');
-                                    }}
-                                    className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-gray-400 bg-gray-900/60 border border-gray-800 hover:text-white hover:border-gray-700 transition-all cursor-pointer"
-                                  >
-                                    Manage Settings
-                                  </button>
-                                )}
+                              <td className="py-4 text-right pr-2" onClick={e => e.stopPropagation()}>
+                                <button
+                                  onClick={() => {
+                                    setReactivateClientId(c.id);
+                                    setReactivateClientName(c.full_name || 'Client');
+                                    setReactivatePeriod(targets.subscription_duration || '1 month');
+                                    setReactivateDelay('0');
+                                    setReactivateModalOpen(true);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/25 transition-all cursor-pointer mr-2"
+                                >
+                                  Re-activate
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setManagementSelectedClientId(c.id);
+                                    fetchManagementClientDetails(c.id);
+                                    setActiveTab('management');
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-gray-400 bg-gray-900/60 border border-gray-800 hover:text-white hover:border-gray-700 transition-all cursor-pointer"
+                                >
+                                  Manage
+                                </button>
                               </td>
                             </tr>
                           );
@@ -4607,6 +4692,226 @@ export default function DesktopCoachPortal() {
           </div>
         </div>
       )}
+
+      {/* SLIDING SUBSCRIPTION DETAILS HISTORY DRAWER */}
+      {selectedSubClient && (
+        <div 
+          className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+          onClick={() => setSelectedSubClient(null)}
+        />
+      )}
+      <div 
+        className={`fixed inset-y-0 right-0 w-full sm:w-[480px] bg-[#0d111d] border-l border-gray-850 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
+          selectedSubClient ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {selectedSubClient && (() => {
+          const targets = selectedSubClient.targets || {};
+          const now = new Date();
+          const isDeactivated = targets.is_deactivated === true;
+          const isExpired = targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
+          const isPending = targets.subscription_start_date && now < new Date(targets.subscription_start_date);
+
+          let statusLabel = 'ACTIVE';
+          let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+          if (isDeactivated) {
+            statusLabel = 'SUSPENDED';
+            statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
+          } else if (isExpired) {
+            statusLabel = 'EXPIRED';
+            statusColor = 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+          } else if (isPending) {
+            statusLabel = 'PENDING';
+            statusColor = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+          }
+
+          // Build History
+          const history = [...(targets.subscription_history || [])];
+          if (history.length === 0 && targets.subscription_start_date && targets.subscription_end_date) {
+            history.push({
+              timestamp: targets.subscription_start_date,
+              action: 'initial_activation',
+              duration: targets.subscription_duration || 'custom',
+              delay_days: targets.subscription_delay_days || 0,
+              start_date: targets.subscription_start_date,
+              end_date: targets.subscription_end_date
+            });
+          }
+          history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+          // Analytics
+          const firstAct = history.length > 0 ? history[history.length - 1] : null;
+          const lastAct = history.length > 1 ? history[0] : null;
+
+          let cumulativeDays = 0;
+          history.forEach((h: any) => {
+            if (h.start_date && h.end_date) {
+              const start = new Date(h.start_date);
+              const end = new Date(h.end_date);
+              const diffMs = end.getTime() - start.getTime();
+              if (diffMs > 0) {
+                cumulativeDays += Math.round(diffMs / (24 * 60 * 60 * 1000));
+              }
+            }
+          });
+
+          return (
+            <>
+              {/* Header */}
+              <div className="p-6 border-b border-gray-850 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-500/25 flex items-center justify-center font-black text-sm text-blue-400 uppercase">
+                    {selectedSubClient.full_name?.substring(0, 2) || 'AT'}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm uppercase tracking-wider">{selectedSubClient.full_name}</h3>
+                    <p className="text-[10px] text-gray-500 lowercase mt-0.5">{selectedSubClient.email}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedSubClient(null)}
+                  className="w-8 h-8 rounded-full bg-gray-900 border border-gray-800 hover:border-gray-700 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer transition-all"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Drawer Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+                {/* Status card */}
+                <div className="bg-gray-900/40 p-4 border border-gray-850 rounded-2xl flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Access Status</p>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border mt-1.5 ${statusColor}`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Remaining Days</p>
+                    <p className="text-xs font-black text-white mt-1">
+                      {(() => {
+                        if (!targets.subscription_end_date) return 'Unlimited';
+                        const diff = new Date(targets.subscription_end_date).getTime() - Date.now();
+                        if (diff <= 0) return '0 Days';
+                        return `${Math.ceil(diff / (24 * 60 * 60 * 1000))} Days`;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid stats */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-900/30 p-3.5 border border-gray-850/50 rounded-xl space-y-1">
+                    <p className="text-[9px] text-gray-500 font-bold uppercase">First Activation</p>
+                    <p className="text-xs font-black text-white">
+                      {firstAct ? new Date(firstAct.timestamp).toLocaleDateString() : 'N/A'}
+                    </p>
+                    <p className="text-[8px] text-gray-500">
+                      Tier: {firstAct?.duration || 'None'}
+                    </p>
+                  </div>
+                  <div className="bg-gray-900/30 p-3.5 border border-gray-850/50 rounded-xl space-y-1">
+                    <p className="text-[9px] text-gray-500 font-bold uppercase">Last Reactivated</p>
+                    <p className="text-xs font-black text-white">
+                      {lastAct ? new Date(lastAct.timestamp).toLocaleDateString() : 'Never'}
+                    </p>
+                    <p className="text-[8px] text-gray-500">
+                      Tier: {lastAct?.duration || 'None'}
+                    </p>
+                  </div>
+                  <div className="bg-gray-900/30 p-3.5 border border-gray-850/50 rounded-xl col-span-2 flex justify-between items-center">
+                    <div>
+                      <p className="text-[9px] text-gray-500 font-bold uppercase">Cumulative Days Active</p>
+                      <p className="text-xs font-black text-indigo-400 mt-0.5">{cumulativeDays} Days total</p>
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <Calendar size={14} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline section */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <History size={12} className="text-blue-400" /> Subscription History Timeline
+                  </h4>
+
+                  {history.length === 0 ? (
+                    <div className="bg-[#121624]/20 border border-gray-850/40 rounded-2xl p-6 text-center text-gray-500 text-xs">
+                      No subscription log entries recorded yet.
+                    </div>
+                  ) : (
+                    <div className="relative border-l border-gray-850 ml-2.5 pl-6 space-y-6 py-1">
+                      {history.map((h: any, idx: number) => {
+                        const hStart = h.start_date ? new Date(h.start_date) : null;
+                        const hEnd = h.end_date ? new Date(h.end_date) : null;
+                        const hNow = new Date();
+                        const isHistActive = hStart && hEnd && hNow >= hStart && hNow < hEnd;
+
+                        return (
+                          <div key={idx} className="relative group">
+                            {/* Point on timeline */}
+                            <span className={`absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full border-2 ${
+                              isHistActive
+                                ? 'bg-emerald-400 border-emerald-950 ring-4 ring-emerald-500/15'
+                                : 'bg-gray-800 border-gray-900'
+                            }`} />
+                            
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black text-white uppercase tracking-wider">
+                                  {h.action === 'initial_activation' ? '🚀 INITIAL ACTIVATION' : '⚡ PLAN REACTIVATION'}
+                                </span>
+                                <span className="text-[8px] text-gray-500">
+                                  {new Date(h.timestamp).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <p className="text-xs font-bold text-gray-400">
+                                Duration: {h.duration || 'custom'} ({h.delay_days > 0 ? `${h.delay_days}d delay` : 'No delay'})
+                              </p>
+                              <p className="text-[9px] text-gray-500">
+                                Range: {hStart ? hStart.toLocaleDateString() : 'N/A'} - {hEnd ? hEnd.toLocaleDateString() : 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer action buttons */}
+              <div className="p-6 border-t border-gray-850 bg-gray-900/10 flex gap-3">
+                <button
+                  onClick={() => {
+                    setReactivateClientId(selectedSubClient.id);
+                    setReactivateClientName(selectedSubClient.full_name || 'Client');
+                    setReactivatePeriod(targets.subscription_duration || '1 month');
+                    setReactivateDelay('0');
+                    setSelectedSubClient(null);
+                    setReactivateModalOpen(true);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center"
+                >
+                  Extend / Reactivate
+                </button>
+                <button
+                  onClick={() => {
+                    setManagementSelectedClientId(selectedSubClient.id);
+                    fetchManagementClientDetails(selectedSubClient.id);
+                    setSelectedSubClient(null);
+                    setActiveTab('management');
+                  }}
+                  className="flex-1 bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-black py-3 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center"
+                >
+                  Manage Profile
+                </button>
+              </div>
+            </>
+          );
+        })()}
+      </div>
 
     </div>
   );
