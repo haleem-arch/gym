@@ -162,9 +162,7 @@ export default function DesktopCoachPortal() {
   const [showAddScanForm, setShowAddScanForm] = useState(false);
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
-  const [subTabMode, setSubTabMode] = useState<'clients' | 'coaches'>('clients');
-  const [newCoachSubPeriod, setNewCoachSubPeriod] = useState('1 month');
-  const [newCoachSubDelay, setNewCoachSubDelay] = useState('0');
+
   const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
   const [coachCountdownText, setCoachCountdownText] = useState('');
   const [isTrialActive, setIsTrialActive] = useState(false);
