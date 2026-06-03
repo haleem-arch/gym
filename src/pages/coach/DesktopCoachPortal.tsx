@@ -173,7 +173,7 @@ export default function DesktopCoachPortal() {
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
 
-  const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
+  const [coachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
   const [coachCountdownText, setCoachCountdownText] = useState('');
   const [isTrialActive, setIsTrialActive] = useState(false);
   const [coachSubPeriod, setCoachSubPeriod] = useState('1 month');
