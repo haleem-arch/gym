@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
-  Users, UserPlus, Database, ShieldAlert, Activity, Search, 
+  Users, User, UserPlus, Database, ShieldAlert, Activity, Search, 
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
@@ -246,7 +246,6 @@ export default function DesktopCoachPortal() {
   const [isCoachSuspended, setIsCoachSuspended] = useState(false);
 
   // System Tab - Coach Management refactored states
-  const [systemSelectedCoachId, setSystemSelectedCoachId] = useState<string | null>(null);
   const [coachSearchQuery, setCoachSearchQuery] = useState('');
   const [reassignCoachTargetId, setReassignCoachTargetId] = useState<Record<string, string>>({});
   const [updatingCoachStatus, setUpdatingCoachStatus] = useState(false);
@@ -2316,14 +2315,6 @@ export default function DesktopCoachPortal() {
       (coach.email && coach.email.toLowerCase().includes(q))
     );
   });
-
-  const selectedCoachProfile = systemSelectedCoachId 
-    ? systemCoaches.find(c => c.id === systemSelectedCoachId) 
-    : null;
-
-  const selectedCoachClients = selectedCoachProfile 
-    ? profiles.filter(p => p.role === 'client' && p.coach_id === selectedCoachProfile.id) 
-    : [];
 
   // Filter Catalog exercises inside Directory template split builder
   const filteredCatalog = exerciseDb.filter(ex => {
@@ -4477,7 +4468,8 @@ export default function DesktopCoachPortal() {
           {/* TAB 4: SYSTEM CONSOLE */}
           {activeTab === 'system' && (
             <div className="space-y-6">
-              {/* Header warning if not Owner               {coachUserId === OWNER_ID && (
+              {/* Header warning if not Owner */}
+              {coachUserId === OWNER_ID && (
                 <div className="space-y-6">
                   {/* Dashboard stats row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
