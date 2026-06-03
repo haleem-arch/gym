@@ -528,27 +528,8 @@ export default function DesktopCoachPortal() {
         return;
       }
 
-      // Check if coach is suspended or subscription is expired/not-started (Owner cannot be suspended)
-      const now = new Date();
-      const myTargets = myProfile?.targets || {};
-      const isDeactivated = myTargets.is_deactivated === true;
-      const isExpired = myTargets.subscription_end_date && now >= new Date(myTargets.subscription_end_date);
-      const isPending = myTargets.subscription_start_date && now < new Date(myTargets.subscription_start_date);
-
-      if (session.user.id !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
-        setIsCoachSuspended(true);
-        let reason = 'Your administrative coach access has been suspended by the system administrator. Please contact the owner if you believe this is an error.';
-        if (isExpired) {
-          reason = 'Your coach subscription has expired. Please contact Haleem to renew your plan.';
-        } else if (isPending) {
-          reason = `Your coach subscription starts on ${new Date(myTargets.subscription_start_date).toLocaleDateString()}.`;
-        }
-        setCoachSuspensionReason(reason);
-        if (!silent) setLoading(false);
-        return;
-      } else {
-        setIsCoachSuspended(false);
-      }
+      // Coach deactivation checks disabled - coaches are never locked out
+      setIsCoachSuspended(false);
 
       const isOwner = session.user.id === OWNER_ID;
 

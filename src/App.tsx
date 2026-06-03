@@ -244,6 +244,7 @@ function App() {
   const [suspensionReason, setSuspensionReason] = useState<string | null>(null);
   const [showWelcomeSplash, setShowWelcomeSplash] = useState(false);
   const [welcomeName, setWelcomeName] = useState('');
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     // 1. Check current session
@@ -275,6 +276,7 @@ function App() {
     if (session === null) {
       setNeedsOnboarding(undefined);
       setIsSuspended(false);
+      setUserRole(null);
       return;
     }
 
@@ -282,7 +284,7 @@ function App() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('display_name, targets')
+          .select('display_name, targets, role')
           .eq('id', session.user.id)
           .maybeSingle();
 
@@ -294,8 +296,11 @@ function App() {
           setSession(null);
           setNeedsOnboarding(undefined);
           setIsSuspended(false);
+          setUserRole(null);
           return;
         }
+
+        setUserRole(profile.role || null);
 
         // Check if account is suspended/deactivated via JSON targets or auto-suspend date
         const now = new Date();
@@ -303,7 +308,9 @@ function App() {
         let isDeactivated = targets.is_deactivated === true;
         let reason = 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.';
 
-        if (targets.subscription_start_date && targets.subscription_end_date) {
+        if (profile.role === 'coach') {
+          isDeactivated = false;
+        } else if (targets.subscription_start_date && targets.subscription_end_date) {
           const startDate = new Date(targets.subscription_start_date);
           const endDate = new Date(targets.subscription_end_date);
           if (now < startDate) {
@@ -374,6 +381,11 @@ function App() {
         table: 'profiles',
         filter: `id=eq.${session.user.id}`
       }, (payload: any) => {
+        if (userRole === 'coach') {
+          setIsSuspended(false);
+          setSuspensionReason(null);
+          return;
+        }
         const now = new Date();
         const targets = payload.new?.targets || {};
         let isDeactivated = targets.is_deactivated === true;
@@ -412,7 +424,7 @@ function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]);
+  }, [session, userRole]);
 
   if (session === undefined || (session !== null && needsOnboarding === undefined)) {
     return <DumbbellLoader fullScreen size={140} />;
