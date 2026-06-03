@@ -294,9 +294,14 @@ const TodayView = () => {
     if (workoutTemplates.length > 0) {
       const types = workoutTemplates.map(t => t.plan_type);
       const validOptions = ['REST', 'RUN', 'RUN + GYM', ...types];
-      if (!validOptions.includes(dayType)) {
-        const fallback = types.find(t => t === 'PUSH') || types[0] || 'REST';
+      
+      const matchedOption = validOptions.find(opt => opt.toUpperCase() === dayType.toUpperCase());
+      
+      if (!matchedOption) {
+        const fallback = types.find(t => t.toUpperCase() === 'PUSH') || types[0] || 'REST';
         setDayType(fallback);
+      } else if (matchedOption !== dayType) {
+        setDayType(matchedOption);
       }
     }
   }, [dayType, workoutTemplates]);
@@ -315,9 +320,9 @@ const TodayView = () => {
     }
     if (dayType === 'RUN + GYM') {
       // Find hybrid split template
-      let matched = workoutTemplates.find(t => t.plan_type === hybridLiftingType);
+      let matched = workoutTemplates.find(t => t.plan_type.toUpperCase() === hybridLiftingType.toUpperCase());
       if (!matched && workoutTemplates.length > 0) {
-        matched = workoutTemplates.find(t => t.plan_type === 'PUSH') || workoutTemplates[0];
+        matched = workoutTemplates.find(t => t.plan_type.toUpperCase() === 'PUSH') || workoutTemplates[0];
       }
       const exNames = matched?.exercises ? matched.exercises.map((e: any) => typeof e === 'string' ? e : e.name) : [];
       return { 
@@ -327,9 +332,9 @@ const TodayView = () => {
     }
     
     // Custom split or PUSH/PULL/LEGS from templates
-    let matched = workoutTemplates.find(t => t.plan_type === dayType);
+    let matched = workoutTemplates.find(t => t.plan_type.toUpperCase() === dayType.toUpperCase());
     if (!matched && workoutTemplates.length > 0) {
-      matched = workoutTemplates.find(t => t.plan_type === 'PUSH') || workoutTemplates[0];
+      matched = workoutTemplates.find(t => t.plan_type.toUpperCase() === 'PUSH') || workoutTemplates[0];
     }
     if (matched) {
       const exNames = matched.exercises ? matched.exercises.map((e: any) => typeof e === 'string' ? e : e.name) : [];

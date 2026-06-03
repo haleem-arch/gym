@@ -397,10 +397,10 @@ const WorkoutHome = () => {
         const targetSplit = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
         
         // Find saved plan or fallback
-        const matchingPlan = activePlans.find(p => p.plan_type === targetSplit);
+        const matchingPlan = activePlans.find(p => p.plan_type.toUpperCase() === targetSplit.toUpperCase());
         const targetItems = (matchingPlan?.exercises && matchingPlan.exercises.length > 0) 
           ? matchingPlan.exercises 
-          : planMap[targetSplit] || [];
+          : planMap[targetSplit.toUpperCase()] || [];
 
         const namesOnly = targetItems.map((e: any) => typeof e === 'string' ? e : e.name);
 
@@ -461,9 +461,14 @@ const WorkoutHome = () => {
     if (savedTemplates.length > 0) {
       const types = savedTemplates.map(t => t.plan_type);
       const validOptions = ['REST', 'RUN', 'RUN + GYM', ...types];
-      if (!validOptions.includes(dayType)) {
-        const fallback = types.find(t => t === 'PUSH') || types[0] || 'REST';
+      
+      const matchedOption = validOptions.find(opt => opt.toUpperCase() === dayType.toUpperCase());
+      
+      if (!matchedOption) {
+        const fallback = types.find(t => t.toUpperCase() === 'PUSH') || types[0] || 'REST';
         setDayType(fallback);
+      } else if (matchedOption !== dayType) {
+        setDayType(matchedOption);
       }
     }
   }, [dayType, savedTemplates]);
