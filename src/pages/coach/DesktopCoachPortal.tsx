@@ -166,7 +166,12 @@ export default function DesktopCoachPortal() {
   const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
   const [coachCountdownText, setCoachCountdownText] = useState('');
   const [isTrialActive, setIsTrialActive] = useState(false);
+  const [coachSubPeriod, setCoachSubPeriod] = useState('1 month');
   const [showCoachWarningBanner, setShowCoachWarningBanner] = useState(false);
+  const [coachSubDelay, setCoachSubDelay] = useState('0');
+  const [coachSubIsFreeTrial, setCoachSubIsFreeTrial] = useState(false);
+  const [coachSubCustomEnd, setCoachSubCustomEnd] = useState(getLocalDateTimeString());
+  const [updatingCoachSub, setUpdatingCoachSub] = useState(false);
 
   const [newWaterAmount, setNewWaterAmount] = useState(500);
 
@@ -1641,6 +1646,79 @@ export default function DesktopCoachPortal() {
       toast.error("Failed to update coach suspension status.");
     } finally {
       setUpdatingCoachStatus(false);
+    }
+  };
+
+  const handleUpdateCoachSubscription = async (coachId: string) => {
+    if (coachId === OWNER_ID) {
+      toast.error("Owner account does not have a subscription.");
+      return;
+    }
+    setUpdatingCoachSub(true);
+    try {
+      const coachProfile = profiles.find(p => p.id === coachId);
+      const currentTargets = coachProfile?.targets || {};
+      
+      const delayDays = parseInt(coachSubDelay) || 0;
+      const startDate = new Date(Date.now() + delayDays * 24 * 60 * 60 * 1000);
+      
+      let endDate: Date | null = null;
+      if (coachSubPeriod === 'none') {
+        // Lifetime / No Expiry
+        endDate = null;
+      } else if (coachSubPeriod === 'custom') {
+        endDate = coachSubCustomEnd ? new Date(coachSubCustomEnd) : null;
+      } else {
+        let durationMs = 30 * 24 * 60 * 60 * 1000; // default 1 month
+        if (coachSubPeriod === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+        else if (coachSubPeriod === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+        else if (coachSubPeriod === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+        else if (coachSubPeriod === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+        else if (coachSubPeriod === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+        else if (coachSubPeriod === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+        
+        endDate = new Date(startDate.getTime() + durationMs);
+      }
+
+      // Prepare subscription history log entry
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        action: 'coach_subscription_update',
+        period: coachSubPeriod,
+        delay_days: delayDays,
+        is_free_trial: coachSubIsFreeTrial,
+        start_date: startDate.toISOString(),
+        end_date: endDate ? endDate.toISOString() : null
+      };
+
+      const updatedHistory = Array.isArray(currentTargets.subscription_history)
+        ? [...currentTargets.subscription_history, logEntry]
+        : [logEntry];
+
+      const updatedTargets = {
+        ...currentTargets,
+        is_deactivated: false, // reactivate coach access automatically on renewal
+        is_free_trial: coachSubIsFreeTrial,
+        subscription_start_date: startDate.toISOString(),
+        subscription_end_date: endDate ? endDate.toISOString() : null,
+        subscription_duration: coachSubPeriod,
+        subscription_delay: coachSubDelay,
+        subscription_history: updatedHistory
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachId);
+
+      if (error) throw error;
+      toast.success("Coach subscription updated successfully!");
+      setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to update coach subscription.");
+    } finally {
+      setUpdatingCoachSub(false);
     }
   };
 
@@ -4398,8 +4476,16 @@ export default function DesktopCoachPortal() {
                             key={coach.id}
                             type="button"
                             onClick={() => {
-                              setSystemSelectedCoachId(systemSelectedCoachId === coach.id ? null : coach.id);
+                              const newId = systemSelectedCoachId === coach.id ? null : coach.id;
+                              setSystemSelectedCoachId(newId);
                               setIsRegisteringNewCoach(false);
+                              if (newId) {
+                                const tg = coach.targets || {};
+                                setCoachSubPeriod(tg.subscription_duration || '1 month');
+                                setCoachSubDelay(tg.subscription_delay || '0');
+                                setCoachSubIsFreeTrial(tg.is_free_trial === true);
+                                setCoachSubCustomEnd(tg.subscription_end_date ? getLocalDateTimeString(new Date(tg.subscription_end_date)) : getLocalDateTimeString());
+                              }
                             }}
                             className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
                               systemSelectedCoachId === coach.id 
@@ -4601,6 +4687,140 @@ export default function DesktopCoachPortal() {
                             </p>
                           </Card>
                         </div>
+
+                        {selectedCoachProfile.id !== OWNER_ID && (
+                          <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
+                            <div className="border-b border-gray-850 pb-2 flex justify-between items-center">
+                              <h3 className="text-xs font-black uppercase tracking-wide text-blue-400 flex items-center gap-1.5">
+                                <CreditCard size={14} /> Coach Subscription Plan &amp; Billing
+                              </h3>
+                              {(() => {
+                                const tg = selectedCoachProfile.targets || {};
+                                const now = new Date();
+                                const isExpired = tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
+                                const isPending = tg.subscription_start_date && now < new Date(tg.subscription_start_date);
+                                const isDeact = tg.is_deactivated === true;
+                                
+                                let statusLabel = "ACTIVE";
+                                let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                                if (isDeact) {
+                                  statusLabel = "SUSPENDED";
+                                  statusColor = "bg-red-500/10 text-red-400 border-red-500/20";
+                                } else if (isExpired) {
+                                  statusLabel = "EXPIRED";
+                                  statusColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                                } else if (isPending) {
+                                  statusLabel = "PENDING";
+                                  statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                                }
+                                return (
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${statusColor}`}>
+                                    {statusLabel}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+
+                            {/* Current Active Plan Stats */}
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div className="bg-[#121624]/60 p-3.5 rounded-xl border border-gray-800">
+                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Start Date</p>
+                                <p className="text-white font-extrabold">
+                                  {selectedCoachProfile.targets?.subscription_start_date 
+                                    ? new Date(selectedCoachProfile.targets.subscription_start_date).toLocaleDateString()
+                                    : 'Immediate (Not set)'
+                                  }
+                                </p>
+                              </div>
+                              <div className="bg-[#121624]/60 p-3.5 rounded-xl border border-gray-800">
+                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Expiration Date</p>
+                                <p className="text-white font-extrabold">
+                                  {selectedCoachProfile.targets?.subscription_end_date 
+                                    ? new Date(selectedCoachProfile.targets.subscription_end_date).toLocaleDateString()
+                                    : 'Never (Lifetime)'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Subscription Duration & Start Delay Form */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Plan Duration</label>
+                                <select
+                                  value={coachSubPeriod}
+                                  onChange={e => setCoachSubPeriod(e.target.value)}
+                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
+                                >
+                                  <option value="2 weeks">2 Weeks</option>
+                                  <option value="1 month">1 Month</option>
+                                  <option value="3 months">3 Months</option>
+                                  <option value="6 months">6 Months</option>
+                                  <option value="12 months">12 Months</option>
+                                  <option value="2 years">2 Years</option>
+                                  <option value="none">No Expiry (Lifetime)</option>
+                                  <option value="custom">Custom Date &amp; Time</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Start Delay (Days)</label>
+                                <select
+                                  value={coachSubDelay}
+                                  onChange={e => setCoachSubDelay(e.target.value)}
+                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
+                                >
+                                  <option value="0">Immediate (0 days)</option>
+                                  <option value="1">1 Day delay</option>
+                                  <option value="3">3 Days delay</option>
+                                  <option value="7">7 Days delay</option>
+                                  <option value="14">14 Days delay</option>
+                                  <option value="30">30 Days delay</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-1.5 flex flex-col justify-end">
+                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1 block">Free Trial Plan</label>
+                                <div className="flex items-center h-full">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCoachSubIsFreeTrial(!coachSubIsFreeTrial)}
+                                    className={`w-full flex items-center justify-between border px-4 py-2 rounded-xl transition-all cursor-pointer ${
+                                      coachSubIsFreeTrial 
+                                        ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-extrabold' 
+                                        : 'bg-[#131b2e] border-gray-750 text-gray-400 font-bold hover:border-gray-600'
+                                    }`}
+                                  >
+                                    <span>Free Trial</span>
+                                    <span className="text-[9px] font-black uppercase font-mono bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">{coachSubIsFreeTrial ? "ON" : "OFF"}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {coachSubPeriod === 'custom' && (
+                              <div className="space-y-1.5 text-xs">
+                                <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Custom Expiration Date &amp; Time</label>
+                                <input
+                                  type="datetime-local"
+                                  value={coachSubCustomEnd}
+                                  onChange={e => setCoachSubCustomEnd(e.target.value)}
+                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none font-bold cursor-pointer"
+                                />
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateCoachSubscription(selectedCoachProfile.id)}
+                              disabled={updatingCoachSub}
+                              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white text-xs font-black uppercase py-3 rounded-2xl transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-500/10 flex items-center justify-center gap-1.5"
+                            >
+                              <CreditCard size={14} />
+                              {updatingCoachSub ? 'Saving...' : 'Update / Extend Coach Subscription'}
+                            </button>
+                          </div>
+                        )}
 
                         {/* Interactive Client re-assignment list */}
                         <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 space-y-4">
