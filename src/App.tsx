@@ -308,7 +308,7 @@ function App() {
         let isDeactivated = targets.is_deactivated === true;
         let reason = 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.';
 
-        if (session.user.id === OWNER_ID) {
+        if (session.user.id === OWNER_ID || profile.role === 'coach') {
           isDeactivated = false;
         } else if (targets.subscription_start_date && targets.subscription_end_date) {
           const startDate = new Date(targets.subscription_start_date);
@@ -381,7 +381,7 @@ function App() {
         table: 'profiles',
         filter: `id=eq.${session.user.id}`
       }, (payload: any) => {
-        if (session.user.id === OWNER_ID) {
+        if (session.user.id === OWNER_ID || userRole === 'coach' || payload.new?.role === 'coach') {
           setIsSuspended(false);
           setSuspensionReason(null);
           return;
