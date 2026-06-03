@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://stride-rite-dashboard.vercel.app',
+        target: 'https://gym-kappa-three.vercel.app',
         changeOrigin: true,
         secure: false
       }

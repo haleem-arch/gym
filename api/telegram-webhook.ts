@@ -87,16 +87,21 @@ Your unique Telegram Chat ID is:
       const tokens = callbackData.split(':');
       const action = tokens[0];
 
-      // Format check
-      if (!action) {
-        return res.status(200).json({ ok: true });
-      }
+      if (!action) return res.status(200).json({ ok: true });
 
-      // Action 1: Approve
-      if (action === 'approve') {
+      // Helper: decode period code back to full string
+      const decodePeriod = (code: string) => {
+        if (code === '2w') return '2 weeks';
+        if (code === '1m') return '1 month';
+        if (code === '3m') return '3 months';
+        if (code === '6m') return '6 months';
+        return '1 month';
+      };
+
+      // ── ACTION A: Approve ──────────────────────────────────────────
+      if (action === 'A') {
         const coachId = tokens[1];
-        const paymentId = tokens[2];
-        const period = tokens[3];
+        const period = decodePeriod(tokens[2]);
 
         const { data: coach, error: fetchErr } = await supabaseAdmin
           .from('profiles')
@@ -112,18 +117,14 @@ Your unique Telegram Chat ID is:
         const targets = coach.targets || {};
         const pendingPayment = targets.pending_payment;
 
-        if (!pendingPayment || pendingPayment.id !== paymentId) {
-          await answerCallback(callbackQueryId, 'This transaction was already processed or does not exist.');
-          // Remove buttons from message since it is stale
+        if (!pendingPayment) {
+          await answerCallback(callbackQueryId, 'This transaction was already processed.');
           await editMessageText(chatId, messageId, originalMessage, '⚠️ <i>This payment has already been processed or cancelled.</i>');
           return res.status(200).json({ ok: true });
         }
 
-        // Calculate subscription extension dates
         const nowObj = new Date();
         let baseDate = nowObj;
-
-        // If current subscription is active, extend from it. Otherwise extend from now.
         const currentEnd = targets.subscription_end_date ? new Date(targets.subscription_end_date) : null;
         if (currentEnd && currentEnd > nowObj && targets.is_deactivated !== true) {
           baseDate = currentEnd;
@@ -132,16 +133,15 @@ Your unique Telegram Chat ID is:
         const durationDays = getDurationDays(period);
         const newEndDate = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-        // Update target parameters
         const updatedTargets = {
           ...targets,
           subscription_start_date: targets.subscription_start_date || nowObj.toISOString(),
           subscription_end_date: newEndDate.toISOString(),
           is_deactivated: false,
-          is_free_trial: false, // upgrades trial to premium
+          is_free_trial: false,
           last_payment_result: {
             status: 'approved',
-            payment_id: paymentId,
+            payment_id: pendingPayment.id,
             period,
             amount: pendingPayment.amount,
             approved_at: nowObj.toISOString()
@@ -158,107 +158,57 @@ Your unique Telegram Chat ID is:
             }
           ]
         };
-
-        // Remove the pending payment block
         delete updatedTargets.pending_payment;
 
         const { error: updateErr } = await supabaseAdmin
-          .from('profiles')
-          .update({ targets: updatedTargets })
-          .eq('id', coach.id);
+          .from('profiles').update({ targets: updatedTargets }).eq('id', coach.id);
 
         if (updateErr) {
-          await answerCallback(callbackQueryId, 'Failed to update coach subscription dates.');
+          await answerCallback(callbackQueryId, 'Failed to update subscription.');
           return res.status(200).json({ ok: true });
         }
 
-        await answerCallback(callbackQueryId, 'Subscription approved successfully!');
-        
-        // Update message representation in Telegram
-        const successText = `
-✅ <b>Payment Approved & Access Extended!</b>
+        await answerCallback(callbackQueryId, 'Subscription approved!');
+        await editMessageText(chatId, messageId, originalMessage,
+          `✅ <b>Payment Approved & Access Extended!</b>\n\n👤 <b>Coach:</b> ${coach.display_name || 'N/A'}\n📧 <b>Email:</b> ${coach.email || 'N/A'}\n\n📅 <b>New Expiry:</b> ${newEndDate.toLocaleDateString()} — extended by <b>${period}</b>`
+        );
 
-👤 <b>Coach Details:</b>
-• <b>Name:</b> ${coach.display_name || 'N/A'}
-• <b>Email:</b> ${coach.email || 'N/A'}
-
-📅 <b>New Expiration Date:</b>
-• ${newEndDate.toLocaleDateString()} at ${newEndDate.toLocaleTimeString()}
-• Extended by <b>${period}</b> from ${baseDate.toLocaleDateString()}
-`;
-        await editMessageText(chatId, messageId, originalMessage, successText);
-
-        // Send a structured receipt as a new message to the owner
-        const receiptText = `
-🧾 <b>LIFE GYM SUBSCRIPTION RECEIPT</b>
-━━━━━━━━━━━━━━━━━━━━━━━━
-<b>Receipt ID:</b> <code>rec_${paymentId}</code>
-<b>Date:</b> ${nowObj.toLocaleString()}
-
-👤 <b>Coach Details:</b>
-• <b>Name:</b> ${coach.display_name || 'N/A'}
-• <b>Email:</b> ${coach.email || 'N/A'}
-
-💳 <b>Payment Details:</b>
-• <b>Plan Duration:</b> ${period}
-• <b>Amount Paid:</b> ${pendingPayment.amount}
-• <b>Payment Method:</b> ${pendingPayment.method === 'telda' ? 'Telda' : 'Mobile Wallet'}
-
-📅 <b>Coverage Period:</b>
-• <b>Start Date:</b> ${baseDate.toLocaleDateString()}
-• <b>End Date:</b> ${newEndDate.toLocaleDateString()}
-
-✅ <b>Status:</b> PAID (Verified & Approved)
-━━━━━━━━━━━━━━━━━━━━━━━━
-`;
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
-            text: receiptText,
+            text: `🧾 <b>RECEIPT</b>\n\n👤 ${coach.display_name} (${coach.email})\n💳 ${period} — ${pendingPayment.amount}\n📅 Expires: ${newEndDate.toLocaleDateString()}\n✅ Status: APPROVED`,
             parse_mode: 'HTML'
           })
         });
       }
 
-      // Action 2: Show Rejection Reasons Options
-      else if (action === 'reject') {
+      // ── ACTION R: Show Rejection Reason Options ────────────────────
+      else if (action === 'R') {
         const coachId = tokens[1];
-        const paymentId = tokens[2];
-
-        // Edit Telegram message inline keyboard markup to present options
         const inlineKeyboard = {
           inline_keyboard: [
             [
-              { text: '❌ Invalid Screenshot', callback_data: `reject_reason:${coachId}:${paymentId}:invalid_screenshot` },
-              { text: '❌ Wrong Amount', callback_data: `reject_reason:${coachId}:${paymentId}:wrong_amount` }
+              { text: '❌ Invalid Screenshot', callback_data: `RR:${coachId}:inv` },
+              { text: '❌ Wrong Amount', callback_data: `RR:${coachId}:amt` }
             ],
             [
-              { text: '❌ Not Received', callback_data: `reject_reason:${coachId}:${paymentId}:not_received` },
-              { text: '🔙 Cancel', callback_data: `reject_reason:${coachId}:${paymentId}:back_to_menu` }
+              { text: '❌ Not Received', callback_data: `RR:${coachId}:nr` },
+              { text: '🔙 Cancel', callback_data: `RR:${coachId}:bk` }
             ]
           ]
         };
-
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: inlineKeyboard
-          })
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: inlineKeyboard })
         });
-
         await answerCallback(callbackQueryId, 'Select rejection reason.');
       }
 
-      // Action 3: Handle Final Selection of Rejection Reason
-      else if (action === 'reject_reason') {
+      // ── ACTION RR: Final Rejection Reason Selected ─────────────────
+      else if (action === 'RR') {
         const coachId = tokens[1];
-        const paymentId = tokens[2];
-        const reasonCode = tokens[3];
+        const reasonCode = tokens[2];
 
         const { data: coach, error: fetchErr } = await supabaseAdmin
           .from('profiles')
@@ -272,55 +222,52 @@ Your unique Telegram Chat ID is:
         }
 
         const targets = coach.targets || {};
+        const pendingPayment = targets.pending_payment;
 
-        if (reasonCode === 'back_to_menu') {
-          // Restore Approve & Reject button choices
+        if (reasonCode === 'bk') {
+          // Go back to approve/reject buttons
+          const pp = pendingPayment;
+          const periodCode = (pp?.period === '2 weeks') ? '2w' : (pp?.period === '1 month') ? '1m' : (pp?.period === '3 months') ? '3m' : '6m';
           const inlineKeyboard = {
-            inline_keyboard: [
-              [
-                { text: '✅ Approve & Add Plan', callback_data: `approve:${coachId}:${paymentId}:${targets.pending_payment?.period || '1 month'}` },
-                { text: '❌ Reject Payment', callback_data: `reject:${coachId}:${paymentId}` }
-              ]
-            ]
+            inline_keyboard: [[
+              { text: '✅ Approve & Add Plan', callback_data: `A:${coachId}:${periodCode}` },
+              { text: '❌ Reject Payment', callback_data: `R:${coachId}` }
+            ]]
           };
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              message_id: messageId,
-              reply_markup: inlineKeyboard
-            })
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: inlineKeyboard })
           });
           await answerCallback(callbackQueryId, 'Returned.');
           return res.status(200).json({ ok: true });
         }
 
-        const pendingPayment = targets.pending_payment;
-        if (!pendingPayment || pendingPayment.id !== paymentId) {
+        if (!pendingPayment) {
           await answerCallback(callbackQueryId, 'Transaction already processed.');
-          await editMessageText(chatId, messageId, originalMessage, '⚠️ <i>This payment has already been processed or cancelled.</i>');
+          await editMessageText(chatId, messageId, originalMessage, '⚠️ <i>This payment has already been processed.</i>');
           return res.status(200).json({ ok: true });
         }
 
-        const reasonText = REJECTION_REASONS[reasonCode] || 'Payment verification failed.';
+        const reasonMap: Record<string, string> = {
+          'inv': 'Invalid Screenshot / Proof of Transaction',
+          'amt': 'Wrong Amount Transferred',
+          'nr': 'Payment Not Received in Wallet / Bank'
+        };
+        const reasonText = reasonMap[reasonCode] || 'Payment verification failed.';
 
         const updatedTargets = {
           ...targets,
           last_payment_result: {
             status: 'rejected',
-            payment_id: paymentId,
+            payment_id: pendingPayment.id,
             reason: reasonText,
             rejected_at: new Date().toISOString()
           }
         };
-        // Remove pending payment block
         delete updatedTargets.pending_payment;
 
         const { error: updateErr } = await supabaseAdmin
-          .from('profiles')
-          .update({ targets: updatedTargets })
-          .eq('id', coach.id);
+          .from('profiles').update({ targets: updatedTargets }).eq('id', coach.id);
 
         if (updateErr) {
           await answerCallback(callbackQueryId, 'Database update failed.');
@@ -328,18 +275,9 @@ Your unique Telegram Chat ID is:
         }
 
         await answerCallback(callbackQueryId, 'Rejection recorded.');
-
-        const rejectionText = `
-❌ <b>Payment Rejected!</b>
-
-👤 <b>Coach Details:</b>
-• <b>Name:</b> ${coach.display_name || 'N/A'}
-• <b>Email:</b> ${coach.email || 'N/A'}
-
-⚠️ <b>Rejection Reason:</b>
-• ${reasonText}
-`;
-        await editMessageText(chatId, messageId, originalMessage, rejectionText);
+        await editMessageText(chatId, messageId, originalMessage,
+          `❌ <b>Payment Rejected!</b>\n\n👤 <b>Coach:</b> ${coach.display_name || 'N/A'}\n\n⚠️ <b>Reason:</b> ${reasonText}`
+        );
       }
     }
 

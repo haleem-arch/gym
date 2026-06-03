@@ -82,13 +82,17 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'You already have a pending transaction awaiting verification.' });
     }
 
+    // Generate a short 8-char token to use in Telegram callback_data (64 byte limit)
     const paymentId = `pay_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 6)}`;
+    const shortToken = `${user.id.replace(/-/g,'').substring(0,6)}${Date.now().toString(36).substring(-4)}`;
 
     // 3. Write pending payment info to Coach targets
     const updatedTargets = {
       ...currentTargets,
       pending_payment: {
         id: paymentId,
+        short_token: shortToken,
+        coach_id: user.id,
         period,
         method,
         sender_details,
@@ -131,11 +135,13 @@ export default async function handler(req: any, res: any) {
 
     const captionText = `🔔 New Coach Subscription Request\n\n👤 Coach Details:\n• Name: ${profile.display_name || 'N/A'}\n• Email: ${profile.email || 'N/A'}\n• ID: ${user.id}\n\n💳 Payment Details:\n• Plan: ${period}\n• Price: ${planPrice}\n• Method: ${method === 'telda' ? 'Telda' : 'Mobile Wallet'}\n${detailsText}\n\n⚡️ Tap approve to extend the coach plan.`;
 
+    // callback_data must be under 64 bytes — use user.id (coach_id) + period code
+    const periodCode = period === '2 weeks' ? '2w' : period === '1 month' ? '1m' : period === '3 months' ? '3m' : '6m';
     const inlineKeyboard = {
       inline_keyboard: [
         [
-          { text: '✅ Approve & Add Plan', callback_data: `approve:${user.id}:${paymentId}:${period}` },
-          { text: '❌ Reject Payment', callback_data: `reject:${user.id}:${paymentId}` }
+          { text: '✅ Approve & Add Plan', callback_data: `A:${user.id}:${periodCode}` },
+          { text: '❌ Reject Payment', callback_data: `R:${user.id}` }
         ]
       ]
     };
