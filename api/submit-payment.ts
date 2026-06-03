@@ -159,18 +159,26 @@ ${detailsHtml}
       // If we have a base64 screenshot, parse and send as file
       const base64Data = screenshot.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
-      const blob = new Blob([buffer], { type: 'image/jpeg' });
-
-      const formData = new FormData();
-      formData.append('chat_id', telegramChatId);
-      formData.append('photo', blob, 'screenshot.jpg');
-      formData.append('caption', captionText);
-      formData.append('parse_mode', 'HTML');
-      formData.append('reply_markup', JSON.stringify(inlineKeyboard));
+      
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+      const parts = [
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${telegramChatId}\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${captionText}\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="parse_mode"\r\n\r\nHTML\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="reply_markup"\r\n\r\n${JSON.stringify(inlineKeyboard)}\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="screenshot.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`),
+        buffer,
+        Buffer.from(`\r\n--${boundary}--\r\n`)
+      ];
+      
+      const multipartBody = Buffer.concat(parts);
 
       const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
+        },
+        body: multipartBody
       });
 
       if (!response.ok) {
