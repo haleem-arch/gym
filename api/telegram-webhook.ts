@@ -44,7 +44,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { message, callback_query } = req.body;
+    const { message, callback_query } = req.body || {};
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false }
