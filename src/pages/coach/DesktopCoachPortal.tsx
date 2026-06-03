@@ -116,7 +116,7 @@ function dayColor(dt: string) {
 
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile'>('overview');
   const [coachUserId, setCoachUserId] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -232,6 +232,11 @@ export default function DesktopCoachPortal() {
   const [editCustomSubscriptionEnd, setEditCustomSubscriptionEnd] = useState(getLocalDateTimeString());
   const [showDetailedSubscriptionTime, setShowDetailedSubscriptionTime] = useState(false);
   const [updatingSubscriptionState, setUpdatingSubscriptionState] = useState(false);
+
+  // Profile settings password updating state
+  const [ownNewPassword, setOwnNewPassword] = useState('');
+  const [ownConfirmPassword, setOwnConfirmPassword] = useState('');
+  const [updatingOwnPassword, setUpdatingOwnPassword] = useState(false);
 
   // Subscriptions Tab Reactivation Modal state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
@@ -687,7 +692,7 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions') => {
+  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile') => {
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'sidebar', payload: newTab });
     } else {
@@ -1667,6 +1672,32 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  const handleUpdateOwnPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ownNewPassword || ownNewPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long.');
+      return;
+    }
+    if (ownNewPassword !== ownConfirmPassword) {
+      toast.error('Passwords do not match.');
+      return;
+    }
+    
+    setUpdatingOwnPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: ownNewPassword });
+      if (error) throw error;
+      toast.success('Your account password has been updated successfully!');
+      setOwnNewPassword('');
+      setOwnConfirmPassword('');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to update your password.');
+    } finally {
+      setUpdatingOwnPassword(false);
+    }
+  };
+
 
 
   const handleSaveManagementQuota = async () => {
@@ -2620,12 +2651,17 @@ export default function DesktopCoachPortal() {
       {/* Main Top Header Navbar */}
       <header className="border-b border-gray-800 bg-[#070710]/80 backdrop-blur-xl px-8 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Users size={18} className="text-white" />
-          </div>
+          <img 
+            src="/icon-transparent.png" 
+            alt="Life Gym Logo" 
+            className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/favicon.svg';
+            }}
+          />
           <div>
             <h1 className="text-base font-black uppercase tracking-widest bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Stride Rite Fitness
+              LIFE GYM
             </h1>
             <p className="text-[10px] text-gray-500 font-mono">Desktop Coach Portal / Version 3.0</p>
           </div>
@@ -2633,21 +2669,25 @@ export default function DesktopCoachPortal() {
 
         {/* System Health Check indicator */}
         <div className="flex items-center gap-6 text-xs">
-          <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-1.5 font-medium">
-            <Database size={13} className={dbHealthy ? 'text-emerald-400' : 'text-red-400'} />
-            <span className="text-[10px] text-gray-400">Database:</span>
-            <span className={dbHealthy ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
-              {dbHealthy ? 'ONLINE' : 'OFFLINE'}
-            </span>
-          </div>
+          {coachUserId === OWNER_ID && (
+            <>
+              <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-1.5 font-medium">
+                <Database size={13} className={dbHealthy ? 'text-emerald-400' : 'text-red-400'} />
+                <span className="text-[10px] text-gray-400">Database:</span>
+                <span className={dbHealthy ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
+                  {dbHealthy ? 'ONLINE' : 'OFFLINE'}
+                </span>
+              </div>
 
-          <button 
-            onClick={() => fetchBaseData()}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/40 text-[10px] font-bold text-gray-400 hover:text-white transition-all active:scale-95 cursor-pointer"
-            title="Refresh database data only"
-          >
-            <RefreshCw size={11} /> Sync Data
-          </button>
+              <button 
+                onClick={() => fetchBaseData()}
+                className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/40 text-[10px] font-bold text-gray-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+                title="Refresh database data only"
+              >
+                <RefreshCw size={11} /> Sync Data
+              </button>
+            </>
+          )}
 
           <button 
             onClick={handleHardReload}
@@ -2732,6 +2772,17 @@ export default function DesktopCoachPortal() {
             }`}
           >
             <CreditCard size={15} /> Subscriptions
+          </button>
+
+          <button 
+            onClick={() => handleSidebarTabClick('profile')}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+              activeTab === 'profile' 
+                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
+            }`}
+          >
+            <User size={15} /> Profile Settings
           </button>
 
           {coachUserId === OWNER_ID && (
@@ -4916,6 +4967,140 @@ export default function DesktopCoachPortal() {
                   </Card>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 5: PROFILE SETTINGS */}
+          {activeTab === 'profile' && (
+            <div className="space-y-6 max-w-2xl">
+              <div className="border-b border-gray-800 pb-4">
+                <h2 className="text-xl font-black text-white uppercase tracking-wider">Coach Profile Settings</h2>
+                <p className="text-xs text-gray-500 mt-1">Manage your administrative password and review your active website subscription status.</p>
+              </div>
+
+              {/* Subscription Card */}
+              <Card className="p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] border border-gray-850 space-y-6 relative overflow-hidden">
+                <div className="absolute right-[-10%] top-[-10%] w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="flex items-center gap-3 border-b border-gray-855 pb-4">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <CreditCard size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase text-blue-400">Website Subscription Status</h3>
+                    <p className="text-[10px] text-gray-500">Details about your active coaching subscription plan.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Account Plan</p>
+                    <p className="text-white font-extrabold flex items-center gap-1.5">
+                      {coachUserId === OWNER_ID ? (
+                        <span className="text-indigo-400 font-mono font-black uppercase tracking-wider">Lifetime Creator Admin</span>
+                      ) : isTrialActive ? (
+                        <span className="text-yellow-500 font-black uppercase tracking-wider">Free Trial Mode</span>
+                      ) : (
+                        <span className="text-emerald-400 font-black uppercase tracking-wider">Premium Coach License</span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">Time Remaining / Status</p>
+                    <p className="text-white font-bold font-mono">
+                      {coachUserId === OWNER_ID ? (
+                        <span className="text-indigo-400 font-extrabold">Unlimited access (No Expiration)</span>
+                      ) : (
+                        <span className="text-white font-extrabold">
+                          {(() => {
+                            if (!myCoachProfile?.targets?.subscription_end_date) return 'Lifetime Access';
+                            const expiry = new Date(myCoachProfile.targets.subscription_end_date);
+                            const now = new Date();
+                            const diffMs = expiry.getTime() - now.getTime();
+                            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                            if (diffDays < 0) return 'Expired';
+                            if (diffDays === 0) return 'Expires today';
+                            return `${diffDays} days left`;
+                          })()}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Nice visual bar for remaining time (Coach only, Owner doesn't need it) */}
+                {coachUserId !== OWNER_ID && myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
+                  <div className="space-y-2 mt-4">
+                    <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+                      <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
+                      <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="h-2 bg-gray-900 border border-gray-850 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                        style={{
+                          width: `${(() => {
+                            const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
+                            const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
+                            const now = new Date().getTime();
+                            if (now >= end) return 0;
+                            if (now <= start) return 100;
+                            const total = end - start;
+                            const remaining = end - now;
+                            return Math.max(0, Math.min(100, (remaining / total) * 100));
+                          })()}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              {/* Password Editing Form Card */}
+              <Card className="p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] border border-gray-850 space-y-6">
+                <div className="flex items-center gap-3 border-b border-gray-850 pb-4">
+                  <div className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase text-yellow-500">Change Admin Access Password</h3>
+                    <p className="text-[10px] text-gray-500">Update the password used to log in to your portal.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleUpdateOwnPassword} className="space-y-4 font-bold">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">New Access Password</label>
+                    <input
+                      type="password"
+                      value={ownNewPassword}
+                      onChange={e => setOwnNewPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                      className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Confirm Password</label>
+                    <input
+                      type="password"
+                      value={ownConfirmPassword}
+                      onChange={e => setOwnConfirmPassword(e.target.value)}
+                      placeholder="Confirm your new password"
+                      className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-mono font-bold"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={updatingOwnPassword || !ownNewPassword || !ownConfirmPassword}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {updatingOwnPassword ? 'Updating Password...' : <><Save size={13} /> Update Password</>}
+                  </button>
+                </form>
+              </Card>
             </div>
           )}
 
