@@ -469,7 +469,7 @@ export default function DesktopCoachPortal() {
       
       const { data: workoutsData } = await supabase
         .from('workouts')
-        .select('id, user_id, date, day_type, total_volume')
+        .select('id, user_id, date, day_type, total_volume, duration, notes')
         .eq('status', 'completed')
         .order('date', { ascending: false })
         .limit(10);
@@ -2384,7 +2384,11 @@ export default function DesktopCoachPortal() {
                       <p className="text-xs text-gray-500 italic text-center py-12">No recent completions recorded.</p>
                     ) : (
                       recentWorkouts.map((w, idx) => (
-                        <div key={idx} className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-gray-800 transition-colors">
+                        <div 
+                          key={idx} 
+                          onClick={() => setSelectedReceiptWorkout(w)}
+                          className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-gray-700 transition-colors cursor-pointer hover:bg-gray-900/20"
+                        >
                           <div className="space-y-1">
                             <p className="font-extrabold text-white">{w.profiles?.display_name}</p>
                             <p className="text-gray-500">Completed a <span className="text-blue-400 font-bold">{w.day_type}</span> day</p>
