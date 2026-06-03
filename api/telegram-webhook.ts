@@ -164,7 +164,7 @@ Your unique Telegram Chat ID is:
         const { error: updateErr } = await supabaseAdmin
           .from('profiles')
           .update({ targets: updatedTargets })
-          .eq('id', coachId);
+          .eq('id', coach.id);
 
         if (updateErr) {
           await answerCallback(callbackQueryId, 'Failed to update coach subscription dates.');
