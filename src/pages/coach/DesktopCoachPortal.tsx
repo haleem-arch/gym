@@ -107,7 +107,7 @@ export default function DesktopCoachPortal() {
   const [showAddScanForm, setShowAddScanForm] = useState(false);
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
-  const [managementNewWaterAmount, setManagementNewWaterAmount] = useState(500);
+  const [newWaterAmount, setNewWaterAmount] = useState(500);
 
   // Preset/Form states
   const [newMealName, setNewMealName] = useState('');
@@ -805,6 +805,26 @@ export default function DesktopCoachPortal() {
   };
 
   // ─── WATER LOGGER OPERATIONS ───────────────────────────────
+  const handleAddWater = async (amountOverride?: number) => {
+    if (!selectedClientId) return;
+    const amount = amountOverride !== undefined ? amountOverride : newWaterAmount;
+    try {
+      const now = new Date();
+      const { error } = await supabase.from('water_logs').insert({
+        user_id: selectedClientId,
+        date: clientActiveDateStr,
+        time: now.toISOString(),
+        amount_ml: amount
+      });
+      if (error) throw error;
+      toast.success(`${amount}ml logged!`);
+      fetchClientData(selectedClientId, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to log water intake.');
+    }
+  };
+
   const handleDeleteWater = async (id: string) => {
     const { error } = await supabase.from('water_logs').delete().eq('id', id);
     if (error) {
@@ -813,6 +833,19 @@ export default function DesktopCoachPortal() {
     }
     toast.success('Entry removed');
     fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  };
+
+  const handleClearWater = async () => {
+    if (!selectedClientId) return;
+    try {
+      const { error } = await supabase.from('water_logs').delete().eq('user_id', selectedClientId).eq('date', clientActiveDateStr);
+      if (error) throw error;
+      toast.success('Water logs cleared');
+      fetchClientData(selectedClientId!, clientActiveDateStr, true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Unable to clear water logs.');
+    }
   };
 
   // ─── INBODY SCAN OPERATIONS ────────────────────────────────
@@ -1141,29 +1174,7 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleLogManagementWater = async (amountOverride?: number) => {
-    if (!managementSelectedClientId) return;
-    const amount = amountOverride !== undefined ? amountOverride : managementNewWaterAmount;
-    try {
-      const todayStr = getLocalDateString();
-      const now = new Date();
-      const { error } = await supabase.from('water_logs').insert({
-        user_id: managementSelectedClientId,
-        date: todayStr,
-        time: now.toISOString(),
-        amount_ml: amount
-      });
-      if (error) throw error;
-      toast.success(`${amount}ml hydration logged for athlete!`);
-      fetchBaseData();
-      if (selectedClientId === managementSelectedClientId) {
-        fetchClientData(selectedClientId, clientActiveDateStr, true);
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Unable to log water intake.');
-    }
-  };
+
 
   const handleSaveManagementQuota = async () => {
     if (!managementSelectedClientId || !managementClientProfile) return;
@@ -2486,8 +2497,42 @@ export default function DesktopCoachPortal() {
                           </div>
                         </div>
 
-                        {/* Water log timeline */}
-                        <div className="w-full bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
+                        {/* Logger inputs & timeline logs */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                          {/* Log Water presets */}
+                          <Card className="p-5 space-y-4">
+                            <div className="flex justify-between items-center border-b border-gray-850 pb-2">
+                              <h3 className="text-xs font-black uppercase text-blue-400">Log Hydration</h3>
+                              {clientWaterLogs.length > 0 && (
+                                <button onClick={handleClearWater} className="text-[9px] font-black uppercase text-red-400">Clear Day</button>
+                              )}
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                              {[250, 330, 500, 750, 1000].map(ml => (
+                                <button 
+                                  key={ml} 
+                                  type="button"
+                                  onClick={() => { 
+                                    setNewWaterAmount(ml); 
+                                    handleAddWater(ml); 
+                                  }}
+                                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border ${newWaterAmount === ml ? 'bg-sky-600 border-sky-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                                >
+                                  {ml}ml
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <input 
+                                type="number" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
+                                className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
+                              />
+                              <button onClick={() => handleAddWater()} className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider whitespace-nowrap active:scale-95 transition-all">+ Log</button>
+                            </div>
+                          </Card>
+
+                          {/* Water log timeline */}
+                          <div className="lg:col-span-2 bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
                             <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Daily Timeline logs</h3>
                             <div className="divide-y divide-gray-850 mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
                               {clientWaterLogs.length === 0 ? (
@@ -2511,6 +2556,7 @@ export default function DesktopCoachPortal() {
                             </div>
                           </div>
                         </div>
+                      </div>
                     )}
 
                     {/* CLIENT TAB: TRAINING PLANS */}
@@ -3388,50 +3434,6 @@ export default function DesktopCoachPortal() {
                     </div>
                   </Card>
 
-                  {/* Card 4: Log Hydration */}
-                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                        <span className="text-sm">💧</span>
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black uppercase text-sky-400">Log Hydration</h3>
-                        <p className="text-[10px] text-gray-500">Log water intake entries directly for this athlete.</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex gap-2 flex-wrap">
-                        {[250, 330, 500, 750, 1000].map(ml => (
-                          <button 
-                            key={ml} 
-                            type="button"
-                            onClick={() => { 
-                              setManagementNewWaterAmount(ml); 
-                              handleLogManagementWater(ml); 
-                            }}
-                            className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border ${managementNewWaterAmount === ml ? 'bg-sky-600 border-sky-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
-                          >
-                            {ml}ml
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input 
-                          type="number" 
-                          value={managementNewWaterAmount} 
-                          onChange={e => setManagementNewWaterAmount(parseInt(e.target.value) || 0)}
-                          className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
-                        />
-                        <button 
-                          onClick={() => handleLogManagementWater()} 
-                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider whitespace-nowrap active:scale-95 transition-all"
-                        >
-                          + Log
-                        </button>
-                      </div>
-                    </div>
-                  </Card>
 
                   {/* Card 3: AI Quota & Global usage stats (Col Span 2) */}
                   <Card className="lg:col-span-2 p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] space-y-6">
