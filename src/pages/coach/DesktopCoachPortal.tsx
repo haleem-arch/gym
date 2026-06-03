@@ -5408,7 +5408,7 @@ export default function DesktopCoachPortal() {
                                 daysRemainingLabel = `${diffDays} days remaining`;
                               }
                             } else {
-                              daysRemainingLabel = 'Lifetime Access';
+                              daysRemainingLabel = 'No Active Plan';
                             }
 
                             // Format dates
@@ -5430,7 +5430,7 @@ export default function DesktopCoachPortal() {
                             
                             const expirationDate = tg.subscription_end_date 
                               ? new Date(tg.subscription_end_date).toLocaleDateString()
-                              : (isSelf ? 'Never (Lifetime)' : 'Never (Lifetime)');
+                              : (isSelf ? 'Never (Lifetime)' : 'N/A');
 
                             return (
                               <tr 
@@ -5669,8 +5669,10 @@ export default function DesktopCoachPortal() {
                             <span className="text-indigo-400 font-mono font-black uppercase tracking-wider">Lifetime Creator Admin</span>
                           ) : isTrialActive ? (
                             <span className="text-yellow-500 font-black uppercase tracking-wider">Free Trial Mode</span>
-                          ) : (
+                          ) : myCoachProfile?.targets?.subscription_end_date ? (
                             <span className="text-emerald-400 font-black uppercase tracking-wider">Premium License</span>
+                          ) : (
+                            <span className="text-gray-500 font-black uppercase tracking-wider">No Active Plan</span>
                           )}
                         </p>
                       </div>
@@ -5683,7 +5685,7 @@ export default function DesktopCoachPortal() {
                           ) : (
                             <span className="text-white font-extrabold">
                               {(() => {
-                                if (!myCoachProfile?.targets?.subscription_end_date) return 'Lifetime Access';
+                                if (!myCoachProfile?.targets?.subscription_end_date) return 'No Active Plan';
                                 const expiry = new Date(myCoachProfile.targets.subscription_end_date);
                                 const now = new Date();
                                 const diffMs = expiry.getTime() - now.getTime();
@@ -5736,8 +5738,8 @@ export default function DesktopCoachPortal() {
                       </div>
                     </div>
                   ) : coachUserId !== OWNER_ID ? (
-                    <div className="text-xs text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
-                      Unlimited Life Access
+                    <div className="text-xs text-amber-500/90 bg-amber-500/5 border border-amber-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
+                      No Active Subscription
                     </div>
                   ) : (
                     <div className="text-xs text-indigo-400/90 bg-indigo-500/5 border border-indigo-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
