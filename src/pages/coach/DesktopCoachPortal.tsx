@@ -513,7 +513,7 @@ export default function DesktopCoachPortal() {
 
       const { data: myProfile } = await supabase
         .from('profiles')
-        .select('role, targets, email, username, display_name, generated_passcode')
+        .select('role, targets, email, username, display_name')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -5081,7 +5081,7 @@ export default function DesktopCoachPortal() {
                       <div className="flex items-center justify-between bg-[#090b14] border border-gray-850 px-3 py-2 rounded-xl transition-all duration-300 hover:border-blue-500/30">
                         <span className="text-xs font-mono font-extrabold text-yellow-500 tracking-wide select-all">
                           {showPasscode 
-                            ? (myCoachProfile?.generated_passcode || '******')
+                            ? (myCoachProfile?.targets?.generated_passcode || '******')
                             : '••••••••'}
                         </span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -5093,11 +5093,11 @@ export default function DesktopCoachPortal() {
                           >
                             {showPasscode ? <EyeOff size={12} /> : <Eye size={12} />}
                           </button>
-                          {myCoachProfile?.generated_passcode && (
+                          {myCoachProfile?.targets?.generated_passcode && (
                             <button
                               type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(myCoachProfile.generated_passcode);
+                                navigator.clipboard.writeText(myCoachProfile.targets.generated_passcode);
                                 setCopiedPasscode(true);
                                 setTimeout(() => setCopiedPasscode(false), 2000);
                                 toast.success('Passcode copied to clipboard');
