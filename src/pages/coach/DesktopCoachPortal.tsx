@@ -7,7 +7,8 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send
+  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
+  DollarSign, TrendingUp, PieChart
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -116,7 +117,10 @@ function dayColor(dt: string) {
 
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials'>('overview');
+  const [financialsSearchQuery, setFinancialsSearchQuery] = useState('');
+  const [financialsStatusFilter, setFinancialsStatusFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
+  const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
   const [coachUserId, setCoachUserId] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -421,9 +425,9 @@ export default function DesktopCoachPortal() {
     }
   }, [deployWeight, deployBfPercent]);
 
-  // Enforce security block on system tab for standard coaches
+  // Enforce security block on system and financials tabs for standard coaches
   useEffect(() => {
-    if (activeTab === 'system' && coachUserId && coachUserId !== OWNER_ID) {
+    if ((activeTab === 'system' || activeTab === 'financials') && coachUserId && coachUserId !== OWNER_ID) {
       setActiveTab('overview');
     }
   }, [activeTab, coachUserId]);
@@ -756,7 +760,7 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile') => {
+  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials') => {
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'sidebar', payload: newTab });
     } else {
@@ -2837,6 +2841,182 @@ export default function DesktopCoachPortal() {
     );
   }
 
+  // --- Financial Dashboard Helpers ---
+  const parseEgp = (amountStr: string): number => {
+    if (!amountStr) return 0;
+    const num = parseInt(amountStr.replace(/[^0-9]/g, ''), 10);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const getAuditLogs = () => {
+    const logs: any[] = [];
+    systemCoaches.forEach(coach => {
+      const tg = coach.targets || {};
+      
+      // 1. Approved history
+      if (Array.isArray(tg.subscription_history)) {
+        tg.subscription_history.forEach((entry: any, index: number) => {
+          logs.push({
+            id: `${coach.id}-approved-${index}-${entry.timestamp}`,
+            coachId: coach.id,
+            coachName: coach.display_name || coach.email || 'Unknown Coach',
+            coachEmail: coach.email || 'N/A',
+            timestamp: entry.timestamp,
+            amount: entry.amount || '0 EGP',
+            duration: entry.duration || 'N/A',
+            status: 'approved',
+            details: entry.details || `${entry.duration || 'Plan'} subscription approved`
+          });
+        });
+      }
+      
+      // 2. Pending payment
+      if (tg.pending_payment) {
+        const p = tg.pending_payment;
+        logs.push({
+          id: `${coach.id}-pending`,
+          coachId: coach.id,
+          coachName: coach.display_name || coach.email || 'Unknown Coach',
+          coachEmail: coach.email || 'N/A',
+          timestamp: p.timestamp || new Date().toISOString(),
+          amount: p.amount || '0 EGP',
+          duration: p.duration || 'N/A',
+          status: 'pending',
+          details: `Awaiting Approval (${p.method || 'Wallet'}: ${p.phone || p.username || 'N/A'})`
+        });
+      }
+      
+      // 3. Rejected last payment
+      if (tg.last_payment_result && tg.last_payment_result.status === 'rejected') {
+        const r = tg.last_payment_result;
+        logs.push({
+          id: `${coach.id}-rejected-${r.timestamp}`,
+          coachId: coach.id,
+          coachName: coach.display_name || coach.email || 'Unknown Coach',
+          coachEmail: coach.email || 'N/A',
+          timestamp: r.timestamp || new Date().toISOString(),
+          amount: r.amount || '0 EGP',
+          duration: r.plan || 'N/A',
+          status: 'rejected',
+          details: `Rejected: ${r.reason || 'Invalid verification'}`
+        });
+      }
+    });
+    
+    // Sort chronologically (latest first)
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
+  const handleApprovePaymentDirect = async (coachId: string) => {
+    setProcessingPaymentId(coachId);
+    try {
+      const coach = profiles.find(p => p.id === coachId);
+      if (!coach) throw new Error("Coach profile not found");
+      const tg = { ...(coach.targets || {}) };
+      const pending = tg.pending_payment;
+      if (!pending) throw new Error("No pending payment request found");
+      
+      const duration = pending.duration || '1 month';
+      const amount = pending.amount || '3,500 EGP';
+      
+      let durationDays = 30;
+      if (duration === '2 weeks') durationDays = 14;
+      else if (duration === '1 month') durationDays = 30;
+      else if (duration === '3 months') durationDays = 90;
+      else if (duration === '6 months') durationDays = 180;
+      
+      const now = new Date();
+      let startDate = now;
+      let currentEndDate = tg.subscription_end_date ? new Date(tg.subscription_end_date) : null;
+      
+      if (currentEndDate && currentEndDate > now) {
+        startDate = currentEndDate;
+      }
+      
+      const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      
+      const newHistoryEntry = {
+        timestamp: now.toISOString(),
+        duration,
+        amount,
+        status: 'approved',
+        details: `Approved by Owner (${pending.method || 'Direct'}: ${pending.phone || pending.username || 'N/A'})`
+      };
+      
+      const history = Array.isArray(tg.subscription_history) ? [...tg.subscription_history] : [];
+      history.push(newHistoryEntry);
+      
+      const updatedTargets = {
+        ...tg,
+        subscription_start_date: startDate.toISOString(),
+        subscription_end_date: endDate.toISOString(),
+        subscription_duration: duration,
+        subscription_history: history,
+        last_payment_result: {
+          status: 'approved',
+          timestamp: now.toISOString(),
+          plan: duration,
+          amount
+        }
+      };
+      delete updatedTargets.pending_payment;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachId);
+        
+      if (error) throw error;
+      
+      setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
+      toast.success(`Approved plan for ${coach.display_name || 'Coach'}`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to approve payment");
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
+
+  const handleRejectPaymentDirect = async (coachId: string, reason: string) => {
+    setProcessingPaymentId(coachId);
+    try {
+      const coach = profiles.find(p => p.id === coachId);
+      if (!coach) throw new Error("Coach profile not found");
+      const tg = { ...(coach.targets || {}) };
+      const pending = tg.pending_payment;
+      if (!pending) throw new Error("No pending payment request found");
+      
+      const now = new Date();
+      const updatedTargets = {
+        ...tg,
+        last_payment_result: {
+          status: 'rejected',
+          timestamp: now.toISOString(),
+          reason,
+          plan: pending.duration,
+          amount: pending.amount
+        }
+      };
+      delete updatedTargets.pending_payment;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachId);
+        
+      if (error) throw error;
+      
+      setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
+      toast.success(`Rejected plan for ${coach.display_name || 'Coach'}`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to reject payment");
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-x-hidden">
       {/* Warning banner for trials / low remaining duration */}
@@ -3018,6 +3198,19 @@ export default function DesktopCoachPortal() {
               }`}
             >
               <Shield size={15} /> System Console
+            </button>
+          )}
+
+          {coachUserId === OWNER_ID && (
+            <button 
+              onClick={() => handleSidebarTabClick('financials')}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+                activeTab === 'financials' 
+                  ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                  : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
+              }`}
+            >
+              <DollarSign size={15} /> Financial Log
             </button>
           )}
         </aside>
@@ -5570,6 +5763,272 @@ export default function DesktopCoachPortal() {
               </div>
             </div>
           )}
+
+          {/* TAB: FINANCIALS & SUBSCRIPTIONS AUDIT LOG */}
+          {activeTab === 'financials' && coachUserId === OWNER_ID && (() => {
+            // Aggregate all logs
+            const allLogs = getAuditLogs();
+            
+            // Stats calculations
+            const totalRevenue = allLogs
+              .filter(l => l.status === 'approved')
+              .reduce((sum, l) => sum + parseEgp(l.amount), 0);
+              
+            const approvedCount = allLogs.filter(l => l.status === 'approved').length;
+            const pendingCount = allLogs.filter(l => l.status === 'pending').length;
+            const rejectedCount = allLogs.filter(l => l.status === 'rejected').length;
+
+            // Filtering
+            const filteredLogs = allLogs.filter(log => {
+              // 1. Search Query
+              const matchesSearch = 
+                log.coachName.toLowerCase().includes(financialsSearchQuery.toLowerCase()) ||
+                log.coachEmail.toLowerCase().includes(financialsSearchQuery.toLowerCase()) ||
+                log.details.toLowerCase().includes(financialsSearchQuery.toLowerCase());
+                
+              // 2. Status Filter
+              const matchesStatus = 
+                financialsStatusFilter === 'all' || 
+                log.status === financialsStatusFilter;
+                
+              return matchesSearch && matchesStatus;
+            });
+
+            // Pending review list specifically for the top card
+            const pendingReviewList = allLogs.filter(l => l.status === 'pending');
+
+            return (
+              <div className="space-y-6 animate-fade-in text-gray-200 font-bold text-xs">
+                
+                {/* 1. Statistics Cards Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="flex justify-between items-center text-gray-500">
+                      <p className="text-[10px] font-black uppercase tracking-wider">Total Revenue</p>
+                      <DollarSign size={14} className="text-blue-400" />
+                    </div>
+                    <p className="text-3xl font-black text-white mt-1.5 font-mono">
+                      {totalRevenue.toLocaleString()} <span className="text-sm font-black text-gray-400">EGP</span>
+                    </p>
+                  </Card>
+
+                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="flex justify-between items-center text-gray-500">
+                      <p className="text-[10px] font-black uppercase tracking-wider">Approved Plan Renewals</p>
+                      <TrendingUp size={14} className="text-emerald-400" />
+                    </div>
+                    <p className="text-3xl font-black text-emerald-400 mt-1.5 font-mono">
+                      {approvedCount}
+                    </p>
+                  </Card>
+
+                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="flex justify-between items-center text-gray-500">
+                      <p className="text-[10px] font-black uppercase tracking-wider">Awaiting Review</p>
+                      <RefreshCw size={14} className={`text-amber-400 ${pendingCount > 0 ? 'animate-spin-slow' : ''}`} />
+                    </div>
+                    <p className={`text-3xl font-black mt-1.5 font-mono ${pendingCount > 0 ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`}>
+                      {pendingCount}
+                    </p>
+                  </Card>
+
+                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="flex justify-between items-center text-gray-500">
+                      <p className="text-[10px] font-black uppercase tracking-wider">Plan Rejections</p>
+                      <AlertTriangle size={14} className="text-red-400" />
+                    </div>
+                    <p className="text-3xl font-black text-red-400 mt-1.5 font-mono">
+                      {rejectedCount}
+                    </p>
+                  </Card>
+                </div>
+
+                {/* 2. Web Registrations / Subscription Payments Review Section */}
+                {pendingReviewList.length > 0 && (
+                  <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-[#1b1510]/95 via-[#1a140f]/90 to-[#120d09]/98 p-6 shadow-2xl backdrop-blur-md">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+                    <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner flex-shrink-0 animate-pulse">
+                        <Clock size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider">Pending Web Registrations</h3>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Please verify deposit transactions and approve or reject access.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {pendingReviewList.map(item => {
+                        const coach = profiles.find(p => p.id === item.coachId);
+                        const pendingPay = coach?.targets?.pending_payment || {};
+                        const isProcessing = processingPaymentId === item.coachId;
+
+                        return (
+                          <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#080910]/80 border border-gray-850">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 font-extrabold uppercase shrink-0">
+                                {item.coachName.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-extrabold text-white text-xs">{item.coachName}</p>
+                                <p className="text-[10px] text-gray-500 font-mono">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
+                                <p className="text-[10px] text-amber-400 mt-1.5 flex items-center gap-1.5">
+                                  <span className="bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-widest font-extrabold text-[8px]">
+                                    {pendingPay.duration} Plan ({pendingPay.amount})
+                                  </span>
+                                  <span className="text-gray-500 font-mono">
+                                    Submitted: {new Date(item.timestamp).toLocaleString()}
+                                  </span>
+                                </p>
+                                {pendingPay.receipt && (
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <span className="text-[9px] text-gray-400 font-bold uppercase">Screenshot Attached:</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const win = window.open();
+                                        if (win) {
+                                          win.document.write(`<iframe src="${pendingPay.receipt}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                        }
+                                      }}
+                                      className="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 text-[9px] text-blue-400 hover:text-blue-300 cursor-pointer hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                                    >
+                                      View Receipt Screenshot
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                              <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={() => {
+                                  const reason = window.prompt("Enter rejection reason (e.g. Invalid Screenshot, Wrong Amount, Not Received):", "Invalid Screenshot");
+                                  if (reason) handleRejectPaymentDirect(item.coachId, reason);
+                                }}
+                                className="px-4 py-2 border border-red-500/30 hover:border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-red-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
+                              >
+                                {isProcessing ? 'Processing...' : '❌ Reject'}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={() => {
+                                  if (window.confirm(`Approve subscription renewal for ${item.coachName}?`)) {
+                                    handleApprovePaymentDirect(item.coachId);
+                                  }
+                                }}
+                                className="px-4 py-2 border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-emerald-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
+                              >
+                                {isProcessing ? 'Processing...' : '✅ Approve & Add Plan'}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Transaction Audit Ledger Table */}
+                <div className="space-y-4">
+                  {/* Search and Filters */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:w-[320px]">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                      <input 
+                        type="text"
+                        value={financialsSearchQuery}
+                        onChange={e => setFinancialsSearchQuery(e.target.value)}
+                        placeholder="Search by coach name, plan, or details..."
+                        className="w-full bg-[#0b0c16] border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-400 self-stretch sm:self-center justify-end">
+                      <span>Filter status:</span>
+                      <select
+                        value={financialsStatusFilter}
+                        onChange={e => setFinancialsStatusFilter(e.target.value as any)}
+                        className="bg-[#0b0c16] border border-gray-800 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-blue-500 font-bold"
+                      >
+                        <option value="all">All Logs</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Audit Ledger Table */}
+                  <Card className="bg-[#0b0c16] border border-gray-800 rounded-3xl overflow-hidden p-2">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-800 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            <th className="py-4 px-5">Date & Time</th>
+                            <th className="py-4 px-5">Coach Profile</th>
+                            <th className="py-4 px-5">Plan Duration</th>
+                            <th className="py-4 px-5">EGP Amount</th>
+                            <th className="py-4 px-5">Verification Status</th>
+                            <th className="py-4 px-5">Transaction Details Log</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-850">
+                          {filteredLogs.map(log => (
+                            <tr key={log.id} className="hover:bg-gray-900/40 transition-colors text-xs font-semibold">
+                              <td className="py-4 px-5 text-gray-500 font-mono text-[10px]">
+                                {new Date(log.timestamp).toLocaleString()}
+                              </td>
+                              <td className="py-4 px-5">
+                                <p className="font-extrabold text-white">{log.coachName}</p>
+                                <p className="text-[10px] text-gray-500 font-mono">{log.coachEmail}</p>
+                              </td>
+                              <td className="py-4 px-5 font-mono text-[11px] text-gray-300">
+                                {log.duration}
+                              </td>
+                              <td className="py-4 px-5 font-mono text-[11px] text-blue-400 font-black">
+                                {log.amount}
+                              </td>
+                              <td className="py-4 px-5">
+                                <span className={`px-2 py-0.5 border rounded text-[8px] uppercase tracking-wider font-mono font-black ${
+                                  log.status === 'approved'
+                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                    : log.status === 'pending'
+                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                }`}>
+                                  {log.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-5 text-gray-400 font-mono text-[10px]">
+                                {log.details}
+                              </td>
+                            </tr>
+                          ))}
+
+                          {filteredLogs.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="py-12 text-center text-gray-500 italic">
+                                <PieChart className="w-8 h-8 text-gray-800 mx-auto mb-2 animate-pulse" />
+                                No financial records match the selected filters.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            );
+          })()}
 
         </main>
       </div>
