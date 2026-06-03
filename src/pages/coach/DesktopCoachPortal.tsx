@@ -7,7 +7,7 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, Download, AlertTriangle
+  CreditCard, AlertTriangle
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -547,7 +547,7 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system') => {
+  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions') => {
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'sidebar', payload: newTab });
     } else {
@@ -3959,11 +3959,11 @@ export default function DesktopCoachPortal() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {(() => {
                   const now = new Date();
-                  const total = clients.length;
+                  const total = clientsList.length;
                   let active = 0;
                   let suspendedOrExpired = 0;
 
-                  clients.forEach(c => {
+                  clientsList.forEach((c: any) => {
                     const targets = c.targets || {};
                     const isDeactivated = targets.is_deactivated === true;
                     const isExpired = targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
@@ -4025,14 +4025,14 @@ export default function DesktopCoachPortal() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-850/60 text-xs">
-                      {clients.length === 0 ? (
+                      {clientsList.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-gray-550">
                             No clients deployed under your account.
                           </td>
                         </tr>
                       ) : (
-                        clients.map(c => {
+                        clientsList.map((c: any) => {
                           const targets = c.targets || {};
                           const now = new Date();
                           const isDeactivated = targets.is_deactivated === true;
