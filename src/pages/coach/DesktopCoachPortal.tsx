@@ -19,6 +19,47 @@ const getLocalDateString = (d: Date = new Date()) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 };
 
+const formatTimeLeft = (diffMs: number, showDetailed: boolean) => {
+  if (diffMs <= 0) return '0 minutes';
+  
+  const totalSec = Math.floor(diffMs / 1000);
+  const totalMin = Math.floor(totalSec / 60);
+  const totalHours = Math.floor(totalMin / 60);
+  const totalDays = Math.floor(totalHours / 24);
+  
+  const years = Math.floor(totalDays / 365);
+  const remainingDaysAfterYears = totalDays % 365;
+  const months = Math.floor(remainingDaysAfterYears / 30);
+  const days = remainingDaysAfterYears % 30;
+  const hours = totalHours % 24;
+  const minutes = totalMin % 60;
+  
+  if (showDetailed) {
+    const parts = [];
+    if (years > 0) parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+    if (months > 0) parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+    if (days > 0) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+    if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+    
+    return parts.join(', ') || 'under a minute';
+  } else {
+    if (years > 0) {
+      return `${years}y, ${months}m, ${days}d`;
+    }
+    if (months > 0) {
+      return `${months}m, ${days}d`;
+    }
+    if (days > 0) {
+      return `${days} days`;
+    }
+    if (hours > 0) {
+      return `${hours} hours`;
+    }
+    return `${minutes} minutes`;
+  }
+};
+
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
@@ -151,6 +192,10 @@ export default function DesktopCoachPortal() {
   const [managementUpdatingQuota, setManagementUpdatingQuota] = useState(false);
   const [managementUpdatingFeatures, setManagementUpdatingFeatures] = useState(false);
   const [managementAiQuotaInput, setManagementAiQuotaInput] = useState<number>(20);
+  const [editSubscriptionPeriod, setEditSubscriptionPeriod] = useState('1 month');
+  const [editSubscriptionDelay, setEditSubscriptionDelay] = useState('0');
+  const [showDetailedSubscriptionTime, setShowDetailedSubscriptionTime] = useState(false);
+  const [updatingSubscriptionState, setUpdatingSubscriptionState] = useState(false);
 
   // Search queries
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -184,7 +229,9 @@ export default function DesktopCoachPortal() {
     height: '',
     experience_level: 'beginner',
     goals: '',
-    injuries_notes: ''
+    injuries_notes: '',
+    subscriptionPeriod: '1 month',
+    subscriptionStartDelay: '0'
   });
   const [deployGender, setDeployGender] = useState<'male' | 'female'>('male');
   
@@ -1109,6 +1156,8 @@ export default function DesktopCoachPortal() {
       if (clientProfile) {
         setManagementClientProfile(clientProfile);
         setManagementAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
+        setEditSubscriptionPeriod(clientProfile.user?.targets?.subscription_duration ?? '1 month');
+        setEditSubscriptionDelay(String(clientProfile.user?.targets?.subscription_delay_days ?? '0'));
       }
     } catch (err) {
       console.error(err);
@@ -1144,6 +1193,75 @@ export default function DesktopCoachPortal() {
       toast.error('Failed to update suspension status.');
     } finally {
       setManagementUpdatingSuspension(false);
+    }
+  };
+
+  const handleUpdateSubscription = async () => {
+    if (!managementSelectedClientId || !managementClientProfile) return;
+    setUpdatingSubscriptionState(true);
+    try {
+      let subscription_start_date = null;
+      let subscription_end_date = null;
+      const period = editSubscriptionPeriod;
+      const delayDays = parseInt(editSubscriptionDelay) || 0;
+
+      if (period && period !== 'none') {
+        const now = new Date();
+        const startDateObj = new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000);
+        let durationMs = 0;
+        if (period === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+        else if (period === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+        else if (period === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+        else if (period === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+        else if (period === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+        else if (period === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+
+        const endDateObj = new Date(startDateObj.getTime() + durationMs);
+        subscription_start_date = startDateObj.toISOString();
+        subscription_end_date = endDateObj.toISOString();
+      }
+
+      const currentTargets = managementClientProfile.user?.targets || {};
+      
+      // Calculate is_deactivated state dynamically
+      let isDeactivated = false;
+      if (subscription_start_date && subscription_end_date) {
+        const nowObj = new Date();
+        const startObj = new Date(subscription_start_date);
+        const endObj = new Date(subscription_end_date);
+        if (nowObj < startObj || nowObj >= endObj) {
+          isDeactivated = true;
+        }
+      }
+
+      const updatedTargets = {
+        ...currentTargets,
+        subscription_duration: period,
+        subscription_delay_days: delayDays,
+        subscription_start_date,
+        subscription_end_date,
+        is_deactivated: isDeactivated
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', managementSelectedClientId);
+
+      if (error) throw error;
+      toast.success('Subscription updated successfully!');
+      
+      setManagementClientProfile((prev: any) => ({
+        ...prev,
+        user: { ...prev.user, targets: updatedTargets }
+      }));
+      
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update subscription: ' + err.message);
+    } finally {
+      setUpdatingSubscriptionState(false);
     }
   };
 
@@ -1460,6 +1578,28 @@ export default function DesktopCoachPortal() {
         dayNutritionMap[s.key] = { kcal: deployKcal, protein: deployProtein, carbs: deployCarbs, fat: deployFat };
       });
 
+      // Calculate subscription dates
+      let subscription_start_date = null;
+      let subscription_end_date = null;
+      const period = formData.subscriptionPeriod;
+      const delayDays = parseInt(formData.subscriptionStartDelay) || 0;
+
+      if (period && period !== 'none') {
+        const now = new Date();
+        const startDateObj = new Date(now.getTime() + delayDays * 24 * 60 * 60 * 1000);
+        let durationMs = 0;
+        if (period === '2 weeks') durationMs = 14 * 24 * 60 * 60 * 1000;
+        else if (period === '1 month') durationMs = 30 * 24 * 60 * 60 * 1000;
+        else if (period === '3 months') durationMs = 90 * 24 * 60 * 60 * 1000;
+        else if (period === '6 months') durationMs = 180 * 24 * 60 * 60 * 1000;
+        else if (period === '12 months') durationMs = 365 * 24 * 60 * 60 * 1000;
+        else if (period === '2 years') durationMs = 730 * 24 * 60 * 60 * 1000;
+
+        const endDateObj = new Date(startDateObj.getTime() + durationMs);
+        subscription_start_date = startDateObj.toISOString();
+        subscription_end_date = endDateObj.toISOString();
+      }
+
       // 4. Public Profiles setup
       const targets = {
         onboarding_completed: true,
@@ -1472,7 +1612,11 @@ export default function DesktopCoachPortal() {
         carbs: deployCarbs,
         fat: deployFat,
         client_code: nextClientCode,
-        phone_number: formData.phoneNumber.trim()
+        phone_number: formData.phoneNumber.trim(),
+        subscription_duration: period,
+        subscription_delay_days: delayDays,
+        subscription_start_date,
+        subscription_end_date
       };
 
       const { error: profileError } = await supabase.from('profiles').upsert({
@@ -2016,16 +2160,20 @@ export default function DesktopCoachPortal() {
             <div className="space-y-8 max-w-6xl">
               
               {/* Demographics Widgets Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                  <div className="absolute top-[-20%] right-[-10%] w-24 h-24 bg-blue-500/10 rounded-full blur-2xl" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total System Accounts</p>
-                  <p className="text-3xl font-black text-white mt-2">{profiles.length}</p>
-                </Card>
-                <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Coaches Active</p>
-                  <p className="text-3xl font-black text-blue-400 mt-2">{profiles.filter(p => p.role === 'coach').length}</p>
-                </Card>
+              <div className={`grid grid-cols-1 ${coachUserId === OWNER_ID ? 'md:grid-cols-4' : 'md:grid-cols-2'} gap-4`}>
+                {coachUserId === OWNER_ID && (
+                  <>
+                    <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                      <div className="absolute top-[-20%] right-[-10%] w-24 h-24 bg-blue-500/10 rounded-full blur-2xl" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total System Accounts</p>
+                      <p className="text-3xl font-black text-white mt-2">{profiles.length}</p>
+                    </Card>
+                    <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Coaches Active</p>
+                      <p className="text-3xl font-black text-blue-400 mt-2">{profiles.filter(p => p.role === 'coach').length}</p>
+                    </Card>
+                  </>
+                )}
                 <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Managed Athletes</p>
                   <p className="text-3xl font-black text-indigo-400 mt-2">{clientsList.length}</p>
@@ -2990,6 +3138,33 @@ export default function DesktopCoachPortal() {
                               <option value="advanced">Advanced (3+ Years)</option>
                             </select>
                           </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Subscription Period</label>
+                            <select 
+                              value={formData.subscriptionPeriod} 
+                              onChange={e => setFormData({ ...formData, subscriptionPeriod: e.target.value })} 
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none"
+                            >
+                              <option value="none">No Expiry (Always Active)</option>
+                              <option value="2 weeks">2 Weeks (14 Days)</option>
+                              <option value="1 month">1 Month (30 Days)</option>
+                              <option value="3 months">3 Months (90 Days)</option>
+                              <option value="6 months">6 Months (180 Days)</option>
+                              <option value="12 months">12 Months (365 Days)</option>
+                              <option value="2 years">2 Years (730 Days)</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Subscription Start Delay (Days)</label>
+                            <input 
+                              type="number" 
+                              min="0"
+                              value={formData.subscriptionStartDelay} 
+                              onChange={e => setFormData({ ...formData, subscriptionStartDelay: e.target.value })} 
+                              placeholder="e.g. 3 days" 
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none" 
+                            />
+                          </div>
                           <div className="space-y-1 col-span-2">
                             <label className="text-[9px] font-black uppercase text-gray-500">Injuries &amp; Medical Notes</label>
                             <textarea value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} placeholder="Enter details about any injuries, operations, or medical conditions..." className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none h-20" />
@@ -3284,8 +3459,10 @@ export default function DesktopCoachPortal() {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   
-                  {/* Card 1: Credentials & Status */}
-                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                  {/* Column 1: Credentials & Subscription */}
+                  <div className="space-y-6">
+                    {/* Card 1: Credentials & Status */}
+                    <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
                     <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
                       <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
                         <Shield size={16} />
@@ -3358,8 +3535,113 @@ export default function DesktopCoachPortal() {
                         </button>
                       </div>
                     </div>
+                    </div>
                   </Card>
 
+                  {/* Subscription Details & Expiry Management */}
+                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <Clock size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-indigo-400 font-sans">Subscription &amp; Validity</h3>
+                        <p className="text-[10px] text-gray-500 font-sans">Monitor validity ranges, delay starts, or extend client subscription plans.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Current Subscription Status */}
+                      <div 
+                        onClick={() => setShowDetailedSubscriptionTime(!showDetailedSubscriptionTime)}
+                        className="bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl cursor-pointer hover:border-gray-700 transition-all select-none"
+                      >
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Plan Duration</p>
+                        <p className="text-xs font-black text-white mt-1">
+                          {managementClientProfile.user?.targets?.subscription_duration 
+                            ? managementClientProfile.user.targets.subscription_duration.toUpperCase()
+                            : 'NO EXPIRY (UNLIMITED)'}
+                        </p>
+                        
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-3">Time Remaining</p>
+                        <p className="text-xs font-bold text-indigo-400 mt-1 flex items-center gap-1">
+                          {(() => {
+                            const targets = managementClientProfile.user?.targets || {};
+                            if (!targets.subscription_start_date || !targets.subscription_end_date) {
+                              return 'Unlimited access';
+                            }
+                            const now = new Date();
+                            const start = new Date(targets.subscription_start_date);
+                            const end = new Date(targets.subscription_end_date);
+                            
+                            if (now < start) {
+                              const diffMs = start.getTime() - now.getTime();
+                              const formatted = formatTimeLeft(diffMs, showDetailedSubscriptionTime);
+                              return `Pending (Starts in ${formatted})`;
+                            } else if (now >= end) {
+                              return 'Expired (Access Suspended)';
+                            } else {
+                              const diffMs = end.getTime() - now.getTime();
+                              const formatted = formatTimeLeft(diffMs, showDetailedSubscriptionTime);
+                              return `${formatted} remaining`;
+                            }
+                          })()}
+                        </p>
+                        <p className="text-[8px] text-gray-550 italic mt-1.5">
+                          {showDetailedSubscriptionTime ? 'Click to show simple countdown' : 'Click to show exact details (years, months, days, minutes)'}
+                        </p>
+                      </div>
+
+                      {/* Update Subscription Plan Form */}
+                      <div className="bg-[#121624]/40 p-4 border border-gray-850 rounded-2xl space-y-4">
+                        <label className="text-[10px] text-gray-400 font-black uppercase tracking-wider block">Update Client Subscription</label>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[8px] text-gray-500 font-bold uppercase">Duration</label>
+                            <select 
+                              value={editSubscriptionPeriod} 
+                              onChange={e => setEditSubscriptionPeriod(e.target.value)} 
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
+                            >
+                              <option value="none">No Expiry</option>
+                              <option value="2 weeks">2 Weeks</option>
+                              <option value="1 month">1 Month</option>
+                              <option value="3 months">3 Months</option>
+                              <option value="6 months">6 Months</option>
+                              <option value="12 months">12 Months</option>
+                              <option value="2 years">2 Years</option>
+                            </select>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-[8px] text-gray-500 font-bold uppercase">Start Delay (Days)</label>
+                            <input 
+                              type="number" 
+                              min="0"
+                              value={editSubscriptionDelay} 
+                              onChange={e => setEditSubscriptionDelay(e.target.value)} 
+                              placeholder="e.g. 0" 
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none" 
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleUpdateSubscription}
+                          disabled={updatingSubscriptionState}
+                          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {updatingSubscriptionState ? 'Updating Plan...' : 'Save Subscription Plan'}
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Column 2: Feature Toggles */}
+                <div className="space-y-6">
                   {/* Card 2: Feature Toggles */}
                   <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
                     <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
@@ -3400,6 +3682,7 @@ export default function DesktopCoachPortal() {
                       })}
                     </div>
                   </Card>
+                </div>
 
 
                   {/* Card 3: AI Quota & Global usage stats (Col Span 2) */}

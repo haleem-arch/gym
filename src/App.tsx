@@ -241,6 +241,7 @@ function App() {
   const [session, setSession] = useState<any>(undefined);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | undefined>(undefined);
   const [isSuspended, setIsSuspended] = useState<boolean>(false);
+  const [suspensionReason, setSuspensionReason] = useState<string | null>(null);
   const [showWelcomeSplash, setShowWelcomeSplash] = useState(false);
   const [welcomeName, setWelcomeName] = useState('');
 
@@ -297,16 +298,39 @@ function App() {
         }
 
         // Check if account is suspended/deactivated via JSON targets or auto-suspend date
-        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        const autoSuspendDate = profile.targets?.auto_suspend_date;
-        const isDeactivated = profile.targets?.is_deactivated === true || (autoSuspendDate && todayStr >= autoSuspendDate);
+        const now = new Date();
+        const targets = profile.targets || {};
+        let isDeactivated = targets.is_deactivated === true;
+        let reason = 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.';
+
+        if (targets.subscription_start_date && targets.subscription_end_date) {
+          const startDate = new Date(targets.subscription_start_date);
+          const endDate = new Date(targets.subscription_end_date);
+          if (now < startDate) {
+            isDeactivated = true;
+            const diffMs = startDate.getTime() - now.getTime();
+            const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+            reason = `Your subscription starts in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}. Your access will activate automatically once your plan begins.`;
+          } else if (now >= endDate) {
+            isDeactivated = true;
+            reason = 'Your subscription has expired. Please contact your coach to renew your plan and reactivate access.';
+          }
+        } else if (targets.auto_suspend_date) {
+          const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          if (todayStr >= targets.auto_suspend_date) {
+            isDeactivated = true;
+            reason = 'Your account has reached its scheduled auto-suspension date. Please contact your coach to reactivate access.';
+          }
+        }
 
         if (isDeactivated) {
           setIsSuspended(true);
+          setSuspensionReason(reason);
           setNeedsOnboarding(false); // Bypass loader check to render suspended page immediately
           return;
         } else {
           setIsSuspended(false);
+          setSuspensionReason(null);
         }
 
         const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
@@ -350,14 +374,37 @@ function App() {
         table: 'profiles',
         filter: `id=eq.${session.user.id}`
       }, (payload: any) => {
+        const now = new Date();
         const targets = payload.new?.targets || {};
-        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        const autoSuspendDate = targets.auto_suspend_date;
-        const isDeactivated = targets.is_deactivated === true || (autoSuspendDate && todayStr >= autoSuspendDate);
+        let isDeactivated = targets.is_deactivated === true;
+        let reason = 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.';
+
+        if (targets.subscription_start_date && targets.subscription_end_date) {
+          const startDate = new Date(targets.subscription_start_date);
+          const endDate = new Date(targets.subscription_end_date);
+          if (now < startDate) {
+            isDeactivated = true;
+            const diffMs = startDate.getTime() - now.getTime();
+            const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+            reason = `Your subscription starts in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}. Your access will activate automatically once your plan begins.`;
+          } else if (now >= endDate) {
+            isDeactivated = true;
+            reason = 'Your subscription has expired. Please contact your coach to renew your plan and reactivate access.';
+          }
+        } else if (targets.auto_suspend_date) {
+          const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          if (todayStr >= targets.auto_suspend_date) {
+            isDeactivated = true;
+            reason = 'Your account has reached its scheduled auto-suspension date. Please contact your coach to reactivate access.';
+          }
+        }
+
         if (isDeactivated) {
           setIsSuspended(true);
+          setSuspensionReason(reason);
         } else {
           setIsSuspended(false);
+          setSuspensionReason(null);
         }
       })
       .subscribe();
@@ -379,7 +426,7 @@ function App() {
         </div>
         <h1 className="text-xl font-black text-white">Account Suspended</h1>
         <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
-          Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.
+          {suspensionReason || 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.'}
         </p>
         <button
           onClick={async () => {
