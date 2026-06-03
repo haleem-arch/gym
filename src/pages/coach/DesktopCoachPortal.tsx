@@ -1245,12 +1245,22 @@ export default function DesktopCoachPortal() {
 
   const handleReassignClient = async (clientId: string, newCoachId: string) => {
     try {
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ coach_id: newCoachId })
         .eq('id', clientId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      const { error: clientProfileError } = await supabase
+        .from('client_profiles')
+        .update({ coach_id: newCoachId })
+        .eq('user_id', clientId);
+
+      if (clientProfileError) {
+        console.error('Failed to update coach_id in client_profiles:', clientProfileError);
+      }
+
       toast.success("Athlete re-assigned successfully!");
       // Update local profiles list to reflect changes instantly
       setProfiles(prev => prev.map(p => p.id === clientId ? { ...p, coach_id: newCoachId } : p));
