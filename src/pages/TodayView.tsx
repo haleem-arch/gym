@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, Shield } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, Shield, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -75,6 +76,31 @@ const TodayView = () => {
     };
     fetchProfile();
   }, []);
+
+  const handleHardReload = async () => {
+    toast.loading('Checking for updates & clearing cache...');
+    if ('serviceWorker' in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      } catch (e) {
+        console.error('SW unregister error:', e);
+      }
+    }
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        for (const name of cacheNames) {
+          await caches.delete(name);
+        }
+      } catch (e) {
+        console.error('Cache delete error:', e);
+      }
+    }
+    window.location.reload();
+  };
 
   const { workout, endWorkout } = useActiveWorkout();
   const { log, targets, waterLogs, logWater, resetWater, activeDate, setActiveDate, waterGoalMl } = useDiet();
@@ -370,6 +396,13 @@ const TodayView = () => {
               Coach
             </button>
           )}
+          <button 
+            onClick={handleHardReload}
+            className="flex items-center justify-center p-2 bg-surface hover:bg-blue-950/20 border border-gray-800 hover:border-blue-900/50 rounded-xl text-gray-400 hover:text-blue-400 transition-all active:scale-95 cursor-pointer"
+            title="Force Update (Hard Reload)"
+          >
+            <RefreshCw size={14} />
+          </button>
           <button 
             onClick={() => {
               if (window.confirm("Are you sure you want to sign out?")) {

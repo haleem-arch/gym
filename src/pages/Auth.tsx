@@ -166,6 +166,19 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
       if (error) throw error;
 
       if (data.session) {
+        if (window.location.pathname.startsWith('/coach-portal')) {
+          const { data: profile, error: profileErr } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+
+          const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+          if (profileErr || (profile?.role !== 'coach' && data.session.user.id !== OWNER_ID)) {
+            await supabase.auth.signOut();
+            throw new Error('Access Denied. Only coaches can log in on this page.');
+          }
+        }
         localStorage.removeItem(lockKey);
         toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
         onSessionConfigured(data.session);

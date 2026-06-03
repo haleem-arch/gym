@@ -297,6 +297,31 @@ export default function DesktopCoachPortal() {
     }
   }, [activeTab, coachUserId]);
 
+  const handleHardReload = async () => {
+    toast.loading('Checking for updates & clearing cache...');
+    if ('serviceWorker' in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        for (const name of cacheNames) {
+          await caches.delete(name);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    window.location.reload();
+  };
+
   // ─── INITIAL BOOTSTRAP ─────────────────────────────────────
   useEffect(() => {
     fetchBaseData();
@@ -2018,8 +2043,17 @@ export default function DesktopCoachPortal() {
           <button 
             onClick={fetchBaseData}
             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/40 text-[10px] font-bold text-gray-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title="Refresh database data only"
           >
-            <RefreshCw size={11} /> Refresh
+            <RefreshCw size={11} /> Sync Data
+          </button>
+
+          <button 
+            onClick={handleHardReload}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-blue-900/40 hover:border-blue-700 bg-blue-950/20 text-[10px] font-bold text-blue-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title="Force browser update and clear cache"
+          >
+            <RefreshCw size={11} /> Force Update (Hard Reload)
           </button>
         </div>
       </header>
