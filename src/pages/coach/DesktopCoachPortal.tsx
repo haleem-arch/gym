@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
   Users, UserPlus, Database, ShieldAlert, Activity, Search, 
-  Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, 
+  Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut
@@ -115,7 +115,6 @@ export default function DesktopCoachPortal() {
   const [newMealProtein, setNewMealProtein] = useState(30);
   const [newMealCarbs, setNewMealCarbs] = useState(45);
   const [newMealFat, setNewMealFat] = useState(10);
-  const [newWaterAmount, setNewWaterAmount] = useState(500);
 
   // InBody scan form states
   const [newScanDate, setNewScanDate] = useState(() => getLocalDateString());
@@ -806,25 +805,6 @@ export default function DesktopCoachPortal() {
   };
 
   // ─── WATER LOGGER OPERATIONS ───────────────────────────────
-  const handleAddWater = async () => {
-    if (!selectedClientId) return;
-    try {
-      const now = new Date();
-      const { error } = await supabase.from('water_logs').insert({
-        user_id: selectedClientId,
-        date: clientActiveDateStr,
-        time: now.toISOString(),
-        amount_ml: newWaterAmount
-      });
-      if (error) throw error;
-      toast.success(`${newWaterAmount}ml logged!`);
-      fetchClientData(selectedClientId, clientActiveDateStr, true);
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Unable to log water intake.');
-    }
-  };
-
   const handleDeleteWater = async (id: string) => {
     const { error } = await supabase.from('water_logs').delete().eq('id', id);
     if (error) {
@@ -832,16 +812,6 @@ export default function DesktopCoachPortal() {
       return;
     }
     toast.success('Entry removed');
-    fetchClientData(selectedClientId!, clientActiveDateStr, true);
-  };
-
-  const handleClearWater = async () => {
-    const { error } = await supabase.from('water_logs').delete().eq('user_id', selectedClientId).eq('date', clientActiveDateStr);
-    if (error) {
-      toast.error('Unable to clear logs.');
-      return;
-    }
-    toast.success('Water logs cleared');
     fetchClientData(selectedClientId!, clientActiveDateStr, true);
   };
 
@@ -1965,7 +1935,7 @@ export default function DesktopCoachPortal() {
           </div>
 
           <button 
-            onClick={fetchBaseData}
+            onClick={() => fetchBaseData()}
             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/40 text-[10px] font-bold text-gray-400 hover:text-white transition-all active:scale-95 cursor-pointer"
             title="Refresh database data only"
           >
@@ -2400,6 +2370,7 @@ export default function DesktopCoachPortal() {
                             </div>
                           </div>
                         </div>
+                      </div>
                     )}
 
                     {/* CLIENT TAB: DIET LOGS */}
@@ -2540,7 +2511,6 @@ export default function DesktopCoachPortal() {
                             </div>
                           </div>
                         </div>
-                      </div>
                     )}
 
                     {/* CLIENT TAB: TRAINING PLANS */}
