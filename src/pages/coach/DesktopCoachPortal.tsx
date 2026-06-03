@@ -6,7 +6,7 @@ import {
   Trash2, Shield, Key, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, UserX, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
-  ChevronDown, ChevronUp, FileText, Settings
+  ChevronDown, ChevronUp, FileText, Settings, Sparkles
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -104,7 +104,6 @@ export default function DesktopCoachPortal() {
 
   // Dialog/modal states
   const [selectedReceiptWorkout, setSelectedReceiptWorkout] = useState<any>(null);
-  const [showAddMealForm, setShowAddMealForm] = useState(false);
   const [showAddScanForm, setShowAddScanForm] = useState(false);
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
@@ -716,7 +715,7 @@ export default function DesktopCoachPortal() {
       await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', logId);
 
       toast.success('Meal logged for athlete!');
-      setNewMealName(''); setShowAddMealForm(false);
+      setNewMealName('');
       fetchClientData(selectedClientId, clientActiveDateStr, true);
     } catch (err: any) {
       console.error(err);
