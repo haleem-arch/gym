@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://hppzxppssmhhaefwqffg.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYyMDAyNiwiZXhwIjoyMDk0MTk2MDI2fQ.od8whZoEL0AgKr7NEI0EMxfo7BgHC9RBsyCKPBwltKY'
-
-const TELEGRAM_BOT_TOKEN = '8802232137:AAEdXRO2LXC0GtR_coXMh6bM_0ATpJd4G0Q';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 const REJECTION_REASONS: Record<string, string> = {
   'invalid_screenshot': 'Invalid Screenshot / Proof of Transaction',
@@ -19,6 +18,12 @@ const PLAN_PRICES: Record<string, string> = {
 };
 
 export default async function handler(req: any, res: any) {
+  // Config Guard
+  if (!supabaseServiceKey || !TELEGRAM_BOT_TOKEN) {
+    console.error('Missing configuration: SUPABASE_SERVICE_ROLE_KEY or TELEGRAM_BOT_TOKEN');
+    return res.status(500).json({ error: 'Internal Configuration Error: Missing environment variables' });
+  }
+
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
