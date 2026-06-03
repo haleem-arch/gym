@@ -7,7 +7,7 @@ import {
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
-  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send, Bell
+  CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -241,20 +241,21 @@ export default function DesktopCoachPortal() {
   // Profile settings password updating state
   const [ownNewPassword, setOwnNewPassword] = useState('');
   const [ownConfirmPassword, setOwnConfirmPassword] = useState('');
+  const [updatingOwnPassword, setUpdatingOwnPassword] = useState(false);
   // Owner Telegram Approvals Configuration states
-  const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
-  const [savingTelegramId, setSavingTelegramId] = useState(false);
+  // const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
+  // const [savingTelegramId, setSavingTelegramId] = useState(false);
 
   // Coach Subscription Renewal Flow states
-  const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
-  const [subOverlayPlan, setSubOverlayPlan] = useState('4 weeks');
-  const [subOverlayMethod, setSubOverlayMethod] = useState('wallet');
-  const [subOverlayPhone, setSubOverlayPhone] = useState('');
-  const [subOverlayTeldaUser, setSubOverlayTeldaUser] = useState('');
-  const [subOverlayScreenshot, setSubOverlayScreenshot] = useState('');
-  const [subOverlayTermsChecked, setSubOverlayTermsChecked] = useState(false);
-  const [subOverlayRefundChecked, setSubOverlayRefundChecked] = useState(false);
-  const [subOverlaySubmitting, setSubOverlaySubmitting] = useState(false);
+  // const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
+  // const [subOverlayPlan, setSubOverlayPlan] = useState('4 weeks');
+  // const [subOverlayMethod, setSubOverlayMethod] = useState('wallet');
+  // const [subOverlayPhone, setSubOverlayPhone] = useState('');
+  // const [subOverlayTeldaUser, setSubOverlayTeldaUser] = useState('');
+  // const [subOverlayScreenshot, setSubOverlayScreenshot] = useState('');
+  // const [subOverlayTermsChecked, setSubOverlayTermsChecked] = useState(false);
+  // const [subOverlayRefundChecked, setSubOverlayRefundChecked] = useState(false);
+  // const [subOverlaySubmitting, setSubOverlaySubmitting] = useState(false);
 
   // Subscriptions Tab Reactivation Modal state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
@@ -514,42 +515,42 @@ export default function DesktopCoachPortal() {
   }, [myCoachProfile, coachUserId]);
 
   // Prefill Owner Telegram ID
-  useEffect(() => {
-    if (myCoachProfile?.targets?.telegram_chat_id) {
-      setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
-    }
-  }, [myCoachProfile]);
+  // useEffect(() => {
+  //   if (myCoachProfile?.targets?.telegram_chat_id) {
+  //     setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
+  //   }
+  // }, [myCoachProfile]);
 
-  const handleSaveTelegramChatId = async () => {
-    if (!coachUserId) return;
-    try {
-      setSavingTelegramId(true);
-      const currentTargets = myCoachProfile?.targets || {};
-      const updatedTargets = {
-        ...currentTargets,
-        telegram_chat_id: ownerTelegramChatId.trim()
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ targets: updatedTargets })
-        .eq('id', coachUserId);
-
-      if (error) throw error;
-
-      toast.success('Telegram Chat ID updated successfully.');
-      // Refresh local profile
-      setMyCoachProfile((prev: any) => ({
-        ...prev,
-        targets: updatedTargets
-      }));
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to update Telegram Chat ID: ' + err.message);
-    } finally {
-      setSavingTelegramId(false);
-    }
-  };
+  // const handleSaveTelegramChatId = async () => {
+  //   if (!coachUserId) return;
+  //   try {
+  //     setSavingTelegramId(true);
+  //     const currentTargets = myCoachProfile?.targets || {};
+  //     const updatedTargets = {
+  //       ...currentTargets,
+  //       telegram_chat_id: ownerTelegramChatId.trim()
+  //     };
+  // 
+  //     const { error } = await supabase
+  //       .from('profiles')
+  //       .update({ targets: updatedTargets })
+  //       .eq('id', coachUserId);
+  // 
+  //     if (error) throw error;
+  // 
+  //     toast.success('Telegram Chat ID updated successfully.');
+  //     // Refresh local profile
+  //     setMyCoachProfile((prev: any) => ({
+  //       ...prev,
+  //       targets: updatedTargets
+  //     }));
+  //   } catch (err: any) {
+  //     console.error(err);
+  //     toast.error('Failed to update Telegram Chat ID: ' + err.message);
+  //   } finally {
+  //     setSavingTelegramId(false);
+  //   }
+  // };
 
   const fetchBaseData = async (silent = false) => {
     try {
