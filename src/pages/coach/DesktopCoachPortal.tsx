@@ -1925,6 +1925,7 @@ export default function DesktopCoachPortal() {
 
     const toastId = toast.loading('Deleting athlete account...');
     try {
+      // 1. Delete user from auth via API
       const res = await fetch('/api/delete-user', {
         method: 'POST',
         headers: {
@@ -1939,12 +1940,62 @@ export default function DesktopCoachPortal() {
         console.warn('Auth deletion warning:', errData.error);
       }
 
-      await supabase.from('inbody_scans').delete().eq('user_id', managementSelectedClientId);
-      await supabase.from('client_workout_days').delete().eq('user_id', managementSelectedClientId);
-      await supabase.from('user_workout_plans').delete().eq('user_id', managementSelectedClientId);
-      await supabase.from('progress_notes').delete().eq('user_id', managementSelectedClientId);
-      await supabase.from('water_logs').delete().eq('user_id', managementSelectedClientId);
-      await supabase.from('client_profiles').delete().eq('user_id', managementSelectedClientId);
+      // 2. Cascade delete from workouts & exercises
+      try {
+        const { data: userWorkouts } = await supabase
+          .from('workouts')
+          .select('id')
+          .eq('user_id', managementSelectedClientId);
+        const workoutIds = userWorkouts?.map(w => w.id) || [];
+        if (workoutIds.length > 0) {
+          await supabase.from('workout_exercises').delete().in('workout_id', workoutIds);
+          await supabase.from('workouts').delete().in('id', workoutIds);
+        }
+      } catch (err) {
+        console.warn('Failed to delete workouts cascade:', err);
+      }
+
+      // 3. Cascade delete from diet logs & meals
+      try {
+        const { data: userDietLogs } = await supabase
+          .from('diet_logs')
+          .select('id')
+          .eq('user_id', managementSelectedClientId);
+        const dietLogIds = userDietLogs?.map(d => d.id) || [];
+        if (dietLogIds.length > 0) {
+          await supabase.from('diet_meals').delete().in('diet_log_id', dietLogIds);
+          await supabase.from('diet_logs').delete().in('id', dietLogIds);
+        }
+      } catch (err) {
+        console.warn('Failed to delete diet logs cascade:', err);
+      }
+
+      // 4. Delete progress notes
+      try {
+        await supabase.from('progress_notes').delete().eq('user_id', managementSelectedClientId);
+      } catch (err) { console.warn(err); }
+
+      // 5. Delete water logs
+      try {
+        await supabase.from('water_logs').delete().eq('user_id', managementSelectedClientId);
+      } catch (err) { console.warn(err); }
+
+      // 6. Delete InBody scans
+      try {
+        await supabase.from('inbody_scans').delete().eq('user_id', managementSelectedClientId);
+      } catch (err) { console.warn(err); }
+
+      // 7. Delete workout plans / split templates
+      try {
+        await supabase.from('user_workout_plans').delete().eq('user_id', managementSelectedClientId);
+      } catch (err) { console.warn(err); }
+
+      // 8. Delete client profiles
+      try {
+        await supabase.from('client_profiles').delete().eq('user_id', managementSelectedClientId);
+      } catch (err) { console.warn(err); }
+
+      // 9. Delete base profile
       await supabase.from('profiles').delete().eq('id', managementSelectedClientId);
 
       toast.success('Athlete wiped successfully.', { id: toastId });
@@ -4519,16 +4570,38 @@ export default function DesktopCoachPortal() {
                               </td>
                               <td className="py-4 text-right pr-2" onClick={e => e.stopPropagation()}>
                                 <button
-                                  onClick={() => {
-                                    setReactivateClientId(c.id);
-                                    setReactivateClientName(c.full_name || 'Client');
-                                    setReactivatePeriod(targets.subscription_duration || '1 month');
-                                    setReactivateDelay('0');
-                                    setReactivateModalOpen(true);
+                                  onClick={async () => {
+                                    if (isDeactivated || isExpired) {
+                                      setReactivateClientId(c.id);
+                                      setReactivateClientName(c.full_name || 'Client');
+                                      setReactivatePeriod(targets.subscription_duration || '1 month');
+                                      setReactivateDelay('0');
+                                      setReactivateModalOpen(true);
+                                    } else {
+                                      if (window.confirm(`Suspend access for client ${c.full_name || 'Client'} immediately?`)) {
+                                        try {
+                                          const updatedTargets = { ...targets, is_deactivated: true };
+                                          const { error } = await supabase
+                                            .from('profiles')
+                                            .update({ targets: updatedTargets })
+                                            .eq('id', c.id);
+                                          if (error) throw error;
+                                          toast.success('Athlete suspended.');
+                                          fetchBaseData(true);
+                                        } catch (err) {
+                                          console.error(err);
+                                          toast.error('Failed to suspend athlete.');
+                                        }
+                                      }
+                                    }
                                   }}
-                                  className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/25 transition-all cursor-pointer mr-2"
+                                  className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer mr-2 ${
+                                    (isDeactivated || isExpired)
+                                      ? 'bg-blue-600 hover:bg-blue-500 border-blue-500/25 text-white'
+                                      : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                                  }`}
                                 >
-                                  Re-activate
+                                  {(isDeactivated || isExpired) ? 'Re-activate' : 'Suspend'}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -5588,6 +5661,72 @@ export default function DesktopCoachPortal() {
                       }`}
                     >
                       {updatingCoachStatus ? 'Updating...' : (tg.is_deactivated === true ? 'Reactivate Coach' : 'Suspend Coach')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Dangerous Actions - Delete Coach */}
+                {!isSelf && (
+                  <div className="bg-red-950/5 border border-red-950/20 p-5 rounded-2xl space-y-3">
+                    <h3 className="text-xs font-black uppercase text-red-400">Dangerous Actions</h3>
+                    <p className="text-[10px] text-red-400/60 leading-relaxed font-bold">
+                      Permanently delete this coach's login and administrative access. Active clients will be reassigned to the main administrator.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const name = currentCoach.display_name || 'this coach';
+                        const conf = window.prompt(`Type "${name}" to confirm complete coach account deletion:`);
+                        if (conf !== name) {
+                          if (conf !== null) toast.error('Verification failed. Deletion cancelled.');
+                          return;
+                        }
+
+                        const toastId = toast.loading('Deleting coach account...');
+                        try {
+                          // 1. Delete user from auth via API
+                          const res = await fetch('/api/delete-user', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${sessionToken}`
+                            },
+                            body: JSON.stringify({ uid: currentCoach.id })
+                          });
+
+                          if (!res.ok) {
+                            const errData = await res.json().catch(() => ({}));
+                            console.warn('Auth deletion warning:', errData.error);
+                          }
+
+                          // 2. Reassign clients to OWNER_ID
+                          await supabase
+                            .from('profiles')
+                            .update({ coach_id: OWNER_ID })
+                            .eq('coach_id', currentCoach.id);
+
+                          await supabase
+                            .from('client_profiles')
+                            .update({ coach_id: OWNER_ID })
+                            .eq('coach_id', currentCoach.id);
+
+                          // 3. Delete coach profile
+                          await supabase
+                            .from('profiles')
+                            .delete()
+                            .eq('id', currentCoach.id);
+
+                          toast.success('Coach deleted successfully.', { id: toastId });
+                          setSelectedSystemCoach(null);
+                          fetchBaseData();
+                        } catch (err: any) {
+                          console.error(err);
+                          toast.error('Deletion failed: ' + err.message, { id: toastId });
+                        }
+                      }}
+                      className="w-full bg-red-650 hover:bg-red-600 text-white font-black py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-lg shadow-red-500/5"
+                    >
+                      <Trash2 size={13} /> Delete Coach Account
                     </button>
                   </div>
                 )}
