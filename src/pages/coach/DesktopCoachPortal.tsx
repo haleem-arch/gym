@@ -5063,6 +5063,11 @@ export default function DesktopCoachPortal() {
                     setSelectedSubClient(null);
                     setActiveTab('management');
                   }}
+                  className="flex-1 bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-black py-3 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center"
+                >
+                  Manage Profile
+                </button>
+              </div>
             </>
           );
         })()}
