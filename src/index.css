@@ -4,19 +4,27 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  box-sizing: border-box;
 }
 
 html {
+  /* Lock to viewport — prevents iOS PWA rubber-band scroll */
+  position: fixed;
+  width: 100%;
   height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background-color: #0f0f0f;
 }
 
 body {
+  /* Do NOT use -webkit-overflow-scrolling: touch — it enables rubber-band on iOS */
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
   user-select: none;
+  position: fixed;
+  width: 100%;
   height: 100%;
+  overflow: hidden;
   margin: 0;
   padding: 0;
   background-color: #0f0f0f;
@@ -30,11 +38,27 @@ body {
   bottom: 0;
   background-color: #0f0f0f;
   overflow: hidden;
+  /* Block any scroll event from bubbling up to the browser on iOS */
+  touch-action: none;
 }
 
 input,
 textarea {
   user-select: text;
+  /* Re-enable touch input on form elements */
+  touch-action: manipulation;
+}
+
+/* Ensure tappable elements work properly on iOS */
+button, a, select, label, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Allow vertical scroll within scrollable containers on iOS */
+.overflow-y-auto,
+.overflow-y-scroll {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: auto;
 }
 
 @layer base {
