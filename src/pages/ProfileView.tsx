@@ -126,7 +126,12 @@ export default function ProfileView() {
       cleanPhone = '20' + cleanPhone;
     }
     
-    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+    const clientName = profile?.display_name || '';
+    const clientId = profile?.targets?.client_code || '';
+    const textMsg = `hey coach im ${clientName} , my id is ${clientId}`;
+    const encodedText = encodeURIComponent(textMsg);
+    
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
   };
 
   if (loading) {
