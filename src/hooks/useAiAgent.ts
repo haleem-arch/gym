@@ -618,11 +618,11 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (session?.user?.id) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, role')
+        .select('display_name, role')
         .eq('id', session.user.id)
         .maybeSingle();
       if (profile) {
-        clientNameRef.current = profile.full_name || 'Client';
+        clientNameRef.current = profile.display_name || 'Client';
         isCoachRef.current = profile.role === 'coach';
       }
     }
