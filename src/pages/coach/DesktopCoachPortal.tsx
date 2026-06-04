@@ -782,9 +782,15 @@ export default function DesktopCoachPortal() {
       const { data: workoutsData } = await workoutsQuery.limit(10);
       const { data: dietLogsData } = await dietLogsQuery.limit(10);
 
+      const filteredDiets = (dietLogsData || []).filter(d => {
+        const kcal = d.daily_totals?.kcal || 0;
+        const protein = d.daily_totals?.protein || 0;
+        return kcal > 0 || protein > 0;
+      });
+
       const feedUserIds = Array.from(new Set([
         ...(workoutsData || []).map(w => w.user_id),
-        ...(dietLogsData || []).map(d => d.user_id)
+        ...filteredDiets.map(d => d.user_id)
       ]));
 
       const feedProfilesMap: Record<string, string> = {};
@@ -806,7 +812,7 @@ export default function DesktopCoachPortal() {
         profiles: { display_name: feedProfilesMap[w.user_id] || 'Athlete' }
       }));
 
-      const stitchedDiets = (dietLogsData || []).map(d => ({
+      const stitchedDiets = filteredDiets.map(d => ({
         ...d,
         profiles: { display_name: feedProfilesMap[d.user_id] || 'Athlete' }
       }));
