@@ -250,6 +250,8 @@ function App() {
   const [showWelcomeSplash, setShowWelcomeSplash] = useState(false);
   const [welcomeName, setWelcomeName] = useState('');
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [clientProfile, setClientProfile] = useState<any>(null);
+  const [coachProfile, setCoachProfile] = useState<any>(null);
 
   useEffect(() => {
     // 1. Check current session
@@ -306,6 +308,39 @@ function App() {
         }
 
         setUserRole(profile.role || null);
+        setClientProfile(profile);
+
+        try {
+          const { data: ownerData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', OWNER_ID)
+            .maybeSingle();
+
+          let coachData = null;
+          const { data: clientProfileRecord } = await supabase
+            .from('client_profiles')
+            .select('coach_id')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (clientProfileRecord?.coach_id) {
+            const { data: cData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', clientProfileRecord.coach_id)
+              .maybeSingle();
+            coachData = cData;
+          }
+
+          if (coachData && coachData.targets?.phone_number) {
+            setCoachProfile(coachData);
+          } else if (ownerData) {
+            setCoachProfile(ownerData);
+          }
+        } catch (err) {
+          console.error('Error pre-fetching coach details:', err);
+        }
 
         // Check if account is suspended/deactivated via JSON targets or auto-suspend date
         const now = new Date();
@@ -386,6 +421,9 @@ function App() {
         table: 'profiles',
         filter: `id=eq.${session.user.id}`
       }, (payload: any) => {
+        if (payload.new) {
+          setClientProfile(payload.new);
+        }
         if (session.user.id === OWNER_ID || userRole === 'coach' || payload.new?.role === 'coach') {
           setIsSuspended(false);
           setSuspensionReason(null);
@@ -431,6 +469,29 @@ function App() {
     };
   }, [session, userRole]);
 
+  const handleRenewSubscription = () => {
+    const rawPhone = coachProfile?.targets?.phone_number;
+    if (!rawPhone) {
+      alert('Your coach has not set up their contact phone number yet.');
+      return;
+    }
+    let cleanPhone = rawPhone.replace(/\D/g, '');
+    
+    // Normalize Egyptian mobile number format
+    if (cleanPhone.startsWith('01') && cleanPhone.length === 11) {
+      cleanPhone = '2' + cleanPhone;
+    } else if (cleanPhone.startsWith('1') && cleanPhone.length === 10) {
+      cleanPhone = '20' + cleanPhone;
+    }
+    
+    const clientName = clientProfile?.display_name || '';
+    const clientId = clientProfile?.targets?.client_code || '';
+    const textMsg = `hey coach im ${clientName} , my id is ${clientId} + i want to renew my subscription`;
+    const encodedText = encodeURIComponent(textMsg);
+    
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
+  };
+
   if (session === undefined || (session !== null && needsOnboarding === undefined)) {
     return <DumbbellLoader fullScreen size={140} />;
   }
@@ -445,13 +506,24 @@ function App() {
         <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
           {suspensionReason || 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.'}
         </p>
+        
+        {coachProfile && (
+          <button
+            onClick={handleRenewSubscription}
+            className="mt-8 w-full max-w-[280px] py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>Renew Subscription</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </button>
+        )}
+
         <button
           onClick={async () => {
             await supabase.auth.signOut();
             setSession(null);
             setIsSuspended(false);
           }}
-          className="mt-6 bg-gray-900 border border-gray-800 hover:bg-gray-800 text-white font-bold px-6 py-3 rounded-xl text-xs transition-all cursor-pointer"
+          className="mt-4 bg-transparent hover:text-white text-gray-400 font-bold px-6 py-2 text-xs transition-all cursor-pointer"
         >
           Sign Out
         </button>
