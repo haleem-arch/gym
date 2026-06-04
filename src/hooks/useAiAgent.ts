@@ -474,9 +474,9 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
   const isCoachRef = useRef<boolean>(false);
   const initialized = useRef(false);
 
-  // ─── Per-minute rate limit: max 3 messages per 60 seconds ─────────────────
+  // ─── Per-minute rate limit: max 8 messages per 60 seconds ─────────────────
   const perMinuteTimestamps = useRef<number[]>([]);
-  const PER_MINUTE_LIMIT = 3;
+  const PER_MINUTE_LIMIT = 8;
   const PER_MINUTE_WINDOW_MS = 60 * 1000;
 
   const [quotaLimit, setQuotaLimit] = useState(20);
@@ -1233,6 +1233,122 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
     } catch (e: any) {
       console.error("AI Coach query error:", e);
+      
+      // ─── Local Fallback Parser ─────────────────────────────────────────────
+      const cleanInput = text.toLowerCase().trim();
+      
+      // 1. Water Logging Intent: e.g. "drank 200ml water", "water 200ml", "200ml water"
+      const waterRegex = /(?:drank|add|log)?\s*(\d+)\s*(?:ml|milliliters)?\s*(?:of\s*)?water/i;
+      const waterRegexAlt = /water\s*(?:of\s*)?(\d+)\s*(?:ml|milliliters)?/i;
+      const waterMatch = cleanInput.match(waterRegex) || cleanInput.match(waterRegexAlt);
+      
+      if (waterMatch) {
+        const amountMl = parseInt(waterMatch[1], 10);
+        if (!isNaN(amountMl) && amountMl > 0) {
+          const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+          
+          const waterAction: DbAction = {
+            type: 'insert',
+            table: 'water_logs',
+            data: {
+              user_id: userIdRef.current,
+              date: selectedDate,
+              time: new Date().toISOString(),
+              amount_ml: amountMl
+            }
+          };
+          
+          const { success } = await executeActions([waterAction]);
+          if (success) {
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'model',
+              text: `*(Local Fallback)* Got it! I've logged **${amountMl}ml of water** for you.`
+            }]);
+            setIsTyping(false);
+            return;
+          }
+        }
+      }
+      
+      // 2. Food Logging Intent: e.g. "100 gm rice", "ate 100g of rice", "100g chicken"
+      const foodRegex = /(?:ate|log|add)?\s*(\d+)\s*(?:g|gm|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
+      const foodMatch = cleanInput.match(foodRegex);
+      
+      if (foodMatch) {
+        const grams = parseInt(foodMatch[1], 10);
+        const foodSearchQuery = foodMatch[2].trim();
+        
+        if (!isNaN(grams) && grams > 0 && foodSearchQuery.length > 2) {
+          const { data: matchingFoods } = await supabase
+            .from('food_inventory')
+            .select('*')
+            .ilike('name', `%${foodSearchQuery}%`)
+            .limit(1);
+            
+          if (matchingFoods && matchingFoods.length > 0) {
+            const food = matchingFoods[0];
+            const kcal = Math.round((Number(food.kcal_per_100g) || 0) * grams / 100);
+            const protein = Math.round((Number(food.protein) || 0) * grams / 100 * 10) / 10;
+            const carbs = Math.round((Number(food.carbs) || 0) * grams / 100 * 10) / 10;
+            const fat = Math.round((Number(food.fat) || 0) * grams / 100 * 10) / 10;
+            
+            const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+            const { data: existingLog } = await supabase
+              .from('diet_logs')
+              .select('id')
+              .eq('user_id', userIdRef.current)
+              .eq('date', selectedDate)
+              .maybeSingle();
+            
+            let activeDietLogId = existingLog?.id;
+            if (!activeDietLogId && userIdRef.current) {
+              const { data: createdLog } = await supabase
+                .from('diet_logs')
+                .insert({
+                  user_id: userIdRef.current,
+                  date: selectedDate,
+                  daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+                })
+                .select('id')
+                .single();
+              activeDietLogId = createdLog?.id;
+            }
+            
+            const draftMealData = {
+              diet_log_id: activeDietLogId,
+              name: 'Meal',
+              time: getLocalTime(),
+              items: [
+                {
+                  id: crypto.randomUUID(),
+                  food_id: food.id,
+                  name: food.name,
+                  grams: grams,
+                  macros: {
+                    kcal: kcal,
+                    protein: protein,
+                    carbs: carbs,
+                    fat: fat
+                  },
+                  serving_type: food.serving_type || 'per_100g'
+                }
+              ]
+            };
+            
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'model',
+              text: `*(Local Fallback)* I found **${food.name}** in the database. Would you like me to log **${grams}g** of it?`,
+              draftMeal: draftMealData
+            }]);
+            setIsTyping(false);
+            return;
+          }
+        }
+      }
+
+      // ─── Standard Error Handling ───────────────────────────────────────────
       const errStr = e.message || '';
       const isRate = errStr.includes('RATE_LIMIT_ALL') || errStr.includes('RATE_LIMIT');
       
