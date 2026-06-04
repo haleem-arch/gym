@@ -273,7 +273,7 @@ const DraftMealBox = ({ initialData, onComplete, showHydration }: { initialData:
 };
 
 const AiCoach = () => {
-  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat, quotaLimit, usageCount } = useAiAgent();
+  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat, quotaLimit, usageCount, clientName } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -359,7 +359,7 @@ const AiCoach = () => {
 
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
-            const hasTiming = /hour|train|workout|session/i.test(msg.text);
+            const hasTiming = !!msg.draftMeal && /pre-workout|before training|before your workout|before your session/i.test(msg.text);
 
             if (msg.role === 'user') {
               return (
@@ -372,10 +372,7 @@ const AiCoach = () => {
                 >
                   <div className="w-full max-w-[85%] bg-[#1c2434] border border-blue-500/20 rounded-[20px] shadow-xl shadow-black/20 p-4 flex flex-col gap-2 mb-2 ml-auto">
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center font-extrabold text-blue-400 text-[10px]">
-                        U
-                      </div>
-                      <span className="font-extrabold text-blue-400 text-[9px] tracking-widest uppercase">Athlete</span>
+                      <span className="font-extrabold text-blue-400 text-[10px] tracking-widest uppercase">{clientName}</span>
                     </div>
                     <div className="text-xs leading-relaxed text-gray-200 whitespace-pre-wrap">
                       {msg.text}
@@ -403,7 +400,7 @@ const AiCoach = () => {
                       {/* Coach Card Header */}
                       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/5 flex-shrink-0">
                         <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-                          <BrandLogo size={18} />
+                          <BrandLogo size={26} />
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-white text-xs tracking-wide">Alberto</span>
@@ -445,7 +442,7 @@ const AiCoach = () => {
                       {/* Coach Card Header */}
                       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/5 flex-shrink-0">
                         <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-                          <BrandLogo size={18} />
+                          <BrandLogo size={26} />
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-white text-xs tracking-wide">Alberto</span>

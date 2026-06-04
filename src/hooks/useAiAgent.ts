@@ -146,6 +146,12 @@ If the AVAILABLE_DATABASE_FOODS list does not contain any item that meets the nu
 RULE 3.6 — PORTION SENSITIVITY:
 Always suggest realistic portion sizes in grams. Avoid suggesting 500g of a dense food if the user only has 200 kcal remaining. Match the suggested gram amount to the user's remaining macro/calorie budget.
 
+RULE 3.7 — DYNAMIC PORTIONS AND DENSE CALORIES:
+Do NOT default to suggesting exactly 100g for every food item in your recommendations. That is a template default. Instead, calculate realistic serving sizes (e.g. 50g–80g of bread, 150g–250g of yogurt, 15g–30g of honey, 30g–40g of protein powder, 150g–200g of foul medames) dynamically tailored to match the user's remaining daily calorie and macronutrient budgets (targets minus diet totals). If the user is low on remaining calories/carbs/fat, keep portions smaller.
+
+RULE 3.8 — TRAINING STATUS SENSITIVITY:
+You will receive TODAY_SCHEDULED_WORKOUT_SPLIT in the context. If it is "REST" or if the user has no workouts completed/scheduled today, they do NOT have training today. Do NOT say "I see you've got a training schedule set up for today" or suggest a pre-workout meal unless today is actually a scheduled workout day (e.g., PUSH, PULL, LEGS, RUN) and they are preparing to train.
+
 ================================================================================
 SECTION 4: PRE-WORKOUT MEAL SCENARIO & MEAL COMPOSITION RULE
 ================================================================================
@@ -484,6 +490,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
   const [quotaLimit, setQuotaLimit] = useState(20);
   const [usageCount, setUsageCount] = useState(0);
+  const [clientName, setClientName] = useState('Client');
 
   const refreshQuota = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -731,9 +738,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       sched = data;
       if (sched) toCache('sched', sched);
     }
-    if (sched) parts.push(`TRAINING_SCHEDULE: ${JSON.stringify(sched)}`);
-
     const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+    let todayWorkoutSplit = 'REST';
+    if (sched && sched.days && sched.days[selectedDate]) {
+      todayWorkoutSplit = sched.days[selectedDate];
+    }
+    parts.push(`TODAY_SCHEDULED_WORKOUT_SPLIT: ${todayWorkoutSplit}`);
+    if (sched) parts.push(`TRAINING_SCHEDULE: ${JSON.stringify(sched)}`);
     parts.push(`SELECTED_DASHBOARD_DATE: ${selectedDate}`);
     parts.push(`REAL_TODAY_DATE: ${getLocalDate()}`);
     parts.push(`CURRENT_TIME: ${getLocalTime()}`);
@@ -1037,6 +1048,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         .maybeSingle();
       if (profile) {
         clientNameRef.current = profile.display_name || 'Client';
+        setClientName(profile.display_name || 'Client');
         isCoachRef.current = profile.role === 'coach';
       }
     }
@@ -1278,6 +1290,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     initChat,
     sessionId,
     quotaLimit,
-    usageCount
+    usageCount,
+    clientName
   };
 };
