@@ -6,10 +6,11 @@ const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 // Model fallback chain — if one hits rate limit, auto-switch to next
 const MODELS = [
-  'gemma2-9b-it',          // primary: JSON mode support, good limits
-  'llama-3.1-8b-instant',  // fallback 1: 131k TPM
-  'mixtral-8x7b-32768',    // fallback 2: different pool of rate limits
+  'llama-3.3-70b-specdec',   // primary: ultra-fast 70B specdec model with JSON support
+  'llama-3.3-70b-versatile', // fallback 1: standard 70B model with high accuracy
+  'llama-3.1-8b-instant',    // fallback 2: fast 8B model with high rate limits
 ];
+
 
 export interface AiMessage {
   id: string;
@@ -967,8 +968,8 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     // Try each model in order — switch automatically on rate limit
     for (let i = 0; i < MODELS.length; i++) {
       const model = MODELS[i];
-      // mixtral doesn't support json_object mode
-      const supportsJson = model !== 'mixtral-8x7b-32768';
+      // all selected llama models support json_object mode
+      const supportsJson = true;
 
       try {
         const res = await fetch(GROQ_ENDPOINT, {

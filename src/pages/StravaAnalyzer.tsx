@@ -1102,7 +1102,7 @@ FORMAT EXACTLY LIKE THIS:
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
         body: JSON.stringify({
-          model: 'gemma2-9b-it',
+          model: 'llama-3.3-70b-specdec',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.6,
           max_tokens: 600
