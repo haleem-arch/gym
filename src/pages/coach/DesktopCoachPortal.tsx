@@ -8,7 +8,7 @@ import {
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
-  DollarSign, TrendingUp, PieChart, Lock
+  DollarSign, TrendingUp, PieChart, Lock, Phone
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -310,6 +310,10 @@ export default function DesktopCoachPortal() {
   const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
   const [savingTelegramId, setSavingTelegramId] = useState(false);
 
+  // Coach WhatsApp Phone Number states
+  const [ownWhatsAppNumber, setOwnWhatsAppNumber] = useState('');
+  const [savingWhatsAppNumber, setSavingWhatsAppNumber] = useState(false);
+
   // Coach Subscription Renewal Flow states
   const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
   const [subOverlayPlan, setSubOverlayPlan] = useState('1 month');
@@ -598,10 +602,13 @@ export default function DesktopCoachPortal() {
     return () => clearInterval(interval);
   }, [myCoachProfile, coachUserId]);
 
-  // Prefill Owner Telegram ID
+  // Prefill Owner Telegram ID & own WhatsApp number
   useEffect(() => {
     if (myCoachProfile?.targets?.telegram_chat_id) {
       setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
+    }
+    if (myCoachProfile?.targets?.phone_number) {
+      setOwnWhatsAppNumber(String(myCoachProfile.targets.phone_number));
     }
   }, [myCoachProfile]);
 
@@ -633,6 +640,37 @@ export default function DesktopCoachPortal() {
       toast.error('Failed to update Telegram Chat ID: ' + err.message);
     } finally {
       setSavingTelegramId(false);
+    }
+  };
+
+  const handleSaveWhatsAppNumber = async () => {
+    if (!coachUserId) return;
+    try {
+      setSavingWhatsAppNumber(true);
+      const currentTargets = myCoachProfile?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        phone_number: ownWhatsAppNumber.trim()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachUserId);
+
+      if (error) throw error;
+
+      toast.success('WhatsApp contact number updated successfully.');
+      // Refresh local profile
+      setMyCoachProfile((prev: any) => ({
+        ...prev,
+        targets: updatedTargets
+      }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update WhatsApp number: ' + err.message);
+    } finally {
+      setSavingWhatsAppNumber(false);
     }
   };
 
@@ -6355,6 +6393,43 @@ export default function DesktopCoachPortal() {
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* WhatsApp Contact Settings Card */}
+              <div className="rounded-3xl border border-gray-800/80 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-8 shadow-xl space-y-6">
+                <div className="flex items-center gap-4 border-b border-gray-800/60 pb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-inner flex-shrink-0">
+                    <Phone size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black uppercase text-emerald-500 tracking-wider">WhatsApp Contact Number</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Set the phone number that athletes will use to contact you via WhatsApp.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">WhatsApp Phone Number</label>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <input
+                        type="text"
+                        value={ownWhatsAppNumber}
+                        onChange={e => setOwnWhatsAppNumber(e.target.value)}
+                        placeholder="e.g. 201234567890 (include country code without + or spaces)"
+                        className="flex-1 bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)]"
+                      />
+                      <button
+                        type="button"
+                        disabled={savingWhatsAppNumber}
+                        onClick={handleSaveWhatsAppNumber}
+                        className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg hover:shadow-emerald-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        {savingWhatsAppNumber ? 'Saving...' : <><Save size={14} /> Save Contact Number</>}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-gray-500">Note: Please enter the phone number with country code, without spaces, +, or symbols (e.g. 201234567890) so the WhatsApp redirect link works perfectly for your clients.</p>
+                  </div>
                 </div>
               </div>
 
