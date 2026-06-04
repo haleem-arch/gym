@@ -185,9 +185,26 @@ const AiCoach = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background relative" style={{ height: '100dvh' }}>
+    /*
+      Layout strategy:
+      The PageTransition wrapper is `position: absolute; overflow-y: auto; pb-28`.
+      AiCoach needs a fixed-height chat layout (header + scrollable messages + input).
+      We use `fixed inset-0 bottom-[56px]` to fill the visible viewport minus the bottom nav,
+      then stack header / messages / input as flex-col children.
+    */
+    <div
+      className="fixed inset-x-0 top-0 flex flex-col bg-background"
+      style={{
+        bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+        maxWidth: '390px',
+        margin: '0 auto',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+      }}
+    >
       {/* Header */}
-      <div className="bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-lg flex-shrink-0">
+      <div className="bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 z-30 flex items-center justify-between shadow-lg flex-shrink-0" style={{ paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}>
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
             <Sparkles size={15} className="text-primary" />
@@ -212,12 +229,12 @@ const AiCoach = () => {
         </button>
       </div>
 
-      {/* Chat Area — scrollable, confined */}
+      {/* Chat Area — scrollable, fills remaining space */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar min-h-0">
         {messages.length === 0 && !isTyping && (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-600 gap-3 py-16">
             <Bot size={40} />
-            <p className="text-sm">Ask me anything about your training or nutrition.</p>
+            <p className="text-sm text-center px-4">Ask me anything about your training or nutrition.</p>
           </div>
         )}
 
@@ -235,10 +252,10 @@ const AiCoach = () => {
                   text-sm leading-relaxed break-words
                   ${msg.role === 'user'
                     ? 'max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5'
-                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 overflow-y-auto overflow-x-hidden'
+                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
                   }
                 `}
-                style={msg.role === 'model' ? { maxHeight: '420px', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
+                style={msg.role === 'model' ? { wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
               >
                 {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
                 
@@ -261,7 +278,7 @@ const AiCoach = () => {
             </motion.div>
           ))}
 
-          {/* Single clean thinking indicator — no step-by-step clutter */}
+          {/* Thinking indicator */}
           {isTyping && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
               <div className="bg-surface border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2.5">
@@ -275,13 +292,13 @@ const AiCoach = () => {
       </div>
 
       {usageCount >= quotaLimit && (
-        <div className="mx-4 my-2 p-3 bg-red-950/25 border border-red-900/30 text-red-300 rounded-xl text-center text-xs font-semibold leading-relaxed shadow-lg shadow-black/20 flex items-center justify-center gap-1.5">
+        <div className="mx-4 my-2 p-3 bg-red-950/25 border border-red-900/30 text-red-300 rounded-xl text-center text-xs font-semibold leading-relaxed shadow-lg shadow-black/20 flex items-center justify-center gap-1.5 flex-shrink-0">
           🔒 Daily limit of {quotaLimit} messages reached. Ask your coach to raise your limit!
         </div>
       )}
 
-      {/* Input — sticky at bottom */}
-      <div className="p-3 bg-background border-t border-gray-800 sticky bottom-0 z-30 flex-shrink-0 pb-20">
+      {/* Input bar — pinned to bottom */}
+      <div className="p-3 bg-background border-t border-gray-800 z-30 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}
