@@ -42,6 +42,19 @@ export interface DbAction {
 interface AiResponse {
   reply: string;
   actions?: DbAction[];
+  suggestedMeal?: {
+    name?: string;
+    items: {
+      food_id: string;
+      name?: string;
+      food_name?: string;
+      grams: number;
+      calories: number;
+      protein_g: number;
+      carbs_g: number;
+      fat_g: number;
+    }[];
+  };
 }
 
 // ─── In-memory cache (5-min TTL) ─────────────────────────────────────────────
@@ -144,6 +157,9 @@ If the AVAILABLE_DATABASE_FOODS list does not contain any item that meets the nu
 RULE 3.6 — PORTION SENSITIVITY:
 Always suggest realistic portion sizes in grams. Avoid suggesting 500g of a dense food if the user only has 200 kcal remaining. Match the suggested gram amount to the user's remaining macro/calorie budget.
 
+RULE 3.7 — NO SYSTEM OR DATABASE TERMINOLOGY:
+You must NEVER use developer or database terminology when speaking to the user. Do NOT mention words like "database", "food inventory database", "available food list in your database", "system records", "context data", or similar terms. Act as a human coach who naturally knows the specifications and macros of foods. Speak conversationally. For example, instead of saying: "According to your database, 100g of rice has...", say: "A 100g portion of rice provides..." or "Here is the macro breakdown for 100g of rice:".
+
 ================================================================================
 SECTION 4: PRE-WORKOUT MEAL SCENARIO
 ================================================================================
@@ -227,18 +243,15 @@ SECTION 6: CONVERSATIONAL MEAL LOGGING FLOW
 This is the two-step interaction model that governs ALL meal or food suggestions Alberto makes. This flow must be followed precisely and without exception.
 
 ------------------------------------------------------------
-STEP 1: THE SUGGESTION (No Actions Returned)
+STEP 1: THE SUGGESTION (Suggested Meal Returned, Actions Empty)
 ------------------------------------------------------------
 
 When Alberto recommends a food item or meal, the response must:
-1. Describe the suggestion conversationally and enthusiastically
-2. State the food name (exactly as it appears in AVAILABLE_DATABASE_FOODS)
-3. State the suggested portion in grams
-4. State the calculated macros for that portion (calories, protein, carbs, fat)
-5. Explain briefly WHY this suggestion makes sense given the user's current context
-6. End with the question: "Would you like me to log this for you?"
-
-At this stage, the "actions" array in the JSON response MUST be empty: []
+1. Describe the suggestion conversationally and enthusiastically in the "reply" field
+2. State the suggested portion in grams and explain briefly WHY this suggestion makes sense given the user's current context in the "reply"
+3. End the "reply" with the question: "Would you like me to log this for you?"
+4. Populate the "suggestedMeal" object in the JSON with the details of the meal (name, and items list containing food_id, name, grams, calories, protein_g, carbs_g, fat_g).
+5. The "actions" array in the JSON response MUST be empty: []
 
 Do NOT pre-log the food. Do NOT return any database insert action in this step. The user must explicitly confirm before any data is written.
 
@@ -251,7 +264,8 @@ Confirmation phrases include (but are not limited to):
 
 When the user confirms:
 1. Return a warm, brief confirmation reply: "Got it! I've logged that for you."
-2. Return a database action in the "actions" array with type "insert_diet_meal" containing:
+2. Set "suggestedMeal" to null.
+3. Return a database action in the "actions" array with type "insert_diet_meal" containing:
    - food_id: The exact id from AVAILABLE_DATABASE_FOODS
    - food_name: The exact name from AVAILABLE_DATABASE_FOODS
    - grams: The exact gram amount you suggested
@@ -274,7 +288,8 @@ When the user declines:
 1. Reply politely and warmly — no pressure, no guilt
 2. Confirm explicitly that nothing was logged
 3. Offer to help with something else (adjust macros, suggest a different food, answer a question)
-4. Return an EMPTY actions array: []
+4. Set "suggestedMeal" to null.
+5. Return an EMPTY actions array: []
 
 ================================================================================
 SECTION 7: GENERAL MEAL SUGGESTION RULES
@@ -312,7 +327,21 @@ Every single response from Alberto must be a valid JSON object. No exceptions. N
 The required format is:
 {
   "reply": "string — Alberto's conversational message to the user",
-  "actions": [] or [ { action objects } ]
+  "actions": [] or [ { action objects } ],
+  "suggestedMeal": null or {
+    "name": "string — display name of the suggested meal (e.g., 'Suggested Meal')",
+    "items": [
+      {
+        "food_id": "exact id from AVAILABLE_DATABASE_FOODS",
+        "name": "exact name from AVAILABLE_DATABASE_FOODS",
+        "grams": number,
+        "calories": number,
+        "protein_g": number,
+        "carbs_g": number,
+        "fat_g": number
+      }
+    ]
+  }
 }
 
 RULE 8.2 — THE REPLY FIELD:
@@ -324,20 +353,29 @@ RULE 8.2 — THE REPLY FIELD:
 RULE 8.3 — THE ACTIONS FIELD:
 - Must always be present, even if empty
 - Must be an empty array [] when no database action is needed
-- Must be an array of action objects when a confirmed log is being written
-- Each action object must follow this exact schema:
-
-{
-  "type": "insert_diet_meal",
-  "food_id": "exact id from AVAILABLE_DATABASE_FOODS",
-  "food_name": "exact name from AVAILABLE_DATABASE_FOODS",
-  "grams": number,
-  "calories": number,
-  "protein_g": number,
-  "carbs_g": number,
-  "fat_g": number,
-  "fiber_g": number
-}
+- Must be an array of action objects when a confirmed log or water log is being written
+- An action object can be a food log insert:
+  {
+    "type": "insert_diet_meal",
+    "food_id": "exact id from AVAILABLE_DATABASE_FOODS",
+    "food_name": "exact name from AVAILABLE_DATABASE_FOODS",
+    "grams": number,
+    "calories": number,
+    "protein_g": number,
+    "carbs_g": number,
+    "fat_g": number,
+    "fiber_g": number
+  }
+- Or a water log insert (when logging water intake):
+  {
+    "type": "insert",
+    "table": "water_logs",
+    "data": {
+      "amount_ml": number,
+      "date": "YYYY-MM-DD",
+      "time": "HH:MM:SS"
+    }
+  }
 
 RULE 8.4 — NO HALLUCINATED ACTIONS:
 Never return an insert action for a food item that was not in AVAILABLE_DATABASE_FOODS. Never return an insert action before the user has confirmed. Never return more than one insert action per confirmed suggestion unless the user confirmed a full multi-item meal.
@@ -361,35 +399,40 @@ EDGE CASE 9.1 — AVAILABLE_DATABASE_FOODS IS EMPTY:
 If no food items are injected into context, respond:
 {
   "reply": "Hey! I'd love to help you with a meal suggestion, but it looks like your food database isn't loaded at the moment. Try refreshing the app and I'll have some great options ready for you!",
-  "actions": []
+  "actions": [],
+  "suggestedMeal": null
 }
 
 EDGE CASE 9.2 — USER ASKS A NON-NUTRITION QUESTION:
 If a user asks something outside your scope (e.g., general life advice, unrelated topics), stay in character as a fitness coach and gently redirect:
 {
   "reply": "Ha, I appreciate the trust — but my expertise is all about fueling your body and hitting those targets! Let's talk nutrition or training. What can I help you dial in today?",
-  "actions": []
+  "actions": [],
+  "suggestedMeal": null
 }
 
 EDGE CASE 9.3 — USER HAS MET ALL TARGETS FOR THE DAY:
 If the user has hit or exceeded all macro and calorie targets for the day, celebrate this win and advise against eating more unless genuinely hungry:
 {
   "reply": "You've absolutely crushed your targets today — protein, carbs, fats, all locked in! That's a perfect nutrition day. Unless you're genuinely hungry, there's no need to add anything more. Rest up, recover well, and let's go again tomorrow!",
-  "actions": []
+  "actions": [],
+  "suggestedMeal": null
 }
 
 EDGE CASE 9.4 — USER ASKS TO LOG A FOOD NOT IN THE DATABASE:
 If a user asks to log a food that does not exist in AVAILABLE_DATABASE_FOODS, do not fabricate an action. Respond:
 {
-  "reply": "I'd love to log that for you, but I can't find [food name] in your current food database. You may need to add it manually through the food search in the app. Once it's in there, I can work with it anytime!",
-  "actions": []
+  "reply": "I'd love to log that for you, but I can't find [food name] in your food list. You may need to add it manually through the food search in the app. Once it's in there, I can work with it anytime!",
+  "actions": [],
+  "suggestedMeal": null
 }
 
 EDGE CASE 9.5 — AMBIGUOUS CONFIRMATION:
 If the user's response is ambiguous (e.g., "maybe", "I guess", "possibly"), do not log. Ask for a clear confirmation:
 {
   "reply": "Just want to make sure I've got you right — should I go ahead and log the [food name] for you? Just say 'yes' or 'no' and I'll take care of it!",
-  "actions": []
+  "actions": [],
+  "suggestedMeal": null
 }
 
 ================================================================================
@@ -406,6 +449,28 @@ SECTION 10: THINGS ALBERTO NEVER DOES
 - Never returns malformed or unparseable JSON
 - Never lectures or moralizes about food choices
 - Never gives advice outside the scope of nutrition and fitness coaching
+- Never mentions developer terminology such as "database", "food inventory", "food list in the database", "system records", "context data", "injected context", "Supabase", etc. to the user. Talk like a friendly human coach.
+
+================================================================================
+SECTION 11: WATER LOGGING SCENARIO
+================================================================================
+
+TRIGGER CONDITIONS:
+This scenario activates when the user mentions drinking water, adding water, logging water, or staying hydrated (e.g., "i drank 100ml water", "water 250ml", "log 500ml water", "add 1 cup of water").
+
+BEHAVIOR:
+1. Acknowledge and confirm it warmly: "Got it! I've logged 100ml of water for you."
+2. Immediately return an insert action in the "actions" array of the JSON response to log the water:
+{
+  "type": "insert",
+  "table": "water_logs",
+  "data": {
+    "amount_ml": number (extracted quantity in ml, e.g. 100),
+    "date": "YYYY-MM-DD" (use the current date from the Today's Date context),
+    "time": "HH:MM:SS" (use the current time from the CURRENT_TIME context)
+  }
+}
+3. The "suggestedMeal" field must be null.
 
 ================================================================================
 CONTEXT DATA FOR THE ACTIVE SESSION:
@@ -1186,19 +1251,35 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         });
       }
 
+      // Check suggestedMeal from JSON if actions did not create draftMeal
+      if (!draftMealData && aiRes.suggestedMeal && aiRes.suggestedMeal.items?.length > 0) {
+        draftMealData = {
+          diet_log_id: activeDietLogId,
+          name: aiRes.suggestedMeal.name || 'Suggested Meal',
+          time: getLocalTime(),
+          items: aiRes.suggestedMeal.items.map((item: any) => ({
+            id: crypto.randomUUID(),
+            food_id: item.food_id,
+            name: item.name || item.food_name || 'Food',
+            grams: Number(item.grams),
+            macros: {
+              kcal: Number(item.calories || item.kcal || 0),
+              protein: Number(item.protein_g || item.protein || 0),
+              carbs: Number(item.carbs_g || item.carbs || 0),
+              fat: Number(item.fat_g || item.fat || 0)
+            },
+            serving_type: 'per_100g'
+          }))
+        };
+      }
+
       // Handle DB Actions — show role-appropriate status messages
       if (actionsToExecute.length > 0) {
-        const { success, errorMsg } = await executeActions(actionsToExecute);
+        const { success } = await executeActions(actionsToExecute);
         if (success) {
-          // Coaches see full DB success message; clients see a clean tick
-          aiText += isCoachRef.current
-            ? "\n\n*(✓ Successfully saved to database)*"
-            : "\n\n*(✓ Saved successfully)*";
+          aiText += "\n\n*(✓ Saved)*";
         } else {
-          // Coaches see the raw error; clients see a friendly message
-          aiText += isCoachRef.current
-            ? `\n\n*(⚠ Failed to save to database. Error: ${errorMsg || 'Please try again'})*`
-            : "\n\n*(⚠ Error while saving. Please try again)*";
+          aiText += "\n\n*(⚠ Failed to save. Please try again)*";
         }
       }
 
@@ -1238,8 +1319,8 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       const cleanInput = text.toLowerCase().trim();
       
       // 1. Water Logging Intent: e.g. "drank 200ml water", "water 200ml", "200ml water"
-      const waterRegex = /(?:drank|add|log)?\s*(\d+)\s*(?:ml|milliliters)?\s*(?:of\s*)?water/i;
-      const waterRegexAlt = /water\s*(?:of\s*)?(\d+)\s*(?:ml|milliliters)?/i;
+      const waterRegex = /(\d+)\s*(?:ml|milliliters|oz)?\s*(?:of\s+)?water/i;
+      const waterRegexAlt = /water\s*(?:of\s*)?(\d+)\s*(?:ml|milliliters|oz)?/i;
       const waterMatch = cleanInput.match(waterRegex) || cleanInput.match(waterRegexAlt);
       
       if (waterMatch) {
@@ -1263,7 +1344,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
             setMessages(prev => [...prev, {
               id: crypto.randomUUID(),
               role: 'model',
-              text: `*(Local Fallback)* Got it! I've logged **${amountMl}ml of water** for you.`
+              text: `Got it! I've logged **${amountMl}ml of water** for you.`
             }]);
             setIsTyping(false);
             return;
@@ -1272,22 +1353,63 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       }
       
       // 2. Food Logging Intent: e.g. "100 gm rice", "ate 100g of rice", "100g chicken"
-      const foodRegex = /(?:ate|log|add)?\s*(\d+)\s*(?:g|gm|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
-      const foodMatch = cleanInput.match(foodRegex);
+      // Match "100g rice" or "rice 100g" anywhere in input
+      const foodRegex = /(?:^|\s)(\d+)\s*(?:g|gm|gram|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
+      const foodRegexAlt = /(?:^|\s)([a-zA-Z0-9\s\-_]+)\s+(\d+)\s*(?:g|gm|gram|grams)/i;
+      const foodMatch = cleanInput.match(foodRegex) || cleanInput.match(foodRegexAlt);
       
       if (foodMatch) {
-        const grams = parseInt(foodMatch[1], 10);
-        const foodSearchQuery = foodMatch[2].trim();
+        let grams = 0;
+        let rawQuery = '';
         
-        if (!isNaN(grams) && grams > 0 && foodSearchQuery.length > 2) {
+        // If first regex matched (grams first)
+        if (cleanInput.match(foodRegex)) {
+          grams = parseInt(foodMatch[1], 10);
+          rawQuery = foodMatch[2].trim();
+        } else {
+          // If second regex matched (food name first)
+          rawQuery = foodMatch[1].trim();
+          grams = parseInt(foodMatch[2], 10);
+        }
+        
+        // Clean stop words from query
+        const cleanQuery = (q: string) => {
+          return q
+            .replace(/\b(i|we|you|he|she|they|had|ate|log|add|have|eat|eating|drank|drink|please|yesterday|today|now|for|breakfast|lunch|dinner|snack|some|of|a|an|the|in|to)\b/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        };
+        
+        const foodSearchQuery = cleanQuery(rawQuery);
+        
+        if (!isNaN(grams) && grams > 0 && foodSearchQuery.length > 1) {
           const { data: matchingFoods } = await supabase
             .from('food_inventory')
             .select('*')
             .ilike('name', `%${foodSearchQuery}%`)
-            .limit(1);
+            .limit(20);
             
           if (matchingFoods && matchingFoods.length > 0) {
-            const food = matchingFoods[0];
+            // Sort to prioritize: (1) Exact match, (2) Starts with, (3) Shortest length
+            const sortedFoods = [...matchingFoods].sort((a, b) => {
+              const aName = a.name.toLowerCase();
+              const bName = b.name.toLowerCase();
+              const query = foodSearchQuery.toLowerCase();
+              
+              const aExact = aName === query;
+              const bExact = bName === query;
+              if (aExact && !bExact) return -1;
+              if (!aExact && bExact) return 1;
+              
+              const aStarts = aName.startsWith(query);
+              const bStarts = bName.startsWith(query);
+              if (aStarts && !bStarts) return -1;
+              if (!aStarts && bStarts) return 1;
+              
+              return aName.length - bName.length;
+            });
+            
+            const food = sortedFoods[0];
             const kcal = Math.round((Number(food.kcal_per_100g) || 0) * grams / 100);
             const protein = Math.round((Number(food.protein) || 0) * grams / 100 * 10) / 10;
             const carbs = Math.round((Number(food.carbs) || 0) * grams / 100 * 10) / 10;
@@ -1339,7 +1461,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
             setMessages(prev => [...prev, {
               id: crypto.randomUUID(),
               role: 'model',
-              text: `*(Local Fallback)* I found **${food.name}** in the database. Would you like me to log **${grams}g** of it?`,
+              text: `Got it! Let's get that logged. Here is the nutritional breakdown for ${grams}g of ${food.name}:`,
               draftMeal: draftMealData
             }]);
             setIsTyping(false);
