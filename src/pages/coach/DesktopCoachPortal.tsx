@@ -237,7 +237,7 @@ export default function DesktopCoachPortal() {
   const [expandedScanId, setExpandedScanId] = useState<string | null>(null);
 
 
-  const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your administrative coach access has been suspended by the system administrator.');
+  const [coachSuspensionReason, setCoachSuspensionReason] = useState('Your subscription to the coaching platform has ended. Please renew your plan to reactivate access.');
   const [coachCountdownText, setCoachCountdownText] = useState('');
   const [isTrialActive, setIsTrialActive] = useState(false);
   const [coachSubPeriod, setCoachSubPeriod] = useState('1 month');
@@ -728,9 +728,9 @@ export default function DesktopCoachPortal() {
 
       if (session.user.id !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
         setIsCoachSuspended(true);
-        let reason = 'Your administrative coach access has been suspended by the system administrator. Please contact the owner if you believe this is an error.';
+        let reason = 'Your subscription to the coaching platform has ended. Please renew your plan to reactivate access.';
         if (isExpired) {
-          reason = 'Your coach subscription has expired. Please contact Haleem to renew your plan.';
+          reason = 'Your subscription to the coaching platform has ended. Please renew your plan to reactivate access.';
         } else if (isPending) {
           reason = `Your coach subscription starts on ${new Date(myTargets.subscription_start_date).toLocaleDateString()}.`;
         }
@@ -1101,6 +1101,30 @@ export default function DesktopCoachPortal() {
               return [...prev, payload.new];
             }
           });
+          
+          // Update coach's own profile and recalculate suspension state in real-time
+          if (payload.new.id === coachUserId) {
+            setMyCoachProfile(payload.new);
+            const nowObj = new Date();
+            const myTargets = payload.new.targets || {};
+            const isDeactivated = myTargets.is_deactivated === true;
+            const isExpired = myTargets.subscription_end_date && nowObj >= new Date(myTargets.subscription_end_date);
+            const isPending = myTargets.subscription_start_date && nowObj < new Date(myTargets.subscription_start_date);
+
+            if (coachUserId !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
+              setIsCoachSuspended(true);
+              let reason = 'Your subscription to the coaching platform has ended. Please renew your plan to reactivate access.';
+              if (isExpired) {
+                reason = 'Your subscription to the coaching platform has ended. Please renew your plan to reactivate access.';
+              } else if (isPending) {
+                reason = `Your coach subscription starts on ${new Date(myTargets.subscription_start_date).toLocaleDateString()}.`;
+              }
+              setCoachSuspensionReason(reason);
+            } else {
+              setIsCoachSuspended(false);
+            }
+          }
+
           // Update management selected client details if updated profile matches
           if (payload.new.id === managementSelectedClientId) {
             setManagementClientProfile((prev: any) => {
@@ -3177,16 +3201,596 @@ export default function DesktopCoachPortal() {
     );
   }
 
+  const renderSubscriptionModals = () => {
+    return (
+      <>
+        {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
+        {showSubscriptionOverlay && (
+          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-4xl w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-gray-855 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <CreditCard size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                      {(() => {
+                        const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
+                        const now = new Date();
+                        if (!expiry) return 'Subscribe Premium';
+                        const diffMs = expiry.getTime() - now.getTime();
+                        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                        return diffDays <= 7 ? 'Renew Subscription' : 'Upgrade Subscription';
+                      })()}
+                    </h3>
+                    <p className="text-[10px] text-gray-500">Extend your coaching portal license</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubscriptionOverlay(false);
+                    setSubOverlayScreenshot('');
+                  }}
+                  className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <form onSubmit={handleRenewSubscription} className="space-y-6 text-xs font-bold text-gray-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                  {/* Left Column */}
+                  <div className="space-y-5">
+                    
+                    {/* COMPELING SELLING POINTS */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 space-y-2">
+                      <p className="font-extrabold text-emerald-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                        <span>💎 Premium License Guarantees:</span>
+                      </p>
+                      <ul className="space-y-1.5 text-[10px] text-gray-400 font-medium list-disc pl-4 font-sans leading-relaxed">
+                        <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all training plans, diet sheets, client records, and analytics.</li>
+                        <li>Allows you to manage <span className="text-white font-bold">up to 50 active athletes</span> concurrently.</li>
+                        <li>Unlocks advanced features: AI workout logs generator, InBody assessments parser, custom client progress tracking dashboard.</li>
+                      </ul>
+                    </div>
+                
+                {/* Plan Choice Grid */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: '2 weeks', label: '2 Weeks', price: planPrices['2 weeks'] || '2,000 EGP' },
+                      { id: '1 month', label: '1 Month', price: planPrices['1 month'] || '3,500 EGP' },
+                      { id: '3 months', label: '3 Months', price: planPrices['3 months'] || '8,500 EGP' },
+                      { id: '6 months', label: '6 Months', price: planPrices['6 months'] || '14,000 EGP' }
+                    ].map(plan => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSubOverlayPlan(plan.id)}
+                        className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer ${
+                          subOverlayPlan === plan.id
+                            ? 'bg-blue-600/10 border-blue-500 text-white shadow-lg shadow-blue-500/5'
+                            : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                        }`}
+                      >
+                        <span className="text-xs font-extrabold">{plan.label}</span>
+                        <span className={`text-[11px] font-mono mt-1 ${subOverlayPlan === plan.id ? 'text-blue-400' : 'text-gray-500'}`}>{plan.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment Method Selector */}
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500">Choose Payment Method</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'wallet', label: 'Mobile Wallet', desc: 'Vodafone Cash, Orange, etc.' },
+                      { id: 'telda', label: 'Telda App', desc: 'Transfer to Username' }
+                    ].map(method => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => {
+                          setSubOverlayMethod(method.id);
+                          setSubOverlayScreenshot('');
+                        }}
+                        className={`p-3.5 rounded-2xl border text-left flex flex-col transition-all duration-200 cursor-pointer ${
+                          subOverlayMethod === method.id
+                            ? 'bg-emerald-600/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/5'
+                            : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                        }`}
+                      >
+                        <span className="text-xs font-extrabold">{method.label}</span>
+                        <span className="text-[9px] text-gray-500 mt-0.5 font-medium">{method.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Guide/Instruction Info Alert */}
+                <div className="p-4 rounded-2xl bg-[#121624]/80 border border-gray-800 space-y-1.5 font-medium text-[11px] text-gray-400">
+                  <p className="font-extrabold text-white text-xs uppercase tracking-wider">Payment Instructions:</p>
+                  {subOverlayMethod === 'telda' ? (
+                    <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@haleemmamdouh</span></p>
+                  ) : (
+                    <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01096739669</span></p>
+                  )}
+                  <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
+                </div>
+
+                {/* Total checkout amount display */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
+                  <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
+                  <span className="text-base font-black text-white font-mono">
+                    {planPrices[subOverlayPlan] || '0 EGP'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-5">
+                {/* Dynamic Inputs depending on Method */}
+                <div className="space-y-4">
+                  {subOverlayMethod === 'telda' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Telda Username</label>
+                        <input
+                          type="text"
+                          required
+                          value={subOverlayTeldaUser}
+                          onChange={e => setSubOverlayTeldaUser(e.target.value)}
+                          placeholder="@username"
+                          className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Phone Number</label>
+                        <input
+                          type="tel"
+                          required
+                          value={subOverlayPhone}
+                          onChange={e => setSubOverlayPhone(e.target.value)}
+                          placeholder="e.g. 01xxxxxxxxx"
+                          className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Wallet Phone Number</label>
+                        <input
+                          type="tel"
+                          required
+                          value={subOverlayPhone}
+                          onChange={e => setSubOverlayPhone(e.target.value)}
+                          placeholder="e.g. 01xxxxxxxxx"
+                          className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                        />
+                      </div>
+
+                      {/* Screenshot drag and drop area */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Transfer Screenshot / Receipt</label>
+                        
+                        {!subOverlayScreenshot ? (
+                          <div 
+                            className="border-2 border-dashed border-gray-800 hover:border-blue-500/40 bg-[#121624]/40 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-pointer relative"
+                            onDragOver={e => e.preventDefault()}
+                            onDrop={e => {
+                              e.preventDefault();
+                              if (e.dataTransfer.files?.[0]) {
+                                handleScreenshotFile(e.dataTransfer.files[0]);
+                              }
+                            }}
+                          >
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={e => {
+                                if (e.target.files?.[0]) {
+                                  handleScreenshotFile(e.target.files[0]);
+                                }
+                              }}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="w-10 h-10 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 mb-2 transition-all">
+                              <Plus size={16} />
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-extrabold group-hover:text-blue-400 transition-colors">Drag and drop screenshot here, or click to upload</p>
+                            <p className="text-[9px] text-gray-600 mt-1">Accepts PNG, JPG, or JPEG up to 2MB (Processed locally only)</p>
+                          </div>
+                        ) : (
+                          <div className="relative border border-gray-800 rounded-2xl overflow-hidden bg-[#121624] p-3 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <img 
+                                src={subOverlayScreenshot} 
+                                alt="Transaction Screenshot" 
+                                className="w-12 h-12 object-cover rounded-lg border border-gray-850"
+                              />
+                              <div>
+                                <p className="text-white text-[11px] font-bold">Screenshot Attached</p>
+                                <p className="text-[9px] text-emerald-400 font-bold">Ready to upload</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSubOverlayScreenshot('')}
+                              className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                              title="Remove screenshot"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div> {/* Close Right Column */}
+            </div> {/* Close Grid Row */}
+
+                {/* Privacy Policy & Terms acceptance checklists */}
+                <div className="space-y-3 pt-2 border-t border-gray-800/80">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={subOverlayTermsChecked}
+                      onChange={e => setSubOverlayTermsChecked(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                    />
+                    <div className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                      I accept the{' '}
+                      <span 
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowPrivacyModal(true);
+                        }}
+                        className="text-blue-400 hover:underline font-extrabold cursor-pointer"
+                      >
+                        Privacy Policy Summary (View Data Details)
+                      </span>{' '}
+                      and authorize my profile details and client records to be securely processed.
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={subOverlayRefundChecked}
+                      onChange={e => setSubOverlayRefundChecked(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                    />
+                    <span className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                      I acknowledge that this transaction is strictly <span className="font-bold text-white uppercase">non-refundable</span> and access depends on the owner's manual verification of the screenshot or Telda username record.
+                    </span>
+                  </label>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSubscriptionOverlay(false);
+                      setSubOverlayScreenshot('');
+                    }}
+                    className="flex-1 bg-gray-900 hover:bg-gray-855 border border-gray-855 text-gray-300 font-bold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                  >
+                    <X size={13} /> Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={subOverlaySubmitting}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {subOverlaySubmitting ? 'Submitting...' : <><Save size={13} /> Submit Renewal</>}
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* COACH PRIVACY POLICY MODAL */}
+        {showPrivacyModal && (
+          <div className="fixed inset-0 bg-[#05050b]/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl animate-fade-in no-scrollbar max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-gray-850 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Privacy Policy</h3>
+                    <p className="text-[10px] text-gray-500">How LIFE GYM processes and secures your data</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacyModal(false)}
+                  className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs text-gray-300 font-bold leading-relaxed font-sans">
+                <p>We process the following categories of data securely to manage your Coach Portal access and provide administrative services:</p>
+                
+                <div className="space-y-3 pt-2">
+                  <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">🔑 Account & Profile Information</h4>
+                    <p className="text-gray-400 font-medium font-sans">Your email address, username, display name, and encrypted access credentials.</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">👥 Client & Athlete Rosters</h4>
+                    <p className="text-gray-400 font-medium font-sans">Assigned client names, training stats, target logs, schedules, and active workout sheets.</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">🍏 Nutrition & Fitness Templates</h4>
+                    <p className="text-gray-400 font-medium font-sans">Dietary calculations, target nutrition plans, customized exercises, and physical muscle maps.</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">📊 Composition & InBody Analytics</h4>
+                    <p className="text-gray-400 font-medium font-sans">Calculations of body fat percentage, lean mass ratios, and uploaded InBody assessment charts.</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
+                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">💳 Billing & Transactions</h4>
+                    <p className="text-gray-400 font-medium font-sans">Payment sender names, transfer telephone numbers, and uploaded transaction receipts. Receipt files are handled locally and are deleted immediately after verification.</p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-gray-500 font-medium font-sans">By accepting these terms, you consent to securely store and process this information under encrypted hosting. We do not sell or share your data with third parties.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                Understand & Accept
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* COACH SUBSCRIPTION HISTORY LEDGER MODAL */}
+        {showHistoryModal && (
+          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-gray-855 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-black">
+                    <History size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">SUBSCRIPTION LEDGER</h3>
+                    <p className="text-[10px] text-gray-500 font-medium font-sans">Your historical billing receipts log</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(false)}
+                  className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* List / History Ledger container */}
+              <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 no-scrollbar">
+                {!myCoachProfile?.targets?.subscription_history || myCoachProfile.targets.subscription_history.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500 italic space-y-2">
+                    <Activity className="w-8 h-8 text-gray-700 mx-auto animate-pulse" />
+                    <p className="text-xs">No subscription payments logged for this account yet.</p>
+                  </div>
+                ) : (
+                  myCoachProfile.targets.subscription_history
+                    .slice()
+                    .reverse()
+                    .map((entry: any, index: number) => (
+                      <div key={index} className="bg-[#121624]/60 border border-gray-800 p-4 rounded-2xl space-y-2.5 font-bold text-xs text-gray-300">
+                        <div className="flex justify-between items-center border-b border-gray-855 pb-2">
+                          <span className="text-[10px] font-mono text-gray-500">
+                            {new Date(entry.timestamp).toLocaleString()}
+                          </span>
+                          <span className="text-[9px] bg-blue-500/15 border border-blue-500/20 text-blue-400 uppercase tracking-widest px-2 py-0.5 rounded font-black">
+                            Approved
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-[11px]">
+                          <div>
+                            <p className="text-[9px] text-gray-500 uppercase tracking-wider">Extended Plan</p>
+                            <p className="text-white mt-0.5">{entry.period}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-gray-500 uppercase tracking-wider">Amount Paid</p>
+                            <p className="text-emerald-400 font-mono mt-0.5">{entry.amount || 'N/A'}</p>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-[#090b14]/50 border border-gray-850 rounded-xl text-[10px] font-mono text-gray-400">
+                          <p className="flex justify-between">
+                            <span>Starts:</span>
+                            <span className="text-white">{entry.start_date ? new Date(entry.start_date).toLocaleDateString() : 'N/A'}</span>
+                          </p>
+                          <p className="flex justify-between mt-1">
+                            <span>Expires:</span>
+                            <span className="text-white">{entry.end_date ? new Date(entry.end_date).toLocaleDateString() : 'Lifetime'}</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(false)}
+                  className="w-full bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 font-bold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <X size={13} /> Close Ledger
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
   if (isCoachSuspended) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6 font-bold">
-        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6 font-bold overflow-y-auto pb-12">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse mt-8">
           <ShieldAlert size={28} className="text-red-500" />
         </div>
         <h1 className="text-xl font-black text-white uppercase tracking-wider">Account Suspended</h1>
         <p className="text-gray-400 text-xs mt-3 max-w-[320px] leading-relaxed font-bold">
           {coachSuspensionReason}
         </p>
+
+        {coachUserId !== OWNER_ID && (
+          <div className="mt-8 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 max-w-[420px] w-full text-left font-bold relative overflow-hidden shadow-2xl">
+            {/* Glow */}
+            <div className="absolute -top-12 -right-12 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-gray-800/60 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <CreditCard size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">SUBSCRIPTION PLAN DETAILS</h3>
+                <p className="text-[10px] text-gray-500 leading-tight mt-1 font-medium font-sans">Details about your active coaching subscription plan.</p>
+              </div>
+            </div>
+
+            {/* License & Duration */}
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">ACCOUNT LICENSE</p>
+                <p className="text-sm font-black text-emerald-400 uppercase mt-1 font-mono">PREMIUM LICENSE</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">REMAINING DURATION</p>
+                <p className="text-sm font-black text-white mt-1 font-mono">
+                  {myCoachProfile?.targets?.subscription_end_date ? (
+                    (() => {
+                      const expiry = new Date(myCoachProfile.targets.subscription_end_date);
+                      const now = new Date();
+                      const diffMs = expiry.getTime() - now.getTime();
+                      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                      if (diffDays < 0) return 'Expired';
+                      if (diffDays === 0) return 'Expires today';
+                      return `${diffDays} days left`;
+                    })()
+                  ) : (
+                    'No Active Plan'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Privileges */}
+            <div className="mt-6 p-4 rounded-2xl bg-[#090b14]/60 border border-gray-800/80 space-y-1.5 text-[11px] leading-relaxed text-gray-400 font-medium font-sans">
+              <p className="font-extrabold text-white text-xs uppercase tracking-wider">🌟 PREMIUM COACH LICENSE PRIVILEGES:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all client feeds, workouts, diet plans, and body composition logs.</li>
+                <li>Allows hosting and managing <span className="text-white font-bold">up to 50 active athletes</span>.</li>
+                <li>Unlocks the AI Workout Generator, custom workout scheduling, and InBody assessment parsers.</li>
+              </ul>
+            </div>
+
+            {/* Progress Bar */}
+            {myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
+              <div className="space-y-3 mt-6">
+                <div className="flex justify-between text-xs text-gray-400 font-mono">
+                  <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
+                  <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                </div>
+                <div className="h-2 bg-[#090b14] border border-gray-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                    style={{
+                      width: `${(() => {
+                        const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
+                        const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
+                        const now = new Date().getTime();
+                        if (now >= end) return 0;
+                        if (now <= start) return 100;
+                        const total = end - start;
+                        const remaining = end - now;
+                        return Math.max(0, Math.min(100, (remaining / total) * 100));
+                      })()}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Banners */}
+            {myCoachProfile?.targets?.pending_payment && (
+              <div className="mt-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold animate-pulse">
+                <p className="font-extrabold uppercase mb-1">⏳ Verification Pending</p>
+                <p className="text-gray-400 font-sans font-medium text-[11px] leading-relaxed">
+                  Your payment for the {myCoachProfile.targets.pending_payment.duration} plan is currently being verified by the administrator.
+                </p>
+              </div>
+            )}
+
+            {myCoachProfile?.targets?.last_payment_result?.status === 'rejected' && (
+              <div className="mt-5 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
+                <p className="font-extrabold uppercase mb-1">❌ Request Rejected</p>
+                <p className="text-gray-400 font-sans font-medium text-[11px] leading-relaxed">
+                  Reason: {myCoachProfile.targets.last_payment_result.reason || 'Invalid verification / receipt details.'}
+                </p>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-5 border-t border-gray-800/40">
+              <button
+                type="button"
+                disabled={!!myCoachProfile?.targets?.pending_payment}
+                onClick={() => setShowSubscriptionOverlay(true)}
+                className={`flex-1 text-[10px] font-black uppercase tracking-wider py-2.5 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
+                  myCoachProfile?.targets?.pending_payment
+                    ? 'bg-gray-800/40 text-gray-500 border-transparent cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white shadow-lg shadow-emerald-500/10'
+                }`}
+              >
+                <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
+                {myCoachProfile?.targets?.pending_payment ? 'Verification Pending' : 'Upgrade Subscription'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-[#090b14] hover:bg-gray-900 border border-gray-800 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 animate-fade-in"
+              >
+                <History size={12} />
+                Last Subscriptions
+              </button>
+            </div>
+
+          </div>
+        )}
+
         <button
           onClick={async () => {
             await supabase.auth.signOut();
@@ -3196,6 +3800,8 @@ export default function DesktopCoachPortal() {
         >
           <LogOut size={13} /> Sign Out / Log Out
         </button>
+
+        {renderSubscriptionModals()}
       </div>
     );
   }
