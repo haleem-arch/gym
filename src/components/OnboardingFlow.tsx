@@ -745,7 +745,10 @@ export default function OnboardingFlow({
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header Bar */}
-      <div className="p-5 flex items-center justify-between border-b border-gray-800 bg-[#060610]/80 backdrop-blur-md z-30 sticky top-0">
+      <div 
+        className="px-5 pb-5 flex items-center justify-between border-b border-gray-800 bg-[#060610]/80 backdrop-blur-md z-30 sticky top-0"
+        style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))' }}
+      >
         <div className="flex items-center gap-2">
           <BrandLogo className="w-8 h-8" />
           <span className="font-black text-sm tracking-widest uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
