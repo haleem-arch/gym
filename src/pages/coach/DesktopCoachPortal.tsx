@@ -3206,20 +3206,20 @@ export default function DesktopCoachPortal() {
       <>
         {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
         {showSubscriptionOverlay && (
-          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 overflow-y-auto flex flex-col justify-start items-center p-4 md:p-6">
-            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 md:p-8 max-w-4xl w-full space-y-5 md:space-y-6 shadow-2xl animate-fade-in my-auto">
+          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 overflow-y-auto flex justify-center items-start py-8 px-4 md:px-6">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-5 md:p-6 max-w-3xl w-full space-y-4 shadow-2xl animate-fade-in my-0">
               
               {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-gray-855 pb-4">
+              <div className="flex items-center justify-between border-b border-gray-855 pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <CreditCard size={18} />
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <CreditCard size={16} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    <h3 className="text-xs font-black text-white uppercase tracking-wider">
                       Renew Subscription
                     </h3>
-                    <p className="text-[10px] text-gray-500">Extend your coaching portal license</p>
+                    <p className="text-[9px] text-gray-500">Extend your coaching portal license</p>
                   </div>
                 </div>
                 <button
@@ -3228,154 +3228,156 @@ export default function DesktopCoachPortal() {
                     setShowSubscriptionOverlay(false);
                     setSubOverlayScreenshot('');
                   }}
-                  className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+                  className="w-7 h-7 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               </div>
 
-              <form onSubmit={handleRenewSubscription} className="space-y-6 text-xs font-bold text-gray-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              <form onSubmit={handleRenewSubscription} className="space-y-4 text-xs font-bold text-gray-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
                   {/* Left Column */}
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     
                     {/* COMPELING SELLING POINTS */}
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 space-y-2">
-                      <p className="font-extrabold text-emerald-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/15 space-y-1.5">
+                      <p className="font-extrabold text-emerald-400 text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
                         <span>💎 Premium License Guarantees:</span>
                       </p>
-                      <ul className="space-y-1.5 text-[10px] text-gray-400 font-medium list-disc pl-4 font-sans leading-relaxed">
+                      <ul className="space-y-1 text-[9px] text-gray-400 font-medium list-disc pl-4 font-sans leading-relaxed">
                         <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all training plans, diet sheets, client records, and analytics.</li>
                         <li>Allows you to manage <span className="text-white font-bold">up to 50 active athletes</span> concurrently.</li>
                         <li>Unlocks advanced features: AI workout logs generator, InBody assessments parser, custom client progress tracking dashboard.</li>
                       </ul>
                     </div>
                 
-                {/* Plan Choice Grid */}
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: '2 weeks', label: '2 Weeks', price: planPrices['2 weeks'] || '2,000 EGP' },
-                      { id: '1 month', label: '1 Month', price: planPrices['1 month'] || '3,500 EGP' },
-                      { id: '3 months', label: '3 Months', price: planPrices['3 months'] || '8,500 EGP' },
-                      { id: '6 months', label: '6 Months', price: planPrices['6 months'] || '14,000 EGP' }
-                    ].map(plan => (
-                      <button
-                        key={plan.id}
-                        type="button"
-                        onClick={() => setSubOverlayPlan(plan.id)}
-                        className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer ${
-                          subOverlayPlan === plan.id
-                            ? 'bg-blue-600/10 border-blue-500 text-white shadow-lg shadow-blue-500/5'
-                            : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
-                        }`}
-                      >
-                        <span className="text-xs font-extrabold">{plan.label}</span>
-                        <span className={`text-[11px] font-mono mt-1 ${subOverlayPlan === plan.id ? 'text-blue-400' : 'text-gray-500'}`}>{plan.price}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Payment Method Selector */}
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-wider text-gray-500">Choose Payment Method</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: 'wallet', label: 'Mobile Wallet', desc: 'Vodafone Cash, Orange, etc.' },
-                      { id: 'telda', label: 'Telda App', desc: 'Transfer to Username' }
-                    ].map(method => (
-                      <button
-                        key={method.id}
-                        type="button"
-                        onClick={() => {
-                          setSubOverlayMethod(method.id);
-                          setSubOverlayScreenshot('');
-                        }}
-                        className={`p-3.5 rounded-2xl border text-left flex flex-col transition-all duration-200 cursor-pointer ${
-                          subOverlayMethod === method.id
-                            ? 'bg-emerald-600/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/5'
-                            : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
-                        }`}
-                      >
-                        <span className="text-xs font-extrabold">{method.label}</span>
-                        <span className="text-[9px] text-gray-500 mt-0.5 font-medium">{method.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Guide/Instruction Info Alert */}
-                <div className="p-4 rounded-2xl bg-[#121624]/80 border border-gray-800 space-y-1.5 font-medium text-[11px] text-gray-400">
-                  <p className="font-extrabold text-white text-xs uppercase tracking-wider">Payment Instructions:</p>
-                  {subOverlayMethod === 'telda' ? (
-                    <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@ckh</span></p>
-                  ) : (
-                    <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01128828954</span></p>
-                  )}
-                  <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
-                </div>
-
-                {/* Total checkout amount display */}
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
-                  <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
-                  <span className="text-base font-black text-white font-mono">
-                    {planPrices[subOverlayPlan] || '0 EGP'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-5">
-                {/* Dynamic Inputs depending on Method */}
-                <div className="space-y-4">
-                  {subOverlayMethod === 'telda' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Telda Username</label>
-                        <input
-                          type="text"
-                          required
-                          value={subOverlayTeldaUser}
-                          onChange={e => setSubOverlayTeldaUser(e.target.value)}
-                          placeholder="@username"
-                          className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Phone Number</label>
-                        <input
-                          type="tel"
-                          required
-                          value={subOverlayPhone}
-                          onChange={e => setSubOverlayPhone(e.target.value)}
-                          placeholder="e.g. 01xxxxxxxxx"
-                          className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
-                        />
+                    {/* Plan Choice Grid */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: '2 weeks', label: '2 Weeks', price: planPrices['2 weeks'] || '2,000 EGP' },
+                          { id: '1 month', label: '1 Month', price: planPrices['1 month'] || '3,500 EGP' },
+                          { id: '3 months', label: '3 Months', price: planPrices['3 months'] || '8,500 EGP' },
+                          { id: '6 months', label: '6 Months', price: planPrices['6 months'] || '14,000 EGP' }
+                        ].map(plan => (
+                          <button
+                            key={plan.id}
+                            type="button"
+                            onClick={() => setSubOverlayPlan(plan.id)}
+                            className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer ${
+                              subOverlayPlan === plan.id
+                                ? 'bg-blue-600/10 border-blue-500 text-white shadow-lg shadow-blue-500/5'
+                                : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                            }`}
+                          >
+                            <span className="text-xs font-extrabold">{plan.label}</span>
+                            <span className={`text-[10px] font-mono mt-0.5 ${subOverlayPlan === plan.id ? 'text-blue-400' : 'text-gray-500'}`}>{plan.price}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Wallet Phone Number</label>
-                        <input
-                          type="tel"
-                          required
-                          value={subOverlayPhone}
-                          onChange={e => setSubOverlayPhone(e.target.value)}
-                          placeholder="e.g. 01xxxxxxxxx"
-                          className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
-                        />
+
+                    {/* Payment Method Selector */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] uppercase tracking-wider text-gray-500">Choose Payment Method</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: 'wallet', label: 'Mobile Wallet', desc: 'Vodafone Cash, etc.' },
+                          { id: 'telda', label: 'Telda App', desc: 'Transfer to Username' }
+                        ].map(method => (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => {
+                              setSubOverlayMethod(method.id);
+                              setSubOverlayScreenshot('');
+                            }}
+                            className={`p-2.5 rounded-xl border text-left flex flex-col transition-all duration-200 cursor-pointer ${
+                              subOverlayMethod === method.id
+                                ? 'bg-emerald-600/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/5'
+                                : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                            }`}
+                          >
+                            <span className="text-xs font-extrabold">{method.label}</span>
+                            <span className="text-[8px] text-gray-500 mt-0.5 font-medium">{method.desc}</span>
+                          </button>
+                        ))}
                       </div>
+                    </div>
+
+                    {/* Guide/Instruction Info Alert */}
+                    <div className="p-3 rounded-xl bg-[#121624]/80 border border-gray-800 space-y-1 font-medium text-[10px] text-gray-400">
+                      <p className="font-extrabold text-white text-[11px] uppercase tracking-wider">Payment Instructions:</p>
+                      {subOverlayMethod === 'telda' ? (
+                        <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@ckh</span></p>
+                      ) : (
+                        <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01128828954</span></p>
+                      )}
+                      <p className="text-[9px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
+                    </div>
+
+                    {/* Total checkout amount display */}
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
+                      <span className="text-[10px] uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
+                      <span className="text-sm font-black text-white font-mono">
+                        {planPrices[subOverlayPlan] || '0 EGP'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    {/* Dynamic Inputs depending on Method */}
+                    <div className="space-y-3">
+                      {subOverlayMethod === 'telda' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Telda Username</label>
+                            <input
+                              type="text"
+                              required
+                              value={subOverlayTeldaUser}
+                              onChange={e => setSubOverlayTeldaUser(e.target.value)}
+                              placeholder="@username"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Sender Phone Number</label>
+                            <input
+                              type="tel"
+                              required
+                              value={subOverlayPhone}
+                              onChange={e => setSubOverlayPhone(e.target.value)}
+                              placeholder="e.g. 01xxxxxxxxx"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Sender Wallet Phone Number</label>
+                            <input
+                              type="tel"
+                              required
+                              value={subOverlayPhone}
+                              onChange={e => setSubOverlayPhone(e.target.value)}
+                              placeholder="e.g. 01xxxxxxxxx"
+                              className="w-full bg-[#121624] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       {/* Screenshot drag and drop area */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Transfer Screenshot / Receipt</label>
+                      <div className="space-y-1">
+                        <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Transfer Screenshot / Receipt</label>
                         
                         {!subOverlayScreenshot ? (
                           <div 
-                            className="border-2 border-dashed border-gray-800 hover:border-blue-500/40 bg-[#121624]/40 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-pointer relative"
+                            className="border-2 border-dashed border-gray-800 hover:border-blue-500/40 bg-[#121624]/40 rounded-xl p-4 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-pointer relative"
                             onDragOver={e => e.preventDefault()}
                             onDrop={e => {
                               e.preventDefault();
@@ -3394,52 +3396,50 @@ export default function DesktopCoachPortal() {
                               }}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             />
-                            <div className="w-10 h-10 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 mb-2 transition-all">
-                              <Plus size={16} />
+                            <div className="w-8 h-8 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 mb-1 transition-all">
+                              <Plus size={14} />
                             </div>
-                            <p className="text-[11px] text-gray-400 font-extrabold group-hover:text-blue-400 transition-colors">Drag and drop screenshot here, or click to upload</p>
-                            <p className="text-[9px] text-gray-600 mt-1">Accepts PNG, JPG, or JPEG up to 2MB (Processed locally only)</p>
+                            <p className="text-[10px] text-gray-400 font-extrabold group-hover:text-blue-400 transition-colors">Drag & drop receipt, or click to upload</p>
+                            <p className="text-[8px] text-gray-600 mt-0.5">Accepts PNG, JPG, or JPEG up to 2MB</p>
                           </div>
                         ) : (
-                          <div className="relative border border-gray-800 rounded-2xl overflow-hidden bg-[#121624] p-3 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
+                          <div className="relative border border-gray-800 rounded-xl overflow-hidden bg-[#121624] p-2 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
                               <img 
                                 src={subOverlayScreenshot} 
                                 alt="Transaction Screenshot" 
-                                className="w-12 h-12 object-cover rounded-lg border border-gray-850"
+                                className="w-10 h-10 object-cover rounded border border-gray-850"
                               />
                               <div>
-                                <p className="text-white text-[11px] font-bold">Screenshot Attached</p>
-                                <p className="text-[9px] text-emerald-400 font-bold">Ready to upload</p>
+                                <p className="text-white text-[10px] font-bold">Receipt Attached</p>
+                                <p className="text-[8px] text-emerald-400 font-bold">Ready to upload</p>
                               </div>
                             </div>
                             <button
                               type="button"
                               onClick={() => setSubOverlayScreenshot('')}
-                              className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                              className="p-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
                               title="Remove screenshot"
                             >
-                              <X size={12} />
+                              <X size={10} />
                             </button>
                           </div>
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div> {/* Close Right Column */}
-            </div> {/* Close Grid Row */}
+                  </div> {/* Close Right Column */}
+                </div> {/* Close Grid Row */}
 
                 {/* Privacy Policy & Terms acceptance checklists */}
-                <div className="space-y-3 pt-2 border-t border-gray-800/80">
+                <div className="space-y-2 pt-2 border-t border-gray-800/80">
                   <label className="flex items-start gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={subOverlayTermsChecked}
                       onChange={e => setSubOverlayTermsChecked(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                      className="w-3.5 h-3.5 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
                     />
-                    <div className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                    <div className="text-[9px] text-gray-400 font-medium leading-relaxed">
                       I accept the{' '}
                       <span 
                         onClick={e => {
@@ -3460,10 +3460,10 @@ export default function DesktopCoachPortal() {
                       type="checkbox"
                       checked={subOverlayRefundChecked}
                       onChange={e => setSubOverlayRefundChecked(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                      className="w-3.5 h-3.5 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
                     />
-                    <span className="text-[10px] text-gray-400 font-medium leading-relaxed">
-                      I acknowledge that this transaction is strictly <span className="font-bold text-white uppercase">non-refundable</span> and access depends on the owner's manual verification of the screenshot or Telda username record.
+                    <span className="text-[9px] text-gray-400 font-medium leading-relaxed">
+                      I acknowledge that this transaction is strictly <span className="font-bold text-white uppercase">non-refundable</span> and access depends on manual verification.
                     </span>
                   </label>
                 </div>
@@ -3476,16 +3476,16 @@ export default function DesktopCoachPortal() {
                       setShowSubscriptionOverlay(false);
                       setSubOverlayScreenshot('');
                     }}
-                    className="flex-1 bg-gray-900 hover:bg-gray-855 border border-gray-855 text-gray-300 font-bold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                    className="flex-1 bg-gray-900 hover:bg-gray-855 border border-gray-855 text-gray-300 font-bold py-2 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
                   >
-                    <X size={13} /> Cancel
+                    <X size={12} /> Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={subOverlaySubmitting}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold py-2 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    {subOverlaySubmitting ? 'Submitting...' : <><Save size={13} /> Submit Renewal</>}
+                    {subOverlaySubmitting ? 'Submitting...' : <><Save size={12} /> Submit Renewal</>}
                   </button>
                 </div>
 
@@ -3696,32 +3696,6 @@ export default function DesktopCoachPortal() {
                 </ul>
               </div>
 
-              {/* Progress Bar */}
-              {myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
-                <div className="space-y-2 mt-4">
-                  <div className="flex justify-between text-[10px] text-gray-400 font-mono">
-                    <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
-                    <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
-                  </div>
-                  <div className="h-1.5 bg-[#090b14] border border-gray-800 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                      style={{
-                        width: `${(() => {
-                          const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
-                          const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
-                          const now = new Date().getTime();
-                          if (now >= end) return 0;
-                          if (now <= start) return 100;
-                          const total = end - start;
-                          const remaining = end - now;
-                          return Math.max(0, Math.min(100, (remaining / total) * 100));
-                        })()}%`
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Banners */}
               {myCoachProfile?.targets?.pending_payment && (
@@ -6916,9 +6890,9 @@ export default function DesktopCoachPortal() {
                         <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
                         <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
                       </div>
-                      <div className="h-2 bg-[#090b14] border border-gray-800 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-gray-800/80 border border-gray-700/50 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.4)]"
                           style={{
                             width: `${(() => {
                               const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
@@ -6960,7 +6934,12 @@ export default function DesktopCoachPortal() {
                         <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
                         {(() => {
                           if (myCoachProfile?.targets?.pending_payment) return 'Verification Pending';
-                          return 'Renew Subscription';
+                          
+                          const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
+                          const now = new Date();
+                          const isExpired = expiry && now >= expiry;
+                          
+                          return isExpired ? 'Renew Subscription' : 'Upgrade Subscription';
                         })()}
                       </button>
                       
@@ -7511,7 +7490,7 @@ export default function DesktopCoachPortal() {
                                   </p>
                                 </div>
                                 <div className="text-right font-medium text-xs">
-                                  <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
+                              <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
                                   <p className="text-[8px] text-gray-500 font-mono mt-0.5">
                                     P{Math.round(item.macros?.protein || 0)}g · C{Math.round(item.macros?.carbs || 0)}g · F{Math.round(item.macros?.fat || 0)}g
                                   </p>
@@ -7542,20 +7521,25 @@ export default function DesktopCoachPortal() {
 
       {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
       {showSubscriptionOverlay && (
-        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
-          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-4xl w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 overflow-y-auto flex justify-center items-start py-8 px-4 md:px-6">
+          <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-5 md:p-6 max-w-3xl w-full space-y-4 shadow-2xl animate-fade-in my-0">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-850 pb-4">
+            <div className="flex items-center justify-between border-b border-gray-855 pb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <CreditCard size={18} />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <CreditCard size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                    Renew Subscription
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider">
+                    {(() => {
+                      const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
+                      const now = new Date();
+                      const isExpired = expiry && now >= expiry;
+                      return isExpired ? 'Renew Subscription' : 'Upgrade Subscription';
+                    })()}
                   </h3>
-                  <p className="text-[10px] text-gray-500">Extend your coaching portal license</p>
+                  <p className="text-[9px] text-gray-500">Extend your coaching portal license</p>
                 </div>
               </div>
               <button
@@ -7564,154 +7548,156 @@ export default function DesktopCoachPortal() {
                   setShowSubscriptionOverlay(false);
                   setSubOverlayScreenshot('');
                 }}
-                className="w-8 h-8 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
+                className="w-7 h-7 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer text-xs"
               >
-                <X size={14} />
+                <X size={12} />
               </button>
             </div>
 
-            <form onSubmit={handleRenewSubscription} className="space-y-6 text-xs font-bold text-gray-300">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <form onSubmit={handleRenewSubscription} className="space-y-4 text-xs font-bold text-gray-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
                 {/* Left Column */}
-                <div className="space-y-5">
+                <div className="space-y-4">
                   
                   {/* COMPELING SELLING POINTS */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 space-y-2">
-                    <p className="font-extrabold text-emerald-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/15 space-y-1.5">
+                    <p className="font-extrabold text-emerald-400 text-[10px] uppercase tracking-wider flex items-center gap-1.5 font-mono">
                       <span>💎 Premium License Guarantees:</span>
                     </p>
-                    <ul className="space-y-1.5 text-[10px] text-gray-400 font-medium list-disc pl-4 font-sans leading-relaxed">
+                    <ul className="space-y-1 text-[9px] text-gray-400 font-medium list-disc pl-4 font-sans leading-relaxed">
                       <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all training plans, diet sheets, client records, and analytics.</li>
                       <li>Allows you to manage <span className="text-white font-bold">up to 50 active athletes</span> concurrently.</li>
                       <li>Unlocks advanced features: AI workout logs generator, InBody assessments parser, custom client progress tracking dashboard.</li>
                     </ul>
                   </div>
               
-              {/* Plan Choice Grid */}
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: '2 weeks', label: '2 Weeks', price: planPrices['2 weeks'] || '2,000 EGP' },
-                    { id: '1 month', label: '1 Month', price: planPrices['1 month'] || '3,500 EGP' },
-                    { id: '3 months', label: '3 Months', price: planPrices['3 months'] || '8,500 EGP' },
-                    { id: '6 months', label: '6 Months', price: planPrices['6 months'] || '14,000 EGP' }
-                  ].map(plan => (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => setSubOverlayPlan(plan.id)}
-                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer ${
-                        subOverlayPlan === plan.id
-                          ? 'bg-blue-600/10 border-blue-500 text-white shadow-lg shadow-blue-500/5'
-                          : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
-                      }`}
-                    >
-                      <span className="text-xs font-extrabold">{plan.label}</span>
-                      <span className={`text-[11px] font-mono mt-1 ${subOverlayPlan === plan.id ? 'text-blue-400' : 'text-gray-500'}`}>{plan.price}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Payment Method Selector */}
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-wider text-gray-500">Choose Payment Method</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: 'wallet', label: 'Mobile Wallet', desc: 'Vodafone Cash, Orange, etc.' },
-                    { id: 'telda', label: 'Telda App', desc: 'Transfer to Username' }
-                  ].map(method => (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => {
-                        setSubOverlayMethod(method.id);
-                        setSubOverlayScreenshot('');
-                      }}
-                      className={`p-3.5 rounded-2xl border text-left flex flex-col transition-all duration-200 cursor-pointer ${
-                        subOverlayMethod === method.id
-                          ? 'bg-emerald-600/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/5'
-                          : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
-                      }`}
-                    >
-                      <span className="text-xs font-extrabold">{method.label}</span>
-                      <span className="text-[9px] text-gray-500 mt-0.5 font-medium">{method.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Guide/Instruction Info Alert */}
-              <div className="p-4 rounded-2xl bg-[#121624]/80 border border-gray-800 space-y-1.5 font-medium text-[11px] text-gray-400">
-                <p className="font-extrabold text-white text-xs uppercase tracking-wider">Payment Instructions:</p>
-                {subOverlayMethod === 'telda' ? (
-                  <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@ckh</span></p>
-                ) : (
-                  <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01128828954</span></p>
-                )}
-                <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
-              </div>
-
-              {/* Total checkout amount display */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
-                <span className="text-xs uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
-                <span className="text-base font-black text-white font-mono">
-                  {planPrices[subOverlayPlan] || '0 EGP'}
-                </span>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-5">
-              {/* Dynamic Inputs depending on Method */}
-              <div className="space-y-4">
-                {subOverlayMethod === 'telda' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Telda Username</label>
-                      <input
-                        type="text"
-                        required
-                        value={subOverlayTeldaUser}
-                        onChange={e => setSubOverlayTeldaUser(e.target.value)}
-                        placeholder="@username"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Phone Number</label>
-                      <input
-                        type="tel"
-                        required
-                        value={subOverlayPhone}
-                        onChange={e => setSubOverlayPhone(e.target.value)}
-                        placeholder="e.g. 01xxxxxxxxx"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
-                      />
+                  {/* Plan Choice Grid */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] uppercase tracking-wider text-gray-500">Select Plan Option</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: '2 weeks', label: '2 Weeks', price: planPrices['2 weeks'] || '2,000 EGP' },
+                        { id: '1 month', label: '1 Month', price: planPrices['1 month'] || '3,500 EGP' },
+                        { id: '3 months', label: '3 Months', price: planPrices['3 months'] || '8,500 EGP' },
+                        { id: '6 months', label: '6 Months', price: planPrices['6 months'] || '14,000 EGP' }
+                      ].map(plan => (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => setSubOverlayPlan(plan.id)}
+                          className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer ${
+                            subOverlayPlan === plan.id
+                              ? 'bg-blue-600/10 border-blue-500 text-white shadow-lg shadow-blue-500/5'
+                              : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                          }`}
+                        >
+                          <span className="text-xs font-extrabold">{plan.label}</span>
+                          <span className={`text-[10px] font-mono mt-0.5 ${subOverlayPlan === plan.id ? 'text-blue-400' : 'text-gray-500'}`}>{plan.price}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Sender Wallet Phone Number</label>
-                      <input
-                        type="tel"
-                        required
-                        value={subOverlayPhone}
-                        onChange={e => setSubOverlayPhone(e.target.value)}
-                        placeholder="e.g. 01xxxxxxxxx"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
-                      />
+
+                  {/* Payment Method Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] uppercase tracking-wider text-gray-500">Choose Payment Method</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'wallet', label: 'Mobile Wallet', desc: 'Vodafone Cash, etc.' },
+                        { id: 'telda', label: 'Telda App', desc: 'Transfer to Username' }
+                      ].map(method => (
+                        <button
+                          key={method.id}
+                          type="button"
+                          onClick={() => {
+                            setSubOverlayMethod(method.id);
+                            setSubOverlayScreenshot('');
+                          }}
+                          className={`p-2.5 rounded-xl border text-left flex flex-col transition-all duration-200 cursor-pointer ${
+                            subOverlayMethod === method.id
+                              ? 'bg-emerald-600/10 border-emerald-500 text-white shadow-lg shadow-emerald-500/5'
+                              : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:border-gray-700'
+                          }`}
+                        >
+                          <span className="text-xs font-extrabold">{method.label}</span>
+                          <span className="text-[8px] text-gray-500 mt-0.5 font-medium">{method.desc}</span>
+                        </button>
+                      ))}
                     </div>
+                  </div>
+
+                  {/* Guide/Instruction Info Alert */}
+                  <div className="p-3 rounded-xl bg-[#121624]/80 border border-gray-800 space-y-1 font-medium text-[10px] text-gray-400">
+                    <p className="font-extrabold text-white text-[11px] uppercase tracking-wider">Payment Instructions:</p>
+                    {subOverlayMethod === 'telda' ? (
+                      <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@ckh</span></p>
+                    ) : (
+                      <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01128828954</span></p>
+                    )}
+                    <p className="text-[9px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
+                  </div>
+
+                  {/* Total checkout amount display */}
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border border-blue-500/20 flex justify-between items-center">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400">Total Transfer Value:</span>
+                    <span className="text-sm font-black text-white font-mono">
+                      {planPrices[subOverlayPlan] || '0 EGP'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  {/* Dynamic Inputs depending on Method */}
+                  <div className="space-y-3">
+                    {subOverlayMethod === 'telda' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Telda Username</label>
+                          <input
+                            type="text"
+                            required
+                            value={subOverlayTeldaUser}
+                            onChange={e => setSubOverlayTeldaUser(e.target.value)}
+                            placeholder="@username"
+                            className="w-full bg-[#121624] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Sender Phone Number</label>
+                          <input
+                            type="tel"
+                            required
+                            value={subOverlayPhone}
+                            onChange={e => setSubOverlayPhone(e.target.value)}
+                            placeholder="e.g. 01xxxxxxxxx"
+                            className="w-full bg-[#121624] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Sender Wallet Phone Number</label>
+                          <input
+                            type="tel"
+                            required
+                            value={subOverlayPhone}
+                            onChange={e => setSubOverlayPhone(e.target.value)}
+                            placeholder="e.g. 01xxxxxxxxx"
+                            className="w-full bg-[#121624] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Screenshot drag and drop area */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Transfer Screenshot / Receipt</label>
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase tracking-wider text-gray-500 block">Transfer Screenshot / Receipt</label>
                       
                       {!subOverlayScreenshot ? (
                         <div 
-                          className="border-2 border-dashed border-gray-800 hover:border-blue-500/40 bg-[#121624]/40 rounded-2xl p-6 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-pointer relative"
+                          className="border-2 border-dashed border-gray-800 hover:border-blue-500/40 bg-[#121624]/40 rounded-xl p-4 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-pointer relative"
                           onDragOver={e => e.preventDefault()}
                           onDrop={e => {
                             e.preventDefault();
@@ -7730,54 +7716,50 @@ export default function DesktopCoachPortal() {
                             }}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           />
-                          <div className="w-10 h-10 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 mb-2 transition-all">
-                            <Plus size={16} />
+                          <div className="w-8 h-8 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 border border-blue-500/10 flex items-center justify-center text-blue-400 mb-1 transition-all">
+                            <Plus size={14} />
                           </div>
-                          <p className="text-[11px] text-gray-400 font-extrabold group-hover:text-blue-400 transition-colors">Drag and drop screenshot here, or click to upload</p>
-                          <p className="text-[9px] text-gray-600 mt-1">Accepts PNG, JPG, or JPEG up to 2MB (Processed locally only)</p>
+                          <p className="text-[10px] text-gray-400 font-extrabold group-hover:text-blue-400 transition-colors">Drag & drop receipt, or click to upload</p>
+                          <p className="text-[8px] text-gray-600 mt-0.5">Accepts PNG, JPG, or JPEG up to 2MB</p>
                         </div>
                       ) : (
-                        <div className="relative border border-gray-800 rounded-2xl overflow-hidden bg-[#121624] p-3 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
+                        <div className="relative border border-gray-800 rounded-xl overflow-hidden bg-[#121624] p-2 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
                             <img 
                               src={subOverlayScreenshot} 
                               alt="Transaction Screenshot" 
-                              className="w-12 h-12 object-cover rounded-lg border border-gray-850"
+                              className="w-10 h-10 object-cover rounded border border-gray-855"
                             />
                             <div>
-                              <p className="text-white text-[11px] font-bold">Screenshot Attached</p>
-                              <p className="text-[9px] text-emerald-400 font-bold">Ready to upload</p>
+                              <p className="text-white text-[10px] font-bold">Receipt Attached</p>
+                              <p className="text-[8px] text-emerald-400 font-bold">Ready to upload</p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => setSubOverlayScreenshot('')}
-                            className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                            className="p-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
                             title="Remove screenshot"
                           >
-                            <X size={12} />
+                            <X size={10} />
                           </button>
                         </div>
                       )}
                     </div>
                   </div>
-                )}
-              </div>
-            </div> {/* Close Right Column */}
-          </div> {/* Close Grid Row */}
-
-
+                </div> {/* Close Right Column */}
+              </div> {/* Close Grid Row */}
 
               {/* Privacy Policy & Terms acceptance checklists */}
-              <div className="space-y-3 pt-2 border-t border-gray-800/80">
+              <div className="space-y-2 pt-2 border-t border-gray-800/80">
                 <label className="flex items-start gap-2.5 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={subOverlayTermsChecked}
                     onChange={e => setSubOverlayTermsChecked(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                    className="w-3.5 h-3.5 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
                   />
-                  <div className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                  <div className="text-[9px] text-gray-400 font-medium leading-relaxed">
                     I accept the{' '}
                     <span 
                       onClick={e => {
@@ -7789,7 +7771,7 @@ export default function DesktopCoachPortal() {
                     >
                       Privacy Policy Summary (View Data Details)
                     </span>{' '}
-                    and authorize my profile details and client records to be securely processed.
+                    and authorize my profile details to be securely processed.
                   </div>
                 </label>
 
@@ -7798,10 +7780,10 @@ export default function DesktopCoachPortal() {
                     type="checkbox"
                     checked={subOverlayRefundChecked}
                     onChange={e => setSubOverlayRefundChecked(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
+                    className="w-3.5 h-3.5 rounded border-gray-800 bg-[#121624] text-blue-600 mt-0.5 outline-none focus:ring-0"
                   />
-                  <span className="text-[10px] text-gray-400 font-medium leading-relaxed">
-                    I acknowledge that this transaction is strictly <span className="font-bold text-white uppercase">non-refundable</span> and access depends on the owner's manual verification of the screenshot or Telda username record.
+                  <span className="text-[9px] text-gray-400 font-medium leading-relaxed">
+                    I acknowledge that this transaction is strictly <span className="font-bold text-white uppercase">non-refundable</span> and access depends on manual verification.
                   </span>
                 </label>
               </div>
@@ -7814,9 +7796,9 @@ export default function DesktopCoachPortal() {
                     setShowSubscriptionOverlay(false);
                     setSubOverlayScreenshot('');
                   }}
-                  className="flex-1 bg-gray-900 hover:bg-gray-855 border border-gray-850 text-gray-300 font-bold py-3 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-gray-900 hover:bg-gray-855 border border-gray-855 text-gray-300 font-bold py-2 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
                 >
-                  <X size={13} /> Cancel
+                  <X size={12} /> Cancel
                 </button>
                 <button
                   type="submit"
