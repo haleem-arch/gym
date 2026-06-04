@@ -22,6 +22,7 @@ import FoodInventory from './pages/FoodInventory';
 
 import InBodyView from './pages/InBodyView';
 import StravaAnalyzer from './pages/StravaAnalyzer';
+import ProfileView from './pages/ProfileView';
 
 // Coach Pages
 import DashboardPage from './pages/coach/DashboardPage';
@@ -52,7 +53,7 @@ const StravaGuard = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody'];
+const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody', '/profile'];
 
 const getTabIndex = (pathname: string) => {
   if (pathname === '/') return 0;
@@ -184,6 +185,8 @@ const AppContent = () => {
                   </StravaGuard>
                 </PageTransition>
               } />
+
+              <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
 
 
               {/* Coach Routes */}

@@ -1,4 +1,4 @@
-import { Home, Dumbbell, Apple, Activity, MapPin } from 'lucide-react';
+import { Home, Dumbbell, Apple, Activity, MapPin, User } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -49,7 +49,8 @@ const BottomNav = () => {
     { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout', lockKey: 'disable_workout' },
     { to: '/diet', icon: <Apple size={24} />, label: 'Diet', lockKey: 'disable_diet' },
     { to: '/strava', icon: <MapPin size={24} />, label: 'Strava', restrict: true },
-    { to: '/inbody', icon: <Activity size={24} />, label: 'InBody', lockKey: 'disable_inbody' }
+    { to: '/inbody', icon: <Activity size={24} />, label: 'InBody', lockKey: 'disable_inbody' },
+    { to: '/profile', icon: <User size={24} />, label: 'Profile' }
   ];
 
   const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
