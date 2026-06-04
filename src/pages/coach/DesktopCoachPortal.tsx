@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
-  Users, User, UserPlus, Database, ShieldAlert, Activity, Search, 
+  Users, User, UserPlus, Database, ShieldAlert, Activity, Search, Filter, 
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
@@ -190,6 +190,9 @@ export default function DesktopCoachPortal() {
   useEffect(() => {
     feedFilterMineOnlyRef.current = feedFilterMineOnly;
   }, [feedFilterMineOnly]);
+
+  // Athlete Directory Filter
+  const [directoryFilterMineOnly, setDirectoryFilterMineOnly] = useState(false);
 
   // Selected Client (Clients Tab)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -3032,10 +3035,14 @@ export default function DesktopCoachPortal() {
   };
 
   // Filters
-  const filteredClients = clientsList.filter(c => 
-    c.display_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
-    c.username?.toLowerCase().includes(clientSearchQuery.toLowerCase())
-  );
+  const filteredClients = clientsList.filter(c => {
+    const matchesSearch = c.display_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+      c.username?.toLowerCase().includes(clientSearchQuery.toLowerCase());
+    if (coachUserId === OWNER_ID && directoryFilterMineOnly) {
+      return matchesSearch && c.coach_id === OWNER_ID;
+    }
+    return matchesSearch;
+  });
 
   const systemCoaches = profiles.filter(p => p.role === 'coach' || p.id === OWNER_ID);
   const filteredSystemCoaches = systemCoaches.filter(coach => {
@@ -3715,15 +3722,31 @@ export default function DesktopCoachPortal() {
               
               {/* Left Column: Search & List */}
               <div className="w-[300px] flex flex-col gap-4 bg-[#0b0c16] border border-gray-800 rounded-3xl p-4 shrink-0">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                  <input 
-                    type="text"
-                    value={clientSearchQuery}
-                    onChange={e => setClientSearchQuery(e.target.value)}
-                    placeholder="Search athletes..."
-                    className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-                  />
+                <div className="flex flex-col gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                    <input 
+                      type="text"
+                      value={clientSearchQuery}
+                      onChange={e => setClientSearchQuery(e.target.value)}
+                      placeholder="Search athletes..."
+                      className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+
+                  {coachUserId === OWNER_ID && (
+                    <button
+                      onClick={() => setDirectoryFilterMineOnly(!directoryFilterMineOnly)}
+                      className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 ${
+                        directoryFilterMineOnly
+                          ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10'
+                          : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 font-bold'
+                      }`}
+                    >
+                      <Filter size={11} />
+                      <span>{directoryFilterMineOnly ? 'My Athletes Only' : 'All System Athletes'}</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
