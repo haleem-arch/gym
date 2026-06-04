@@ -8,6 +8,11 @@
   --color-surface-hover: #1a1a1a;
 }
 
+html, body {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   background-color: #000000;
   color: #ffffff;
