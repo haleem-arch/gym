@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
+import HRDashboard from './pages/HRDashboard';
 import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
 import WorkoutBuilder from './pages/WorkoutBuilder';
@@ -481,15 +482,25 @@ function App() {
 
   return (
     <Router>
-      <CookieConsent />
-      <AppContent />
-      {showWelcomeSplash && (
-        <SplashOverlay
-          show={showWelcomeSplash}
-          welcomeName={welcomeName}
-          onComplete={() => setShowWelcomeSplash(false)}
-        />
-      )}
+      <Routes>
+        {/* ── Standalone HR dashboard — no auth required ── */}
+        <Route path="/hr" element={<HRDashboard />} />
+
+        {/* ── Everything else goes through the normal auth shell ── */}
+        <Route path="*" element={
+          <>
+            <CookieConsent />
+            <AppContent />
+            {showWelcomeSplash && (
+              <SplashOverlay
+                show={showWelcomeSplash}
+                welcomeName={welcomeName}
+                onComplete={() => setShowWelcomeSplash(false)}
+              />
+            )}
+          </>
+        } />
+      </Routes>
     </Router>
   );
 }

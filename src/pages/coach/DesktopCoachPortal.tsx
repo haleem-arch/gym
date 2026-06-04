@@ -4535,19 +4535,51 @@ export default function DesktopCoachPortal() {
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="text-[9px] text-gray-500 uppercase font-black">Calories (kcal)</label>
-                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestKcal} onChange={e => setDeployRestKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                <input
+                                  type="number"
+                                  value={deployRestKcal}
+                                  onChange={e => {
+                                    setDeployIsRestOverridden(true);
+                                    setDeployRestKcal(parseInt(e.target.value) || 0);
+                                  }}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white"
+                                />
                               </div>
                               <div>
                                 <label className="text-[9px] text-gray-500 uppercase font-black">Protein (g)</label>
-                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestProtein} onChange={e => setDeployRestProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                <input
+                                  type="number"
+                                  value={deployRestProtein}
+                                  onChange={e => {
+                                    setDeployIsRestOverridden(true);
+                                    setDeployRestProtein(parseInt(e.target.value) || 0);
+                                  }}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white"
+                                />
                               </div>
                               <div>
                                 <label className="text-[9px] text-gray-500 uppercase font-black">Carbs (g)</label>
-                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestCarbs} onChange={e => setDeployRestCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                <input
+                                  type="number"
+                                  value={deployRestCarbs}
+                                  onChange={e => {
+                                    setDeployIsRestOverridden(true);
+                                    setDeployRestCarbs(parseInt(e.target.value) || 0);
+                                  }}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white"
+                                />
                               </div>
                               <div>
                                 <label className="text-[9px] text-gray-500 uppercase font-black">Fat (g)</label>
-                                <input type="number" disabled={!deployIsRestOverridden} value={deployRestFat} onChange={e => setDeployRestFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] disabled:bg-gray-900 border border-gray-800 rounded-xl p-2 text-xs text-white" />
+                                <input
+                                  type="number"
+                                  value={deployRestFat}
+                                  onChange={e => {
+                                    setDeployIsRestOverridden(true);
+                                    setDeployRestFat(parseInt(e.target.value) || 0);
+                                  }}
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white"
+                                />
                               </div>
                             </div>
                           </div>
