@@ -3217,14 +3217,7 @@ export default function DesktopCoachPortal() {
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                      {(() => {
-                        const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
-                        const now = new Date();
-                        if (!expiry) return 'Subscribe Premium';
-                        const diffMs = expiry.getTime() - now.getTime();
-                        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                        return diffDays <= 7 ? 'Renew Subscription' : 'Upgrade Subscription';
-                      })()}
+                      Renew Subscription
                     </h3>
                     <p className="text-[10px] text-gray-500">Extend your coaching portal license</p>
                   </div>
@@ -3317,9 +3310,9 @@ export default function DesktopCoachPortal() {
                 <div className="p-4 rounded-2xl bg-[#121624]/80 border border-gray-800 space-y-1.5 font-medium text-[11px] text-gray-400">
                   <p className="font-extrabold text-white text-xs uppercase tracking-wider">Payment Instructions:</p>
                   {subOverlayMethod === 'telda' ? (
-                    <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@haleemmamdouh</span></p>
+                    <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@ckh</span></p>
                   ) : (
-                    <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01096739669</span></p>
+                    <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01128828954</span></p>
                   )}
                   <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
                 </div>
@@ -3681,29 +3674,15 @@ export default function DesktopCoachPortal() {
                 </div>
               </div>
 
-              {/* License & Duration */}
+              {/* License & Status */}
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
                   <p className="text-[9px] text-gray-500 uppercase tracking-wider">ACCOUNT LICENSE</p>
                   <p className="text-xs font-black text-emerald-400 uppercase mt-0.5 font-mono">PREMIUM LICENSE</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wider">REMAINING DURATION</p>
-                  <p className="text-xs font-black text-white mt-0.5 font-mono">
-                    {myCoachProfile?.targets?.subscription_end_date ? (
-                      (() => {
-                        const expiry = new Date(myCoachProfile.targets.subscription_end_date);
-                        const now = new Date();
-                        const diffMs = expiry.getTime() - now.getTime();
-                        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                        if (diffDays < 0) return 'Expired';
-                        if (diffDays === 0) return 'Expires today';
-                        return `${diffDays} days left`;
-                      })()
-                    ) : (
-                      'No Active Plan'
-                    )}
-                  </p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wider">SUBSCRIPTION STATUS</p>
+                  <p className="text-xs font-black text-red-500 uppercase mt-0.5 font-mono">EXPIRED</p>
                 </div>
               </div>
 
@@ -3776,7 +3755,7 @@ export default function DesktopCoachPortal() {
                   }`}
                 >
                   <RefreshCw size={11} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
-                  {myCoachProfile?.targets?.pending_payment ? 'Verification Pending' : 'Upgrade Subscription'}
+                  {myCoachProfile?.targets?.pending_payment ? 'Verification Pending' : 'Renew Subscription'}
                 </button>
                 
                 <button
@@ -6981,12 +6960,7 @@ export default function DesktopCoachPortal() {
                         <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
                         {(() => {
                           if (myCoachProfile?.targets?.pending_payment) return 'Verification Pending';
-                          const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
-                          const now = new Date();
-                          if (!expiry) return 'Renew Subscription';
-                          const diffMs = expiry.getTime() - now.getTime();
-                          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                          return diffDays <= 7 ? 'Renew Subscription' : 'Upgrade Subscription';
+                          return 'Renew Subscription';
                         })()}
                       </button>
                       
@@ -7579,14 +7553,7 @@ export default function DesktopCoachPortal() {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                    {(() => {
-                      const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
-                      const now = new Date();
-                      if (!expiry) return 'Subscribe Premium';
-                      const diffMs = expiry.getTime() - now.getTime();
-                      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                      return diffDays <= 7 ? 'Renew Subscription' : 'Upgrade Subscription';
-                    })()}
+                    Renew Subscription
                   </h3>
                   <p className="text-[10px] text-gray-500">Extend your coaching portal license</p>
                 </div>
@@ -7679,9 +7646,9 @@ export default function DesktopCoachPortal() {
               <div className="p-4 rounded-2xl bg-[#121624]/80 border border-gray-800 space-y-1.5 font-medium text-[11px] text-gray-400">
                 <p className="font-extrabold text-white text-xs uppercase tracking-wider">Payment Instructions:</p>
                 {subOverlayMethod === 'telda' ? (
-                  <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@haleemmamdouh</span></p>
+                  <p>Send the transaction amount to Telda Username: <span className="text-yellow-500 font-mono font-bold select-all">@ckh</span></p>
                 ) : (
-                  <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01096739669</span></p>
+                  <p>Transfer the transaction amount to Mobile Wallet phone: <span className="text-yellow-500 font-mono font-bold select-all">01128828954</span></p>
                 )}
                 <p className="text-[10px] text-gray-500">Verify details and fill out the transfer credentials form below.</p>
               </div>
