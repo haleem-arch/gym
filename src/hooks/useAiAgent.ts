@@ -1096,7 +1096,8 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         if (!res.ok) {
           const e = await res.json().catch(() => ({}));
           const msg = JSON.stringify(e);
-          const isRateLimit = msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP') || msg.includes('RPD') || msg.includes('quota');
+          console.error(`Groq API Model ${model} failed (Status: ${res.status}):`, msg);
+          const isRateLimit = res.status === 429 || msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RPM') || msg.includes('RPD') || msg.includes('quota');
           if (isRateLimit && i < MODELS.length - 1) {
             // Rate limited — silently try next model
             continue;
@@ -1386,6 +1387,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       const waterRegex = /(\d+)\s*(?:ml|milliliters|oz)?\s*(?:of\s+)?water/i;
       const waterRegexAlt = /water\s*(?:of\s*)?(\d+)\s*(?:ml|milliliters|oz)?/i;
       const waterMatch = cleanInput.match(waterRegex) || cleanInput.match(waterRegexAlt);
+      let waterMessageText = '';
       
       if (waterMatch) {
         const amountMl = parseInt(waterMatch[1], 10);
@@ -1405,13 +1407,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
           
           const { success } = await executeActions([waterAction]);
           if (success) {
-            setMessages(prev => [...prev, {
-              id: crypto.randomUUID(),
-              role: 'model',
-              text: `Got it! I've logged **${amountMl}ml of water** for you.`
-            }]);
-            setIsTyping(false);
-            return;
+            waterMessageText = `Got it! I've logged **${amountMl}ml of water** for you.`;
           }
         }
       }
@@ -1421,6 +1417,16 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       const foodRegex = /(?:^|\s)(\d+)\s*(?:g|gm|gram|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
       const foodRegexAlt = /(?:^|\s)([a-zA-Z0-9\s\-_]+)\s+(\d+)\s*(?:g|gm|gram|grams)/i;
       const foodMatch = cleanInput.match(foodRegex) || cleanInput.match(foodRegexAlt);
+      
+      if (!foodMatch && waterMessageText) {
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'model',
+          text: waterMessageText
+        }]);
+        setIsTyping(false);
+        return;
+      }
       
       if (foodMatch) {
         let grams = 0;
@@ -1562,6 +1568,10 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
               replyText = `Eggs are a perfect source of protein and healthy fats. Here is the breakdown for ${grams}g of ${food.name}:`;
             } else if (food.name.toLowerCase().includes('honey') || food.name.toLowerCase().includes('banana') || food.name.toLowerCase().includes('fruit')) {
               replyText = `Great quick-digesting energy choice! Here is the breakdown for ${grams}g of ${food.name}:`;
+            }
+            
+            if (waterMessageText) {
+              replyText = `${waterMessageText}\n\n${replyText}`;
             }
             
             setMessages(prev => [...prev, {
