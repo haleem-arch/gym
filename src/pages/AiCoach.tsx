@@ -12,13 +12,11 @@ const MessageText = ({ text }: { text: string }) => {
     <div className="space-y-1">
       {lines.map((line, i) => {
         if (!line.trim()) return <div key={i} className="h-2" />;
-        // Bold: **text**
         const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
           p.startsWith('**') && p.endsWith('**')
             ? <strong key={j} className="font-semibold text-white">{p.slice(2, -2)}</strong>
             : p
         );
-        // Bullet detection
         const isBullet = /^[-•*]\s/.test(line);
         return (
           <div key={i} className={`flex ${isBullet ? 'gap-2' : ''}`}>
@@ -48,8 +46,6 @@ const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplet
     try {
       const { error } = await supabase.from('diet_meals').insert(data);
       if (error) throw error;
-      
-      // Dispatch an event so the Diet page updates
       window.dispatchEvent(new CustomEvent('diet_updated'));
       onComplete(true);
     } catch (err) {
@@ -60,9 +56,7 @@ const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplet
     }
   };
 
-  const handleDiscard = () => {
-    onComplete(false);
-  };
+  const handleDiscard = () => onComplete(false);
 
   if (!data || data.items.length === 0) {
     return (
@@ -81,7 +75,6 @@ const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplet
         <span className="text-xs font-bold text-gray-300 tracking-wide uppercase">Draft Meal</span>
         <span className="text-xs font-black text-white">{Math.round(totalKcal)} kcal</span>
       </div>
-      
       <div className="flex flex-col">
         {data.items.map((item: any) => (
           <SwipeToDeleteRow key={item.id} onDelete={() => handleDeleteItem(item.id)}>
@@ -99,20 +92,11 @@ const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplet
           </SwipeToDeleteRow>
         ))}
       </div>
-
       <div className="p-2 flex gap-2">
-        <button 
-          onClick={handleDiscard}
-          disabled={isSaving}
-          className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs transition-colors"
-        >
+        <button onClick={handleDiscard} disabled={isSaving} className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs transition-colors">
           Discard
         </button>
-        <button 
-          onClick={handleLog}
-          disabled={isSaving}
-          className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1 shadow-md shadow-emerald-900/20"
-        >
+        <button onClick={handleLog} disabled={isSaving} className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1 shadow-md shadow-emerald-900/20">
           {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={3} />} Log
         </button>
       </div>
@@ -121,36 +105,18 @@ const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplet
 };
 
 const AiCoach = () => {
-  const { 
-    messages, 
-    isTyping, 
-    sendMessage, 
-    updateMessage, 
-    initChat, 
-    startNewChat,
-    quotaLimit,
-    usageCount
-  } = useAiAgent();
+  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat, quotaLimit, usageCount } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLocked, setIsLocked] = useState(false);
 
-  useEffect(() => { 
-    initChat(); 
-    
-    // Check lock status
+  useEffect(() => {
+    initChat();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.id) {
-        supabase
-          .from('profiles')
-          .select('targets')
-          .eq('id', session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data?.targets?.disable_ai) {
-              setIsLocked(true);
-            }
-          });
+        supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle().then(({ data }) => {
+          if (data?.targets?.disable_ai) setIsLocked(true);
+        });
       }
     });
   }, []);
@@ -172,7 +138,7 @@ const AiCoach = () => {
 
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-background text-gray-200">
+      <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-200">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
           <Bot size={28} className="text-red-500" />
         </div>
@@ -185,26 +151,12 @@ const AiCoach = () => {
   }
 
   return (
-    /*
-      Layout strategy:
-      The PageTransition wrapper is `position: absolute; overflow-y: auto; pb-28`.
-      AiCoach needs a fixed-height chat layout (header + scrollable messages + input).
-      We use `fixed inset-0 bottom-[56px]` to fill the visible viewport minus the bottom nav,
-      then stack header / messages / input as flex-col children.
-    */
-    <div
-      className="fixed inset-x-0 top-0 flex flex-col bg-background"
-      style={{
-        bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-        maxWidth: '390px',
-        margin: '0 auto',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-      }}
-    >
-      {/* Header */}
-      <div className="bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 z-30 flex items-center justify-between shadow-lg flex-shrink-0" style={{ paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}>
+    // h-full fills the ChatPageTransition container (which is w-full h-full flex flex-col)
+    // flex flex-col with min-h-0 on the messages area makes it properly scroll
+    <div className="flex flex-col h-full bg-background">
+
+      {/* Header — fixed at top, never scrolls */}
+      <div className="flex-shrink-0 bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 z-30 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
             <Sparkles size={15} className="text-primary" />
@@ -221,16 +173,13 @@ const AiCoach = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={startNewChat}
-          className="px-3 py-1.5 rounded-full text-xs font-bold bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
-        >
+        <button onClick={startNewChat} className="px-3 py-1.5 rounded-full text-xs font-bold bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">
           + New Chat
         </button>
       </div>
 
-      {/* Chat Area — scrollable, fills remaining space */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar min-h-0">
+      {/* Messages — scrollable, takes remaining height */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
         {messages.length === 0 && !isTyping && (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-600 gap-3 py-16">
             <Bot size={40} />
@@ -248,26 +197,20 @@ const AiCoach = () => {
               className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`
-                  text-sm leading-relaxed break-words
-                  ${msg.role === 'user'
+                className={`text-sm leading-relaxed break-words ${
+                  msg.role === 'user'
                     ? 'max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5'
                     : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
-                  }
-                `}
+                }`}
                 style={msg.role === 'model' ? { wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
               >
                 {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
-                
                 {msg.draftMeal && (
-                  <DraftMealBox 
-                    initialData={msg.draftMeal} 
+                  <DraftMealBox
+                    initialData={msg.draftMeal}
                     onComplete={(saved) => {
                       if (saved) {
-                        updateMessage(msg.id, { 
-                          draftMeal: null, 
-                          text: msg.text + "\n\n*(✓ Successfully saved to database)*" 
-                        });
+                        updateMessage(msg.id, { draftMeal: null, text: msg.text + "\n\n*(✓ Successfully saved to database)*" });
                       } else {
                         updateMessage(msg.id, { draftMeal: null });
                       }
@@ -278,7 +221,6 @@ const AiCoach = () => {
             </motion.div>
           ))}
 
-          {/* Thinking indicator */}
           {isTyping && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
               <div className="bg-surface border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2.5">
@@ -291,14 +233,15 @@ const AiCoach = () => {
         <div ref={bottomRef} />
       </div>
 
+      {/* Quota warning */}
       {usageCount >= quotaLimit && (
-        <div className="mx-4 my-2 p-3 bg-red-950/25 border border-red-900/30 text-red-300 rounded-xl text-center text-xs font-semibold leading-relaxed shadow-lg shadow-black/20 flex items-center justify-center gap-1.5 flex-shrink-0">
+        <div className="flex-shrink-0 mx-4 my-2 p-3 bg-red-950/25 border border-red-900/30 text-red-300 rounded-xl text-center text-xs font-semibold leading-relaxed flex items-center justify-center gap-1.5">
           🔒 Daily limit of {quotaLimit} messages reached. Ask your coach to raise your limit!
         </div>
       )}
 
-      {/* Input bar — pinned to bottom */}
-      <div className="p-3 bg-background border-t border-gray-800 z-30 flex-shrink-0">
+      {/* Input bar — pinned at bottom, above the bottom nav */}
+      <div className="flex-shrink-0 p-3 bg-background border-t border-gray-800 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
         <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}

@@ -94,6 +94,30 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
   );
 };
 
+// Special wrapper for full-height chat pages — no scroll, no bottom padding
+const ChatPageTransition = ({ children, direction }: { children: React.ReactNode, direction: number }) => {
+  const variants = {
+    initial: (dir: number) => ({ x: dir > 0 ? 100 : -100, opacity: 0 }),
+    animate: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -100 : 100, opacity: 0 })
+  };
+
+  return (
+    <motion.div
+      custom={direction}
+      variants={variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="w-full h-full absolute top-0 left-0 flex flex-col overflow-hidden bg-background"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 const AppContent = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
@@ -183,7 +207,7 @@ const AppContent = () => {
                   </StravaGuard>
                 </PageTransition>
               } />
-              <Route path="/ai" element={<PageTransition direction={direction}><AiCoach /></PageTransition>} />
+              <Route path="/ai" element={<ChatPageTransition direction={direction}><AiCoach /></ChatPageTransition>} />
 
               {/* Coach Routes */}
               <Route path="/coach/dashboard" element={<PageTransition direction={direction}><DashboardPage /></PageTransition>} />
