@@ -3206,8 +3206,8 @@ export default function DesktopCoachPortal() {
       <>
         {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
         {showSubscriptionOverlay && (
-          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
-            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-4xl w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 overflow-y-auto flex flex-col justify-start items-center p-4 md:p-6">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 md:p-8 max-w-4xl w-full space-y-5 md:space-y-6 shadow-2xl animate-fade-in my-auto">
               
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-gray-855 pb-4">
@@ -3503,8 +3503,8 @@ export default function DesktopCoachPortal() {
 
         {/* COACH PRIVACY POLICY MODAL */}
         {showPrivacyModal && (
-          <div className="fixed inset-0 bg-[#05050b]/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl animate-fade-in no-scrollbar max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-[#05050b]/90 backdrop-blur-md z-[60] overflow-y-auto flex flex-col justify-start items-center p-4">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-5 md:space-y-6 shadow-2xl animate-fade-in my-auto">
               <div className="flex items-center justify-between border-b border-gray-850 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -3566,8 +3566,8 @@ export default function DesktopCoachPortal() {
 
         {/* COACH SUBSCRIPTION HISTORY LEDGER MODAL */}
         {showHistoryModal && (
-          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
-            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl animate-fade-in my-8 no-scrollbar">
+          <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 overflow-y-auto flex flex-col justify-start items-center p-4">
+            <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-5 md:space-y-6 shadow-2xl animate-fade-in my-auto">
               
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-gray-855 pb-4">
@@ -3590,7 +3590,7 @@ export default function DesktopCoachPortal() {
               </div>
 
               {/* List / History Ledger container */}
-              <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 no-scrollbar">
+              <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2">
                 {!myCoachProfile?.targets?.subscription_history || myCoachProfile.targets.subscription_history.length === 0 ? (
                   <div className="py-12 text-center text-gray-500 italic space-y-2">
                     <Activity className="w-8 h-8 text-gray-700 mx-auto animate-pulse" />
@@ -3655,152 +3655,153 @@ export default function DesktopCoachPortal() {
 
   if (isCoachSuspended) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6 font-bold overflow-y-auto pb-12">
-        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse mt-8">
-          <ShieldAlert size={28} className="text-red-500" />
-        </div>
-        <h1 className="text-xl font-black text-white uppercase tracking-wider">Account Suspended</h1>
-        <p className="text-gray-400 text-xs mt-3 max-w-[320px] leading-relaxed font-bold">
-          {coachSuspensionReason}
-        </p>
-
-        {coachUserId !== OWNER_ID && (
-          <div className="mt-8 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 max-w-[420px] w-full text-left font-bold relative overflow-hidden shadow-2xl">
-            {/* Glow */}
-            <div className="absolute -top-12 -right-12 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-gray-800/60 pb-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                <CreditCard size={18} />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">SUBSCRIPTION PLAN DETAILS</h3>
-                <p className="text-[10px] text-gray-500 leading-tight mt-1 font-medium font-sans">Details about your active coaching subscription plan.</p>
-              </div>
-            </div>
-
-            {/* License & Duration */}
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider">ACCOUNT LICENSE</p>
-                <p className="text-sm font-black text-emerald-400 uppercase mt-1 font-mono">PREMIUM LICENSE</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider">REMAINING DURATION</p>
-                <p className="text-sm font-black text-white mt-1 font-mono">
-                  {myCoachProfile?.targets?.subscription_end_date ? (
-                    (() => {
-                      const expiry = new Date(myCoachProfile.targets.subscription_end_date);
-                      const now = new Date();
-                      const diffMs = expiry.getTime() - now.getTime();
-                      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                      if (diffDays < 0) return 'Expired';
-                      if (diffDays === 0) return 'Expires today';
-                      return `${diffDays} days left`;
-                    })()
-                  ) : (
-                    'No Active Plan'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Privileges */}
-            <div className="mt-6 p-4 rounded-2xl bg-[#090b14]/60 border border-gray-800/80 space-y-1.5 text-[11px] leading-relaxed text-gray-400 font-medium font-sans">
-              <p className="font-extrabold text-white text-xs uppercase tracking-wider">🌟 PREMIUM COACH LICENSE PRIVILEGES:</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all client feeds, workouts, diet plans, and body composition logs.</li>
-                <li>Allows hosting and managing <span className="text-white font-bold">up to 50 active athletes</span>.</li>
-                <li>Unlocks the AI Workout Generator, custom workout scheduling, and InBody assessment parsers.</li>
-              </ul>
-            </div>
-
-            {/* Progress Bar */}
-            {myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
-              <div className="space-y-3 mt-6">
-                <div className="flex justify-between text-xs text-gray-400 font-mono">
-                  <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
-                  <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
-                </div>
-                <div className="h-2 bg-[#090b14] border border-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                    style={{
-                      width: `${(() => {
-                        const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
-                        const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
-                        const now = new Date().getTime();
-                        if (now >= end) return 0;
-                        if (now <= start) return 100;
-                        const total = end - start;
-                        const remaining = end - now;
-                        return Math.max(0, Math.min(100, (remaining / total) * 100));
-                      })()}%`
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Banners */}
-            {myCoachProfile?.targets?.pending_payment && (
-              <div className="mt-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold animate-pulse">
-                <p className="font-extrabold uppercase mb-1">⏳ Verification Pending</p>
-                <p className="text-gray-400 font-sans font-medium text-[11px] leading-relaxed">
-                  Your payment for the {myCoachProfile.targets.pending_payment.duration} plan is currently being verified by the administrator.
-                </p>
-              </div>
-            )}
-
-            {myCoachProfile?.targets?.last_payment_result?.status === 'rejected' && (
-              <div className="mt-5 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
-                <p className="font-extrabold uppercase mb-1">❌ Request Rejected</p>
-                <p className="text-gray-400 font-sans font-medium text-[11px] leading-relaxed">
-                  Reason: {myCoachProfile.targets.last_payment_result.reason || 'Invalid verification / receipt details.'}
-                </p>
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-5 border-t border-gray-800/40">
-              <button
-                type="button"
-                disabled={!!myCoachProfile?.targets?.pending_payment}
-                onClick={() => setShowSubscriptionOverlay(true)}
-                className={`flex-1 text-[10px] font-black uppercase tracking-wider py-2.5 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
-                  myCoachProfile?.targets?.pending_payment
-                    ? 'bg-gray-800/40 text-gray-500 border-transparent cursor-not-allowed'
-                    : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white shadow-lg shadow-emerald-500/10'
-                }`}
-              >
-                <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
-                {myCoachProfile?.targets?.pending_payment ? 'Verification Pending' : 'Upgrade Subscription'}
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setShowHistoryModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#090b14] hover:bg-gray-900 border border-gray-800 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 animate-fade-in"
-              >
-                <History size={12} />
-                Last Subscriptions
-              </button>
-            </div>
-
+      <div className="min-h-screen w-full bg-[#05050b] overflow-y-auto flex flex-col justify-start md:justify-center items-center py-10 px-4 md:px-6">
+        <div className="flex flex-col items-center max-w-[400px] w-full text-center my-auto scale-[0.96] origin-center">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 animate-pulse">
+            <ShieldAlert size={22} className="text-red-500" />
           </div>
-        )}
+          <h1 className="text-lg font-black text-white uppercase tracking-wider">Account Suspended</h1>
+          <p className="text-gray-400 text-[11px] mt-2 max-w-[300px] leading-relaxed font-bold">
+            {coachSuspensionReason}
+          </p>
 
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            window.location.href = '/coach-portal';
-          }}
-          className="mt-6 flex items-center gap-2 py-2.5 px-5 rounded-xl border border-red-900/40 hover:border-red-700 bg-red-950/20 text-xs font-black uppercase text-red-400 hover:text-white transition-all active:scale-95 cursor-pointer"
-        >
-          <LogOut size={13} /> Sign Out / Log Out
-        </button>
+          {coachUserId !== OWNER_ID && (
+            <div className="mt-6 bg-[#0b0c16] border border-gray-800 rounded-3xl p-5 w-full text-left font-bold relative overflow-hidden shadow-2xl">
+              {/* Glow */}
+              <div className="absolute -top-12 -right-12 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
+              {/* Header */}
+              <div className="flex items-center gap-2.5 border-b border-gray-800/60 pb-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <CreditCard size={15} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider font-mono">SUBSCRIPTION PLAN DETAILS</h3>
+                  <p className="text-[9px] text-gray-500 leading-tight mt-0.5 font-medium font-sans">Details about your active coaching subscription plan.</p>
+                </div>
+              </div>
+
+              {/* License & Duration */}
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wider">ACCOUNT LICENSE</p>
+                  <p className="text-xs font-black text-emerald-400 uppercase mt-0.5 font-mono">PREMIUM LICENSE</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wider">REMAINING DURATION</p>
+                  <p className="text-xs font-black text-white mt-0.5 font-mono">
+                    {myCoachProfile?.targets?.subscription_end_date ? (
+                      (() => {
+                        const expiry = new Date(myCoachProfile.targets.subscription_end_date);
+                        const now = new Date();
+                        const diffMs = expiry.getTime() - now.getTime();
+                        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                        if (diffDays < 0) return 'Expired';
+                        if (diffDays === 0) return 'Expires today';
+                        return `${diffDays} days left`;
+                      })()
+                    ) : (
+                      'No Active Plan'
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Privileges */}
+              <div className="mt-4 p-3 rounded-xl bg-[#090b14]/60 border border-gray-800/80 space-y-1 text-[10px] leading-relaxed text-gray-400 font-medium font-sans">
+                <p className="font-extrabold text-white text-xs uppercase tracking-wider">🌟 PREMIUM COACH LICENSE PRIVILEGES:</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all client feeds, workouts, diet plans, and body composition logs.</li>
+                  <li>Allows hosting and managing <span className="text-white font-bold">up to 50 active athletes</span>.</li>
+                  <li>Unlocks the AI Workout Generator, custom workout scheduling, and InBody assessment parsers.</li>
+                </ul>
+              </div>
+
+              {/* Progress Bar */}
+              {myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
+                <div className="space-y-2 mt-4">
+                  <div className="flex justify-between text-[10px] text-gray-400 font-mono">
+                    <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
+                    <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                  </div>
+                  <div className="h-1.5 bg-[#090b14] border border-gray-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                      style={{
+                        width: `${(() => {
+                          const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
+                          const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
+                          const now = new Date().getTime();
+                          if (now >= end) return 0;
+                          if (now <= start) return 100;
+                          const total = end - start;
+                          const remaining = end - now;
+                          return Math.max(0, Math.min(100, (remaining / total) * 100));
+                        })()}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Banners */}
+              {myCoachProfile?.targets?.pending_payment && (
+                <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold animate-pulse">
+                  <p className="font-extrabold uppercase mb-0.5">⏳ Verification Pending</p>
+                  <p className="text-gray-400 font-sans font-medium text-[10px] leading-relaxed">
+                    Your payment for the {myCoachProfile.targets.pending_payment.duration} plan is currently being verified by the administrator.
+                  </p>
+                </div>
+              )}
+
+              {myCoachProfile?.targets?.last_payment_result?.status === 'rejected' && (
+                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
+                  <p className="font-extrabold uppercase mb-0.5">❌ Request Rejected</p>
+                  <p className="text-gray-400 font-sans font-medium text-[10px] leading-relaxed">
+                    Reason: {myCoachProfile.targets.last_payment_result.reason || 'Invalid verification / receipt details.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2.5 mt-4 pt-4 border-t border-gray-800/40">
+                <button
+                  type="button"
+                  disabled={!!myCoachProfile?.targets?.pending_payment}
+                  onClick={() => setShowSubscriptionOverlay(true)}
+                  className={`flex-1 text-[9px] font-black uppercase tracking-wider py-2 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
+                    myCoachProfile?.targets?.pending_payment
+                      ? 'bg-gray-800/40 text-gray-500 border-transparent cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white shadow-lg shadow-emerald-500/10'
+                  }`}
+                >
+                  <RefreshCw size={11} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
+                  {myCoachProfile?.targets?.pending_payment ? 'Verification Pending' : 'Upgrade Subscription'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(true)}
+                  className="px-3 py-2 rounded-xl bg-[#090b14] hover:bg-gray-900 border border-gray-800 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 animate-fade-in"
+                >
+                  <History size={11} />
+                  Last Subscriptions
+                </button>
+              </div>
+
+            </div>
+          )}
+
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/coach-portal';
+            }}
+            className="mt-5 flex items-center gap-2 py-2 px-4 rounded-xl border border-red-900/40 hover:border-red-700 bg-red-950/20 text-[10px] font-black uppercase text-red-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+          >
+            <LogOut size={11} /> Sign Out / Log Out
+          </button>
+        </div>
         {renderSubscriptionModals()}
       </div>
     );
