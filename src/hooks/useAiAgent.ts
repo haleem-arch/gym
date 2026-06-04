@@ -1383,30 +1383,60 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         const foodSearchQuery = cleanQuery(rawQuery);
         
         if (!isNaN(grams) && grams > 0 && foodSearchQuery.length > 1) {
-          const { data: matchingFoods } = await supabase
-            .from('food_inventory')
-            .select('*')
-            .ilike('name', `%${foodSearchQuery}%`)
-            .limit(20);
+          const searchWords = foodSearchQuery.split(/\s+/).filter(w => w.length > 0);
+          let queryBuilder = supabase.from('food_inventory').select('*');
+          
+          if (searchWords.length > 0) {
+            const filters = searchWords.map(w => `name.ilike.%${w}%`).join(',');
+            queryBuilder = queryBuilder.or(filters);
+          } else {
+            queryBuilder = queryBuilder.ilike('name', `%${foodSearchQuery}%`);
+          }
+          
+          const { data: matchingFoods } = await queryBuilder.limit(100);
             
           if (matchingFoods && matchingFoods.length > 0) {
-            // Sort to prioritize: (1) Exact match, (2) Starts with, (3) Shortest length
+            const getMatchScore = (food: any, query: string) => {
+              const name = food.name;
+              const n = name.toLowerCase();
+              const q = query.toLowerCase();
+              
+              let baseScore = 0;
+              if (n === q) {
+                baseScore = 150; // Exact match
+              } else {
+                const queryWords = q.split(/\s+/).filter(w => w.length > 0);
+                const nameWords = n.split(/[\s,()\-]+/);
+                
+                let matches = 0;
+                for (const qw of queryWords) {
+                  if (nameWords.includes(qw)) {
+                    matches++;
+                  }
+                }
+                
+                if (matches > 0) {
+                  baseScore = 80 * (matches / queryWords.length);
+                  if (n.includes('cooked')) baseScore += 10;
+                  if (n.includes('raw')) baseScore -= 15;
+                  if (n.includes('dish') || n.includes('complete')) baseScore -= 20;
+                  if (n.includes('component')) baseScore -= 10;
+                  if (n.includes('cake') || n.includes('pudding') || n.includes('drink') || n.includes('stuffed') || n.includes('sausage')) baseScore -= 25;
+                  baseScore -= n.length * 0.5;
+                } else if (n.includes(q)) {
+                  baseScore = 30 - n.length * 0.5;
+                }
+              }
+              
+              if (food.user_id && food.user_id === userIdRef.current) {
+                baseScore += 100;
+              }
+              
+              return baseScore;
+            };
+
             const sortedFoods = [...matchingFoods].sort((a, b) => {
-              const aName = a.name.toLowerCase();
-              const bName = b.name.toLowerCase();
-              const query = foodSearchQuery.toLowerCase();
-              
-              const aExact = aName === query;
-              const bExact = bName === query;
-              if (aExact && !bExact) return -1;
-              if (!aExact && bExact) return 1;
-              
-              const aStarts = aName.startsWith(query);
-              const bStarts = bName.startsWith(query);
-              if (aStarts && !bStarts) return -1;
-              if (!aStarts && bStarts) return 1;
-              
-              return aName.length - bName.length;
+              return getMatchScore(b, foodSearchQuery) - getMatchScore(a, foodSearchQuery);
             });
             
             const food = sortedFoods[0];
@@ -1458,10 +1488,22 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
               ]
             };
             
+            // Dynamic, natural-sounding conversational replies mimicking the main AI
+            let replyText = `Nice choice! That's a great fit for your goals. Here is the breakdown for ${grams}g of ${food.name}:`;
+            if (food.name.toLowerCase().includes('rice')) {
+              replyText = `You're fueling up with ${grams}g of ${food.name}! That's a solid ${carbs}g of carbs to keep you going! 🍚`;
+            } else if (food.name.toLowerCase().includes('chicken') || food.name.toLowerCase().includes('meat') || food.name.toLowerCase().includes('steak')) {
+              replyText = `Excellent! A solid portion of protein. Here is the breakdown for ${grams}g of ${food.name}:`;
+            } else if (food.name.toLowerCase().includes('egg')) {
+              replyText = `Eggs are a perfect source of protein and healthy fats. Here is the breakdown for ${grams}g of ${food.name}:`;
+            } else if (food.name.toLowerCase().includes('honey') || food.name.toLowerCase().includes('banana') || food.name.toLowerCase().includes('fruit')) {
+              replyText = `Great quick-digesting energy choice! Here is the breakdown for ${grams}g of ${food.name}:`;
+            }
+            
             setMessages(prev => [...prev, {
               id: crypto.randomUUID(),
               role: 'model',
-              text: `Got it! Let's get that logged. Here is the nutritional breakdown for ${grams}g of ${food.name}:`,
+              text: replyText,
               draftMeal: draftMealData
             }]);
             setIsTyping(false);

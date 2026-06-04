@@ -1,398 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAiAgent, type AiMessage } from '../hooks/useAiAgent';
-import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
+import { useAiAgent } from '../hooks/useAiAgent';
+import { Send, Bot, Loader2, Sparkles, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 
-const cardStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700&display=swap');
-
-  .user-bubble-custom {
-    align-self: flex-end;
-    background: #4f7cff;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.5;
-    padding: 12px 16px;
-    border-radius: 18px 18px 4px 18px;
-    max-width: 78%;
-    word-break: break-word;
-    box-shadow: 0 4px 12px rgba(79, 124, 255, 0.15);
-  }
-
-  .coach-card-custom {
-    width: 100%;
-    max-width: 420px;
-    background: #1a1a22;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 20px;
-    overflow: hidden;
-    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-    display: flex;
-    flex-direction: column;
-    font-family: 'DM Sans', sans-serif;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .coach-header-custom {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-
-  .coach-avatar-custom {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ff6b35, #ff9a3c);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
-  }
-
-  .coach-meta-custom {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-
-  .coach-name-custom {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: 0.02em;
-  }
-
-  .coach-tag-custom {
-    font-size: 10px;
-    font-weight: 500;
-    color: #ff6b35;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .timing-badge-custom {
-    margin-left: auto;
-    background: rgba(255, 107, 53, 0.12);
-    border: 1px solid rgba(255, 107, 53, 0.25);
-    color: #ff9a3c;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    padding: 4px 9px;
-    border-radius: 20px;
-    text-transform: uppercase;
-  }
-
-  .coach-body-custom {
-    padding: 14px 16px 14px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .coach-intro-custom {
-    font-size: 13.5px;
-    font-weight: 400;
-    color: #b0b0c0;
-    line-height: 1.6;
-  }
-
-  .coach-intro-custom strong {
-    color: #ffffff;
-    font-weight: 500;
-  }
-
-  .meal-label-custom {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #ff6b35;
-    margin-top: 14px;
-    margin-bottom: 8px;
-  }
-
-  .meal-items-custom {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-
-  .meal-item-custom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
-    padding: 9px 12px;
-    gap: 8px;
-    animation: fadeIn 0.3s ease both;
-    width: 100%;
-  }
-
-  .meal-item-custom:nth-child(1) { animation-delay: 0.1s; }
-  .meal-item-custom:nth-child(2) { animation-delay: 0.18s; }
-  .meal-item-custom:nth-child(3) { animation-delay: 0.26s; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateX(-6px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  .item-left-custom {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .item-icon-custom {
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .item-name-custom {
-    font-size: 13px;
-    font-weight: 500;
-    color: #e8e8f0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .item-grams-custom {
-    font-size: 11px;
-    color: #666680;
-    font-weight: 400;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
-  .hydration-note-custom {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    background: rgba(56, 189, 248, 0.07);
-    border: 1px solid rgba(56, 189, 248, 0.15);
-    border-radius: 10px;
-    padding: 9px 11px;
-    margin-top: 4px;
-  }
-
-  .hydration-icon-custom {
-    font-size: 14px;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-
-  .hydration-text-custom {
-    font-size: 12px;
-    color: #7dd3f0;
-    line-height: 1.5;
-  }
-
-  .hydration-text-custom strong {
-    color: #bae6fd;
-    font-weight: 500;
-  }
-
-  .macro-footer-custom {
-    background: rgba(255, 107, 53, 0.06);
-    border-top: 1px solid rgba(255, 107, 53, 0.12);
-    padding: 13px 16px 14px;
-  }
-
-  .macro-header-row-custom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-
-  .macro-title-custom {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #666680;
-  }
-
-  .total-kcal-custom {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-  }
-
-  .total-kcal-custom span {
-    font-size: 11px;
-    font-weight: 500;
-    color: #666680;
-    margin-left: 2px;
-  }
-
-  .macro-pills-custom {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-
-  .macro-pill-custom {
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    padding: 7px 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .macro-pill-value-custom {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1;
-  }
-
-  .macro-pill-label-custom {
-    font-size: 9.5px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .macro-pill-custom.protein .macro-pill-value-custom  { color: #ff6b35; }
-  .macro-pill-custom.protein .macro-pill-label-custom  { color: #ff6b35; opacity: 0.7; }
-  .macro-pill-custom.carbs   .macro-pill-value-custom  { color: #fbbf24; }
-  .macro-pill-custom.carbs   .macro-pill-label-custom  { color: #fbbf24; opacity: 0.7; }
-  .macro-pill-custom.fat     .macro-pill-value-custom  { color: #a78bfa; }
-  .macro-pill-custom.fat     .macro-pill-label-custom  { color: #a78bfa; opacity: 0.7; }
-
-  .cta-row-custom {
-    padding: 12px 16px 14px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-  }
-
-  .cta-question-custom {
-    font-size: 13px;
-    color: #b0b0c0;
-    line-height: 1.5;
-    margin-bottom: 10px;
-  }
-
-  .cta-buttons-custom {
-    display: flex;
-    gap: 8px;
-  }
-
-  .btn-log-custom {
-    flex: 1;
-    background: #ff6b35;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 0;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .btn-log-custom:hover    { background: #ff7d4d; }
-  .btn-log-custom:active   { transform: scale(0.97); }
-
-  .btn-skip-custom {
-    flex: 1;
-    background: rgba(255,255,255,0.05);
-    color: #888898;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    padding: 10px 0;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .btn-skip-custom:hover { background: rgba(255,255,255,0.09); color: #aaa; }
-`;
-
-const getTimingBadgeText = (messages: AiMessage[], currentMsgIndex: number) => {
-  const currentMsg = messages[currentMsgIndex];
-  let text = '';
-  
-  if (currentMsgIndex > 0) {
-    const prevMsg = messages[currentMsgIndex - 1];
-    if (prevMsg.role === 'user') {
-      text += ' ' + prevMsg.text.toLowerCase();
-    }
-  }
-  
-  if (currentMsg) {
-    text += ' ' + currentMsg.text.toLowerCase();
-  }
-
-  const hourMatch = text.match(/(\d+)\s*(?:hour|hr|h|hours)\b/i);
-  const minMatch = text.match(/(\d+)\s*(?:min|m|minutes)\b/i);
-  const isTraining = text.includes('train') || text.includes('workout') || text.includes('practice') || text.includes('gym');
-  
-  if (isTraining) {
-    if (hourMatch) return `⚡ ${hourMatch[1]}h to train`;
-    if (minMatch) return `⚡ ${minMatch[1]}m to train`;
-    return `⚡ Train today`;
-  }
-  return null;
-};
-
-const checkHasHydration = (msgText: string, timingBadge: string | null) => {
-  const text = msgText.toLowerCase();
-  return !!timingBadge || text.includes('water') || text.includes('hydrate') || text.includes('hydration') || text.includes('pre-workout') || text.includes('training');
-};
-
-const getItemIcon = (name: string) => {
-  const n = name.toLowerCase();
-  if (n.includes('egg')) return '🥚';
-  if (n.includes('bread') || n.includes('toast') || n.includes('aish') || n.includes('baladi') || n.includes('sandwich')) return '🍞';
-  if (n.includes('honey') || n.includes('sweetener')) return '🍯';
-  if (n.includes('rice') || n.includes('grain')) return '🍚';
-  if (n.includes('banana')) return '🍌';
-  if (n.includes('oat') || n.includes('porridge') || n.includes('cereal')) return '🥣';
-  if (n.includes('milk') || n.includes('yogurt') || n.includes('cheese') || n.includes('dairy') || n.includes('curd')) return '🥛';
-  if (n.includes('chicken') || n.includes('poultry') || n.includes('breast')) return '🍗';
-  if (n.includes('beef') || n.includes('meat') || n.includes('steak') || n.includes('pork')) return '🥩';
-  if (n.includes('fish') || n.includes('salmon') || n.includes('tuna') || n.includes('seafood')) return '🐟';
-  if (n.includes('apple')) return '🍎';
-  if (n.includes('fruit') || n.includes('berry') || n.includes('berries') || n.includes('strawberry') || n.includes('blueberry')) return '🍓';
-  if (n.includes('water')) return '💧';
-  if (n.includes('shake') || n.includes('whey') || n.includes('protein')) return '🥛';
-  if (n.includes('oil') || n.includes('butter') || n.includes('fat') || n.includes('avocado')) return '🥑';
-  return '🥗';
-};
-
+// Renders model text with line breaks and basic markdown (bold, bullets)
 const MessageText = ({ text }: { text: string }) => {
   const lines = text.split('\n');
   return (
@@ -416,43 +29,25 @@ const MessageText = ({ text }: { text: string }) => {
   );
 };
 
-const CoachCard = ({
-  msg,
-  messages,
-  msgIndex,
-  onUpdateMessage
-}: {
-  msg: AiMessage;
-  messages: AiMessage[];
-  msgIndex: number;
-  onUpdateMessage: (id: string, updates: Partial<AiMessage>) => void;
-}) => {
-  const [data, setData] = useState(msg.draftMeal);
+const DraftMealBox = ({ initialData, onComplete }: { initialData: any; onComplete: (saved: boolean) => void }) => {
+  const [data, setData] = useState(initialData);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    setData(msg.draftMeal);
-  }, [msg.draftMeal]);
-
   const handleDeleteItem = (itemId: string) => {
-    if (!data) return;
-    const updatedItems = data.items.filter((item: any) => item.id !== itemId);
-    const newData = { ...data, items: updatedItems };
-    setData(newData);
-    onUpdateMessage(msg.id, { draftMeal: newData });
+    setData((prev: any) => ({
+      ...prev,
+      items: prev.items.filter((item: any) => item.id !== itemId)
+    }));
   };
 
   const handleLog = async () => {
-    if (!data || data.items.length === 0) return;
+    if (data.items.length === 0) return;
     setIsSaving(true);
     try {
       const { error } = await supabase.from('diet_meals').insert(data);
       if (error) throw error;
       window.dispatchEvent(new CustomEvent('diet_updated'));
-      onUpdateMessage(msg.id, {
-        draftMeal: null,
-        text: msg.text + "\n\n*(✓ Saved)*"
-      });
+      onComplete(true);
     } catch (err) {
       console.error("Failed to save draft meal", err);
       alert("Failed to save meal");
@@ -461,110 +56,50 @@ const CoachCard = ({
     }
   };
 
-  const handleDiscard = () => {
-    onUpdateMessage(msg.id, { draftMeal: null });
-  };
+  const handleDiscard = () => onComplete(false);
 
-  const timingBadgeText = getTimingBadgeText(messages, msgIndex);
-  const hasHydration = checkHasHydration(msg.text, timingBadgeText);
+  if (!data || data.items.length === 0) {
+    return (
+      <div className="mt-3 p-3 bg-surface border border-gray-800 rounded-xl flex items-center justify-between opacity-50">
+        <span className="text-xs text-gray-500">Draft empty</span>
+        <button onClick={handleDiscard} className="text-[10px] uppercase font-bold text-gray-400">Dismiss</button>
+      </div>
+    );
+  }
 
-  const totalKcal = data?.items?.reduce((acc: number, item: any) => acc + (item.macros?.kcal || 0), 0) || 0;
-  const totalProtein = data?.items?.reduce((acc: number, item: any) => acc + (item.macros?.protein || 0), 0) || 0;
-  const totalCarbs = data?.items?.reduce((acc: number, item: any) => acc + (item.macros?.carbs || 0), 0) || 0;
-  const totalFat = data?.items?.reduce((acc: number, item: any) => acc + (item.macros?.fat || 0), 0) || 0;
+  const totalKcal = data.items.reduce((acc: number, item: any) => acc + (item.macros?.kcal || 0), 0);
 
   return (
-    <div className="coach-card-custom">
-      {/* Header */}
-      <div className="coach-header-custom">
-        <div className="coach-avatar-custom">A</div>
-        <div className="coach-meta-custom">
-          <div className="coach-name-custom">Alberto</div>
-          <div className="coach-tag-custom">Your Coach</div>
-        </div>
-        {timingBadgeText && (
-          <div className="timing-badge-custom">{timingBadgeText}</div>
-        )}
+    <div className="mt-3 bg-surface border border-gray-700/50 rounded-xl overflow-hidden shadow-lg shadow-black/20">
+      <div className="bg-gray-800/40 px-3 py-2 border-b border-gray-700/50 flex justify-between items-center">
+        <span className="text-xs font-bold text-gray-300 tracking-wide uppercase">Draft Meal</span>
+        <span className="text-xs font-black text-white">{Math.round(totalKcal)} kcal</span>
       </div>
-
-      {/* Body */}
-      <div className="coach-body-custom">
-        <div className="coach-intro-custom">
-          <MessageText text={msg.text} />
-        </div>
-
-        {data && data.items && data.items.length > 0 && (
-          <>
-            <div className="meal-label-custom">Suggested Meal</div>
-            <div className="meal-items-custom">
-              {data.items.map((item: any) => (
-                <SwipeToDeleteRow key={item.id} onDelete={() => handleDeleteItem(item.id)}>
-                  <div className="meal-item-custom">
-                    <div className="item-left-custom">
-                      <span className="item-icon-custom">{getItemIcon(item.name)}</span>
-                      <span className="item-name-custom">{item.name}</span>
-                    </div>
-                    <span className="item-grams-custom">
-                      {item.grams}g
-                    </span>
-                  </div>
-                </SwipeToDeleteRow>
-              ))}
-            </div>
-
-            {hasHydration && (
-              <div className="hydration-note-custom">
-                <span className="hydration-icon-custom">💧</span>
-                <p className="hydration-text-custom">
-                  Sip water steadily over the next 2 hours. <strong>Don't chug right before training</strong> — it causes bloating and cramps.
-                </p>
+      <div className="flex flex-col">
+        {data.items.map((item: any) => (
+          <SwipeToDeleteRow key={item.id} onDelete={() => handleDeleteItem(item.id)}>
+            <div className="px-3 py-2.5 border-b border-gray-800/30 flex justify-between items-center bg-surface">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-200">{item.name}</span>
+                <span className="text-[10px] text-gray-500">{item.grams}g</span>
               </div>
-            )}
-          </>
-        )}
+              <div className="flex gap-2 text-[10px] font-semibold">
+                <span className="text-blue-400">{Math.round(item.macros?.protein || 0)}P</span>
+                <span className="text-orange-400">{Math.round(item.macros?.carbs || 0)}C</span>
+                <span className="text-red-400">{Math.round(item.macros?.fat || 0)}F</span>
+              </div>
+            </div>
+          </SwipeToDeleteRow>
+        ))}
       </div>
-
-      {data && data.items && data.items.length > 0 && (
-        <>
-          {/* Macro footer */}
-          <div className="macro-footer-custom">
-            <div className="macro-header-row-custom">
-              <span className="macro-title-custom">Total Meal Macros</span>
-              <span className="total-kcal-custom">
-                {Math.round(totalKcal)}
-                <span>kcal</span>
-              </span>
-            </div>
-            <div className="macro-pills-custom">
-              <div className="macro-pill-custom protein">
-                <span className="macro-pill-value-custom">{Math.round(totalProtein)}g</span>
-                <span className="macro-pill-label-custom">Protein</span>
-              </div>
-              <div className="macro-pill-custom carbs">
-                <span className="macro-pill-value-custom">{Math.round(totalCarbs)}g</span>
-                <span className="macro-pill-label-custom">Carbs</span>
-              </div>
-              <div className="macro-pill-custom fat">
-                <span className="macro-pill-value-custom">{Math.round(totalFat)}g</span>
-                <span className="macro-pill-label-custom">Fat</span>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="cta-row-custom">
-            <p className="cta-question-custom">Want me to log this meal for you?</p>
-            <div className="cta-buttons-custom">
-              <button onClick={handleLog} disabled={isSaving} className="btn-log-custom">
-                {isSaving ? <Loader2 size={13} className="animate-spin" /> : "Yes, log it ✓"}
-              </button>
-              <button onClick={handleDiscard} disabled={isSaving} className="btn-skip-custom">
-                Not now
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <div className="p-2 flex gap-2">
+        <button onClick={handleDiscard} disabled={isSaving} className="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs transition-colors">
+          Discard
+        </button>
+        <button onClick={handleLog} disabled={isSaving} className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1 shadow-md shadow-emerald-900/20">
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={3} />} Log
+        </button>
+      </div>
     </div>
   );
 };
@@ -574,6 +109,7 @@ const AiCoach = () => {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLocked, setIsLocked] = useState(false);
+
   useEffect(() => {
     initChat();
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -616,7 +152,6 @@ const AiCoach = () => {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <style dangerouslySetInnerHTML={{ __html: cardStyles }} />
 
       {/* Header — fixed at top, never scrolls */}
       <div className="flex-shrink-0 bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 z-30 flex items-center justify-between shadow-lg">
@@ -642,7 +177,7 @@ const AiCoach = () => {
       </div>
 
       {/* Messages — scrollable, takes remaining height */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4 no-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
         {messages.length === 0 && !isTyping && (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-600 gap-3 py-16">
             <Bot size={40} />
@@ -651,7 +186,7 @@ const AiCoach = () => {
         )}
 
         <AnimatePresence initial={false}>
-          {messages.map((msg, index) => (
+          {messages.map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 8 }}
@@ -659,18 +194,28 @@ const AiCoach = () => {
               transition={{ duration: 0.2 }}
               className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {msg.role === 'user' ? (
-                <div className="user-bubble-custom">
-                  {msg.text}
-                </div>
-              ) : (
-                <CoachCard
-                  msg={msg}
-                  messages={messages}
-                  msgIndex={index}
-                  onUpdateMessage={updateMessage}
-                />
-              )}
+              <div
+                className={`text-sm leading-relaxed break-words ${
+                  msg.role === 'user'
+                    ? 'max-w-[80%] bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5'
+                    : 'max-w-[90%] bg-surface border border-gray-800 text-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
+                }`}
+                style={msg.role === 'model' ? { wordBreak: 'break-word', overflowWrap: 'anywhere' } : {}}
+              >
+                {msg.role === 'model' ? <MessageText text={msg.text} /> : msg.text}
+                {msg.draftMeal && (
+                  <DraftMealBox
+                    initialData={msg.draftMeal}
+                    onComplete={(saved) => {
+                      if (saved) {
+                        updateMessage(msg.id, { draftMeal: null, text: msg.text + "\n\n*(✓ Saved)*" });
+                      } else {
+                        updateMessage(msg.id, { draftMeal: null });
+                      }
+                    }}
+                  />
+                )}
+              </div>
             </motion.div>
           ))}
 
