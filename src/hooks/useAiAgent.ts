@@ -987,12 +987,12 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         if (!res.ok) {
           const e = await res.json().catch(() => ({}));
           const msg = JSON.stringify(e);
-          const isRateLimit = msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP');
+          const isRateLimit = msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP') || msg.includes('RPD') || msg.includes('quota');
           if (isRateLimit && i < MODELS.length - 1) {
             // Rate limited — silently try next model
             continue;
           }
-          throw new Error(isRateLimit ? 'RATE_LIMIT_ALL' : msg.slice(0, 100));
+          throw new Error(isRateLimit ? `RATE_LIMIT_ALL: ${msg}` : msg);
         }
 
         const data = await res.json();
@@ -1235,18 +1235,35 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
     } catch (e: any) {
       console.error("AI Coach query error:", e);
-      const isRate = e.message === 'RATE_LIMIT_ALL' || e.message === 'RATE_LIMIT';
-      const isQuotaOrKeyError = e.message?.includes('API_KEY') || e.message?.includes('key') || e.message?.includes('quota') || e.message?.includes('401') || e.message?.includes('403') || e.message?.includes('429');
+      const errStr = e.message || '';
+      const isRate = errStr.includes('RATE_LIMIT_ALL') || errStr.includes('RATE_LIMIT');
+      
+      const isDailyQuota = errStr.toLowerCase().includes('rpd') || 
+                           errStr.toLowerCase().includes('requests per day') || 
+                           errStr.toLowerCase().includes('daily_limit') || 
+                           errStr.toLowerCase().includes('quota') || 
+                           errStr.toLowerCase().includes('capacity') ||
+                           errStr.toLowerCase().includes('limit reached');
+
+      const isQuotaOrKeyError = errStr.includes('API_KEY') || 
+                                errStr.includes('key') || 
+                                errStr.includes('401') || 
+                                errStr.includes('403') || 
+                                errStr.includes('429') || 
+                                isDailyQuota;
       
       let userFacingText = 'The AI Coach is temporarily offline for maintenance. Please check back shortly!';
-      if (isRate) {
+      
+      if (isDailyQuota) {
+        userFacingText = '🤖 The AI Coach has reached its daily training capacity. Please try again shortly or notify your coach!';
+      } else if (isRate) {
         userFacingText = '⏱️ The AI is busy right now. Please wait a moment and try again.';
       } else if (isQuotaOrKeyError) {
         userFacingText = '🤖 The AI Coach has reached its daily training capacity. Please try again shortly or notify your coach!';
       }
       
       if (isCoachRef.current) {
-        userFacingText = `🤖 AI Coach Status: Offline. (Reason: ${isRate ? 'Rate Limit' : (isQuotaOrKeyError ? 'API Quota Exceeded' : 'Service Connection Issue')})`;
+        userFacingText = `🤖 AI Coach Status: Offline. (Reason: ${isDailyQuota ? 'API Quota Exceeded' : (isRate ? 'Rate Limit' : (isQuotaOrKeyError ? 'API Quota Exceeded' : 'Service Connection Issue'))})`;
       }
 
       setMessages(prev => [...prev, {
