@@ -519,3 +519,4 @@ const AiCoach = () => {
 };
 
 export default AiCoach;
+// Build optimization trigger: Refined AI Coach layouts v1.1
