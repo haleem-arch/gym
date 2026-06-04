@@ -4031,13 +4031,15 @@ export default function DesktopCoachPortal() {
 
         {/* System Health Check indicator */}
         <div className="flex items-center gap-6 text-xs">
-          <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-1.5 font-medium">
-            <Database size={13} className={dbHealthy ? 'text-emerald-400' : 'text-red-400'} />
-            <span className="text-[10px] text-gray-400">Database:</span>
-            <span className={dbHealthy ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
-              {dbHealthy ? 'ONLINE' : 'OFFLINE'}
-            </span>
-          </div>
+          {coachUserId === OWNER_ID && (
+            <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-1.5 font-medium">
+              <Database size={13} className={dbHealthy ? 'text-emerald-400' : 'text-red-400'} />
+              <span className="text-[10px] text-gray-400">Database:</span>
+              <span className={dbHealthy ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
+                {dbHealthy ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            </div>
+          )}
 
           <button 
             onClick={async () => {
