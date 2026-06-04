@@ -1583,10 +1583,29 @@ export default function DesktopCoachPortal() {
     const headers = ["Date", "Workouts", "Diet Calories (kcal)", "Protein (g)", "Carbs (g)", "Fat (g)", "Water (L)"];
     const rows = data.map(row => {
       const workoutsStr = row.workouts.map(w => `${w.day_type || 'GYM'}: ${w.name || 'Workout'} (${w.status})`).join(" | ");
-      const kcal = row.diet?.daily_totals?.kcal || 0;
-      const protein = row.diet?.daily_totals?.protein || 0;
-      const carbs = row.diet?.daily_totals?.carbs || 0;
-      const fat = row.diet?.daily_totals?.fat || 0;
+      
+      let kcal = 0;
+      let protein = 0;
+      let carbs = 0;
+      let fat = 0;
+      
+      if (row.diet) {
+        let dt = row.diet.daily_totals;
+        if (typeof dt === 'string') {
+          try {
+            dt = JSON.parse(dt);
+          } catch (e) {
+            console.error("Failed to parse daily_totals string in export:", e);
+          }
+        }
+        if (dt) {
+          kcal = dt.kcal || 0;
+          protein = dt.protein || 0;
+          carbs = dt.carbs || 0;
+          fat = dt.fat || 0;
+        }
+      }
+      
       const waterL = (row.waterMl / 1000).toFixed(2);
       
       return [
@@ -3045,13 +3064,22 @@ export default function DesktopCoachPortal() {
 
   const waterTotalMl = clientWaterLogs.reduce((acc, log) => acc + (log.amount_ml || 0), 0);
 
+  const scheduleDayTypes = clientActiveSchedule?.days ? Object.values(clientActiveSchedule.days) : [];
+  const historyDayTypes = clientHistoryWorkouts ? clientHistoryWorkouts.map(w => w.day_type) : [];
+  const activeDayTypesSet = new Set([
+    'REST',
+    ...clientWorkoutPlans.map(p => p.plan_type),
+    ...scheduleDayTypes,
+    ...historyDayTypes
+  ]);
+
   const athleteDayTypes = Array.from(new Set([
     'REST', 
     'RUN', 
     'RUN + GYM', 
     ...clientWorkoutPlans.map(p => p.plan_type),
     ...Object.keys(dayNutrition)
-  ])).filter(Boolean);
+  ])).filter(dt => dt && activeDayTypesSet.has(dt));
 
   if (loading) {
     return (
@@ -3378,25 +3406,29 @@ export default function DesktopCoachPortal() {
 
         {/* System Health Check indicator */}
         <div className="flex items-center gap-6 text-xs">
-          {coachUserId === OWNER_ID && (
-            <>
-              <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-1.5 font-medium">
-                <Database size={13} className={dbHealthy ? 'text-emerald-400' : 'text-red-400'} />
-                <span className="text-[10px] text-gray-400">Database:</span>
-                <span className={dbHealthy ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
-                  {dbHealthy ? 'ONLINE' : 'OFFLINE'}
-                </span>
-              </div>
+          <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-1.5 font-medium">
+            <Database size={13} className={dbHealthy ? 'text-emerald-400' : 'text-red-400'} />
+            <span className="text-[10px] text-gray-400">Database:</span>
+            <span className={dbHealthy ? 'text-emerald-400 font-black' : 'text-red-400 font-black'}>
+              {dbHealthy ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </div>
 
-              <button 
-                onClick={() => fetchBaseData()}
-                className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/40 text-[10px] font-bold text-gray-400 hover:text-white transition-all active:scale-95 cursor-pointer"
-                title="Refresh database data only"
-              >
-                <RefreshCw size={11} /> Sync Data
-              </button>
-            </>
-          )}
+          <button 
+            onClick={async () => {
+              const toastId = toast.loading("Syncing dashboard data...");
+              try {
+                await fetchBaseData();
+                toast.success("Dashboard data synced!", { id: toastId });
+              } catch (err) {
+                toast.error("Failed to sync data", { id: toastId });
+              }
+            }}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-emerald-900/40 hover:border-emerald-600 bg-emerald-950/20 text-[10px] font-bold text-emerald-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title="Refresh database data only"
+          >
+            <RefreshCw size={11} className="text-emerald-400 animate-pulse" /> Sync Data
+          </button>
 
           <button 
             onClick={handleHardReload}
@@ -3632,7 +3664,11 @@ export default function DesktopCoachPortal() {
                       <p className="text-xs text-gray-500 italic text-center py-12">No recent diet logs recorded.</p>
                     ) : (
                       recentDiets.map((d, idx) => (
-                        <div key={idx} className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-gray-800 transition-colors">
+                        <div 
+                          key={idx} 
+                          onClick={() => handleOpenDietReceipt(d)}
+                          className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-emerald-500/50 hover:bg-gray-900/20 transition-colors cursor-pointer"
+                        >
                           <div className="space-y-1">
                             <p className="font-extrabold text-white">{d.profiles?.display_name}</p>
                             <p className="text-gray-500">Tracked daily totals</p>
@@ -4040,17 +4076,42 @@ export default function DesktopCoachPortal() {
                         </div>
 
                         {/* Hydration Goal Status */}
-                        <div className="bg-[#121624] border border-gray-850 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="bg-[#121624] border border-gray-850 p-5 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-6">
                           <div className="flex items-center gap-3">
                             <span className="text-2xl">💧</span>
                             <div>
                               <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Water Consumed Progress</p>
-                              <p className="text-lg font-black text-white mt-0.5">
-                                {(waterTotalMl / 1000).toFixed(2)}L <span className="text-xs text-gray-500">/ {targetWaterLiters}L Goal</span>
-                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-lg font-black text-white">{(waterTotalMl / 1000).toFixed(2)}L</span>
+                                <span className="text-xs text-gray-500">/ {targetWaterLiters}L Goal</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex-1 max-w-[240px]">
+                          
+                          {/* Inline Edit Daily Goal */}
+                          <div className="flex items-center gap-2 bg-[#090b11] border border-gray-850 rounded-xl px-3 py-1.5 w-full lg:w-auto justify-between lg:justify-start">
+                            <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider whitespace-nowrap">Edit Goal:</span>
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="number" 
+                                step="0.1" 
+                                min="0.1"
+                                value={targetWaterLiters} 
+                                onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
+                                className="w-16 bg-[#121624] border border-gray-800 rounded-lg p-1 text-xs text-white text-center font-bold outline-none focus:border-sky-500"
+                              />
+                              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">L</span>
+                            </div>
+                            <button
+                              onClick={handleSaveTargets}
+                              disabled={savingTargets}
+                              className="bg-sky-600 hover:bg-sky-500 disabled:bg-gray-800 text-white font-black text-[9px] uppercase px-3 py-1.5 rounded-lg active:scale-95 transition-all cursor-pointer shadow-md"
+                            >
+                              {savingTargets ? 'Saving...' : 'Save Target'}
+                            </button>
+                          </div>
+
+                          <div className="w-full lg:w-48">
                             <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#38bdf8" />
                           </div>
                         </div>

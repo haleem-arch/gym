@@ -337,7 +337,7 @@ const TodayView = () => {
       const exNames = matched?.exercises ? matched.exercises.map((e: any) => typeof e === 'string' ? e : e.name) : [];
       return { 
         title: `Run + Gym (${matched?.plan_type || hybridLiftingType})`, 
-        exercises: ['🏃‍♂️ Strava / Manual Run Session', ...exNames.map((name: string) => `🏋️‍♂️ ${name}`)] 
+        exercises: ['🏃‍♂️ Manual Run Session', ...exNames.map((name: string) => `🏋️‍♂️ ${name}`)] 
       };
     }
     
@@ -491,7 +491,7 @@ const TodayView = () => {
                 className="w-full h-[48px] bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
                 <Activity size={16} />
-                LOG RUN (MANUAL / STRAVA)
+                LOG RUN (MANUAL)
               </button>
             )}
 

@@ -642,7 +642,7 @@ const WorkoutHome = () => {
                 onClick={() => setShowRunModal(true)}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-8 rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer text-xs uppercase tracking-wider w-full"
               >
-                {currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' ? 'Log Run (Manual / Strava)' : 'Log Run (Manual)'}
+                Log Run (Manual)
               </button>
             )}
           </div>
@@ -689,7 +689,7 @@ const WorkoutHome = () => {
                   onClick={() => setShowRunModal(true)}
                   className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
                 >
-                  <Activity size={18} /> {currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' ? 'LOG RUN (MANUAL / STRAVA)' : 'LOG RUN (MANUAL)'}
+                  <Activity size={18} /> LOG RUN (MANUAL)
                 </button>
               )}
 
