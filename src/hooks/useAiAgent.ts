@@ -820,7 +820,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         const filters = words.slice(0, 5).map(w => `name.ilike.%${w}%`).join(',');
         query = query.or(filters);
       } else {
-        query = query.limit(30);
+        query = query.limit(15);
       }
       
       const { data: presetFoods } = await query;
@@ -834,7 +834,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
           .from('food_inventory')
           .select('id, name, kcal_per_100g, protein, carbs, fat, serving_type')
           .is('user_id', null)
-          .limit(30);
+          .limit(15);
         if (defaultPreset) {
           matchedFoods.push(...defaultPreset);
         }
@@ -861,7 +861,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         serving_type: f.serving_type || 'per_100g'
       }));
 
-      parts.push(`AVAILABLE_DATABASE_FOODS: ${JSON.stringify(promptFoods.slice(0, 50))}`);
+      parts.push(`AVAILABLE_DATABASE_FOODS: ${JSON.stringify(promptFoods.slice(0, 20))}`);
 
     } catch (err) {
       console.error("Error loading food database context:", err);
@@ -930,7 +930,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       .eq('user_id', uid)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(3);
     
     if (recentWorkouts && recentWorkouts.length > 0) {
       const summary = recentWorkouts
@@ -999,7 +999,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         if (!res.ok) {
           const e = await res.json().catch(() => ({}));
           const msg = JSON.stringify(e);
-          const isRateLimit = msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP');
+          const isRateLimit = res.status === 429 || msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM') || msg.includes('RMP');
           if (isRateLimit && i < MODELS.length - 1) {
             // Rate limited — silently try next model
             continue;
