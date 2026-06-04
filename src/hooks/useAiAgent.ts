@@ -1393,15 +1393,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         const amountMl = parseInt(waterMatch[1], 10);
         if (!isNaN(amountMl) && amountMl > 0) {
           const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
-          
           const waterAction: DbAction = {
             type: 'insert',
             table: 'water_logs',
             data: {
-              user_id: userIdRef.current,
+              amount_ml: amountMl,
               date: selectedDate,
-              time: new Date().toISOString(),
-              amount_ml: amountMl
+              time: getLocalTime()
             }
           };
           
@@ -1411,14 +1409,40 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
           }
         }
       }
-      
+
+      // Helper function to clean search terms
+      const cleanQuery = (q: string) => {
+        const stopWords = new Set([
+          'i', 'we', 'you', 'he', 'she', 'they', 'it', 'me', 'my', 'us', 'our',
+          'had', 'ate', 'log', 'add', 'have', 'eat', 'eating', 'drank', 'drink',
+          'please', 'yesterday', 'today', 'now', 'for', 'breakfast', 'lunch',
+          'dinner', 'snack', 'some', 'of', 'a', 'an', 'the', 'in', 'to', 'from',
+          'with', 'and', 'but', 'or', 'so', 'yet', 'at', 'by', 'on', 'about',
+          'into', 'through', 'over', 'after', 'before', 'between', 'under',
+          'out', 'up', 'down', 'can', 'could', 'would', 'should', 'will', 'shall',
+          'let', 'go', 'ahead', 'just', 'like', 'this', 'that', 'these', 'those',
+          'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being', 'do', 'does',
+          'did', 'done', 'doing', 'it', 'its'
+        ]);
+        return q
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .split(/\s+/)
+          .filter(w => w.length >= 3 && !stopWords.has(w))
+          .join(' ')
+          .trim();
+      };
+
       // 2. Food Logging Intent: e.g. "100 gm rice", "ate 100g of rice", "100g chicken"
-      // Match "100g rice" or "rice 100g" anywhere in input
       const foodRegex = /(?:^|\s)(\d+)\s*(?:g|gm|gram|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
       const foodRegexAlt = /(?:^|\s)([a-zA-Z0-9\s\-_]+)\s+(\d+)\s*(?:g|gm|gram|grams)/i;
       const foodMatch = cleanInput.match(foodRegex) || cleanInput.match(foodRegexAlt);
       
-      if (!foodMatch && waterMessageText) {
+      const foodKeywords = ['ate', 'eat', 'had', 'log', 'add', 'logged', 'breakfast', 'lunch', 'dinner', 'snack', 'meal', 'food'];
+      const inputWords = cleanInput.split(/[\s,()\-]+/);
+      const isTryingToLogFood = inputWords.some(w => foodKeywords.includes(w));
+      
+      if (!foodMatch && waterMessageText && !isTryingToLogFood) {
         setMessages(prev => [...prev, {
           id: crypto.randomUUID(),
           role: 'model',
@@ -1432,23 +1456,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         let grams = 0;
         let rawQuery = '';
         
-        // If first regex matched (grams first)
         if (cleanInput.match(foodRegex)) {
           grams = parseInt(foodMatch[1], 10);
           rawQuery = foodMatch[2].trim();
         } else {
-          // If second regex matched (food name first)
           rawQuery = foodMatch[1].trim();
           grams = parseInt(foodMatch[2], 10);
         }
-        
-        // Clean stop words from query
-        const cleanQuery = (q: string) => {
-          return q
-            .replace(/\b(i|we|you|he|she|they|had|ate|log|add|have|eat|eating|drank|drink|please|yesterday|today|now|for|breakfast|lunch|dinner|snack|some|of|a|an|the|in|to)\b/gi, '')
-            .replace(/\s+/g, ' ')
-            .trim();
-        };
         
         const foodSearchQuery = cleanQuery(rawQuery);
         
@@ -1464,7 +1478,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
           }
           
           const { data: matchingFoods } = await queryBuilder.limit(100);
-            
+             
           if (matchingFoods && matchingFoods.length > 0) {
             const getMatchScore = (food: any, query: string) => {
               const name = food.name;
@@ -1473,7 +1487,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
               
               let baseScore = 0;
               if (n === q) {
-                baseScore = 150; // Exact match
+                baseScore = 150;
               } else {
                 const queryWords = q.split(/\s+/).filter(w => w.length > 0);
                 const nameWords = n.split(/[\s,()\-]+/);
@@ -1558,7 +1572,6 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
               ]
             };
             
-            // Dynamic, natural-sounding conversational replies mimicking the main AI
             let replyText = `Nice choice! That's a great fit for your goals. Here is the breakdown for ${grams}g of ${food.name}:`;
             if (food.name.toLowerCase().includes('rice')) {
               replyText = `You're fueling up with ${grams}g of ${food.name}! That's a solid ${carbs}g of carbs to keep you going! 🍚`;
@@ -1582,7 +1595,101 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
             }]);
             setIsTyping(false);
             return;
+          } else {
+            let replyText = `I couldn't find "${foodSearchQuery}" in your food list. You can add it manually in the Diet tab, and I'll be able to log it for you next time!`;
+            if (waterMessageText) {
+              replyText = `${waterMessageText}\n\n${replyText}`;
+            }
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'model',
+              text: replyText
+            }]);
+            setIsTyping(false);
+            return;
           }
+        }
+      } else if (isTryingToLogFood) {
+        // User wants to log food but forgot to specify the amount in grams
+        const foodSearchQuery = cleanQuery(cleanInput);
+        
+        if (foodSearchQuery.length > 1) {
+          const searchWords = foodSearchQuery.split(/\s+/).filter(w => w.length > 0);
+          let queryBuilder = supabase.from('food_inventory').select('*');
+          
+          if (searchWords.length > 0) {
+            const filters = searchWords.map(w => `name.ilike.%${w}%`).join(',');
+            queryBuilder = queryBuilder.or(filters);
+          } else {
+            queryBuilder = queryBuilder.ilike('name', `%${foodSearchQuery}%`);
+          }
+          
+          const { data: matchingFoods } = await queryBuilder.limit(100);
+          
+          if (matchingFoods && matchingFoods.length > 0) {
+            // Found matching foods
+            const getMatchScore = (food: any, query: string) => {
+              const name = food.name;
+              const n = name.toLowerCase();
+              const q = query.toLowerCase();
+              let baseScore = 0;
+              if (n === q) {
+                baseScore = 150;
+              } else {
+                const queryWords = q.split(/\s+/).filter(w => w.length > 0);
+                const nameWords = n.split(/[\s,()\-]+/);
+                let matches = 0;
+                for (const qw of queryWords) {
+                  if (nameWords.includes(qw)) matches++;
+                }
+                if (matches > 0) {
+                  baseScore = 80 * (matches / queryWords.length);
+                  baseScore -= n.length * 0.5;
+                }
+              }
+              if (food.user_id && food.user_id === userIdRef.current) baseScore += 100;
+              return baseScore;
+            };
+            
+            const sortedFoods = [...matchingFoods].sort((a, b) => getMatchScore(b, foodSearchQuery) - getMatchScore(a, foodSearchQuery));
+            const food = sortedFoods[0];
+            
+            let replyText = `I can help you log "${food.name}"! Just let me know the amount in grams (for example: '100g ${food.name}') and I'll check your food list.`;
+            if (waterMessageText) {
+              replyText = `${waterMessageText}\n\n${replyText}`;
+            }
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'model',
+              text: replyText
+            }]);
+            setIsTyping(false);
+            return;
+          } else {
+            let replyText = `I couldn't find "${foodSearchQuery}" in your food list. You can add it manually in the Diet tab, and I'll be able to log it for you next time!`;
+            if (waterMessageText) {
+              replyText = `${waterMessageText}\n\n${replyText}`;
+            }
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              role: 'model',
+              text: replyText
+            }]);
+            setIsTyping(false);
+            return;
+          }
+        } else {
+          let replyText = "I can help you log that! Just let me know the food and the amount in grams (for example: '100g chicken') and I'll check your food list.";
+          if (waterMessageText) {
+            replyText = `${waterMessageText}\n\n${replyText}`;
+          }
+          setMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
+            role: 'model',
+            text: replyText
+          }]);
+          setIsTyping(false);
+          return;
         }
       }
 
