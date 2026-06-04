@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useSchedule } from '../hooks/useSchedule';
-import { Play, History, ChevronRight, Check, Activity, RefreshCw, Sparkles, X, BarChart2, Layers } from 'lucide-react';
+import { Play, History, ChevronRight, Check, Activity, RefreshCw, BarChart2, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
@@ -38,24 +38,7 @@ const WorkoutHome = () => {
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
-  const [workoutAnalysis, setWorkoutAnalysis] = useState<{
-    score: number;
-    verdict: string;
-    focus: string;
-    nextTime: string;
-    consistency: string;
-    advice: string;
-    volumeLifted: number;
-    runDistance: number;
-    runPace: string;
-    runDuration: number;
-    runElevation: number;
-    hasRun: boolean;
-    hasGym: boolean;
-    gymType: string;
-    tips: string[];
-  } | null>(null);
+
 
   // Auto-open Run modal if navigated from TodayView with openRunModal flag
   useEffect(() => {
@@ -186,100 +169,7 @@ const WorkoutHome = () => {
     }
   };
 
-  const analyzeWorkoutsWithAi = () => {
-    const todayWorkouts = pastWorkouts.filter(w => w.date === getLocalDateString());
-    if (todayWorkouts.length === 0) {
-      alert("Please log a workout first for today to analyze!");
-      return;
-    }
 
-    let hasRun = false;
-    let hasGym = false;
-    let gymType = "";
-    let volumeLifted = 0;
-    let runDistance = 0;
-    let runPace = "";
-    let runDuration = 0;
-    let runElevation = 0;
-
-    todayWorkouts.forEach(w => {
-      if (w.day_type === 'RUN' || (w.notes && w.notes.includes('"type":"run_stats"'))) {
-        hasRun = true;
-        try {
-          const stats = JSON.parse(w.notes);
-          runDistance += parseFloat(stats.distance_km) || 0;
-          runPace = stats.pace || "";
-          runDuration += (w.duration || 0) / 60;
-          runElevation += parseInt(stats.elevation_m) || 0;
-        } catch (e) {}
-      } else if (w.day_type !== 'RUN' && w.day_type !== 'REST') {
-        hasGym = true;
-        gymType = w.day_type;
-        volumeLifted += w.total_volume || 0;
-      }
-    });
-
-    // Score calculations
-    let score = 0;
-    let verdict = "";
-    let focus = "";
-    let nextTime = "";
-    let consistency = "";
-    let advice = "";
-    const tips: string[] = [];
-
-    const isSelectedToday = getLocalDateString() === new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    const dateFormatted = isSelectedToday ? 'Today' : new Date(getLocalDateString()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
-    if (hasRun && hasGym) {
-      score = 98;
-      verdict = "Double Stimulus Completed";
-      focus = `A demanding hybrid session on ${dateFormatted}! You focused on building cardiovascular endurance by running ${runDistance.toFixed(2)} km (${Math.round(runDuration)}m) and mechanical loading by lifting ${volumeLifted.toLocaleString()} kg on your ${gymType} split. This simultaneously targets aerobic pathways and skeletal muscle hypertrophy.`;
-      nextTime = "Prioritize rest and nutrient timing! For your next hybrid day, consider spacing the run and gym session by at least 4-6 hours to maximize recovery, or reduce the weight slightly to protect joint health from impact stress.";
-      consistency = "Staying consistent with this hybrid stimulus will build a highly metabolic physique, elite cardiovascular stamina, denser muscle definition, and a superior ability to handle high systemic workloads.";
-      advice = "Prioritize eating 70-100g of high-glycemic carbohydrates and 30-40g of protein within 90 minutes. Rehydrate with electrolyte-dense water (at least 1.5L containing sodium/potassium).";
-    } else if (hasRun) {
-      score = 92;
-      verdict = "Aerobic Engine Stimulated";
-      focus = `Cardiovascular conditioning and aerobic base building. You ran ${runDistance.toFixed(2)} km over ${Math.round(runDuration)} minutes at a pace of ${runPace}/km, promoting capillary density, mitochondrial biogenesis, and heart rate efficiency.`;
-      nextTime = "On your next run, focus on maintaining a steady pacing strategy or introduce short, controlled intervals to challenge your aerobic threshold. Keep tomorrow's session light or resistance-focused.";
-      consistency = "Remaining consistent with your cardio will lower your resting heart rate, improve oxygen delivery/lung capacity, increase daily energy levels, and speed up recovery times between training sessions.";
-      advice = "Perform 5-10 minutes of hamstring/calf stretches and ankle mobility exercises to relieve impact stress. Consume fluid equivalent to 150% of your sweat loss with electrolytes.";
-    } else if (hasGym) {
-      score = 90;
-      verdict = "Muscle Tissue Loaded";
-      focus = `Mechanical tension and muscular hypertrophy. You loaded your musculoskeletal system on a ${gymType} day, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg to stimulate protein synthesis and neuromuscular adaptations.`;
-      nextTime = "In your next strength session, focus on progressive overload—aim to add a small amount of weight or squeeze out one extra rep with perfect form and controlled eccentrics.";
-      consistency = "Consistency in strength training triggers muscle protein synthesis, resulting in body recomposition (increased muscle, reduced fat), stronger joints and tendons, improved insulin sensitivity, and a higher resting metabolic rate.";
-      advice = "Consume 30-40g of high-quality protein (like whey or EAAs) immediately. Rest well tonight to support growth hormone release. Perform light active recovery tomorrow to flush metabolic waste.";
-    } else {
-      score = 80;
-      verdict = "Rest & Reset Focus";
-      focus = `Active recovery and system downregulation on ${dateFormatted}. You focused on physical restoration, tissue remodeling, and giving your central nervous system (CNS) a complete break from training stress.`;
-      nextTime = "For your next training session, set a clear target split beforehand, plan your lifts, and go in fully hydrated and prepared to execute with maximum intensity.";
-      consistency = "Regular recovery blocks prevent overtraining syndrome, balance hormones, reduce injury risk, and ensure you return to your next training block with maximum power and force production.";
-      advice = "Focus on clean hydration, light movement (like 5,000-8,000 light steps to keep joint fluids moving), stretching, and going to bed 30 minutes earlier.";
-    }
-
-    setWorkoutAnalysis({
-      score,
-      verdict,
-      focus,
-      nextTime,
-      consistency,
-      advice,
-      volumeLifted,
-      runDistance,
-      runPace,
-      runDuration,
-      runElevation,
-      hasRun,
-      hasGym,
-      gymType,
-      tips
-    });
-    setShowWorkoutModal(true);
-  };
 
   const [disableWorkoutTemplates, setDisableWorkoutTemplates] = useState(false);
 
@@ -809,15 +699,7 @@ const WorkoutHome = () => {
             <History size={18} />
             <h2 className="text-sm font-semibold uppercase tracking-wider">Past Sessions</h2>
           </div>
-          {pastWorkouts.some(w => w.date === getLocalDateString()) && (
-            <button
-              onClick={analyzeWorkoutsWithAi}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black tracking-wider uppercase transition-all border border-indigo-500/25 active:scale-95 cursor-pointer shadow-inner"
-            >
-              <Sparkles size={11} className="text-indigo-400 animate-pulse" />
-              <span>AI Analysis</span>
-            </button>
-          )}
+
         </div>
 
         {loading ? (
@@ -979,116 +861,7 @@ const WorkoutHome = () => {
         </div>
       )}
 
-      {/* Workout AI Coach Modal */}
-      {showWorkoutModal && workoutAnalysis && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex justify-center items-start p-4 py-8">
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-surface w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl relative my-auto mb-16"
-          >
-            {/* Close Button */}
-            <button 
-              onClick={() => setShowWorkoutModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <X size={16} />
-            </button>
 
-            {/* Title */}
-            <div className="flex items-center gap-2 mb-6">
-              <Sparkles size={18} className="text-indigo-400" />
-              <h3 className="text-lg font-black text-white tracking-tight uppercase">AI Training Analysis</h3>
-            </div>
-
-            {/* Score Ring Section */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="relative w-36 h-36 flex items-center justify-center">
-                {/* SVG Ring Background & Progress */}
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="72"
-                    cy="72"
-                    r="60"
-                    stroke="#1e293b"
-                    strokeWidth="10"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="72"
-                    cy="72"
-                    r="60"
-                    stroke="url(#indigoGrad)"
-                    strokeWidth="10"
-                    fill="transparent"
-                    strokeDasharray={376.9}
-                    strokeDashoffset={376.9 - (376.9 * workoutAnalysis.score) / 100}
-                    strokeLinecap="round"
-                    className="transition-all duration-1000 ease-out"
-                  />
-                  <defs>
-                    <linearGradient id="indigoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#a855f7" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                {/* Center score readout */}
-                <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-4xl font-black text-white tracking-tighter">{workoutAnalysis.score}</span>
-                  <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest leading-none mt-1">Training Score</span>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="mt-4 bg-indigo-950/60 border border-indigo-500/30 px-3 py-1 rounded-full text-indigo-300 text-[10px] font-black tracking-wider uppercase">
-                {workoutAnalysis.verdict}
-              </div>
-            </div>
-
-            {/* Dynamic Output & Explanation */}
-            <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
-              <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-white font-extrabold mb-1 flex items-center gap-1.5">
-                  <span>🎯</span> Today's Focus
-                </p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.focus}</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-white font-extrabold mb-1.5 flex items-center gap-1.5">
-                  <span>🚀</span> Next Session Plan
-                </p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.nextTime}</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-white font-extrabold mb-1.5 flex items-center gap-1.5">
-                  <span>📈</span> Consistency Outlook
-                </p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.consistency}</p>
-              </div>
-
-              {workoutAnalysis.advice && (
-                <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
-                  <p className="text-white font-extrabold mb-1.5 flex items-center gap-1.5">
-                    <span>💡</span> Coach Advice
-                  </p>
-                  <p className="text-gray-400 font-medium">{workoutAnalysis.advice}</p>
-                </div>
-              )}
-            </div>
-
-            {/* OK Button */}
-            <button 
-              onClick={() => setShowWorkoutModal(false)}
-              className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
-            >
-              Acknowledge
-            </button>
-          </motion.div>
-        </div>
-      )}
       </>
       )}
       
