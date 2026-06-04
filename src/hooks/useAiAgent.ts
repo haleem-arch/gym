@@ -1364,6 +1364,24 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       // ─── Local Fallback Parser ─────────────────────────────────────────────
       const cleanInput = text.toLowerCase().trim();
       
+      // 0. Conversational Greeting Fallback: e.g. "hi", "hey", "hello", "wassup", "how are you"
+      const greetings = ['hi', 'hey', 'hello', 'wassup', 'sup', 'how are you', 'how are uu', 'how r u', 'howdy', 'yo'];
+      const isGreeting = greetings.some(g => cleanInput.startsWith(g) || cleanInput === g || cleanInput.includes('how are you') || cleanInput.includes('how are uu') || cleanInput.includes('how r u'));
+      
+      if (isGreeting) {
+        let chatReply = `Hey ${clientNameRef.current}! 👋 Great to see you're getting started on your fitness journey! What's on your mind today? Need some nutrition guidance or help tracking your water intake?`;
+        if (cleanInput.includes('how')) {
+          chatReply = `I'm doing great, thanks for asking! Ready to help you crush your training and nutrition targets today. What do you need?`;
+        }
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'model',
+          text: chatReply
+        }]);
+        setIsTyping(false);
+        return;
+      }
+      
       // 1. Water Logging Intent: e.g. "drank 200ml water", "water 200ml", "200ml water"
       const waterRegex = /(\d+)\s*(?:ml|milliliters|oz)?\s*(?:of\s+)?water/i;
       const waterRegexAlt = /water\s*(?:of\s*)?(\d+)\s*(?:ml|milliliters|oz)?/i;
