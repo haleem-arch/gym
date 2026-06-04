@@ -94,7 +94,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
   );
 };
 
-// Special wrapper for full-height chat pages — no scroll, no bottom padding
+// Special wrapper for full-height chat pages — leaves room for the BottomNav (absolute bottom-0 ~68px)
 const ChatPageTransition = ({ children, direction }: { children: React.ReactNode, direction: number }) => {
   const variants = {
     initial: (dir: number) => ({ x: dir > 0 ? 100 : -100, opacity: 0 }),
@@ -110,8 +110,11 @@ const ChatPageTransition = ({ children, direction }: { children: React.ReactNode
       animate="animate"
       exit="exit"
       transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="w-full h-full absolute top-0 left-0 flex flex-col overflow-hidden bg-background"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      className="absolute top-0 left-0 right-0 flex flex-col overflow-hidden bg-background"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))'
+      }}
     >
       {children}
     </motion.div>

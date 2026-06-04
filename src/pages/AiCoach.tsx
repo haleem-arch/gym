@@ -240,8 +240,8 @@ const AiCoach = () => {
         </div>
       )}
 
-      {/* Input bar — pinned at bottom, above the bottom nav */}
-      <div className="flex-shrink-0 p-3 bg-background border-t border-gray-800 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+      {/* Input bar */}
+      <div className="flex-shrink-0 p-3 bg-background border-t border-gray-800">
         <form onSubmit={handleSubmit} className="flex items-end gap-2 relative">
           <textarea
             value={input}
