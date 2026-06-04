@@ -49,7 +49,14 @@ export default async function handler(req: any, res: any) {
     .eq('id', user.id)
     .maybeSingle();
 
-  const isCoach = profile?.role === 'coach' || user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+  const userEmail = user.email || '';
+  const isStrideFitEmail = userEmail.toLowerCase().endsWith('@stride.fit');
+  const isCoach = profile?.role === 'coach' || 
+                  profile?.role === 'owner' || 
+                  profile?.role === 'admin' || 
+                  profile?.role === 'superadmin' || 
+                  user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' ||
+                  isStrideFitEmail;
   if (!isCoach) {
     return res.status(403).json({ error: 'Forbidden: Requires Coach role' });
   }

@@ -2340,6 +2340,14 @@ export default function DesktopCoachPortal() {
     setDeploySuccessData(null);
 
     try {
+      const { data: { session: activeSession } } = await supabase.auth.getSession();
+      const activeCoachId = activeSession?.user?.id || coachUserId;
+      const activeToken = activeSession?.access_token || sessionToken;
+
+      if (!activeCoachId) {
+        throw new Error('Coach session not found. Please log in again.');
+      }
+
       // 1. Calculate next client code
       let nextClientCode = parseInt(formData.clientCode);
       if (isNaN(nextClientCode)) {
@@ -2362,7 +2370,7 @@ export default function DesktopCoachPortal() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
+          'Authorization': `Bearer ${activeToken}`
         },
         body: JSON.stringify({
           email: emailAddress,
@@ -2455,7 +2463,7 @@ export default function DesktopCoachPortal() {
         email: emailAddress,
         display_name: formData.displayName,
         role: 'client',
-        coach_id: coachUserId,
+        coach_id: activeCoachId,
         targets
       });
       if (profileError) throw profileError;
@@ -2463,7 +2471,7 @@ export default function DesktopCoachPortal() {
       // 5. Client Profiles row
       const { error: clientProfileError } = await supabase.from('client_profiles').insert({
         user_id: clientUserId,
-        coach_id: coachUserId,
+        coach_id: activeCoachId,
         age: parseInt(formData.age) || null,
         height: parseFloat(formData.height) || null,
         experience_level: formData.experience_level,
