@@ -899,8 +899,54 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
         return true;
       });
 
+      // Sort uniqueFoods to prioritize: exact word matches, cooked items, custom foods, and penalize complete/mixed dishes
+      const cleanUserText = userText.toLowerCase();
+      const getPromptMatchScore = (food: any, query: string) => {
+        const name = food.name;
+        const n = name.toLowerCase();
+        const q = query.toLowerCase();
+        
+        let score = 0;
+        if (n === q) {
+          score = 150;
+        } else {
+          // Check word overlap
+          const queryWords = q.split(/\s+/).filter(w => w.length > 2 && w !== 'and' && w !== 'the' && w !== 'for' && w !== 'with');
+          const nameWords = n.split(/[\s,()\-]+/);
+          
+          let matches = 0;
+          for (const qw of queryWords) {
+            if (nameWords.includes(qw)) {
+              matches++;
+            }
+          }
+          
+          if (matches > 0) {
+            score = 80 * (matches / queryWords.length);
+            if (n.includes('cooked')) score += 15;
+            if (n.includes('raw')) score -= 10;
+            if (n.includes('dish') || n.includes('complete')) score -= 30;
+            if (n.includes('component')) score -= 15;
+            if (n.includes('cake') || n.includes('pudding') || n.includes('drink') || n.includes('stuffed') || n.includes('sausage')) score -= 25;
+            score -= n.length * 0.5;
+          } else if (n.includes(q)) {
+            score = 30 - n.length * 0.5;
+          }
+        }
+        
+        if (food.user_id && food.user_id !== null) {
+          score += 100;
+        }
+        
+        return score;
+      };
+
+      const sortedUniqueFoods = [...uniqueFoods].sort((a, b) => {
+        return getPromptMatchScore(b, cleanUserText) - getPromptMatchScore(a, cleanUserText);
+      });
+
       // Map format for prompt
-      const promptFoods = uniqueFoods.map(f => ({
+      const promptFoods = sortedUniqueFoods.map(f => ({
         id: f.id,
         name: f.name,
         macros_per_100g: {
