@@ -327,7 +327,7 @@ const AiCoach = () => {
       <div className="flex-shrink-0 bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 z-30 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-            <BrandLogo size={18} />
+            <BrandLogo size={24} />
           </div>
           <div>
             <h1 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
@@ -383,6 +383,10 @@ const AiCoach = () => {
             }
 
             const { coreText, statusText } = parseMessageContent(msg.text);
+            let displayCoreText = coreText;
+            if (msg.id === '1' && displayCoreText && displayCoreText.startsWith('Hey Client!')) {
+              displayCoreText = displayCoreText.replace('Hey Client!', `Hey ${clientName}!`);
+            }
             const isCoachMealCard = msg.draftMeal;
 
             return (
@@ -416,7 +420,7 @@ const AiCoach = () => {
                       {/* Coach Card Body */}
                       <div className="p-4 flex flex-col gap-3">
                         <div className="text-xs leading-relaxed text-gray-300">
-                          <MessageText text={coreText} />
+                          <MessageText text={displayCoreText || ''} />
                         </div>
 
                         <div className="text-[9px] font-extrabold tracking-widest text-[#3b82f6] uppercase mt-2 border-b border-white/5 pb-1">
@@ -458,7 +462,7 @@ const AiCoach = () => {
                       {/* Coach Card Body */}
                       <div className="p-4 flex flex-col gap-3">
                         <div className="text-xs leading-relaxed text-gray-300">
-                          <MessageText text={coreText} />
+                          <MessageText text={displayCoreText || ''} />
                         </div>
                       </div>
                     </div>
