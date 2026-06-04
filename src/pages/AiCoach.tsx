@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAiAgent } from '../hooks/useAiAgent';
 import type { AiMessage } from '../hooks/useAiAgent';
-import { Send, Bot, Loader2, Sparkles, Dumbbell } from 'lucide-react';
+import { Send, Bot, Loader2, Sparkles, Dumbbell, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
@@ -417,12 +417,14 @@ const CoachCard = ({
   msg,
   messages,
   msgIndex,
-  onUpdateMessage
+  onUpdateMessage,
+  isAiten
 }: {
   msg: AiMessage;
   messages: AiMessage[];
   msgIndex: number;
   onUpdateMessage: (id: string, updates: Partial<AiMessage>) => void;
+  isAiten?: boolean;
 }) => {
   const [data, setData] = useState(msg.draftMeal);
   const [isSaving, setIsSaving] = useState(false);
@@ -474,12 +476,12 @@ const CoachCard = ({
     <div className="coach-card-custom">
       {/* Header */}
       <div className="coach-header-custom">
-        <div className="coach-avatar-custom">
-          <Dumbbell size={16} className="text-white" />
+        <div className={`coach-avatar-custom ${isAiten ? 'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_10px_rgba(6,182,212,0.5)]' : ''}`}>
+          {isAiten ? <Cpu size={16} className="text-white animate-pulse" /> : <Dumbbell size={16} className="text-white" />}
         </div>
         <div className="coach-meta-custom">
-          <div className="coach-name-custom">Alberto</div>
-          <div className="coach-tag-custom">Your Coach</div>
+          <div className="coach-name-custom">{isAiten ? 'Jarvis' : 'Alberto'}</div>
+          <div className="coach-tag-custom">{isAiten ? 'System Core' : 'Your Coach'}</div>
         </div>
         {timingBadgeText && (
           <div className="timing-badge-custom">{timingBadgeText}</div>
@@ -569,7 +571,7 @@ const CoachCard = ({
 };
 
 const AiCoach = () => {
-  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat, quotaLimit, usageCount } = useAiAgent();
+  const { messages, isTyping, sendMessage, updateMessage, initChat, startNewChat, quotaLimit, usageCount, isAiten } = useAiAgent();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -669,6 +671,7 @@ const AiCoach = () => {
                   messages={messages}
                   msgIndex={index}
                   onUpdateMessage={updateMessage}
+                  isAiten={isAiten}
                 />
               )}
             </motion.div>

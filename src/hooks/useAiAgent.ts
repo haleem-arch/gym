@@ -537,6 +537,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
   const userIdRef = useRef<string | null>(null);
   const clientNameRef = useRef<string>('Client');
   const isCoachRef = useRef<boolean>(false);
+  const userEmailRef = useRef<string>('');
   const initialized = useRef(false);
 
   // ─── Per-minute rate limit: max 8 messages per 60 seconds ─────────────────
@@ -552,11 +553,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     const uid = session?.user?.id;
     if (!uid) return { limit: 20, count: 0, exceeded: false };
 
-    const { data: profile } = await supabase.from('profiles').select('targets, role').eq('id', uid).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('targets, role, email').eq('id', uid).maybeSingle();
     if (!profile) return { limit: 20, count: 0, exceeded: false };
 
-    // Coach bypasses AI limit
-    if (profile.role === 'coach' || uid === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c') {
+    const isAiten = profile.email === 'aitenn@stride.fit' || profile.email === 'aiten@stride.fit' || uid === '9a4194f9-3111-49cb-a0c9-4166885b883c';
+
+    // Coach or Aiten bypasses AI limit
+    if (profile.role === 'coach' || uid === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || isAiten) {
       setQuotaLimit(Infinity);
       setUsageCount(0);
       return { limit: Infinity, count: 0, exceeded: false };
@@ -1144,12 +1147,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (session?.user?.id) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('display_name, role')
+        .select('display_name, role, email')
         .eq('id', session.user.id)
         .maybeSingle();
       if (profile) {
         clientNameRef.current = profile.display_name || 'Client';
         isCoachRef.current = profile.role === 'coach';
+        userEmailRef.current = profile.email || '';
       }
     }
 
@@ -1171,6 +1175,634 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     localStorage.setItem(sessionKey, newId);
     setSessionId(newId);
     setMessages(options?.storageKey ? [] : [{ id: '1', role: 'model', text: "New session started. How can I help?" }]);
+  };
+
+  const runJarvisParser = async (text: string, forceJarvis = false) => {
+    setIsTyping(true);
+    const cleanInput = text.toLowerCase().trim();
+    const isJarvis = forceJarvis || userEmailRef.current === 'aitenn@stride.fit' || userEmailRef.current === 'aiten@stride.fit';
+    
+    // 1. Diagnostics, greetings, systems check
+    const greetings = ['hi', 'hey', 'hello', 'wassup', 'sup', 'how are you', 'how are uu', 'how r u', 'howdy', 'yo', 'systems check', 'diagnostics', 'status check', 'online check', 'are you there', 'online'];
+    const isGreeting = greetings.some(g => cleanInput.startsWith(g) || cleanInput === g || cleanInput.includes('how are you') || cleanInput.includes('status check') || cleanInput.includes('systems check') || cleanInput.includes('diagnostics'));
+    
+    if (isGreeting) {
+      let reply = `Hey ${clientNameRef.current}! 👋 Great to see you! What's on your mind today? Need help tracking your food or water intake?`;
+      if (isJarvis) {
+        reply = `Systems online, Aiten. 🖥️ Biometric feeds synced. Mainframe operating at peak capacity. Core database status: Connected. I am actively monitoring your macronutrient margins and mechanical performance. Ready for instructions.`;
+      }
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+      setIsTyping(false);
+      return;
+    }
+
+    // 2. Help Manual Override Command
+    const helpKeywords = ['help', 'commands', 'capabilities', 'what can you do', 'what are your systems', 'manual'];
+    const isCheckingHelp = helpKeywords.some(h => cleanInput === h || cleanInput.startsWith(h));
+    
+    if (isCheckingHelp) {
+      let reply = `I can help you log your food and water! Just type something like "i ate 100g rice and chicken" or "i drank 500ml water".`;
+      if (isJarvis) {
+        reply = `Manual Overrides for Aiten's Jarvis Core: 🖥\n\n` +
+          `• **Check Macros/Status**: Type \`macros\` or \`progress\` to compile today's macronutrient margins.\n` +
+          `• **Check Training Split**: Type \`split\` or \`routine\` to retrieve today's scheduled mechanical workload.\n` +
+          `• **Log Water**: Type \`i drank 1.5l water\` or \`water 500ml\` (supports L, ml, oz, cups/glasses).\n` +
+          `• **Log Meals**: Type \`i ate 150g chicken and 100g rice\` (supports multiple items, scales unit counts like eggs, assumes standard portion sizes).\n` +
+          `• **Swap Exercises**: Type \`swap [exercise] with [new exercise]\` to modify active training splits.\n` +
+          `• **Update Targets**: Type \`set protein target to 180g\` or \`set legs calorie target to 2400\` (automatically updates root or split-specific nutrition thresholds).\n` +
+          `• **Add Food to Inventory**: Type \`add food [name]: [kcal] kcal, [protein]g protein, [carbs]g carbs, [fat]g fat\` to register a new food item.`;
+      }
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+      setIsTyping(false);
+      return;
+    }
+
+    // 3. Water regex & parsing
+    const waterRegex = /(\d+(?:\.\d+)?)\s*(ml|milliliters|oz|l|liter|liters|cups?|glasses?|glass)?\s*(?:of\s+)?water/i;
+    const waterRegexAlt = /water\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(ml|milliliters|oz|l|liter|liters|cups?|glasses?|glass)?/i;
+    const waterMatch = cleanInput.match(waterRegex) || cleanInput.match(waterRegexAlt);
+    let waterMessageText = '';
+    
+    if (waterMatch) {
+      const amount = parseFloat(waterMatch[1]);
+      const unit = (waterMatch[2] || 'ml').toLowerCase();
+      let amountMl = amount;
+      
+      if (unit.startsWith('l')) {
+        amountMl = amount * 1000;
+      } else if (unit.startsWith('cup') || unit.startsWith('glass')) {
+        amountMl = amount * 250;
+      } else if (unit === 'oz') {
+        amountMl = amount * 30;
+      }
+      
+      amountMl = Math.round(amountMl);
+      
+      if (!isNaN(amountMl) && amountMl > 0) {
+        const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+        const waterAction: DbAction = {
+          type: 'insert',
+          table: 'water_logs',
+          data: {
+            amount_ml: amountMl,
+            date: selectedDate,
+            time: new Date().toISOString()
+          }
+        };
+        const { success } = await executeActions([waterAction]);
+        if (success) {
+          waterMessageText = isJarvis
+            ? `Hydration log committed: **${amountMl}ml of water** has been added to your mainframe.`
+            : `Got it! I've logged **${amountMl}ml of water** for you.`;
+        }
+      }
+    }
+
+    // 4. Target Updates & Custom Food Register Command checks
+    const targetSplitRegex = /(?:set|change|update)\s+(run|legs|pull|push|rest|run\s*\+\s*gym)\s+(calorie|calories|kcal|protein|prot|carb|carbs|fat|fats)\s+(?:target\s+)?(?:to\s+)?(\d+)/i;
+    const targetCalRegex = /(?:set|change|update)\s+(?:calorie|calories|kcal|cal)\s+(?:target\s+)?(?:to\s+)?(\d+)/i;
+    const targetProtRegex = /(?:set|change|update)\s+(?:protein|prot|pro|protein\s+target)\s+(?:target\s+)?(?:to\s+)?(\d+)/i;
+    const targetCarbRegex = /(?:set|change|update)\s+(?:carb|carbs|carbohydrates)\s+(?:target\s+)?(?:to\s+)?(\d+)/i;
+    const targetFatRegex = /(?:set|change|update)\s+(?:fat|fats|lipid|lipids)\s+(?:target\s+)?(?:to\s+)?(\d+)/i;
+    
+    const addFoodRegex = /(?:add\s+food|create\s+food)\s+([a-zA-Z0-9\s\-_]+)\s*:\s*(\d+)\s*(?:kcal|calories|cal|cals)?\s*,\s*(\d+(?:\.\d+)?)\s*(?:g|gm)?\s*protein\s*,\s*(\d+(?:\.\d+)?)\s*(?:g|gm)?\s*carbs?\s*,\s*(\d+(?:\.\d+)?)\s*(?:g|gm)?\s*fat/i;
+
+    // Process Split-Specific Target Update
+    const targetSplitMatch = cleanInput.match(targetSplitRegex);
+    if (targetSplitMatch && userIdRef.current) {
+      const splitName = targetSplitMatch[1].trim().toUpperCase().replace(/\s+/g, ' ');
+      const metric = targetSplitMatch[2].toLowerCase();
+      const val = parseInt(targetSplitMatch[3], 10);
+      
+      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', userIdRef.current).maybeSingle();
+      if (profile) {
+        const targets = { ...(profile.targets || {}) };
+        if (!targets.day_nutrition) targets.day_nutrition = {};
+        
+        let splitKey = splitName;
+        if (splitName === 'RUN+GYM' || splitName === 'RUN +GYM' || splitName === 'RUN+ GYM') {
+          splitKey = 'RUN + GYM';
+        }
+        
+        if (!targets.day_nutrition[splitKey]) {
+          targets.day_nutrition[splitKey] = {
+            kcal: targets.kcal || 2000,
+            protein: targets.protein || 150,
+            carbs: targets.carbs || 200,
+            fat: targets.fat || 70
+          };
+        }
+        
+        let metricKey = '';
+        let metricLabel = '';
+        if (['calorie', 'calories', 'kcal'].includes(metric)) {
+          metricKey = 'kcal';
+          metricLabel = 'Calories';
+        } else if (['protein', 'prot'].includes(metric)) {
+          metricKey = 'protein';
+          metricLabel = 'Protein';
+        } else if (['carb', 'carbs'].includes(metric)) {
+          metricKey = 'carbs';
+          metricLabel = 'Carbs';
+        } else if (['fat', 'fats'].includes(metric)) {
+          metricKey = 'fat';
+          metricLabel = 'Fat';
+        }
+        
+        if (metricKey) {
+          targets.day_nutrition[splitKey][metricKey] = val;
+          const { error } = await supabase.from('profiles').update({ targets }).eq('id', userIdRef.current);
+          if (!error) {
+            const reply = isJarvis
+              ? `Split target configured. Updated **${splitKey}** split **${metricLabel}** target to **${val}${metricKey === 'kcal' ? ' kcal' : 'g'}**.`
+              : `Successfully updated **${splitKey}** split **${metricLabel}** target to **${val}${metricKey === 'kcal' ? ' kcal' : 'g'}**.`;
+              
+            setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+            setIsTyping(false);
+            return;
+          }
+        }
+      }
+    }
+
+    // Process Root Target Updates
+    const targetCalMatch = cleanInput.match(targetCalRegex);
+    const targetProtMatch = cleanInput.match(targetProtRegex);
+    const targetCarbMatch = cleanInput.match(targetCarbRegex);
+    const targetFatMatch = cleanInput.match(targetFatRegex);
+    
+    if ((targetCalMatch || targetProtMatch || targetCarbMatch || targetFatMatch) && userIdRef.current) {
+      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', userIdRef.current).maybeSingle();
+      if (profile) {
+        const targets = { ...(profile.targets || {}) };
+        const msgParts = [];
+        
+        if (targetCalMatch) {
+          const val = parseInt(targetCalMatch[1], 10);
+          targets.kcal = val;
+          msgParts.push(`Calories target updated to **${val} kcal**.`);
+        }
+        if (targetProtMatch) {
+          const val = parseInt(targetProtMatch[1], 10);
+          targets.protein = val;
+          msgParts.push(`Protein target updated to **${val}g**.`);
+        }
+        if (targetCarbMatch) {
+          const val = parseInt(targetCarbMatch[1], 10);
+          targets.carbs = val;
+          msgParts.push(`Carbs target updated to **${val}g**.`);
+        }
+        if (targetFatMatch) {
+          const val = parseInt(targetFatMatch[1], 10);
+          targets.fat = val;
+          msgParts.push(`Fat target updated to **${val}g**.`);
+        }
+        
+        const { error } = await supabase.from('profiles').update({ targets }).eq('id', userIdRef.current);
+        if (!error) {
+          const reply = isJarvis 
+            ? `Target modification successful. Systems configured:\n` + msgParts.map(p => `• ${p}`).join('\n')
+            : `Success! I've updated your goals:\n` + msgParts.map(p => `- ${p}`).join('\n');
+            
+          setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+          setIsTyping(false);
+          return;
+        }
+      }
+    }
+
+    // Process Custom Food Creation
+    const addFoodMatch = cleanInput.match(addFoodRegex);
+    if (addFoodMatch && userIdRef.current) {
+      const foodName = addFoodMatch[1].trim();
+      const kcal = parseInt(addFoodMatch[2], 10);
+      const protein = parseFloat(addFoodMatch[3]);
+      const carbs = parseFloat(addFoodMatch[4]);
+      const fat = parseFloat(addFoodMatch[5]);
+      
+      const newFoodAction: DbAction = {
+        type: 'insert',
+        table: 'food_inventory',
+        data: {
+          name: foodName,
+          kcal_per_100g: kcal,
+          protein: protein,
+          carbs: carbs,
+          fat: fat,
+          serving_type: 'per_100g',
+          user_id: userIdRef.current
+        }
+      };
+      
+      const { success } = await executeActions([newFoodAction]);
+      if (success) {
+        const reply = isJarvis
+          ? `Inventory upload complete. **${foodName}** committed to memory banks:\n` +
+            `• Calories: ${kcal} kcal/100g\n` +
+            `• Protein: ${protein}g\n` +
+            `• Carbs: ${carbs}g\n` +
+            `• Fat: ${fat}g`
+          : `Awesome! I've added **${foodName}** to your custom food database:\n` +
+            `- Calories: ${kcal} kcal/100g\n` +
+            `- Protein: ${protein}g\n` +
+            `- Carbs: ${carbs}g\n` +
+            `- Fat: ${fat}g`;
+            
+        setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+        setIsTyping(false);
+        return;
+      }
+    }
+
+    // Clean query helper
+    const cleanQuery = (q: string) => {
+      const stopWords = new Set([
+        'i', 'we', 'you', 'he', 'she', 'they', 'it', 'me', 'my', 'us', 'our',
+        'had', 'ate', 'log', 'add', 'have', 'eat', 'eating', 'drank', 'drink',
+        'please', 'yesterday', 'today', 'now', 'for', 'breakfast', 'lunch',
+        'dinner', 'snack', 'some', 'of', 'a', 'an', 'the', 'in', 'to', 'from',
+        'with', 'and', 'but', 'or', 'so', 'yet', 'at', 'by', 'on', 'about',
+        'into', 'through', 'over', 'after', 'before', 'between', 'under',
+        'out', 'up', 'down', 'can', 'could', 'would', 'should', 'will', 'shall',
+        'let', 'go', 'ahead', 'just', 'like', 'this', 'that', 'these', 'those',
+        'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being', 'do', 'does',
+        'did', 'done', 'doing', 'it', 'its'
+      ]);
+      return q
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length >= 3 && !stopWords.has(w))
+        .join(' ')
+        .trim();
+    };
+
+    // Split input into potential segments for multiple food parsing
+    const segments = cleanInput
+      .split(/\b(?:and|with|plus|then|\+|&)\b|[\n\r,]+/gi)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    const parsedItems: { food: any; grams: number; isDefaultWeight: boolean }[] = [];
+    const unrecognizedFoods: string[] = [];
+    
+    const foodKeywords = ['ate', 'eat', 'had', 'log', 'add', 'logged', 'breakfast', 'lunch', 'dinner', 'snack', 'meal', 'food'];
+    const inputWords = cleanInput.split(/[\s,()\-]+/);
+    const isTryingToLogFood = inputWords.some(w => foodKeywords.includes(w));
+    
+    const workoutKeywords = ['workout', 'split', 'schedule', 'exercise', 'training', 'routine', 'plan'];
+    const isCheckingWorkout = workoutKeywords.some(w => cleanInput.includes(w)) && !isTryingToLogFood;
+
+    const macroKeywords = ['macro', 'target', 'progress', 'calorie', 'kcal', 'status', 'summary', 'remaining'];
+    const isCheckingMacros = macroKeywords.some(w => cleanInput.includes(w)) && !isTryingToLogFood;
+
+    const isSwapCommand = cleanInput.includes('swap') || cleanInput.includes('replace');
+
+    // Process Swap Exercise Command
+    if (isSwapCommand && userIdRef.current) {
+      const swapRegex = /(?:swap|replace)\s+([a-zA-Z0-9\s\-]+)\s+(?:for|with)\s+([a-zA-Z0-9\s\-]+)/i;
+      const swapMatch = cleanInput.match(swapRegex);
+      if (swapMatch) {
+        const oldExName = swapMatch[1].trim();
+        const newExName = swapMatch[2].trim();
+        
+        const { data: matchingExercises } = await supabase.from('exercises').select('name').ilike('name', `%${newExName}%`).limit(1);
+        if (matchingExercises && matchingExercises.length > 0) {
+          const actualNewName = matchingExercises[0].name;
+          const replaceAction: DbAction = {
+            type: 'replace_active_exercise',
+            oldExercise: oldExName,
+            newExercise: actualNewName
+          };
+          const { success } = await executeActions([replaceAction]);
+          if (success) {
+            const reply = isJarvis
+              ? `Exercise swap compile successful. Swapped **${oldExName}** with **${actualNewName}** in your active workout plan.`
+              : `Got it! Swapped **${oldExName}** with **${actualNewName}** in your active routine.`;
+            setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+            setIsTyping(false);
+            return;
+          }
+        }
+      }
+    }
+
+    // Process Macros Check
+    if (isCheckingMacros && userIdRef.current) {
+      const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+      const { data: schedData } = await supabase.from('schedules').select('days').eq('user_id', userIdRef.current).order('week_start', { ascending: false }).limit(1).maybeSingle();
+      const splitType = schedData?.days?.[selectedDate] || 'REST';
+
+      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', userIdRef.current).maybeSingle();
+      const targets = profile?.targets || {};
+      const dayNutrition = targets.day_nutrition || {};
+      const activeTargets = dayNutrition[splitType] || {
+        kcal: targets.kcal || 2000,
+        protein: targets.protein || 150,
+        carbs: targets.carbs || 200,
+        fat: targets.fat || 70
+      };
+
+      const targetKcal = activeTargets.kcal || 2000;
+      const targetProtein = activeTargets.protein || 150;
+      const targetCarbs = activeTargets.carbs || 200;
+      const targetFat = activeTargets.fat || 70;
+      
+      const { data: log } = await supabase.from('diet_logs').select('daily_totals').eq('user_id', userIdRef.current).eq('date', selectedDate).maybeSingle();
+      const totals = log?.daily_totals || {};
+      const consumedKcal = Math.round(totals.kcal || 0);
+      const consumedProtein = Math.round(totals.protein || 0);
+      const consumedCarbs = Math.round(totals.carbs || 0);
+      const consumedFat = Math.round(totals.fat || 0);
+      
+      const remainingKcal = Math.max(0, targetKcal - consumedKcal);
+      const remainingProtein = Math.max(0, targetProtein - consumedProtein);
+      const remainingCarbs = Math.max(0, targetCarbs - consumedCarbs);
+      const remainingFat = Math.max(0, targetFat - consumedFat);
+
+      let reply = "";
+      if (isJarvis) {
+        let recommendation = '';
+        if (remainingProtein > 0) {
+          recommendation += `\n⚠️ **Nitrogen Balance Alert**: ${remainingProtein}g of protein required to prevent catabolism and optimize recovery.`;
+        }
+        if (remainingCarbs > 0 && splitType !== 'REST') {
+          recommendation += `\n🔋 **Glycogen Reserve Info**: Carbohydrates recommended before next mechanical execution (${remainingCarbs}g remaining).`;
+        }
+        if (remainingKcal === 0) {
+          recommendation = `\n🎉 **Threshold Secured**: Target calories met. Peak thermodynamic efficiency achieved.`;
+        }
+        
+        reply = `Status compilation for Aiten [Split: ${splitType}]:\n\n` +
+          `• **Calories**: ${consumedKcal} / ${targetKcal} kcal (${remainingKcal} remaining)\n` +
+          `• **Protein**: ${consumedProtein}g / ${targetProtein}g (${remainingProtein}g remaining)\n` +
+          `• **Carbs**: ${consumedCarbs}g / ${targetCarbs}g (${remainingCarbs}g remaining)\n` +
+          `• **Fat**: ${consumedFat}g / ${targetFat}g (${remainingFat}g remaining)\n` +
+          recommendation;
+      } else {
+        reply = `Here is your progress report for today [${splitType}]:\n\n` +
+          `- **Calories**: ${consumedKcal} / ${targetKcal} kcal (${remainingKcal} left)\n` +
+          `- **Protein**: ${consumedProtein}g / ${targetProtein}g (${remainingProtein}g left)\n` +
+          `- **Carbs**: ${consumedCarbs}g / ${targetCarbs}g (${remainingCarbs}g left)\n` +
+          `- **Fat**: ${consumedFat}g / ${targetFat}g (${remainingFat}g left)`;
+      }
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+      setIsTyping(false);
+      return;
+    }
+
+    // Process Workout split check
+    if (isCheckingWorkout && userIdRef.current) {
+      const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+      const { data: schedData } = await supabase.from('schedules').select('days').eq('user_id', userIdRef.current).order('week_start', { ascending: false }).limit(1).maybeSingle();
+      const splitType = schedData?.days?.[selectedDate] || 'REST';
+      
+      const formatExercise = (ex: any) => {
+        if (typeof ex === 'string') return ex;
+        if (ex && typeof ex === 'object') {
+          const name = ex.name || ex.exercise_name || 'Exercise';
+          const sets = ex.sets ? `${ex.sets} sets` : '';
+          const rest = ex.rest ? `${ex.rest}s rest` : '';
+          const extra = [sets, rest].filter(Boolean).join(', ');
+          return extra ? `${name} (${extra})` : name;
+        }
+        return 'Unknown Exercise';
+      };
+
+      let reply = "";
+      if (splitType === 'REST') {
+        reply = isJarvis
+          ? `Coordinating recovery parameters: Today is designated as a REST day. Recommended action is active rest, low-intensity recovery, and high hydration.`
+          : `Today is a recovery/rest day! Take it easy and focus on recovery.`;
+      } else {
+        const { data: customPlans } = await supabase.from('user_workout_plans').select('exercises').eq('user_id', userIdRef.current).eq('plan_type', splitType).maybeSingle();
+        const exercises = customPlans?.exercises || [];
+        
+        if (isJarvis) {
+          reply = `Routine compiled for Split [${splitType}]:\n\n` +
+            (exercises.length > 0 
+              ? exercises.map((ex: any, i: number) => `[${i+1}] **${formatExercise(ex)}**`).join('\n')
+              : `*No exercises configured in active database.*`) +
+            `\n\nNeuromuscular systems primed. All exercises active in your routine. Crush the sets, Aiten.`;
+        } else {
+          reply = `Here is your ${splitType} workout split for today:\n\n` +
+            (exercises.length > 0
+              ? exercises.map((ex: any, i: number) => `${i+1}. **${formatExercise(ex)}**`).join('\n')
+              : `*No exercises configured.*`);
+        }
+      }
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'model', text: reply }]);
+      setIsTyping(false);
+      return;
+    }
+
+    // Process Food and Water Logging segments
+    if (segments.length > 0 && (isTryingToLogFood || cleanInput.match(waterRegex))) {
+      const getDefaultWeight = (foodName: string) => {
+        const fn = foodName.toLowerCase();
+        if (fn.includes('toast') || fn.includes('slice')) return 30;
+        if (fn.includes('egg')) return 50;
+        if (fn.includes('banana')) return 120;
+        if (fn.includes('apple')) return 150;
+        if (fn.includes('zinger')) return 200;
+        if (fn.includes('chicken breast')) return 150;
+        if (fn.includes('rice')) return 150;
+        if (fn.includes('whey') || fn.includes('protein powder') || fn.includes('shake')) return 30;
+        return 100;
+      };
+
+      for (const seg of segments) {
+        if (seg.match(waterRegex) || seg.match(waterRegexAlt)) {
+          continue;
+        }
+
+        const foodRegex = /(?:^|\s)(\d+)\s*(?:g|gm|gram|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
+        const foodRegexAlt = /(?:^|\s)([a-zA-Z0-9\s\-_]+)\s+(\d+)\s*(?:g|gm|gram|grams)/i;
+        const foodMatch = seg.match(foodRegex) || seg.match(foodRegexAlt);
+        
+        let grams = 0;
+        let queryStr = '';
+        
+        if (foodMatch) {
+          if (seg.match(foodRegex)) {
+            grams = parseInt(foodMatch[1], 10);
+            queryStr = foodMatch[2].trim();
+          } else {
+            queryStr = foodMatch[1].trim();
+            grams = parseInt(foodMatch[2], 10);
+          }
+          
+          // Smart unit conversion for small numbers (e.g. 2 eggs -> 100g)
+          const lowerQuery = queryStr.toLowerCase();
+          if (grams > 0 && grams <= 10) {
+            if (lowerQuery.includes('egg')) {
+              grams = grams * 50;
+            } else if (lowerQuery.includes('banana')) {
+              grams = grams * 120;
+            } else if (lowerQuery.includes('apple')) {
+              grams = grams * 150;
+            }
+          }
+        } else {
+          if (isTryingToLogFood) {
+            queryStr = seg;
+            grams = getDefaultWeight(queryStr);
+          }
+        }
+        
+        const foodSearchQuery = cleanQuery(queryStr);
+        if (foodSearchQuery.length > 1) {
+          const searchWords = foodSearchQuery.split(/\s+/).filter(w => w.length > 0);
+          let queryBuilder = supabase.from('food_inventory').select('*');
+          
+          if (searchWords.length > 0) {
+            const filters = searchWords.map(w => `name.ilike.%${w}%`).join(',');
+            queryBuilder = queryBuilder.or(filters);
+          } else {
+            queryBuilder = queryBuilder.ilike('name', `%${foodSearchQuery}%`);
+          }
+          
+          const { data: matchingFoods } = await queryBuilder.limit(100);
+          
+          if (matchingFoods && matchingFoods.length > 0) {
+            const getMatchScore = (food: any, query: string) => {
+              const name = food.name;
+              const n = name.toLowerCase();
+              const q = query.toLowerCase();
+              let baseScore = 0;
+              if (n === q) {
+                baseScore = 150;
+              } else {
+                const queryWords = q.split(/\s+/).filter(w => w.length > 0);
+                const nameWords = n.split(/[\s,()\-]+/);
+                let matches = 0;
+                for (const qw of queryWords) {
+                  if (nameWords.includes(qw)) matches++;
+                }
+                if (matches > 0) {
+                  baseScore = 80 * (matches / queryWords.length);
+                  baseScore -= n.length * 0.5;
+                }
+              }
+              if (food.user_id && food.user_id === userIdRef.current) baseScore += 100;
+              return baseScore;
+            };
+            
+            const sortedFoods = [...matchingFoods].sort((a, b) => getMatchScore(b, foodSearchQuery) - getMatchScore(a, foodSearchQuery));
+            const food = sortedFoods[0];
+            parsedItems.push({
+              food,
+              grams,
+              isDefaultWeight: !foodMatch
+            });
+          } else {
+            unrecognizedFoods.push(queryStr);
+          }
+        }
+      }
+
+      if (parsedItems.length > 0) {
+        const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
+        const { data: existingLog } = await supabase
+          .from('diet_logs')
+          .select('id')
+          .eq('user_id', userIdRef.current)
+          .eq('date', selectedDate)
+          .maybeSingle();
+        
+        let activeDietLogId = existingLog?.id;
+        if (!activeDietLogId && userIdRef.current) {
+          const { data: createdLog } = await supabase
+            .from('diet_logs')
+            .insert({
+              user_id: userIdRef.current,
+              date: selectedDate,
+              daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+            })
+            .select('id')
+            .single();
+          activeDietLogId = createdLog?.id;
+        }
+
+        const draftMealData = {
+          diet_log_id: activeDietLogId,
+          name: 'Meal',
+          time: getLocalTime(),
+          items: parsedItems.map(item => {
+            const food = item.food;
+            const grams = item.grams;
+            const kcal = Math.round((Number(food.kcal_per_100g) || 0) * grams / 100);
+            const protein = Math.round((Number(food.protein) || 0) * grams / 100 * 10) / 10;
+            const carbs = Math.round((Number(food.carbs) || 0) * grams / 100 * 10) / 10;
+            const fat = Math.round((Number(food.fat) || 0) * grams / 100 * 10) / 10;
+            
+            return {
+              id: crypto.randomUUID(),
+              food_id: food.id,
+              name: food.name,
+              grams: grams,
+              macros: {
+                kcal: kcal,
+                protein: protein,
+                carbs: carbs,
+                fat: fat
+              },
+              serving_type: food.serving_type || 'per_100g'
+            };
+          })
+        };
+
+        let replyText = "";
+        if (waterMessageText) {
+          replyText += waterMessageText + "\n\n";
+        }
+        
+        replyText += isJarvis
+          ? `Analysis complete. Meal compile list matches targets:\n`
+          : `Nice choice! That's a great fit for your goals. Here is the breakdown for your meal:\n`;
+          
+        for (const item of parsedItems) {
+          const displayGrams = item.isDefaultWeight ? `${item.grams}g (approx)` : `${item.grams}g`;
+          replyText += `- **${item.food.name}**: ${displayGrams}\n`;
+        }
+
+        if (unrecognizedFoods.length > 0) {
+          const unrecStr = unrecognizedFoods.map(f => `"${cleanQuery(f)}"`).join(', ');
+          replyText += isJarvis
+            ? `\nWarning: Unrecognized logs detected: ${unrecStr}. Please add them through the override system (e.g. "add food ${cleanQuery(unrecognizedFoods[0])}: ...").`
+            : `\nI couldn't find ${unrecStr} in your food list. You can add them manually in the Diet tab.`;
+        }
+
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'model',
+          text: replyText,
+          draftMeal: draftMealData
+        }]);
+        setIsTyping(false);
+        return;
+      } else if (waterMessageText) {
+        setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'model',
+          text: waterMessageText
+        }]);
+        setIsTyping(false);
+        return;
+      }
+    }
+
+    // Default Fallback Standard response
+    let finalFallback = "I'm writing up a plan for another client right now. Give me just a second and hit me back!";
+    if (isJarvis) {
+      finalFallback = `Jarvis offline status: Standby mode. I didn't catch that coordinate, Aiten. Ask me about your 'split', 'schedule', 'macros', or log food/water. (Or type 'help' for manual overrides).`;
+    }
+    setMessages(prev => [...prev, {
+      id: crypto.randomUUID(),
+      role: 'model',
+      text: finalFallback
+    }]);
+    setIsTyping(false);
   };
 
   const sendInvisibleMessage = async (text: string) => {
@@ -1196,7 +1828,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     if (!initialized.current) await initChat();
     if (!getApiKey()) return;
 
-    // ── Per-minute rolling window check (max 3 msgs / 60s) ──────────────────
+    // ── Per-minute rolling window check (max 8 messages / 60 seconds) ─────────
     const now = Date.now();
     perMinuteTimestamps.current = perMinuteTimestamps.current.filter(
       ts => now - ts < PER_MINUTE_WINDOW_MS
@@ -1232,6 +1864,13 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
     const userMsgId = crypto.randomUUID();
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', text }]);
+
+    const isAiten = userEmailRef.current === 'aitenn@stride.fit' || userEmailRef.current === 'aiten@stride.fit';
+    if (isAiten) {
+      await runJarvisParser(text, true);
+      return;
+    }
+
     setIsTyping(true);
 
     try {
@@ -1364,289 +2003,6 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
 
     } catch (e: any) {
       console.error("AI Coach query error:", e);
-      
-      // ─── Local Fallback Parser ─────────────────────────────────────────────
-      const cleanInput = text.toLowerCase().trim();
-      
-      // 0. Conversational Greeting Fallback: e.g. "hi", "hey", "hello", "wassup", "how are you"
-      const greetings = ['hi', 'hey', 'hello', 'wassup', 'sup', 'how are you', 'how are uu', 'how r u', 'howdy', 'yo'];
-      const isGreeting = greetings.some(g => cleanInput.startsWith(g) || cleanInput === g || cleanInput.includes('how are you') || cleanInput.includes('how are uu') || cleanInput.includes('how r u'));
-      
-      if (isGreeting) {
-        let chatReply = `Hey ${clientNameRef.current}! 👋 Great to see you're getting started on your fitness journey! What's on your mind today? Need some nutrition guidance or help tracking your water intake?`;
-        if (cleanInput.includes('how')) {
-          chatReply = `I'm doing great, thanks for asking! Ready to help you crush your training and nutrition targets today. What do you need?`;
-        }
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          role: 'model',
-          text: chatReply
-        }]);
-        setIsTyping(false);
-        return;
-      }
-      
-      // 1. Water Logging Intent: e.g. "drank 200ml water", "water 200ml", "200ml water"
-      const waterRegex = /(\d+)\s*(?:ml|milliliters|oz)?\s*(?:of\s+)?water/i;
-      const waterRegexAlt = /water\s*(?:of\s*)?(\d+)\s*(?:ml|milliliters|oz)?/i;
-      const waterMatch = cleanInput.match(waterRegex) || cleanInput.match(waterRegexAlt);
-      let waterMessageText = '';
-      
-      if (waterMatch) {
-        const amountMl = parseInt(waterMatch[1], 10);
-        if (!isNaN(amountMl) && amountMl > 0) {
-          const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
-          const waterAction: DbAction = {
-            type: 'insert',
-            table: 'water_logs',
-            data: {
-              amount_ml: amountMl,
-              date: selectedDate,
-              time: getLocalTime()
-            }
-          };
-          
-          const { success } = await executeActions([waterAction]);
-          if (success) {
-            waterMessageText = `Got it! I've logged **${amountMl}ml of water** for you.`;
-          }
-        }
-      }
-
-      // 2. Food Logging Intent: support multiple foods separated by prepositions/splitters
-      const segments = cleanInput
-        .split(/\b(?:and|with|plus|then|\+|&)\b|[\n\r,]+/gi)
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-
-      const parsedItems: { food: any; grams: number; isDefaultWeight: boolean }[] = [];
-      const unrecognizedFoods: string[] = [];
-      
-      const foodKeywords = ['ate', 'eat', 'had', 'log', 'add', 'logged', 'breakfast', 'lunch', 'dinner', 'snack', 'meal', 'food'];
-      const inputWords = cleanInput.split(/[\s,()\-]+/);
-      const isTryingToLogFood = inputWords.some(w => foodKeywords.includes(w));
-      
-      // If user only logged water and didn't mention food
-      if (segments.length === 0 || (!isTryingToLogFood && parsedItems.length === 0)) {
-        if (waterMessageText) {
-          setMessages(prev => [...prev, {
-            id: crypto.randomUUID(),
-            role: 'model',
-            text: waterMessageText
-          }]);
-          setIsTyping(false);
-          return;
-        }
-      }
-
-      // Helper function to clean search terms
-      const cleanQuery = (q: string) => {
-        const stopWords = new Set([
-          'i', 'we', 'you', 'he', 'she', 'they', 'it', 'me', 'my', 'us', 'our',
-          'had', 'ate', 'log', 'add', 'have', 'eat', 'eating', 'drank', 'drink',
-          'please', 'yesterday', 'today', 'now', 'for', 'breakfast', 'lunch',
-          'dinner', 'snack', 'some', 'of', 'a', 'an', 'the', 'in', 'to', 'from',
-          'with', 'and', 'but', 'or', 'so', 'yet', 'at', 'by', 'on', 'about',
-          'into', 'through', 'over', 'after', 'before', 'between', 'under',
-          'out', 'up', 'down', 'can', 'could', 'would', 'should', 'will', 'shall',
-          'let', 'go', 'ahead', 'just', 'like', 'this', 'that', 'these', 'those',
-          'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being', 'do', 'does',
-          'did', 'done', 'doing', 'it', 'its'
-        ]);
-        return q
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, ' ')
-          .split(/\s+/)
-          .filter(w => w.length >= 3 && !stopWords.has(w))
-          .join(' ')
-          .trim();
-      };
-
-      for (const seg of segments) {
-        // Skip water-only segments
-        if (seg.match(waterRegex) || seg.match(waterRegexAlt)) {
-          continue;
-        }
-
-        const foodRegex = /(?:^|\s)(\d+)\s*(?:g|gm|gram|grams)?\s+(?:of\s+)?([a-zA-Z0-9\s\-_]+)/i;
-        const foodRegexAlt = /(?:^|\s)([a-zA-Z0-9\s\-_]+)\s+(\d+)\s*(?:g|gm|gram|grams)/i;
-        const foodMatch = seg.match(foodRegex) || seg.match(foodRegexAlt);
-        
-        let grams = 0;
-        let queryStr = '';
-        
-        if (foodMatch) {
-          if (seg.match(foodRegex)) {
-            grams = parseInt(foodMatch[1], 10);
-            queryStr = foodMatch[2].trim();
-          } else {
-            queryStr = foodMatch[1].trim();
-            grams = parseInt(foodMatch[2], 10);
-          }
-        } else {
-          if (isTryingToLogFood) {
-            queryStr = seg;
-            grams = 100; // default assumed weight
-          }
-        }
-        
-        const foodSearchQuery = cleanQuery(queryStr);
-        if (foodSearchQuery.length > 1) {
-          const searchWords = foodSearchQuery.split(/\s+/).filter(w => w.length > 0);
-          let queryBuilder = supabase.from('food_inventory').select('*');
-          
-          if (searchWords.length > 0) {
-            const filters = searchWords.map(w => `name.ilike.%${w}%`).join(',');
-            queryBuilder = queryBuilder.or(filters);
-          } else {
-            queryBuilder = queryBuilder.ilike('name', `%${foodSearchQuery}%`);
-          }
-          
-          const { data: matchingFoods } = await queryBuilder.limit(100);
-          
-          if (matchingFoods && matchingFoods.length > 0) {
-            const getMatchScore = (food: any, query: string) => {
-              const name = food.name;
-              const n = name.toLowerCase();
-              const q = query.toLowerCase();
-              let baseScore = 0;
-              if (n === q) {
-                baseScore = 150;
-              } else {
-                const queryWords = q.split(/\s+/).filter(w => w.length > 0);
-                const nameWords = n.split(/[\s,()\-]+/);
-                let matches = 0;
-                for (const qw of queryWords) {
-                  if (nameWords.includes(qw)) matches++;
-                }
-                if (matches > 0) {
-                  baseScore = 80 * (matches / queryWords.length);
-                  baseScore -= n.length * 0.5;
-                }
-              }
-              if (food.user_id && food.user_id === userIdRef.current) baseScore += 100;
-              return baseScore;
-            };
-            
-            const sortedFoods = [...matchingFoods].sort((a, b) => getMatchScore(b, foodSearchQuery) - getMatchScore(a, foodSearchQuery));
-            const food = sortedFoods[0];
-            parsedItems.push({
-              food,
-              grams,
-              isDefaultWeight: !foodMatch
-            });
-          } else {
-            unrecognizedFoods.push(queryStr);
-          }
-        }
-      }
-
-      if (parsedItems.length > 0) {
-        const selectedDate = localStorage.getItem('athlete_dashboard_selected_date') || getLocalDate();
-        const { data: existingLog } = await supabase
-          .from('diet_logs')
-          .select('id')
-          .eq('user_id', userIdRef.current)
-          .eq('date', selectedDate)
-          .maybeSingle();
-        
-        let activeDietLogId = existingLog?.id;
-        if (!activeDietLogId && userIdRef.current) {
-          const { data: createdLog } = await supabase
-            .from('diet_logs')
-            .insert({
-              user_id: userIdRef.current,
-              date: selectedDate,
-              daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
-            })
-            .select('id')
-            .single();
-          activeDietLogId = createdLog?.id;
-        }
-
-        const draftMealData = {
-          diet_log_id: activeDietLogId,
-          name: 'Meal',
-          time: getLocalTime(),
-          items: parsedItems.map(item => {
-            const food = item.food;
-            const grams = item.grams;
-            const kcal = Math.round((Number(food.kcal_per_100g) || 0) * grams / 100);
-            const protein = Math.round((Number(food.protein) || 0) * grams / 100 * 10) / 10;
-            const carbs = Math.round((Number(food.carbs) || 0) * grams / 100 * 10) / 10;
-            const fat = Math.round((Number(food.fat) || 0) * grams / 100 * 10) / 10;
-            
-            return {
-              id: crypto.randomUUID(),
-              food_id: food.id,
-              name: food.name,
-              grams: grams,
-              macros: {
-                kcal: kcal,
-                protein: protein,
-                carbs: carbs,
-                fat: fat
-              },
-              serving_type: food.serving_type || 'per_100g'
-            };
-          })
-        };
-
-        let replyText = "";
-        if (waterMessageText) {
-          replyText += waterMessageText + "\n\n";
-        }
-        
-        replyText += `Nice choice! That's a great fit for your goals. Here is the breakdown for your meal:\n`;
-        for (const item of parsedItems) {
-          const displayGrams = item.isDefaultWeight ? `${item.grams}g (approx)` : `${item.grams}g`;
-          replyText += `- **${item.food.name}**: ${displayGrams}\n`;
-        }
-
-        if (unrecognizedFoods.length > 0) {
-          const unrecStr = unrecognizedFoods.map(f => `"${cleanQuery(f)}"`).join(', ');
-          replyText += `\nI couldn't find ${unrecStr} in your food list. You can add them manually in the Diet tab, and I'll be able to log them next time!`;
-        }
-
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          role: 'model',
-          text: replyText,
-          draftMeal: draftMealData
-        }]);
-        setIsTyping(false);
-        return;
-
-      } else if (unrecognizedFoods.length > 0) {
-        let replyText = "";
-        if (waterMessageText) {
-          replyText += waterMessageText + "\n\n";
-        }
-        const unrecStr = unrecognizedFoods.map(f => `"${cleanQuery(f)}"`).join(', ');
-        replyText += `I couldn't find ${unrecStr} in your food list. You can add them manually in the Diet tab, and I'll be able to log them next time!`;
-
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          role: 'model',
-          text: replyText
-        }]);
-        setIsTyping(false);
-        return;
-      } else if (isTryingToLogFood) {
-        let replyText = "I can help you log that! Just let me know the food and the amount in grams (for example: '100g chicken') and I'll check your food list.";
-        if (waterMessageText) {
-          replyText = `${waterMessageText}\n\n${replyText}`;
-        }
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          role: 'model',
-          text: replyText
-        }]);
-        setIsTyping(false);
-        return;
-      }
-
-      // ─── Standard Error Handling ───────────────────────────────────────────
       const errStr = e.message || '';
       const isRate = errStr.includes('RATE_LIMIT_ALL') || errStr.includes('RATE_LIMIT');
       
@@ -1702,6 +2058,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
     initChat,
     sessionId,
     quotaLimit,
-    usageCount
+    usageCount,
+    isAiten: userEmailRef.current === 'aitenn@stride.fit' || userEmailRef.current === 'aiten@stride.fit'
   };
 };
