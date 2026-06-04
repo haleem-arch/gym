@@ -43,13 +43,19 @@ export default function ProfileView() {
           .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
           .maybeSingle();
 
-        // 3. Fetch coach profile if coach_id is assigned
+        // 3. Fetch coach profile if coach_id is assigned (from client_profiles table)
         let coachData = null;
-        if (userProfile.coach_id) {
+        const { data: clientProfile } = await supabase
+          .from('client_profiles')
+          .select('coach_id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (clientProfile?.coach_id) {
           const { data: cData } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', userProfile.coach_id)
+            .eq('id', clientProfile.coach_id)
             .maybeSingle();
           coachData = cData;
         }
@@ -152,8 +158,8 @@ export default function ProfileView() {
         transition={{ delay: 0.05 }}
         className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-lg flex items-center gap-4"
       >
-        <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase shrink-0">
-          {profile?.display_name?.charAt(0) || '?'}
+        <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0 p-1.5">
+          <img src="/icon.svg" className="w-full h-full object-contain" alt="Stride Rite Logo" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Athlete Profile</p>
@@ -212,8 +218,8 @@ export default function ProfileView() {
         {coachProfile && (
           <div className="mt-5 pt-4 border-t border-gray-800/60 flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 font-black flex items-center justify-center text-xs uppercase shrink-0">
-                {coachProfile.display_name?.charAt(0) || '?'}
+              <div className="w-8 h-8 rounded-lg bg-emerald-950/40 border border-emerald-500/20 flex items-center justify-center shrink-0 p-1">
+                <img src="/icon.svg" className="w-full h-full object-contain" alt="Stride Rite Logo" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-white">Coach: {coachProfile.display_name}</p>
