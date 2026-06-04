@@ -86,7 +86,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
       animate="animate"
       exit="exit"
       transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-28 no-scrollbar bg-background"
+      className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-8 no-scrollbar bg-background"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       {children}
