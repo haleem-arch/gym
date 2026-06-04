@@ -50,7 +50,7 @@ const FoodCreator = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background relative">
+    <div className="flex flex-col min-h-[100dvh] bg-background relative">
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-gray-800 p-4 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
           <ArrowLeft size={24} />

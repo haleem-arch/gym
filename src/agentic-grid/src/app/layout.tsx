@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   title: 'Ultimate Run Club',
   description: 'Community run hub, schedules, and management.',
   themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+  },
 };
 
 export default function RootLayout({
@@ -24,9 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
       </head>
-      <body className="antialiased min-h-screen bg-black text-white selection:bg-volt selection:text-black flex flex-col">
+      <body className="antialiased min-h-[100dvh] bg-black text-white selection:bg-volt selection:text-black flex flex-col">
         <AuthProvider>
           <Navbar />
           <main className="flex-1 flex flex-col">

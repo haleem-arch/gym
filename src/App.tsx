@@ -170,7 +170,7 @@ const AppContent = () => {
 
   if (isCoachPortal) {
     return (
-      <div className="w-full min-h-screen bg-background text-gray-100 font-sans">
+      <div className="w-full min-h-[100dvh] bg-background text-gray-100 font-sans">
         <Routes location={location} key={location.pathname}>
           <Route path="/coach-portal" element={<DesktopCoachPortal />} />
         </Routes>

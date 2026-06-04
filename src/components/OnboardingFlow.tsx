@@ -738,7 +738,7 @@ export default function OnboardingFlow({
   }).slice(0, 5); // display top 5 matches
 
   return (
-    <div className="w-full sm:max-w-[390px] mx-auto min-h-screen bg-[#060610] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">
+    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#060610] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">
       
       {/* Dynamic brand blue ribbon glow background */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />

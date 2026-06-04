@@ -33,8 +33,6 @@ body {
   background-color: #0f0f0f;
   overflow: hidden;
   touch-action: none;
-  /* Safe area — covers home indicator on all iOS PWA pages including login */
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 input, textarea {

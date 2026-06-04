@@ -206,7 +206,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#090b11] flex flex-col justify-center items-center px-6 py-12 relative overflow-hidden">
+    <div className="min-h-[100dvh] w-full bg-[#090b11] flex flex-col justify-center items-center px-6 py-12 relative overflow-hidden">
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px]" />
