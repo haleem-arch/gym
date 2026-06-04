@@ -4,11 +4,9 @@ import { useNavigate } from 'react-router-dom';
 
 const getApiKey = () => import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-// Model fallback chain — if one hits rate limit, auto-switch to next
 const MODELS = [
-  'llama-3.3-70b-specdec',   // primary: ultra-fast 70B specdec model with JSON support
-  'llama-3.3-70b-versatile', // fallback 1: standard 70B model with high accuracy
-  'llama-3.1-8b-instant',    // fallback 2: fast 8B model with high rate limits
+  'llama-3.3-70b-versatile', // primary: standard 70B model with high accuracy and JSON support
+  'llama-3.1-8b-instant',    // fallback: fast 8B model with high rate limits
 ];
 
 
