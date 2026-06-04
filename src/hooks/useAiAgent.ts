@@ -1203,7 +1203,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       setMessages(prev => [...prev,
         { id: crypto.randomUUID(), role: 'user', text },
         { id: crypto.randomUUID(), role: 'model',
-          text: `⏱️ You're sending messages too fast. Please wait ${waitSec} second${waitSec !== 1 ? 's' : ''} before trying again.` }
+          text: `Whoa, slow down a bit! Give me just ${waitSec} second${waitSec !== 1 ? 's' : ''} to finish organizing client logs, then shoot me another message!` }
       ]);
       return;
     }
@@ -1218,7 +1218,7 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
       }, {
         id: crypto.randomUUID(),
         role: 'model',
-        text: `⚡ Daily limit reached (${limit}/${limit} messages). Please ask your coach to increase your daily AI limit!`
+        text: `Hey! I've run out of session slots for today (${limit}/${limit} logs completed). Shoot me a text if you need me to adjust your daily limits!`
       }]);
       return;
     }
@@ -1576,18 +1576,18 @@ export const useAiAgent = (options?: { storageKey?: string; mode?: 'default' | '
                                 errStr.includes('429') || 
                                 isDailyQuota;
       
-      let userFacingText = 'The AI Coach is temporarily offline for maintenance. Please check back shortly!';
+      let userFacingText = "I'm wrapping up notes for some of the other athletes right now. Let's touch base on your metrics in just a moment — send your message again soon!";
       
       if (isDailyQuota) {
-        userFacingText = '🤖 The AI Coach has reached its daily training capacity. Please try again shortly or notify your coach!';
+        userFacingText = "I'm wrapping up training sessions for the day! Let's resume coaching shortly, or drop me a message if you need your capacity increased.";
       } else if (isRate) {
-        userFacingText = '⏱️ The AI is busy right now. Please wait a moment and try again.';
+        userFacingText = "I'm writing up a plan for another client right now. Give me just a second and hit me back!";
       } else if (isQuotaOrKeyError) {
-        userFacingText = '🤖 The AI Coach has reached its daily training capacity. Please try again shortly or notify your coach!';
+        userFacingText = "I'm wrapping up training sessions for the day! Let's resume coaching shortly, or drop me a message if you need your capacity increased.";
       }
       
       if (isCoachRef.current) {
-        userFacingText = `🤖 AI Coach Status: Offline. (Reason: ${isDailyQuota ? 'API Quota Exceeded' : (isRate ? 'Rate Limit' : (isQuotaOrKeyError ? 'API Quota Exceeded' : 'Service Connection Issue'))})`;
+        userFacingText = `Coach Mode Status: Offline. (Reason: ${isDailyQuota ? 'Daily capacity reached' : (isRate ? 'Rate Limit' : (isQuotaOrKeyError ? 'Daily capacity reached' : 'Service Connection Issue'))})`;
       }
 
       setMessages(prev => [...prev, {
