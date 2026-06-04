@@ -8,7 +8,7 @@ import {
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
-  DollarSign, TrendingUp, PieChart
+  DollarSign, TrendingUp, PieChart, Lock
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -30,6 +30,26 @@ const getLocalDateTimeString = (d: Date = new Date()) => {
   const minutes = pad(d.getMinutes());
   const seconds = pad(d.getSeconds());
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
+const getWeekStart = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().split('T')[0];
+};
+
+const getWeekDays = (dateStr: string) => {
+  const weekStart = getWeekStart(dateStr);
+  const start = new Date(weekStart);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  return days;
 };
 
 const formatTimeLeft = (diffMs: number, showDetailed: boolean) => {
@@ -164,7 +184,7 @@ export default function DesktopCoachPortal() {
   const [loadingClientDetails, setLoadingClientDetails] = useState(false);
 
   // Client sub-tabs layout
-  const [clientActiveTab, setClientActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody'>('overview');
+  const [clientActiveTab, setClientActiveTab] = useState<'overview' | 'diet' | 'water' | 'workouts' | 'inbody' | 'history'>('overview');
   const [clientActiveDateStr, setClientActiveDateStr] = useState<string>(() => getLocalDateString());
   const [myCoachProfile, setMyCoachProfile] = useState<any | null>(null);
 
@@ -177,6 +197,18 @@ export default function DesktopCoachPortal() {
   const [clientScans, setClientScans] = useState<any[]>([]);
   const [clientWorkoutPlans, setClientWorkoutPlans] = useState<any[]>([]);
   const [exerciseDb, setExerciseDb] = useState<any[]>([]);
+
+  // Weekly schedule states
+  const [clientActiveSchedule, setClientActiveSchedule] = useState<any | null>(null);
+
+  // Unified history state variables
+  const [clientHistoryWorkouts, setClientHistoryWorkouts] = useState<any[]>([]);
+  const [clientHistoryDiets, setClientHistoryDiets] = useState<any[]>([]);
+  const [clientHistoryWater, setClientHistoryWater] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedReceiptDiet, setSelectedReceiptDiet] = useState<any | null>(null);
+  const [selectedReceiptDietMeals, setSelectedReceiptDietMeals] = useState<any[]>([]);
+  const [loadingReceiptDietMeals, setLoadingReceiptDietMeals] = useState(false);
 
   // Exercise catalog search in training tab
   const [searchExerciseQuery, setSearchExerciseQuery] = useState('');
@@ -483,6 +515,21 @@ export default function DesktopCoachPortal() {
 
   useEffect(() => {
     fetchFeedData();
+
+    // Subscribe to real-time updates for workouts and diet_logs to update coach feed dynamically
+    const channelId = `coach-feed-channel-${Date.now()}-${Math.random()}`;
+    const subscription = supabase.channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts' }, () => {
+        fetchFeedData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'diet_logs' }, () => {
+        fetchFeedData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [feedFilterMineOnly]);
 
   // Coach subscription warning and free trial countdown timer
@@ -797,7 +844,7 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleClientSubTabClick = (newSubTab: 'overview' | 'diet' | 'water' | 'workouts' | 'inbody') => {
+  const handleClientSubTabClick = (newSubTab: 'overview' | 'diet' | 'water' | 'workouts' | 'inbody' | 'history') => {
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'subtab', payload: newSubTab });
     } else {
@@ -912,6 +959,17 @@ export default function DesktopCoachPortal() {
         .order('created_at', { ascending: true });
       setClientWorkoutPlans(plansData || []);
 
+      // 6. Weekly Schedule
+      const weekStart = getWeekStart(dateStr);
+      const { data: schedData } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('week_start', weekStart)
+        .maybeSingle();
+
+      setClientActiveSchedule(schedData || null);
+
     } catch (err) {
       console.error(err);
       toast.error('Unable to sync active client database logs.');
@@ -953,6 +1011,9 @@ export default function DesktopCoachPortal() {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans', filter: `user_id=eq.${selectedClientId}` }, () => {
+        fetchClientData(selectedClientId, clientActiveDateStr, true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules', filter: `user_id=eq.${selectedClientId}` }, () => {
         fetchClientData(selectedClientId, clientActiveDateStr, true);
       })
       .subscribe();
@@ -1392,6 +1453,171 @@ export default function DesktopCoachPortal() {
       toast.error('Unable to rename split day.');
     }
   };
+
+  const handleUpdateClientDayType = async (date: string, newType: string) => {
+    if (!selectedClientId) return;
+    try {
+      const weekStart = getWeekStart(date);
+      
+      const { data: schedData, error: selectError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('user_id', selectedClientId)
+        .eq('week_start', weekStart)
+        .maybeSingle();
+
+      if (selectError) throw selectError;
+
+      let newDays = schedData?.days || {};
+      newDays[date] = newType;
+
+      let error;
+      if (schedData) {
+        const { error: updateError } = await supabase
+          .from('schedules')
+          .update({ days: newDays })
+          .eq('id', schedData.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('schedules')
+          .insert({
+            user_id: selectedClientId,
+            week_start: weekStart,
+            days: newDays
+          });
+        error = insertError;
+      }
+
+      if (error) throw error;
+      toast.success('Schedule updated successfully');
+      fetchClientData(selectedClientId, clientActiveDateStr, true);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update scheduled day type.');
+    }
+  };
+
+  const fetchClientHistory = async (clientId: string) => {
+    if (!clientId) return;
+    setLoadingHistory(true);
+    try {
+      const [workoutsRes, dietsRes, waterRes] = await Promise.all([
+        supabase.from('workouts').select('*').eq('user_id', clientId).order('date', { ascending: false }),
+        supabase.from('diet_logs').select('*').eq('user_id', clientId).order('date', { ascending: false }),
+        supabase.from('water_logs').select('*').eq('user_id', clientId).order('date', { ascending: false })
+      ]);
+
+      setClientHistoryWorkouts(workoutsRes.data || []);
+      setClientHistoryDiets(dietsRes.data || []);
+      setClientHistoryWater(waterRes.data || []);
+    } catch (err) {
+      console.error("Error fetching client history:", err);
+      toast.error("Failed to load client history.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleOpenDietReceipt = async (dietLog: any) => {
+    setSelectedReceiptDiet(dietLog);
+    setSelectedReceiptDietMeals([]);
+    setLoadingReceiptDietMeals(true);
+    try {
+      const { data: meals } = await supabase
+        .from('diet_meals')
+        .select('*')
+        .eq('diet_log_id', dietLog.id)
+        .order('created_at', { ascending: true });
+      setSelectedReceiptDietMeals(meals || []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Unable to fetch meal details.');
+    } finally {
+      setLoadingReceiptDietMeals(false);
+    }
+  };
+
+  const getUnifiedHistory = () => {
+    const datesMap: Record<string, {
+      date: string;
+      workouts: any[];
+      diet: any | null;
+      waterMl: number;
+    }> = {};
+
+    clientHistoryWorkouts.forEach(w => {
+      const date = w.date;
+      if (!datesMap[date]) {
+        datesMap[date] = { date, workouts: [], diet: null, waterMl: 0 };
+      }
+      datesMap[date].workouts.push(w);
+    });
+
+    clientHistoryDiets.forEach(d => {
+      const date = d.date;
+      if (!datesMap[date]) {
+        datesMap[date] = { date, workouts: [], diet: null, waterMl: 0 };
+      }
+      datesMap[date].diet = d;
+    });
+
+    clientHistoryWater.forEach(wat => {
+      const date = wat.date;
+      if (!datesMap[date]) {
+        datesMap[date] = { date, workouts: [], diet: null, waterMl: 0 };
+      }
+      datesMap[date].waterMl += (wat.amount_ml || 0);
+    });
+
+    return Object.values(datesMap).sort((a, b) => b.date.localeCompare(a.date));
+  };
+
+  const handleExportHistoryToCSV = () => {
+    const data = getUnifiedHistory();
+    if (data.length === 0) {
+      toast.error("No history data to export.");
+      return;
+    }
+
+    const headers = ["Date", "Workouts", "Diet Calories (kcal)", "Protein (g)", "Carbs (g)", "Fat (g)", "Water (L)"];
+    const rows = data.map(row => {
+      const workoutsStr = row.workouts.map(w => `${w.day_type || 'GYM'}: ${w.name || 'Workout'} (${w.status})`).join(" | ");
+      const kcal = row.diet?.daily_totals?.kcal || 0;
+      const protein = row.diet?.daily_totals?.protein || 0;
+      const carbs = row.diet?.daily_totals?.carbs || 0;
+      const fat = row.diet?.daily_totals?.fat || 0;
+      const waterL = (row.waterMl / 1000).toFixed(2);
+      
+      return [
+        row.date,
+        `"${workoutsStr.replace(/"/g, '""')}"`,
+        kcal,
+        protein,
+        carbs,
+        fat,
+        waterL
+      ];
+    });
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    
+    const clientNameClean = selectedClientProfile?.full_name?.toLowerCase().replace(/\s+/g, '_') || 'client';
+    link.setAttribute("download", `${clientNameClean}_fitness_history.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  useEffect(() => {
+    if (selectedClientId && clientActiveTab === 'history') {
+      fetchClientHistory(selectedClientId);
+    }
+  }, [selectedClientId, clientActiveTab]);
 
   // ─── ATHLETE CONTROL TAB ACTIONS ───────────────────────────
   useEffect(() => {
@@ -3520,13 +3746,14 @@ export default function DesktopCoachPortal() {
                     </div>
 
                     {/* Client Detail Sub-Tabs Navigation */}
-                    <div className="flex border-b border-gray-800 gap-4 mt-4">
+                    <div className="flex border-b border-gray-800 gap-4 mt-4 font-sans">
                       {([
                         { id: 'overview', label: 'Overview', icon: <Activity size={13} /> },
                         { id: 'diet', label: 'Diet Logs', icon: <Apple size={13} /> },
                         { id: 'water', label: 'Water Logs', icon: <Droplets size={13} /> },
                         { id: 'workouts', label: 'Training Plans', icon: <Dumbbell size={13} /> },
                         { id: 'inbody', label: 'InBody Scans', icon: <Scale size={13} /> },
+                        { id: 'history', label: 'History', icon: <History size={13} /> },
                       ] as const).map(tab => (
                         <button
                           key={tab.id}
@@ -3930,8 +4157,54 @@ export default function DesktopCoachPortal() {
                           </div>
                         </div>
 
+                        {/* Weekly Schedule Planner */}
+                        <div className="bg-[#121624]/30 border border-gray-850 rounded-2xl p-5 space-y-4 font-sans">
+                          <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-850 pb-2 flex items-center gap-1.5">
+                            📅 Weekly Schedule Planner
+                          </h3>
+                          <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+                            {getWeekDays(clientActiveDateStr).map(date => {
+                              const dayType = clientActiveSchedule?.days?.[date] || 'REST';
+                              const isSelectedDay = date === clientActiveDateStr;
+                              return (
+                                <div 
+                                  key={date} 
+                                  className={`p-3 rounded-2xl border flex flex-col gap-2 transition-all ${
+                                    isSelectedDay 
+                                      ? 'bg-blue-600/10 border-blue-500/40 shadow-md' 
+                                      : 'bg-[#121624]/50 border-gray-850 hover:border-gray-800'
+                                  }`}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-gray-200">
+                                      {new Date(date).toLocaleDateString(undefined, { weekday: 'short' })}
+                                    </span>
+                                    <span className="text-[8px] text-gray-500 font-bold">
+                                      {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                  <select
+                                    value={dayType}
+                                    onChange={(e) => handleUpdateClientDayType(date, e.target.value)}
+                                    className={`w-full bg-[#0d1220] text-[10px] font-black p-1.5 rounded-lg border outline-none cursor-pointer uppercase ${dayColor(dayType)}`}
+                                  >
+                                    <option value="REST" className="bg-[#0d1220] text-gray-400">REST</option>
+                                    <option value="RUN" className="bg-[#0d1220] text-amber-400">RUN</option>
+                                    <option value="RUN + GYM" className="bg-[#0d1220] text-indigo-400">RUN + GYM</option>
+                                    {clientWorkoutPlans.map(p => (
+                                      <option key={p.id} value={p.plan_type} className="bg-[#0d1220] text-blue-400">
+                                        {p.plan_type}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
                         {/* Splits template editor */}
-                        <div className="bg-[#121624]/30 border border-gray-800 rounded-3xl p-5 space-y-4">
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-3xl p-5 space-y-4 font-sans">
                           <div className="flex items-center justify-between border-b border-gray-850 pb-2">
                             <h3 className="text-xs font-black uppercase text-blue-400">Gym Program templates splits ({clientWorkoutPlans.length})</h3>
                             
@@ -3946,9 +4219,14 @@ export default function DesktopCoachPortal() {
                           </div>
 
                           <div className="divide-y divide-gray-850">
-                            {clientWorkoutPlans.map(plan => {
+                            {[
+                              ...clientWorkoutPlans,
+                              { id: 'system-run', plan_type: 'RUN', exercises: [], isSystem: true },
+                              { id: 'system-run-gym', plan_type: 'RUN + GYM', exercises: [], isSystem: true }
+                            ].map(plan => {
                               const dt = plan.plan_type;
                               const isExp = activeSplitEditKey === dt;
+                              const isSys = !!plan.isSystem;
                               return (
                                 <div key={plan.id} className="py-2.5">
                                   <div className="w-full flex items-center justify-between py-2">
@@ -3957,84 +4235,109 @@ export default function DesktopCoachPortal() {
                                       onClick={() => setActiveSplitEditKey(isExp ? null : dt)}
                                     >
                                       <span className={`text-[9px] font-black px-2.5 py-0.5 rounded border uppercase ${dayColor(dt)}`}>{dt}</span>
-                                      <span className="text-[10px] text-gray-400 font-bold">({plan.exercises?.length || 0} exercises)</span>
+                                      {isSys ? (
+                                        <span className="text-[9px] text-gray-500 font-extrabold uppercase bg-gray-900 border border-gray-800 px-2 py-0.5 rounded">System Template</span>
+                                      ) : (
+                                        <span className="text-[10px] text-gray-400 font-bold font-sans">({plan.exercises?.length || 0} exercises)</span>
+                                      )}
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                      <button onClick={() => handleRenameSplitDay(plan)} className="p-2 text-gray-500 hover:text-blue-400" title="Rename"><Edit3 size={13} /></button>
-                                      <button onClick={() => handleDeleteSplitDay(plan.id)} className="p-2 text-gray-500 hover:text-red-400" title="Delete"><Trash2 size={13} /></button>
+                                      {!isSys ? (
+                                        <>
+                                          <button onClick={() => handleRenameSplitDay(plan)} className="p-2 text-gray-500 hover:text-blue-400" title="Rename"><Edit3 size={13} /></button>
+                                          <button onClick={() => handleDeleteSplitDay(plan.id)} className="p-2 text-gray-500 hover:text-red-400" title="Delete"><Trash2 size={13} /></button>
+                                        </>
+                                      ) : (
+                                        <span className="p-2 text-gray-600" title="System locked"><Lock size={12} /></span>
+                                      )}
                                       <button onClick={() => setActiveSplitEditKey(isExp ? null : dt)} className="p-2 text-gray-500 hover:text-white">{isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button>
                                     </div>
                                   </div>
 
                                   {isExp && (
                                     <div className="mt-3 bg-[#0d1220] border border-gray-850 p-4 rounded-2xl space-y-4">
-                                      {/* Exercises rows */}
-                                      {!plan.exercises || plan.exercises.length === 0 ? (
-                                        <p className="text-[10px] text-gray-500 italic py-2 text-center">No exercises added. Use search below.</p>
+                                      {isSys ? (
+                                        <div className="text-center py-4 px-2 space-y-2">
+                                          <p className="text-xs text-gray-400 font-bold">
+                                            {dt === 'RUN' 
+                                              ? '🏃 Cardio running session tracked automatically via integration (e.g. Strava) or logged manually by the athlete.'
+                                              : '🏃‍♂️ Hybrid Day: Running session + Gym split. The athlete can select their target gym template split when starting the workout.'
+                                            }
+                                          </p>
+                                          <p className="text-[10px] text-gray-500 italic">
+                                            This is a built-in system split. Exercises are tracked dynamically and cannot be customized directly here. Use the Weekly Schedule Planner above to schedule or remove this day for the athlete.
+                                          </p>
+                                        </div>
                                       ) : (
-                                        <div className="space-y-1.5">
-                                          {plan.exercises.map((ex: any, idx: number) => (
-                                            <div key={ex.id || idx} className="flex justify-between items-center bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs">
-                                              <div>
-                                                <p className="font-bold text-white">{ex.name}</p>
-                                                <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
-                                              </div>
-                                              <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-1">
-                                                  <input 
-                                                    type="number" value={ex.sets || 3} min="1"
-                                                    onChange={e => handleUpdateExerciseStats(dt, ex.id, parseInt(e.target.value) || 3, ex.rest || 120)}
-                                                    className="w-10 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
-                                                  />
-                                                  <span className="text-[9px] text-gray-500 uppercase font-black">Sets</span>
+                                        <>
+                                          {/* Exercises rows */}
+                                          {!plan.exercises || plan.exercises.length === 0 ? (
+                                            <p className="text-[10px] text-gray-500 italic py-2 text-center">No exercises added. Use search below.</p>
+                                          ) : (
+                                            <div className="space-y-1.5 font-sans">
+                                              {plan.exercises.map((ex: any, idx: number) => (
+                                                <div key={ex.id || idx} className="flex justify-between items-center bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs">
+                                                  <div>
+                                                    <p className="font-bold text-white">{ex.name}</p>
+                                                    <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
+                                                  </div>
+                                                  <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-1">
+                                                      <input 
+                                                        type="number" value={ex.sets || 3} min="1"
+                                                        onChange={e => handleUpdateExerciseStats(dt, ex.id, parseInt(e.target.value) || 3, ex.rest || 120)}
+                                                        className="w-10 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
+                                                      />
+                                                      <span className="text-[9px] text-gray-500 uppercase font-black">Sets</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                      <input 
+                                                        type="number" value={ex.rest || 120} min="0" step="5"
+                                                        onChange={e => handleUpdateExerciseStats(dt, ex.id, ex.sets || 3, parseInt(e.target.value) || 0)}
+                                                        className="w-12 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
+                                                      />
+                                                      <span className="text-[9px] text-gray-500 uppercase font-black">Rest</span>
+                                                    </div>
+                                                    <button onClick={() => handleRemoveExerciseFromSplit(dt, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
+                                                  </div>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                  <input 
-                                                    type="number" value={ex.rest || 120} min="0" step="5"
-                                                    onChange={e => handleUpdateExerciseStats(dt, ex.id, ex.sets || 3, parseInt(e.target.value) || 0)}
-                                                    className="w-12 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
-                                                  />
-                                                  <span className="text-[9px] text-gray-500 uppercase font-black">Rest</span>
-                                                </div>
-                                                <button onClick={() => handleRemoveExerciseFromSplit(dt, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
-                                              </div>
+                                              ))}
                                             </div>
-                                          ))}
-                                        </div>
-                                      )}
+                                          )}
 
-                                      {/* Search Exercises catalog to insert */}
-                                      <div className="border-t border-gray-850 pt-3 space-y-2 relative">
-                                        <div className="relative">
-                                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                                          <input 
-                                            type="text" value={searchExerciseQuery} onChange={e => setSearchExerciseQuery(e.target.value)}
-                                            placeholder="Search catalog to add exercise..."
-                                            className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2 pl-9 pr-8 text-xs text-white outline-none focus:border-blue-500"
-                                          />
-                                          {searchExerciseQuery && <button onClick={() => setSearchExerciseQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"><X size={12} /></button>}
-                                        </div>
+                                          {/* Search Exercises catalog to insert */}
+                                          <div className="border-t border-gray-850 pt-3 space-y-2 relative">
+                                            <div className="relative">
+                                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                                              <input 
+                                                type="text" value={searchExerciseQuery} onChange={e => setSearchExerciseQuery(e.target.value)}
+                                                placeholder="Search catalog to add exercise..."
+                                                className="w-full bg-[#121624] border border-gray-850 rounded-xl py-2 pl-9 pr-8 text-xs text-white outline-none focus:border-blue-500 font-sans"
+                                              />
+                                              {searchExerciseQuery && <button onClick={() => setSearchExerciseQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"><X size={12} /></button>}
+                                            </div>
 
-                                        {searchExerciseQuery && (
-                                          <div className="bg-[#121624] border border-gray-800 rounded-xl overflow-hidden shadow-2xl max-h-[160px] overflow-y-auto">
-                                            {filteredCatalog.length === 0 ? (
-                                              <p className="text-[10px] text-gray-500 italic p-3 text-center">No exercises found.</p>
-                                            ) : (
-                                              filteredCatalog.map(ex => (
-                                                <button 
-                                                  key={ex.id} 
-                                                  onClick={() => handleAddExerciseToSplit(dt, ex)}
-                                                  className="w-full text-left px-3 py-2 text-xs hover:bg-blue-600/20 flex justify-between border-b border-gray-800/60 last:border-0"
-                                                >
-                                                  <span className="font-bold text-gray-200">{ex.name}</span>
-                                                  <span className="text-[8px] bg-gray-800 border border-gray-700 text-gray-500 font-extrabold px-1.5 py-0.5 rounded uppercase">{ex.muscle_group}</span>
-                                                </button>
-                                              ))
+                                            {searchExerciseQuery && (
+                                              <div className="bg-[#121624] border border-gray-850 rounded-xl overflow-hidden shadow-2xl max-h-[160px] overflow-y-auto">
+                                                {filteredCatalog.length === 0 ? (
+                                                  <p className="text-[10px] text-gray-500 italic p-3 text-center">No exercises found.</p>
+                                                ) : (
+                                                  filteredCatalog.map(ex => (
+                                                    <button 
+                                                      key={ex.id} 
+                                                      onClick={() => handleAddExerciseToSplit(dt, ex)}
+                                                      className="w-full text-left px-3 py-2 text-xs hover:bg-blue-600/20 flex justify-between border-b border-gray-800/60 last:border-0 font-sans"
+                                                    >
+                                                      <span className="font-bold text-gray-200">{ex.name}</span>
+                                                      <span className="text-[8px] bg-gray-800 border border-gray-700 text-gray-500 font-extrabold px-1.5 py-0.5 rounded uppercase">{ex.muscle_group}</span>
+                                                    </button>
+                                                  ))
+                                                )}
+                                              </div>
                                             )}
                                           </div>
-                                        )}
-                                      </div>
-
+                                        </>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -4189,6 +4492,115 @@ export default function DesktopCoachPortal() {
                           </div>
                         </div>
 
+                      </div>
+                    )}
+
+                    {/* CLIENT TAB: HISTORY */}
+                    {clientActiveTab === 'history' && (
+                      <div className="space-y-6">
+                        {/* Header & Export Button */}
+                        <div className="flex justify-between items-center bg-[#121624]/30 border border-gray-800 rounded-2xl p-4">
+                          <div>
+                            <h3 className="text-xs font-black uppercase text-blue-400">Unified Logs History</h3>
+                            <p className="text-[10px] text-gray-400 mt-1">Timeline of all workouts, running cards, daily diet macros, and water entries.</p>
+                          </div>
+                          <button
+                            onClick={handleExportHistoryToCSV}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-1.5 font-sans"
+                          >
+                            <FileText size={14} /> Export to Excel
+                          </button>
+                        </div>
+
+                        {/* History Table Card */}
+                        <div className="bg-[#121624]/30 border border-gray-800 rounded-3xl p-5 overflow-hidden">
+                          {loadingHistory ? (
+                            <div className="text-center py-12 text-xs text-gray-500 font-bold flex items-center justify-center gap-2">
+                              <RefreshCw className="animate-spin text-blue-500" size={16} /> Loading athlete history logs...
+                            </div>
+                          ) : getUnifiedHistory().length === 0 ? (
+                            <p className="text-xs text-gray-500 italic py-12 text-center">No logs recorded in the historical database.</p>
+                          ) : (
+                            <div className="overflow-x-auto no-scrollbar">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-gray-850 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                    <th className="py-3 px-4">Date</th>
+                                    <th className="py-3 px-4">Workouts / Runs</th>
+                                    <th className="py-3 px-4">Diet &amp; Macros</th>
+                                    <th className="py-3 px-4 text-center">Water Logs</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-850/50 text-xs">
+                                  {getUnifiedHistory().map(row => (
+                                    <tr key={row.date} className="hover:bg-gray-900/10 transition-colors">
+                                      {/* Date column */}
+                                      <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
+                                        {new Date(row.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                      </td>
+                                      
+                                      {/* Workouts column */}
+                                      <td className="py-3.5 px-4">
+                                        {row.workouts.length === 0 ? (
+                                          <span className="text-gray-600 font-semibold">-</span>
+                                        ) : (
+                                          <div className="flex flex-col gap-1.5 font-sans">
+                                            {row.workouts.map(w => (
+                                              <button
+                                                key={w.id}
+                                                onClick={() => w.status === 'completed' && setSelectedReceiptWorkout(w)}
+                                                className={`text-left inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border max-w-fit text-[10px] font-black transition-all ${
+                                                  w.status === 'completed'
+                                                    ? 'bg-blue-900/20 text-blue-400 border-blue-800/30 hover:border-blue-500 cursor-pointer'
+                                                    : 'bg-gray-850 text-gray-500 border-gray-800'
+                                                }`}
+                                              >
+                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${dayColor(w.day_type || '')}`}>
+                                                  {w.day_type || 'GYM'}
+                                                </span>
+                                                <span>{w.name || 'Workout Session'}</span>
+                                                {w.status === 'completed' && <span className="text-green-500">✓</span>}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </td>
+                                      
+                                      {/* Diet column */}
+                                      <td className="py-3.5 px-4 font-sans">
+                                        {row.diet ? (
+                                          <button
+                                            onClick={() => handleOpenDietReceipt(row.diet)}
+                                            className="text-left bg-purple-900/15 border border-purple-800/30 text-purple-400 hover:border-purple-500 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex flex-col gap-0.5"
+                                          >
+                                            <span className="text-[10px] font-black">{Math.round(row.diet.daily_totals?.kcal || 0)} kcal</span>
+                                            <span className="text-[8px] text-gray-500 font-mono">
+                                              P{Math.round(row.diet.daily_totals?.protein || 0)}g · C{Math.round(row.diet.daily_totals?.carbs || 0)}g · F{Math.round(row.diet.daily_totals?.fat || 0)}g
+                                            </span>
+                                          </button>
+                                        ) : (
+                                          <span className="text-gray-600 font-semibold">-</span>
+                                        )}
+                                      </td>
+                                      
+                                      {/* Water column */}
+                                      <td className="py-3.5 px-4 text-center">
+                                        {row.waterMl > 0 ? (
+                                          <div className="inline-flex items-center gap-1 bg-blue-950/20 border border-blue-900/30 text-blue-400 px-2.5 py-1 rounded-xl text-[10px] font-black font-sans">
+                                            <Droplet size={10} className="text-blue-500" />
+                                            <span>{(row.waterMl / 1000).toFixed(1)} L</span>
+                                          </div>
+                                        ) : (
+                                          <span className="text-gray-600 font-semibold">-</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -6257,6 +6669,115 @@ export default function DesktopCoachPortal() {
           stats={selectedReceiptWorkout}
           onClose={() => setSelectedReceiptWorkout(null)}
         />
+      )}
+
+      {/* DIET RECEIPT MODAL OVERLAY */}
+      {selectedReceiptDiet && (
+        <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0b0f19] border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-850 flex items-center justify-between bg-gray-900/20 font-sans">
+              <div>
+                <h3 className="text-xs font-black uppercase text-blue-400">Diet Receipt</h3>
+                <p className="text-sm font-black text-white mt-0.5">
+                  {new Date(selectedReceiptDiet.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedReceiptDiet(null)} 
+                className="w-8 h-8 rounded-xl bg-gray-900 hover:bg-gray-850 text-gray-400 hover:text-white flex items-center justify-center border border-gray-800 transition-all cursor-pointer animate-scale"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto no-scrollbar space-y-5 flex-1 font-sans">
+              {/* Daily totals cards */}
+              <div className="grid grid-cols-4 gap-2 bg-[#121624]/60 border border-gray-850 p-4 rounded-2xl">
+                <div className="text-center">
+                  <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Calories</p>
+                  <p className="text-xs font-black text-white">{Math.round(selectedReceiptDiet.daily_totals?.kcal || 0)} kcal</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Protein</p>
+                  <p className="text-xs font-black text-blue-400">{Math.round(selectedReceiptDiet.daily_totals?.protein || 0)}g</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Carbs</p>
+                  <p className="text-xs font-black text-purple-400">{Math.round(selectedReceiptDiet.daily_totals?.carbs || 0)}g</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Fat</p>
+                  <p className="text-xs font-black text-emerald-400">{Math.round(selectedReceiptDiet.daily_totals?.fat || 0)}g</p>
+                </div>
+              </div>
+
+              {/* Meals list */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Logged Meals</h4>
+                {loadingReceiptDietMeals ? (
+                  <div className="text-center py-6 text-xs text-gray-500 font-bold flex items-center justify-center gap-2">
+                    <RefreshCw className="animate-spin text-blue-500" size={14} /> Loading meals...
+                  </div>
+                ) : selectedReceiptDietMeals.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic py-4 text-center">No meal entries logged.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedReceiptDietMeals.map(meal => {
+                      const mm = meal.items?.reduce((t: any, i: any) => ({
+                        kcal: t.kcal + (i.macros?.kcal || 0),
+                        protein: t.protein + (i.macros?.protein || 0),
+                        carbs: t.carbs + (i.macros?.carbs || 0),
+                        fat: t.fat + (i.macros?.fat || 0),
+                      }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+                      
+                      return (
+                        <div key={meal.id} className="bg-[#121624]/30 border border-gray-800 rounded-2xl p-4 space-y-3">
+                          <div className="flex justify-between items-center border-b border-gray-850 pb-2">
+                            <span className="text-xs font-black text-white uppercase tracking-wider">{meal.name}</span>
+                            <span className="text-[10px] font-black text-blue-400">{Math.round(mm?.kcal || 0)} kcal</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {meal.items?.map((item: any, idx: number) => (
+                              <div key={item.id || idx} className="flex justify-between items-center bg-[#0d1220] border border-gray-850 p-2.5 rounded-xl text-xs">
+                                <div>
+                                  <p className="font-bold text-gray-200">{item.name}</p>
+                                  <p className="text-[9px] text-gray-500 mt-0.5">
+                                    {item.serving_type === 'per_item' 
+                                      ? (item.grams === 1 ? '1 serving' : `${item.grams} servings`) 
+                                      : `${item.grams}g`}
+                                  </p>
+                                </div>
+                                <div className="text-right font-medium text-xs">
+                                  <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
+                                  <p className="text-[8px] text-gray-500 font-mono mt-0.5">
+                                    P{Math.round(item.macros?.protein || 0)}g · C{Math.round(item.macros?.carbs || 0)}g · F{Math.round(item.macros?.fat || 0)}g
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-850 bg-gray-900/10 flex justify-end font-sans">
+              <button 
+                onClick={() => setSelectedReceiptDiet(null)}
+                className="bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Close Receipt
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}

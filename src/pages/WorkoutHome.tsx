@@ -396,11 +396,11 @@ const WorkoutHome = () => {
       } else {
         const targetSplit = dayType === 'RUN + GYM' ? hybridLiftingType : dayType;
         
-        // Find saved plan or fallback
+        // Find saved plan (no hardcoded fallback to planMap for split types)
         const matchingPlan = activePlans.find(p => p.plan_type.toUpperCase() === targetSplit.toUpperCase());
         const targetItems = (matchingPlan?.exercises && matchingPlan.exercises.length > 0) 
           ? matchingPlan.exercises 
-          : planMap[targetSplit.toUpperCase()] || [];
+          : [];
 
         const namesOnly = targetItems.map((e: any) => typeof e === 'string' ? e : e.name);
 
@@ -450,9 +450,18 @@ const WorkoutHome = () => {
     const handlePlanUpdated = () => loadData();
     window.addEventListener('plan_updated', handlePlanUpdated);
     
+    // Subscribe to real-time changes on user_workout_plans to update UI instantly when coach edits/deletes templates
+    const channelId = `user-plans-channel-${Date.now()}-${Math.random()}`;
+    const subscription = supabase.channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans' }, () => {
+        loadData();
+      })
+      .subscribe();
+    
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('plan_updated', handlePlanUpdated);
+      supabase.removeChannel(subscription);
     };
   }, [dayType, hybridLiftingType, selectedDateStr]);
 

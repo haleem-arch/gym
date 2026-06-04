@@ -283,9 +283,18 @@ const TodayView = () => {
     const handlePlanUpdated = () => fetchWorkoutTemplates();
     window.addEventListener('plan_updated', handlePlanUpdated);
     
+    // Subscribe to real-time changes on user_workout_plans to sync coach template updates
+    const channelId = `user-plans-channel-${Date.now()}-${Math.random()}`;
+    const subscription = supabase.channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans' }, () => {
+        fetchWorkoutTemplates();
+      })
+      .subscribe();
+      
     return () => {
       active = false;
       window.removeEventListener('plan_updated', handlePlanUpdated);
+      supabase.removeChannel(subscription);
     };
   }, []);
 
@@ -334,9 +343,6 @@ const TodayView = () => {
     
     // Custom split or PUSH/PULL/LEGS from templates
     let matched = workoutTemplates.find(t => t.plan_type.toUpperCase() === dayType.toUpperCase());
-    if (!matched && workoutTemplates.length > 0) {
-      matched = workoutTemplates.find(t => t.plan_type.toUpperCase() === 'PUSH') || workoutTemplates[0];
-    }
     if (matched) {
       const exNames = matched.exercises ? matched.exercises.map((e: any) => typeof e === 'string' ? e : e.name) : [];
       return {
