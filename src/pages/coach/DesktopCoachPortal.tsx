@@ -320,6 +320,7 @@ export default function DesktopCoachPortal() {
   const [deployStep, setDeployStep] = useState(1);
   const [deployLoading, setDeployLoading] = useState(false);
   const [deploySuccessData, setDeploySuccessData] = useState<any | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     displayName: '',
     username: '',
@@ -2338,6 +2339,7 @@ export default function DesktopCoachPortal() {
     }
     setDeployLoading(true);
     setDeploySuccessData(null);
+    setDeployError(null);
 
     try {
       const { data: { session: activeSession } } = await supabase.auth.getSession();
@@ -2573,8 +2575,10 @@ export default function DesktopCoachPortal() {
 
       fetchBaseData();
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Deployment encountered an error.');
+      console.error('Deploy error:', err);
+      const errMsg = err?.message || err?.error || String(err) || 'Unknown error during deployment.';
+      setDeployError(errMsg);
+      toast.error(errMsg, { duration: 8000 });
     } finally {
       setDeployLoading(false);
     }
@@ -4644,6 +4648,18 @@ export default function DesktopCoachPortal() {
 
                   </div>
 
+                  {/* Error banner */}
+                  {deployError && (
+                    <div className="bg-red-950/30 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3">
+                      <span className="text-red-400 text-lg">⚠</span>
+                      <div className="flex-1">
+                        <p className="text-red-400 font-bold text-xs uppercase">Deploy Failed</p>
+                        <p className="text-red-300 text-xs mt-1 break-all">{deployError}</p>
+                      </div>
+                      <button onClick={() => setDeployError(null)} className="text-red-500 hover:text-red-300 text-xs">✕</button>
+                    </div>
+                  )}
+
                   {/* Deploy wizard action buttons */}
                   <div className="flex justify-between items-center gap-4 bg-gray-950/20 p-4 border border-gray-800 rounded-2xl">
                     <button 
@@ -4660,6 +4676,7 @@ export default function DesktopCoachPortal() {
                             toast.error('Complete basic account credentials fields.');
                             return;
                           }
+                          setDeployError(null);
                           setDeployStep(prev => prev + 1);
                         }}
                         className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs uppercase font-black"
@@ -4670,9 +4687,9 @@ export default function DesktopCoachPortal() {
                       <button 
                         onClick={handleDeployAthlete} 
                         disabled={deployLoading}
-                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs uppercase font-black shadow-lg shadow-blue-500/20"
+                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-xs uppercase font-black shadow-lg shadow-blue-500/20"
                       >
-                        {deployLoading ? 'Deploying...' : 'Deploy Athlete'}
+                        {deployLoading ? '⏳ Deploying...' : '🚀 Deploy Athlete'}
                       </button>
                     )}
                   </div>
