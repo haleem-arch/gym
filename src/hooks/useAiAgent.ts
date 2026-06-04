@@ -19,7 +19,7 @@ export interface AiMessage {
 }
 
 export interface DbAction {
-  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule' | 'update_workout_plan' | 'replace_active_exercise';
+  type: 'insert' | 'update' | 'delete' | 'navigate' | 'update_schedule' | 'update_workout_plan' | 'replace_active_exercise' | 'insert_diet_meal';
   table?: string;
   data?: any;
   match?: Record<string, any>;
@@ -30,6 +30,14 @@ export interface DbAction {
   exercises?: string[];
   oldExercise?: string;
   newExercise?: string;
+  food_id?: string;
+  food_name?: string;
+  grams?: number;
+  calories?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  fiber_g?: number;
 }
 
 interface AiResponse {
