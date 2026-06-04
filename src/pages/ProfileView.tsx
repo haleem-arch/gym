@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, Lock, Clock, MessageSquare, CheckCircle, AlertCircle, ExternalLink, Shield } from 'lucide-react';
+import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { DumbbellLoader } from '../components/DumbbellLoader';
 
@@ -36,17 +36,29 @@ export default function ProfileView() {
       if (userProfile) {
         setProfile(userProfile);
 
-        // 2. Fetch coach profile if coach_id is assigned
+        // 2. Fetch owner profile as fallback
+        const { data: ownerData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+          .maybeSingle();
+
+        // 3. Fetch coach profile if coach_id is assigned
+        let coachData = null;
         if (userProfile.coach_id) {
-          const { data: coachData } = await supabase
+          const { data: cData } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', userProfile.coach_id)
             .maybeSingle();
-            
-          if (coachData) {
-            setCoachProfile(coachData);
-          }
+          coachData = cData;
+        }
+
+        // Set coachProfile with phone number fallback checks
+        if (coachData && coachData.targets?.phone_number) {
+          setCoachProfile(coachData);
+        } else if (ownerData) {
+          setCoachProfile(ownerData);
         }
       }
     } catch (err) {
@@ -136,16 +148,20 @@ export default function ProfileView() {
       {/* Account Info Dossier Card */}
       <motion.div 
         initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 0.95, y: 0 }}
         transition={{ delay: 0.05 }}
         className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-lg flex items-center gap-4"
       >
         <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase shrink-0">
           {profile?.display_name?.charAt(0) || '?'}
         </div>
-        <div className="min-w-0">
-          <h2 className="text-lg font-black text-white truncate">{profile?.display_name || 'Unnamed Client'}</h2>
-          <p className="text-xs text-gray-500 truncate">@{profile?.username || 'no-username'}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Athlete Profile</p>
+          <h2 className="text-base font-black text-white truncate">{profile?.display_name || 'Unnamed Client'}</h2>
+          <div className="flex flex-col gap-0.5 mt-1 text-xs text-gray-400">
+            <p className="font-semibold">Phone: <span className="text-white font-mono">{profile?.targets?.phone_number || 'Not added'}</span></p>
+            <p className="text-[10px] text-gray-500 mt-0.5">@{profile?.username || 'no-username'}</p>
+          </div>
         </div>
       </motion.div>
 
@@ -191,39 +207,31 @@ export default function ProfileView() {
             <p className="text-xs text-gray-400">Your account is on an unlimited coach target split plan.</p>
           </div>
         )}
-      </motion.div>
 
-      {/* Contact Assigned Coach Card */}
-      {coachProfile && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-surface border border-gray-800 rounded-3xl p-6 shadow-lg space-y-4"
-        >
-          <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-            <MessageSquare size={14} /> Contact Coach
-          </h3>
-
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 font-black flex items-center justify-center text-sm uppercase shrink-0">
-              {coachProfile.display_name?.charAt(0) || '?'}
+        {/* WhatsApp Contact Coach CTA inside Subscription Card */}
+        {coachProfile && (
+          <div className="mt-5 pt-4 border-t border-gray-800/60 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 font-black flex items-center justify-center text-xs uppercase shrink-0">
+                {coachProfile.display_name?.charAt(0) || '?'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white">Coach: {coachProfile.display_name}</p>
+                {coachProfile.targets?.phone_number && (
+                  <p className="text-[9px] text-gray-500">Contact: <span className="font-mono">{coachProfile.targets.phone_number}</span></p>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-white">Coach {coachProfile.display_name}</p>
-              <p className="text-[10px] text-gray-500">Contact Number: {coachProfile.targets?.phone_number || 'N/A'}</p>
-            </div>
+            <button
+              onClick={handleContactCoach}
+              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Contact Coach (WhatsApp)</span>
+              <ExternalLink size={13} />
+            </button>
           </div>
-
-          <button
-            onClick={handleContactCoach}
-            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <span>Message Coach on WhatsApp</span>
-            <ExternalLink size={13} />
-          </button>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
 
       {/* Change Password Security Card */}
       <motion.div
