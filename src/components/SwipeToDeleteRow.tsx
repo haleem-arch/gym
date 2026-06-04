@@ -1,5 +1,5 @@
 import { useState, useRef, type ReactNode } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 
 interface SwipeToDeleteRowProps {
   children: ReactNode;
@@ -43,7 +43,7 @@ export const SwipeToDeleteRow = ({ children, onDelete, threshold = 80, className
   };
 
   return (
-    <div className={`relative w-full overflow-hidden ${className}`}>
+    <div className={`relative w-full overflow-hidden group ${className}`}>
       {/* Background Delete Layer */}
       <div className={`absolute inset-0 bg-danger flex items-center justify-end pr-4 ${backgroundRounded}`}>
         <Trash2 className="text-white w-5 h-5" />
@@ -60,6 +60,19 @@ export const SwipeToDeleteRow = ({ children, onDelete, threshold = 80, className
       >
         {children}
       </div>
+
+      {/* Desktop-only delete X button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onDelete();
+        }}
+        className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 items-center justify-center bg-red-600 hover:bg-red-700 text-white rounded-full w-7 h-7 transition-all hover:scale-105 active:scale-95 shadow-md border border-red-500/30 hover:border-red-500 cursor-pointer opacity-0 group-hover:opacity-100"
+        title="Delete item"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 };

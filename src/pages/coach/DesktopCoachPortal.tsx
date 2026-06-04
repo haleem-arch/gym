@@ -135,6 +135,20 @@ function dayColor(dt: string) {
   return 'bg-indigo-900/40 text-indigo-400 border-indigo-800/30';
 }
 
+function formatDayTypeLabel(dayType: string, totalVolume: number) {
+  if (totalVolume > 0) {
+    return `${totalVolume} kg`;
+  }
+  if (!dayType) return 'Rest';
+  const upper = dayType.toUpperCase();
+  if (upper === 'RUN') return 'Run';
+  if (upper === 'REST') return 'Rest';
+  if (upper === 'RUN + GYM' || upper === 'RUN/GYM' || upper === 'RUN_GYM' || (upper.includes('RUN') && (upper.includes('GYM') || upper.includes('PUSH') || upper.includes('PULL') || upper.includes('LEGS')))) {
+    return 'Run / Gym';
+  }
+  return dayType.charAt(0).toUpperCase() + dayType.slice(1).toLowerCase();
+}
+
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials'>('overview');
@@ -3642,7 +3656,7 @@ export default function DesktopCoachPortal() {
                             <p className="text-gray-500">Completed a <span className="text-blue-400 font-bold">{w.day_type}</span> day</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-black text-gray-200">{w.total_volume > 0 ? `${w.total_volume} kg` : 'Run/Rest'}</p>
+                            <p className="font-black text-gray-200">{formatDayTypeLabel(w.day_type, w.total_volume)}</p>
                             <p className="text-gray-500 font-mono text-[10px] mt-0.5">{w.date}</p>
                           </div>
                         </div>

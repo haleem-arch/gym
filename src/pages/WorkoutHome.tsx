@@ -42,7 +42,9 @@ const WorkoutHome = () => {
   const [workoutAnalysis, setWorkoutAnalysis] = useState<{
     score: number;
     verdict: string;
-    action: string;
+    focus: string;
+    nextTime: string;
+    consistency: string;
     advice: string;
     volumeLifted: number;
     runDistance: number;
@@ -220,7 +222,9 @@ const WorkoutHome = () => {
     // Score calculations
     let score = 0;
     let verdict = "";
-    let action = "";
+    let focus = "";
+    let nextTime = "";
+    let consistency = "";
     let advice = "";
     const tips: string[] = [];
 
@@ -230,40 +234,39 @@ const WorkoutHome = () => {
     if (hasRun && hasGym) {
       score = 98;
       verdict = "Double Stimulus Completed";
-      action = "🔥 Elite Output: You logged both your running mileage and your strength training. Outstanding adaptation response!";
-      advice = `Your dual-stimulus session on ${dateFormatted} combined a cardiovascular run of ${runDistance.toFixed(2)} km with a resistance training load of ${volumeLifted.toLocaleString()} kg. This simultaneous stimulation of mitochondrial growth and muscle hypertrophy is highly effective for elite hybrid athletes. However, this creates a high systemic stress response. Glycogen reserves will be heavily depleted, and muscle tissue damage requires immediate attention.`;
-      tips.push("Carb reload: Prioritize eating 70-100g of high-glycemic carbohydrates alongside 30-40g of protein within 90 minutes.");
-      tips.push("Active flush: Spend 10 minutes performing light foam rolling on the targeted lifting muscles and your calves/quads.");
-      tips.push("Hydration formula: Rehydrate with electrolyte-dense water (at least 1.5L containing sodium/potassium) to offset cardio sweat loss.");
+      focus = `A demanding hybrid session on ${dateFormatted}! You focused on building cardiovascular endurance by running ${runDistance.toFixed(2)} km (${Math.round(runDuration)}m) and mechanical loading by lifting ${volumeLifted.toLocaleString()} kg on your ${gymType} split. This simultaneously targets aerobic pathways and skeletal muscle hypertrophy.`;
+      nextTime = "Prioritize rest and nutrient timing! For your next hybrid day, consider spacing the run and gym session by at least 4-6 hours to maximize recovery, or reduce the weight slightly to protect joint health from impact stress.";
+      consistency = "Staying consistent with this hybrid stimulus will build a highly metabolic physique, elite cardiovascular stamina, denser muscle definition, and a superior ability to handle high systemic workloads.";
+      advice = "Prioritize eating 70-100g of high-glycemic carbohydrates and 30-40g of protein within 90 minutes. Rehydrate with electrolyte-dense water (at least 1.5L containing sodium/potassium).";
     } else if (hasRun) {
       score = 92;
-      verdict = "Aerobic System Stimulated";
-      action = "🏃 Aerobic Focus: Cardiovascular session completed. Focus on structural recovery of lower-body joints.";
-      advice = `Your cardiovascular training on ${dateFormatted} stimulated critical aerobic adaptations, clocking in a total distance of ${runDistance.toFixed(2)} km over ${Math.round(runDuration)} minutes. Settle-in paces around ${runPace}/km promote capillary density and cellular oxygen utilization. Your heart rate recovery indicates a highly efficient cardiovascular engine.`;
-      tips.push("Joint care: Perform 5-10 mins of hamstring/calf stretches and ankle mobility exercises to relieve impact stress.");
-      tips.push("Rehydrate: Consume fluid equivalent to 150% of your estimated sweat loss, adding an electrolyte tablet.");
-      tips.push("Keep consistency: Maintain structural tissue integrity by keeping tomorrow's session light or resistance-focused.");
+      verdict = "Aerobic Engine Stimulated";
+      focus = `Cardiovascular conditioning and aerobic base building. You ran ${runDistance.toFixed(2)} km over ${Math.round(runDuration)} minutes at a pace of ${runPace}/km, promoting capillary density, mitochondrial biogenesis, and heart rate efficiency.`;
+      nextTime = "On your next run, focus on maintaining a steady pacing strategy or introduce short, controlled intervals to challenge your aerobic threshold. Keep tomorrow's session light or resistance-focused.";
+      consistency = "Remaining consistent with your cardio will lower your resting heart rate, improve oxygen delivery/lung capacity, increase daily energy levels, and speed up recovery times between training sessions.";
+      advice = "Perform 5-10 minutes of hamstring/calf stretches and ankle mobility exercises to relieve impact stress. Consume fluid equivalent to 150% of your sweat loss with electrolytes.";
     } else if (hasGym) {
       score = 90;
-      verdict = "Myofibrillar Hypertrophy Stimulated";
-      action = "🏋️‍♂️ Strength Loaded: Complete mechanical overload achieved on your strength split. Optimize recovery windows.";
-      advice = `Your resistance training session on ${dateFormatted} stimulated high mechanical tension on your ${gymType} split, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg. This mechanical stimulus triggers muscular protein synthesis and neuromuscular adaptation. Physical fatigue in target muscle groups will peak in 24-48 hours.`;
-      tips.push("Amino availability: Consume 30-40g of whey protein or essential amino acids (EAAs) immediately to trigger protein synthesis.");
-      tips.push("Targeted blood flow: Perform active recovery or light movements tomorrow to flush metabolic waste from trained muscle groups.");
-      tips.push("Rest: Ensure adequate rest tonight to support growth hormone release and muscle repair.");
+      verdict = "Muscle Tissue Loaded";
+      focus = `Mechanical tension and muscular hypertrophy. You loaded your musculoskeletal system on a ${gymType} day, lifting a cumulative volume of ${volumeLifted.toLocaleString()} kg to stimulate protein synthesis and neuromuscular adaptations.`;
+      nextTime = "In your next strength session, focus on progressive overload—aim to add a small amount of weight or squeeze out one extra rep with perfect form and controlled eccentrics.";
+      consistency = "Consistency in strength training triggers muscle protein synthesis, resulting in body recomposition (increased muscle, reduced fat), stronger joints and tendons, improved insulin sensitivity, and a higher resting metabolic rate.";
+      advice = "Consume 30-40g of high-quality protein (like whey or EAAs) immediately. Rest well tonight to support growth hormone release. Perform light active recovery tomorrow to flush metabolic waste.";
     } else {
-      score = 50;
-      verdict = "Minimal Training Load Detected";
-      action = "💤 Recovery Day: Focus on physical restoration, hydration, and central nervous system (CNS) reset.";
-      advice = `No major lifting or running workload was recorded for ${dateFormatted}. This is perfectly in line with a planned recovery block, allowing your physiological systems, connective tissues, and endocrine balance to reset.`;
-      tips.push("Active rest: Walk 5,000-8,000 light steps to keep joint fluids moving without inducing fatigue.");
-      tips.push("Circadian shift: Go to bed 30 minutes earlier to supercharge recovery mechanisms.");
+      score = 80;
+      verdict = "Rest & Reset Focus";
+      focus = `Active recovery and system downregulation on ${dateFormatted}. You focused on physical restoration, tissue remodeling, and giving your central nervous system (CNS) a complete break from training stress.`;
+      nextTime = "For your next training session, set a clear target split beforehand, plan your lifts, and go in fully hydrated and prepared to execute with maximum intensity.";
+      consistency = "Regular recovery blocks prevent overtraining syndrome, balance hormones, reduce injury risk, and ensure you return to your next training block with maximum power and force production.";
+      advice = "Focus on clean hydration, light movement (like 5,000-8,000 light steps to keep joint fluids moving), stretching, and going to bed 30 minutes earlier.";
     }
 
     setWorkoutAnalysis({
       score,
       verdict,
-      action,
+      focus,
+      nextTime,
+      consistency,
       advice,
       volumeLifted,
       runDistance,
@@ -1046,72 +1049,32 @@ const WorkoutHome = () => {
             {/* Dynamic Output & Explanation */}
             <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
               <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-white font-extrabold mb-1">Coach Verdict</p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.action}</p>
+                <p className="text-white font-extrabold mb-1 flex items-center gap-1.5">
+                  <span>🎯</span> Today's Focus
+                </p>
+                <p className="text-gray-400 font-medium">{workoutAnalysis.focus}</p>
               </div>
 
               <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
-                <p className="text-white font-extrabold mb-1.5 flex items-center gap-1">
-                  <span>💡</span> Physiological Analysis
+                <p className="text-white font-extrabold mb-1.5 flex items-center gap-1.5">
+                  <span>🚀</span> Next Session Plan
                 </p>
-                <p className="text-gray-400 font-medium">{workoutAnalysis.advice}</p>
+                <p className="text-gray-400 font-medium">{workoutAnalysis.nextTime}</p>
               </div>
 
-              {/* Workout Benchmarks/Targets Visualizer */}
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                  <span>📊</span> Daily Volume & Distance Targets
-                </h5>
-                
-                <div className="space-y-3.5 text-xs">
-                  {/* Gym Lifted Volume */}
-                  {workoutAnalysis.hasGym && (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-[#a855f7]">{workoutAnalysis.gymType} Volume</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{workoutAnalysis.volumeLifted.toLocaleString()} kg</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 5,000 kg)</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#a855f7] h-2 rounded-full" style={{ width: `${Math.min((workoutAnalysis.volumeLifted / 5000) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Run Duration */}
-                  {workoutAnalysis.hasRun && (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between font-bold leading-none">
-                        <span className="text-[#3b82f6]">Cardio Duration</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-black">{Math.round(workoutAnalysis.runDuration)} mins</span>
-                          <span className="text-[9px] text-gray-500 font-bold">(Target: 40 mins)</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((workoutAnalysis.runDuration / 40) * 100, 100)}%` }}></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
+                <p className="text-white font-extrabold mb-1.5 flex items-center gap-1.5">
+                  <span>📈</span> Consistency Outlook
+                </p>
+                <p className="text-gray-400 font-medium">{workoutAnalysis.consistency}</p>
               </div>
 
-              {/* Action Item Recovery Tips */}
-              {workoutAnalysis.tips.length > 0 && (
-                <div className="bg-indigo-950/20 p-4 rounded-2xl border border-indigo-500/25">
-                  <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <span>⚡</span> Post-Workout Action Plan
-                  </h5>
-                  <ul className="space-y-2 text-xs text-indigo-200/90 font-semibold list-disc list-inside">
-                    {workoutAnalysis.tips.map((tip, idx) => (
-                      <li key={idx} className="leading-relaxed">
-                        <span className="text-indigo-300 font-bold">{tip.split(':')[0]}:</span>
-                        {tip.split(':').slice(1).join(':')}
-                      </li>
-                    ))}
-                  </ul>
+              {workoutAnalysis.advice && (
+                <div className="bg-slate-900 border border-slate-800/80 p-3.5 rounded-2xl">
+                  <p className="text-white font-extrabold mb-1.5 flex items-center gap-1.5">
+                    <span>💡</span> Coach Advice
+                  </p>
+                  <p className="text-gray-400 font-medium">{workoutAnalysis.advice}</p>
                 </div>
               )}
             </div>

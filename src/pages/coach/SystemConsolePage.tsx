@@ -7,6 +7,20 @@ import {
   Search, Shield, Key, Plus, Activity, CheckCircle, Database
 } from 'lucide-react';
 
+function formatDayTypeLabel(dayType: string, totalVolume: number) {
+  if (totalVolume > 0) {
+    return `${totalVolume} kg`;
+  }
+  if (!dayType) return 'Rest';
+  const upper = dayType.toUpperCase();
+  if (upper === 'RUN') return 'Run';
+  if (upper === 'REST') return 'Rest';
+  if (upper === 'RUN + GYM' || upper === 'RUN/GYM' || upper === 'RUN_GYM' || (upper.includes('RUN') && (upper.includes('GYM') || upper.includes('PUSH') || upper.includes('PULL') || upper.includes('LEGS')))) {
+    return 'Run / Gym';
+  }
+  return dayType.charAt(0).toUpperCase() + dayType.slice(1).toLowerCase();
+}
+
 export default function SystemConsolePage() {
   const navigate = useNavigate();
 
@@ -819,7 +833,7 @@ export default function SystemConsolePage() {
                     <span className="text-gray-500 font-medium">Logged a {w.day_type} session</span>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-blue-400">{w.total_volume > 0 ? `${w.total_volume} kg` : 'Run/Rest'}</p>
+                    <p className="font-bold text-blue-400">{formatDayTypeLabel(w.day_type, w.total_volume)}</p>
                     <p className="text-gray-600 font-mono mt-0.5">{w.date}</p>
                   </div>
                 </div>
