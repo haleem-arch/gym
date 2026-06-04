@@ -8,25 +8,19 @@
 }
 
 html {
-  /* Lock to viewport — prevents iOS PWA rubber-band scroll */
-  position: fixed;
-  width: 100%;
   height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
   background-color: #0f0f0f;
+  /* Prevent iOS Safari bounce/overscroll */
+  overscroll-behavior: none;
 }
 
 body {
-  /* Do NOT use -webkit-overflow-scrolling: touch — it enables rubber-band on iOS */
   overscroll-behavior: none;
+  /* NEVER use -webkit-overflow-scrolling:touch — causes rubber-band on iOS PWA */
   user-select: none;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
   margin: 0;
   padding: 0;
+  height: 100%;
   background-color: #0f0f0f;
 }
 
@@ -38,27 +32,23 @@ body {
   bottom: 0;
   background-color: #0f0f0f;
   overflow: hidden;
-  /* Block any scroll event from bubbling up to the browser on iOS */
   touch-action: none;
+  /* Safe area — covers home indicator on all iOS PWA pages including login */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-input,
-textarea {
+input, textarea {
   user-select: text;
-  /* Re-enable touch input on form elements */
   touch-action: manipulation;
 }
 
-/* Ensure tappable elements work properly on iOS */
 button, a, select, label, [role="button"] {
   touch-action: manipulation;
 }
 
-/* Allow vertical scroll within scrollable containers on iOS */
-.overflow-y-auto,
-.overflow-y-scroll {
+/* Allow vertical scrolling inside scroll containers (overrides root touch-action:none) */
+.overflow-y-auto, .overflow-y-scroll {
   touch-action: pan-y;
-  -webkit-overflow-scrolling: auto;
 }
 
 @layer base {
