@@ -117,7 +117,15 @@ export default function ProfileView() {
       alert('Your coach has not set up their contact phone number yet.');
       return;
     }
-    const cleanPhone = rawPhone.replace(/\D/g, '');
+    let cleanPhone = rawPhone.replace(/\D/g, '');
+    
+    // Normalize Egyptian mobile number format
+    if (cleanPhone.startsWith('01') && cleanPhone.length === 11) {
+      cleanPhone = '2' + cleanPhone;
+    } else if (cleanPhone.startsWith('1') && cleanPhone.length === 10) {
+      cleanPhone = '20' + cleanPhone;
+    }
+    
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
   };
 
@@ -158,7 +166,7 @@ export default function ProfileView() {
         transition={{ delay: 0.05 }}
         className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-lg flex items-center gap-4"
       >
-        <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0 p-1.5">
+        <div className="w-16 h-16 rounded-2xl bg-gray-950/80 border border-gray-800 flex items-center justify-center shrink-0 p-2 shadow-inner">
           <img src="/icon.svg" className="w-full h-full object-contain" alt="Stride Rite Logo" />
         </div>
         <div className="min-w-0 flex-1">
@@ -218,7 +226,7 @@ export default function ProfileView() {
         {coachProfile && (
           <div className="mt-5 pt-4 border-t border-gray-800/60 flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-950/40 border border-emerald-500/20 flex items-center justify-center shrink-0 p-1">
+              <div className="w-12 h-12 rounded-xl bg-gray-950/80 border border-gray-800 flex items-center justify-center shrink-0 p-1.5 shadow-inner">
                 <img src="/icon.svg" className="w-full h-full object-contain" alt="Stride Rite Logo" />
               </div>
               <div className="min-w-0">
