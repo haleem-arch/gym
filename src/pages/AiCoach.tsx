@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAiAgent } from '../hooks/useAiAgent';
-import { Send, Bot, Loader2, Sparkles, Check } from 'lucide-react';
+import { Send, Bot, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
