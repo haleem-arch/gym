@@ -176,7 +176,14 @@ export default function ProfileView() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Athlete Profile</p>
-          <h2 className="text-base font-black text-white truncate">{profile?.display_name || 'Unnamed Client'}</h2>
+          <h2 className="text-base font-black text-white truncate flex items-center gap-1.5">
+            {profile?.display_name || 'Unnamed Client'}
+            {profile?.targets?.client_code && (
+              <span className="text-[10px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black tracking-normal">
+                #{profile.targets.client_code}
+              </span>
+            )}
+          </h2>
           <div className="flex flex-col gap-0.5 mt-1 text-xs text-gray-400">
             <p className="font-semibold">Phone: <span className="text-white font-mono">{profile?.targets?.phone_number || 'Not added'}</span></p>
             <p className="text-[10px] text-gray-500 mt-0.5">@{profile?.username || 'no-username'}</p>

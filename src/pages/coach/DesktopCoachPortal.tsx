@@ -290,6 +290,7 @@ export default function DesktopCoachPortal() {
 
   // Athlete Control Tab states
   const [managementSelectedClientId, setManagementSelectedClientId] = useState<string>('');
+  const [managementSearchQuery, setManagementSearchQuery] = useState('');
   const [managementClientProfile, setManagementClientProfile] = useState<any | null>(null);
   const [managementNewPassword, setManagementNewPassword] = useState('');
   const [managementUpdatingPassword, setManagementUpdatingPassword] = useState(false);
@@ -835,28 +836,31 @@ export default function DesktopCoachPortal() {
         ...filteredDiets.map(d => d.user_id)
       ]));
 
-      const feedProfilesMap: Record<string, string> = {};
+      const feedProfilesMap: Record<string, any> = {};
       if (feedUserIds.length > 0) {
         const { data: feedProfiles } = await supabase
           .from('profiles')
-          .select('id, display_name')
+          .select('id, display_name, targets')
           .in('id', feedUserIds);
         
         if (feedProfiles) {
           feedProfiles.forEach(p => {
-            feedProfilesMap[p.id] = p.display_name || 'Athlete';
+            feedProfilesMap[p.id] = {
+              display_name: p.display_name || 'Athlete',
+              client_code: p.targets?.client_code
+            };
           });
         }
       }
 
       const stitchedWorkouts = (workoutsData || []).map(w => ({
         ...w,
-        profiles: { display_name: feedProfilesMap[w.user_id] || 'Athlete' }
+        profiles: feedProfilesMap[w.user_id] || { display_name: 'Athlete' }
       }));
 
       const stitchedDiets = filteredDiets.map(d => ({
         ...d,
-        profiles: { display_name: feedProfilesMap[d.user_id] || 'Athlete' }
+        profiles: feedProfilesMap[d.user_id] || { display_name: 'Athlete' }
       }));
 
       setRecentWorkouts(stitchedWorkouts);
@@ -3099,8 +3103,11 @@ export default function DesktopCoachPortal() {
 
   // Filters
   const filteredClients = clientsList.filter(c => {
-    const matchesSearch = c.display_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
-      c.username?.toLowerCase().includes(clientSearchQuery.toLowerCase());
+    const code = c.targets?.client_code ? String(c.targets.client_code) : '';
+    const cleanQuery = clientSearchQuery.trim().toLowerCase().replace('#', '');
+    const matchesSearch = c.display_name?.toLowerCase().includes(cleanQuery) ||
+      c.username?.toLowerCase().includes(cleanQuery) ||
+      code.includes(cleanQuery);
     if (coachUserId === OWNER_ID && directoryFilterMineOnly) {
       return matchesSearch && c.coach_id === OWNER_ID;
     }
@@ -4330,7 +4337,14 @@ export default function DesktopCoachPortal() {
                           className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-gray-700 transition-colors cursor-pointer hover:bg-gray-900/20"
                         >
                           <div className="space-y-1">
-                            <p className="font-extrabold text-white">{w.profiles?.display_name}</p>
+                            <p className="font-extrabold text-white flex items-center gap-1.5">
+                              {w.profiles?.display_name}
+                              {w.profiles?.client_code && (
+                                <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                  #{w.profiles.client_code}
+                                </span>
+                              )}
+                            </p>
                             <p className="text-gray-500">Completed a <span className="text-blue-400 font-bold">{w.day_type}</span> day</p>
                           </div>
                           <div className="text-right">
@@ -4362,7 +4376,14 @@ export default function DesktopCoachPortal() {
                           className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-emerald-500/50 hover:bg-gray-900/20 transition-colors cursor-pointer"
                         >
                           <div className="space-y-1">
-                            <p className="font-extrabold text-white">{d.profiles?.display_name}</p>
+                            <p className="font-extrabold text-white flex items-center gap-1.5">
+                              {d.profiles?.display_name}
+                              {d.profiles?.client_code && (
+                                <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                  #{d.profiles.client_code}
+                                </span>
+                              )}
+                            </p>
                             <p className="text-gray-500">Tracked daily totals</p>
                           </div>
                           <div className="text-right">
@@ -4429,7 +4450,14 @@ export default function DesktopCoachPortal() {
                         {client.display_name?.charAt(0) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white truncate">{client.display_name || 'Unnamed Client'}</p>
+                        <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                          {client.display_name || 'Unnamed Client'}
+                          {client.targets?.client_code && (
+                            <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                              #{client.targets.client_code}
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[10px] text-gray-500 truncate">@{client.username}</p>
                       </div>
                       <ChevronRight size={13} className="text-gray-600" />
@@ -5896,20 +5924,40 @@ export default function DesktopCoachPortal() {
                   <p className="text-xs text-gray-500 mt-1">Manage athlete access, security credentials, quotas, and feature permissions.</p>
                 </div>
                 
-                {/* Select Client Dropdown */}
-                <div className="flex items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl px-4 py-2">
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Athlete:</span>
+                {/* Select Client Dropdown with Search */}
+                <div className="flex flex-wrap items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl px-4 py-2">
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Search size={10} /> Search/Select Athlete:
+                  </span>
+                  
+                  <input
+                    type="text"
+                    value={managementSearchQuery}
+                    onChange={e => setManagementSearchQuery(e.target.value)}
+                    placeholder="Search code, name..."
+                    className="bg-transparent text-xs text-white outline-none border-b border-gray-850/60 focus:border-blue-500/60 w-32 pb-0.5"
+                  />
+
                   <select
                     value={managementSelectedClientId}
                     onChange={e => setManagementSelectedClientId(e.target.value)}
-                    className="bg-transparent text-xs font-black text-white outline-none cursor-pointer"
+                    className="bg-transparent text-xs font-black text-white outline-none cursor-pointer max-w-[200px]"
                   >
                     <option value="" disabled className="bg-[#0b0c16]">Select client...</option>
-                    {clientsList.map(c => (
-                      <option key={c.id} value={c.id} className="bg-[#0b0c16]">
-                        {c.display_name} (@{c.username})
-                      </option>
-                    ))}
+                    {clientsList
+                      .filter(c => {
+                        const code = c.targets?.client_code ? String(c.targets.client_code) : '';
+                        const q = managementSearchQuery.trim().toLowerCase().replace('#', '');
+                        return c.display_name?.toLowerCase().includes(q) ||
+                               c.username?.toLowerCase().includes(q) ||
+                               code.includes(q);
+                      })
+                      .map(c => (
+                        <option key={c.id} value={c.id} className="bg-[#0b0c16]">
+                          #{c.targets?.client_code || 'N/A'} - {c.display_name} (@{c.username})
+                        </option>
+                      ))
+                    }
                   </select>
                 </div>
               </div>
@@ -5920,7 +5968,37 @@ export default function DesktopCoachPortal() {
                   <p className="text-xs text-gray-400 mt-2">Please select an athlete from the dropdown above to load management controls.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  {/* Selected Client Dossier Header Banner */}
+                  <div className="bg-gradient-to-r from-blue-950/20 to-indigo-950/20 border border-blue-900/30 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-900/40 text-blue-300 font-black flex items-center justify-center text-sm uppercase">
+                        {managementClientProfile.user?.display_name?.charAt(0) || '?'}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-white flex items-center gap-2">
+                          {managementClientProfile.user?.display_name || 'Unnamed Athlete'}
+                          {managementClientProfile.user?.targets?.client_code && (
+                            <span className="text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-black tracking-normal">
+                              #{managementClientProfile.user.targets.client_code}
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-xs text-gray-500">Handle: @{managementClientProfile.user?.username || 'no-username'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
+                        managementClientProfile.user?.targets?.is_deactivated === true 
+                          ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      }`}>
+                        {managementClientProfile.user?.targets?.is_deactivated === true ? 'Suspended' : 'Active'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   
                   {/* Column 1: Credentials & Subscription */}
                   <div className="space-y-6">
@@ -6289,6 +6367,7 @@ export default function DesktopCoachPortal() {
                   </Card>
 
                 </div>
+                </div>
               )}
             </div>
           )}
@@ -6416,7 +6495,14 @@ export default function DesktopCoachPortal() {
                                   {c.full_name?.substring(0, 2) || 'AT'}
                                 </div>
                                 <div>
-                                  <p className="font-black text-white">{c.full_name}</p>
+                                  <p className="font-black text-white flex items-center gap-1.5">
+                                    {c.full_name}
+                                    {targets.client_code && (
+                                      <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                        #{targets.client_code}
+                                      </span>
+                                    )}
+                                  </p>
                                   <p className="text-[9px] text-gray-500 lowercase mt-0.5">{c.email}</p>
                                 </div>
                               </td>
@@ -7491,7 +7577,14 @@ export default function DesktopCoachPortal() {
             {/* Header */}
             <div className="p-5 border-b border-gray-850 flex items-center justify-between bg-gray-900/20 font-sans">
               <div>
-                <h3 className="text-xs font-black uppercase text-blue-400">Diet Receipt</h3>
+                <h3 className="text-xs font-black uppercase text-blue-400">
+                  Diet Receipt {selectedReceiptDiet.profiles?.display_name && `- ${selectedReceiptDiet.profiles.display_name}`}
+                  {selectedReceiptDiet.profiles?.client_code && (
+                    <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal ml-1.5 align-middle">
+                      #{selectedReceiptDiet.profiles.client_code}
+                    </span>
+                  )}
+                </h3>
                 <p className="text-sm font-black text-white mt-0.5">
                   {new Date(selectedReceiptDiet.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
