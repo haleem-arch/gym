@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, AlertCircle, Key } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LegalModal from '../components/LegalModals';
 
@@ -206,49 +206,10 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[#05060b] flex flex-col justify-center items-center px-6 py-12 relative overflow-hidden">
-      {/* Dynamic tech-grid background overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-      
-      {/* Background Decorative Pulsating Elements */}
-      <motion.div 
-        animate={{
-          scale: [1, 1.15, 1],
-          x: [0, 30, 0],
-          y: [0, -30, 0]
-        }}
-        transition={{
-          duration: 14,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute top-[-15%] left-[-15%] w-[65%] h-[65%] bg-blue-500/[0.07] rounded-full blur-[130px] pointer-events-none" 
-      />
-      <motion.div 
-        animate={{
-          scale: [1, 1.2, 1],
-          x: [0, -30, 0],
-          y: [0, 30, 0]
-        }}
-        transition={{
-          duration: 18,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute bottom-[-15%] right-[-15%] w-[65%] h-[65%] bg-purple-500/[0.07] rounded-full blur-[130px] pointer-events-none" 
-      />
-      <motion.div 
-        animate={{
-          scale: [0.95, 1.08, 0.95],
-          opacity: [0.3, 0.5, 0.3]
-        }}
-        transition={{
-          duration: 9,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute top-[25%] left-[20%] w-[350px] h-[350px] bg-indigo-500/[0.04] rounded-full blur-[100px] pointer-events-none" 
-      />
+    <div className="min-h-[100dvh] w-full bg-[#090b11] flex flex-col justify-center items-center px-6 py-12 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px]" />
 
       <div className="w-full max-w-[390px] z-10 flex flex-col items-center">
         {/* Logo / Header */}
@@ -268,7 +229,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
               errorMsg 
                 ? 'from-red-950/65 to-purple-950/65 border-red-500/35 shadow-red-500/10' 
                 : 'from-blue-600 to-purple-600 border-white/10 shadow-blue-500/20'
-            } border flex items-center justify-center shadow-lg mb-5`}
+            } border flex items-center justify-center shadow-lg mb-4`}
             style={{
               width: errorMsg ? 350 : 64,
               height: 64,
@@ -432,48 +393,39 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
             </svg>
           </motion.div>
 
-          <h1 className="text-4xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-blue-100 to-indigo-300 bg-clip-text text-transparent uppercase select-none">
+          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
             STRIDE RITE
           </h1>
-          <p className="text-[10px] text-gray-500 mt-1.5 font-black uppercase tracking-widest flex items-center gap-1.5">
-            <span className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-            Peak Athletic Performance
+          <p className="text-sm text-gray-500 mt-1 font-semibold flex items-center gap-1">
+            <Sparkles size={12} className="text-primary" /> Peak Athletic Performance
           </p>
         </motion.div>
 
-        {/* Tab Toggle Switch */}
-        <div className="w-full bg-[#080913]/90 border border-gray-850/60 p-1 rounded-2xl flex gap-1 mb-6 relative z-10 shadow-inner">
-          {[
-            { id: false, label: 'Sign In' },
-            { id: true, label: 'Create Account' }
-          ].map(tab => (
-            <button
-              key={tab.label}
-              type="button"
-              onClick={() => { setIsSignUp(tab.id); setErrorMsg(null); }}
-              className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider relative transition-colors cursor-pointer select-none"
-            >
-              {isSignUp === tab.id && (
-                <motion.div 
-                  layoutId="activeAuthTab"
-                  className="absolute inset-0 bg-[#121626] border border-blue-500/20 rounded-xl shadow-md z-0"
-                  transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                />
-              )}
-              <span className={`relative z-10 transition-colors duration-205 ${isSignUp === tab.id ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'}`}>
-                {tab.label}
-              </span>
-            </button>
-          ))}
+        {/* Tab Toggle */}
+        <div className="w-full bg-[#121620] border border-gray-800 p-1 rounded-xl flex gap-1 mb-6">
+          <button 
+            type="button"
+            onClick={() => { setIsSignUp(false); setErrorMsg(null); }}
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${!isSignUp ? 'bg-[#1e2330] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+          >
+            Sign In
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setIsSignUp(true); setErrorMsg(null); }}
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${isSignUp ? 'bg-[#1e2330] text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+          >
+            Create Account
+          </button>
         </div>
 
         {/* Auth Card */}
         <motion.div 
           ref={cardRef}
           layout
-          className="w-full bg-[#0d111a]/85 backdrop-blur-2xl border border-gray-850 rounded-3xl p-7 shadow-2xl relative z-10"
+          className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 shadow-xl relative"
         >
-          <form onSubmit={handleAuth} className="space-y-5">
+          <form onSubmit={handleAuth} className="space-y-4">
             <AnimatePresence mode="wait">
               {isSignUp && (
                 <motion.div
@@ -484,7 +436,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   transition={{ duration: 0.2 }}
                   className="space-y-1.5 overflow-hidden"
                 >
-                  <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest">Full Name</label>
+                  <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">Full Name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                     <input
@@ -492,7 +444,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Enter your name"
-                      className="w-full bg-[#05050b]/80 text-white rounded-2xl py-3.5 pl-11 pr-4 border border-gray-850 focus:border-blue-500 focus:outline-none text-xs transition-all placeholder-gray-700 font-medium focus:shadow-[0_0_15px_rgba(59,130,246,0.08)]"
+                      className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:border-blue-500 focus:outline-none text-sm transition-all"
                       required={isSignUp}
                     />
                   </div>
@@ -501,7 +453,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
             </AnimatePresence>
 
             <div className="space-y-1.5">
-              <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest">Email Address</label>
+              <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                 <input
@@ -509,14 +461,14 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="name@example.com"
-                  className="w-full bg-[#05050b]/80 text-white rounded-2xl py-3.5 pl-11 pr-4 border border-gray-850 focus:border-blue-500 focus:outline-none text-xs transition-all placeholder-gray-700 font-medium focus:shadow-[0_0_15px_rgba(59,130,246,0.08)]"
+                  className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:border-blue-500 focus:outline-none text-sm transition-all"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest">Password</label>
+              <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">Password</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                 <input
@@ -524,7 +476,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="••••••••"
-                  className="w-full bg-[#05050b]/80 text-white rounded-2xl py-3.5 pl-11 pr-4 border border-gray-850 focus:border-blue-500 focus:outline-none text-xs transition-all placeholder-gray-700 font-medium focus:shadow-[0_0_15px_rgba(59,130,246,0.08)]"
+                  className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:border-blue-500 focus:outline-none text-sm transition-all"
                   required
                 />
               </div>
@@ -536,7 +488,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="bg-red-950/40 border border-red-500/30 rounded-2xl p-3 flex gap-2 items-start text-xs text-red-400"
+                  className="bg-red-950/40 border border-red-500/30 rounded-xl p-3 flex gap-2 items-start text-xs text-red-400"
                 >
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />
                   <span>{errorMsg}</span>
@@ -545,7 +497,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
             </AnimatePresence>
 
             {/* Legal Checkbox */}
-            <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1 pb-1 select-none text-left relative">
+            <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1.5 pb-1 select-none text-left relative">
               <input 
                 type="checkbox" 
                 id="legal-accept-auth"
@@ -556,7 +508,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                     setShowArrow(false);
                   }
                 }} 
-                className="mt-0.5 h-4 w-4 rounded border-gray-850 bg-[#05050b] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#0d111a] focus:ring-2 cursor-pointer transition-colors"
+                className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
               />
               <label htmlFor="legal-accept-auth" className="text-[10px] text-gray-400 leading-normal">
                 I agree to the{' '}
@@ -574,7 +526,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
               ref={loginButtonRef}
               type="submit"
               disabled={loading || lockoutTimeLeft > 0}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold py-3.5 rounded-2xl shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 transition-all active:scale-[0.98] cursor-pointer mt-1 text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -646,16 +598,9 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
         </motion.div>
 
         {/* Demo Accounts Info */}
-        <div className="w-full max-w-[340px] bg-gradient-to-br from-[#0c1020]/40 to-[#070811]/60 border border-gray-850/50 rounded-2xl p-4 mt-8 text-center text-xs text-gray-500 relative shadow-lg">
-          <p className="flex items-center justify-center gap-1.5 font-bold text-gray-400">
-            <Key size={12} className="text-blue-400" /> Demo Account Credentials
-          </p>
-          <div className="mt-2 text-gray-500 font-medium">
-            <p>Admin / Seed Coach Profile:</p>
-            <p className="font-mono text-[11px] text-blue-300 mt-1 select-all bg-[#05050b]/80 border border-gray-900 rounded-lg py-1 px-2">
-              haleem@example.com / athletepassword123
-            </p>
-          </div>
+        <div className="mt-8 text-center text-xs text-gray-500 max-w-[320px]">
+          <p>Want to log in to the admin/seed account? Use:</p>
+          <p className="font-semibold text-gray-400 mt-1">haleem@example.com / athletepassword123</p>
         </div>
       </div>
 
