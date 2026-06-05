@@ -3,13 +3,13 @@ import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
-  Users, User, UserPlus, Database, ShieldAlert, Activity, Search, Filter, 
+  Users, User, UserPlus, UserX, Database, ShieldAlert, Activity, Search, Filter, 
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
-  DollarSign, TrendingUp, PieChart, Lock, Phone
+  DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -6584,121 +6584,174 @@ export default function DesktopCoachPortal() {
               {coachUserId === OWNER_ID && (
                 <div className="space-y-6">
                   {/* Dashboard stats row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Total Registered Coaches</p>
-                      <p className="text-3xl font-black text-white mt-1.5">{systemCoaches.length}</p>
-                    </Card>
-                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Active Coaches</p>
-                      <p className="text-3xl font-black text-emerald-400 mt-1.5">
-                        {systemCoaches.filter(c => c.targets?.is_deactivated !== true).length}
-                      </p>
-                    </Card>
-                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Suspended / Inactive</p>
-                      <p className="text-3xl font-black text-red-400 mt-1.5">
-                        {systemCoaches.filter(c => c.targets?.is_deactivated === true).length}
-                      </p>
-                    </Card>
-                    <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Managed Clients (Total)</p>
-                      <p className="text-3xl font-black text-blue-400 mt-1.5">
-                        {profiles.filter(p => p.role === 'client').length}
-                      </p>
-                    </Card>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                    {[
+                      {
+                        label: 'Total Registered Coaches',
+                        value: systemCoaches.length,
+                        icon: <Users className="text-blue-400" size={18} />,
+                        colorClass: 'text-white',
+                        glowClass: 'from-blue-500/10 to-transparent',
+                        borderClass: 'border-blue-500/15',
+                        iconBg: 'bg-blue-500/10'
+                      },
+                      {
+                        label: 'Active Coaches',
+                        value: systemCoaches.filter(c => c.targets?.is_deactivated !== true).length,
+                        icon: <UserCheck className="text-emerald-400" size={18} />,
+                        colorClass: 'text-emerald-400',
+                        glowClass: 'from-emerald-500/10 to-transparent',
+                        borderClass: 'border-emerald-500/15',
+                        iconBg: 'bg-emerald-500/10'
+                      },
+                      {
+                        label: 'Suspended / Inactive',
+                        value: systemCoaches.filter(c => c.targets?.is_deactivated === true).length,
+                        icon: <UserX className="text-rose-400" size={18} />,
+                        colorClass: 'text-rose-400',
+                        glowClass: 'from-rose-500/10 to-transparent',
+                        borderClass: 'border-rose-500/15',
+                        iconBg: 'bg-rose-500/10'
+                      },
+                      {
+                        label: 'Managed Clients (Total)',
+                        value: profiles.filter(p => p.role === 'client').length,
+                        icon: <ShieldCheck className="text-indigo-400" size={18} />,
+                        colorClass: 'text-indigo-400',
+                        glowClass: 'from-indigo-500/10 to-transparent',
+                        borderClass: 'border-indigo-500/15',
+                        iconBg: 'bg-indigo-500/10'
+                      }
+                    ].map((stat, i) => (
+                      <Card 
+                        key={i} 
+                        className={`p-5 flex items-center justify-between bg-gradient-to-br from-[#0c1020] to-[#0d1222] border ${stat.borderClass} rounded-3xl relative overflow-hidden shadow-lg shadow-[#05050b]/50 group hover:border-gray-700 transition-all duration-300`}
+                      >
+                        <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${stat.glowClass} rounded-bl-full opacity-60 pointer-events-none group-hover:scale-110 transition-transform duration-500`} />
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">{stat.label}</p>
+                          <p className={`text-3xl font-black ${stat.colorClass} mt-2 font-mono tracking-tight`}>{stat.value}</p>
+                        </div>
+                        <div className={`w-10 h-10 rounded-xl ${stat.iconBg} border border-white/5 flex items-center justify-center relative z-10 shrink-0 shadow-inner`}>
+                          {stat.icon}
+                        </div>
+                      </Card>
+                    ))}
                   </div>
 
                   {/* Telegram Bot Config Card */}
-                  <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/95 via-[#0d1228]/90 to-[#0b0c1b]/98 p-8 shadow-2xl backdrop-blur-md">
-                    <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                  <div className="relative overflow-hidden rounded-3xl border border-blue-500/10 bg-gradient-to-br from-[#0b0c16]/95 via-[#0d1022]/95 to-[#05060b]/98 p-6 md:p-8 shadow-2xl backdrop-blur-md">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-indigo-500/[0.03] rounded-full blur-2xl pointer-events-none" />
                     
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800/80 pb-5 mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
-                          <Send size={20} />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Telegram Bot Configuration</h3>
-                          <p className="text-xs text-gray-400 mt-0.5 font-medium">Configure your Chat ID to receive instant coach subscription approval notifications.</p>
-                        </div>
+                    <div className="flex items-center gap-4 border-b border-gray-850/80 pb-5 mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
+                        <Send size={20} className="animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Telegram Bot Integration</h3>
+                        <p className="text-xs text-gray-400 mt-0.5 font-medium">Link your account to receive instant notifications for coach registrations and subscription updates.</p>
                       </div>
                     </div>
 
-                    <div className="space-y-6 text-xs text-gray-300 font-bold">
-                      <div className="p-4 rounded-2xl bg-[#080910] border border-gray-850 space-y-2 text-gray-400 font-medium leading-relaxed">
-                        <p className="font-extrabold text-white text-xs uppercase tracking-wider">How to get your Telegram Chat ID:</p>
-                        <ol className="list-decimal pl-4 space-y-1.5 text-[11px]">
-                          <li>Open Telegram and search for the bot: <a href="https://t.me/LifeGymVerificationBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-bold">@LifeGymVerificationBot</a> (or click link).</li>
-                          <li>Send the command <code className="bg-gray-900 px-1.5 py-0.5 rounded text-yellow-500 font-mono">/start</code> or <code className="bg-gray-900 px-1.5 py-0.5 rounded text-yellow-500 font-mono">/getid</code> to the bot.</li>
-                          <li>The bot will reply with your unique Chat ID (e.g., <code className="text-white font-mono">123456789</code>).</li>
-                          <li>Copy that ID and paste it into the input field below.</li>
-                        </ol>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch text-xs text-gray-300 font-bold">
+                      {/* Left side: Guide (col-span-7) */}
+                      <div className="lg:col-span-7 bg-[#05050b]/40 border border-gray-850/60 rounded-3xl p-5 space-y-4 flex flex-col justify-between">
+                        <div>
+                          <p className="font-extrabold text-white text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            How to retrieve your Chat ID:
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {[
+                              { step: '1', text: <>Search for <a href="https://t.me/LifeGymVerificationBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline font-extrabold">@LifeGymVerificationBot</a> on Telegram.</> },
+                              { step: '2', text: <>Send the command <code className="bg-gray-950/80 border border-gray-880 px-1.5 py-0.5 rounded text-yellow-500 font-mono">/start</code> to initialize the bot.</> },
+                              { step: '3', text: <>The bot will reply instantly with your unique numerical Chat ID (e.g. <code className="text-white font-mono font-bold">123456789</code>).</> },
+                              { step: '4', text: <>Copy the ID and paste it into the secure control field on the right.</> }
+                            ].map((item, idx) => (
+                              <div key={idx} className="flex gap-2.5 items-start bg-gray-900/20 border border-gray-900/40 p-2.5 rounded-xl">
+                                <span className="w-5 h-5 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-black text-[10px] text-blue-400 flex-shrink-0 mt-0.5">
+                                  {item.step}
+                                </span>
+                                <p className="text-[11px] text-gray-400 leading-normal font-medium">{item.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-4 items-end">
-                        <div className="flex-1 space-y-2">
-                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">Owner Telegram Chat ID</label>
+                      {/* Right side: Input Form (col-span-5) */}
+                      <div className="lg:col-span-5 bg-[#080913]/40 border border-gray-850/60 rounded-3xl p-5 flex flex-col justify-center gap-5">
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">Owner Telegram Chat ID</label>
                           <input
                             type="text"
                             value={ownerTelegramChatId}
                             onChange={e => setOwnerTelegramChatId(e.target.value)}
-                            placeholder="Enter Telegram Chat ID"
-                            className="w-full bg-[#080910] border border-gray-850 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-all font-mono font-bold placeholder-gray-600 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                            placeholder="e.g. 1538316434"
+                            className="w-full bg-[#05050b]/80 border border-gray-850 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all font-mono font-bold placeholder-gray-700 focus:shadow-[0_0_15px_rgba(59,130,246,0.08)]"
                           />
                         </div>
                         <button
                           type="button"
                           disabled={savingTelegramId}
                           onClick={handleSaveTelegramChatId}
-                          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:bg-gray-850 disabled:text-gray-500 border border-blue-500 disabled:border-transparent text-white font-extrabold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-blue-500/10 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-gray-850 disabled:to-gray-850 disabled:text-gray-500 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                         >
-                          {savingTelegramId ? 'Saving...' : 'Save Configuration'}
+                          {savingTelegramId ? (
+                            <span className="flex items-center gap-1.5">
+                              <div className="w-3.5 h-3.5 rounded-full border border-white/20 border-t-white animate-spin" />
+                              Saving Configuration...
+                            </span>
+                          ) : (
+                            <>
+                              <Save size={13} /> Save Configuration
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Actions & Filters */}
-                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full sm:w-[320px]">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-gradient-to-r from-[#0c1020]/20 to-transparent p-4 rounded-3xl border border-gray-850/40">
+                    <div className="relative w-full sm:w-[340px]">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
                       <input 
                         type="text"
                         value={coachSearchQuery}
                         onChange={e => setCoachSearchQuery(e.target.value)}
                         placeholder="Search by coach name, email, or handle..."
-                        className="w-full bg-[#0b0c16] border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                        className="w-full bg-[#080913] border border-gray-850 focus:border-blue-500/50 rounded-2xl py-3.5 pl-10 pr-4 text-xs text-white outline-none transition-all placeholder-gray-650 focus:shadow-[0_0_15px_rgba(59,130,246,0.05)]"
                       />
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setIsRegisteringNewCoach(true)}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase px-5 py-3 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-500/10 animate-fade-in"
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase px-6 py-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20"
                     >
                       <UserPlus size={14} /> Register Coach Account
                     </button>
                   </div>
 
                   {/* Coaches Full Table */}
-                  <Card className="bg-[#0b0c16] border border-gray-800 rounded-3xl overflow-hidden p-2">
+                  <Card className="bg-gradient-to-br from-[#0b0c16] to-[#0c1020] border border-gray-850 rounded-3xl overflow-hidden shadow-2xl p-2 animate-fade-in">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="border-b border-gray-800 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                            <th className="py-4 px-4">Coach / Handle</th>
+                          <tr className="border-b border-gray-850/80 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            <th className="py-4 px-5">Coach / Handle</th>
                             <th className="py-4 px-4">Start Date</th>
                             <th className="py-4 px-4">Last Resub Date</th>
                             <th className="py-4 px-4">Expiration Date</th>
                             <th className="py-4 px-4 text-center">Clients</th>
                             <th className="py-4 px-4">Subscription Status</th>
                             <th className="py-4 px-4">Contact Info</th>
-                            <th className="py-4 px-4 text-right">Action</th>
+                            <th className="py-4 px-5 text-right">Action</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-850">
+                        <tbody className="divide-y divide-gray-850/40">
                           {filteredSystemCoaches.map(coach => {
                             const tg = coach.targets || {};
                             const isDeact = tg.is_deactivated === true;
@@ -6774,45 +6827,61 @@ export default function DesktopCoachPortal() {
                                   setCoachSubIsFreeTrial(tg.is_free_trial === true);
                                   setCoachSubCustomEnd(tg.subscription_end_date ? getLocalDateTimeString(new Date(tg.subscription_end_date)) : getLocalDateTimeString());
                                 }}
-                                className="group hover:bg-gray-900/40 transition-colors cursor-pointer text-xs"
+                                className="group hover:bg-blue-500/[0.02] active:scale-[0.995] transition-all duration-200 cursor-pointer text-xs"
                               >
-                                <td className="py-4 px-4 flex items-center gap-3">
-                                  <div className={`w-8 h-8 rounded-lg font-black flex items-center justify-center text-xs uppercase ${
-                                    isSelf ? 'bg-indigo-900/40 text-indigo-300' : 'bg-blue-900/40 text-blue-300'
+                                <td className="py-4 px-5 flex items-center gap-3">
+                                  <div className={`w-9 h-9 rounded-xl font-black flex items-center justify-center text-xs uppercase shadow-inner border transition-all ${
+                                    isSelf 
+                                      ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/30 text-indigo-300 group-hover:border-indigo-500/50' 
+                                      : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300 group-hover:border-blue-500/50'
                                   }`}>
                                     {coach.display_name?.charAt(0) || '?'}
                                   </div>
                                   <div>
                                     <p className="font-bold text-white group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
                                       {coach.display_name}
-                                      {isSelf && <span className="text-[7px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-1 rounded uppercase tracking-wider font-mono">Owner</span>}
+                                      {isSelf && (
+                                        <span className="text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono tracking-wider uppercase font-black">
+                                          Owner
+                                        </span>
+                                      )}
                                     </p>
-                                    <p className="text-[10px] text-gray-500">@{coach.username || 'no-username'}</p>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">@{coach.username || 'no-username'}</p>
                                   </div>
                                 </td>
                                 <td className="py-4 px-4 text-gray-300 font-mono font-bold">{startDate}</td>
                                 <td className="py-4 px-4 text-gray-300 font-mono font-bold">{lastResubDate}</td>
                                 <td className="py-4 px-4 text-gray-300 font-mono font-bold">{expirationDate}</td>
-                                <td className="py-4 px-4 text-center font-extrabold text-white">{coachClients.length}</td>
+                                <td className="py-4 px-4 text-center">
+                                  <span className="inline-flex items-center gap-1 bg-blue-950/30 border border-blue-800/20 rounded-lg px-2.5 py-1 text-blue-400 font-extrabold font-mono">
+                                    <Users size={10} />
+                                    {coachClients.length}
+                                  </span>
+                                </td>
                                 <td className="py-4 px-4">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-col items-start gap-1">
                                     <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${statusColor}`}>
                                       {statusLabel}
                                     </span>
-                                    <span className="text-gray-500 font-medium text-[10px] font-mono">({daysRemainingLabel})</span>
+                                    <span className="text-gray-500 font-medium text-[9px] font-mono">({daysRemainingLabel})</span>
                                   </div>
                                 </td>
-                                <td className="py-4 px-4">
-                                  <div className="flex flex-col gap-0.5">
-                                    <p className="text-gray-300 font-mono text-[11px]">{coach.email}</p>
-                                    {tg.contact_email && <p className="text-gray-400 font-mono text-[10px]">{tg.contact_email}</p>}
-                                    {tg.phone_number && <p className="text-gray-500 text-[9px]">{tg.phone_number}</p>}
+                                <td className="py-4 px-4 space-y-1">
+                                  <div className="flex items-center gap-1.5 text-gray-300 font-mono text-[11px]">
+                                    <Mail size={10} className="text-gray-500 shrink-0" />
+                                    <span className="truncate max-w-[150px]">{coach.email}</span>
                                   </div>
+                                  {tg.phone_number && (
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-[10px]">
+                                      <Phone size={10} className="text-gray-600 shrink-0" />
+                                      <span>{tg.phone_number}</span>
+                                    </div>
+                                  )}
                                 </td>
-                                <td className="py-4 px-4 text-right">
+                                <td className="py-4 px-5 text-right">
                                   <button
                                     type="button"
-                                    className="bg-[#121624] group-hover:bg-blue-600 border border-gray-800 group-hover:border-blue-500 text-gray-400 group-hover:text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl transition-all"
+                                    className="bg-[#121624]/60 group-hover:bg-blue-600 border border-gray-800 group-hover:border-blue-500 text-gray-400 group-hover:text-white text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition-all shadow-inner active:scale-95 cursor-pointer"
                                   >
                                     Manage Details
                                   </button>
@@ -6822,7 +6891,7 @@ export default function DesktopCoachPortal() {
                           })}
                           {filteredSystemCoaches.length === 0 && (
                             <tr>
-                              <td colSpan={7} className="py-12 text-center text-gray-500 italic">
+                              <td colSpan={8} className="py-12 text-center text-gray-500 italic">
                                 No coaches found matching criteria.
                               </td>
                             </tr>
