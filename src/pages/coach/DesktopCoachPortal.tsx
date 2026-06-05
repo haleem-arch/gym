@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
@@ -4089,93 +4090,157 @@ export default function DesktopCoachPortal() {
           
           <button 
             onClick={() => handleSidebarTabClick('overview')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+            className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'overview' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
             }`}
           >
-            <Activity size={15} /> Operational Overview
+            {activeTab === 'overview' && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <Activity size={15} className="relative z-10" />
+            <span className="relative z-10">Operational Overview</span>
           </button>
 
           <button 
             onClick={() => handleSidebarTabClick('clients')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+            className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'clients' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
             }`}
           >
-            <Users size={15} /> Athlete Directory
+            {activeTab === 'clients' && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <Users size={15} className="relative z-10" />
+            <span className="relative z-10">Athlete Directory</span>
           </button>
 
           <button 
             onClick={() => handleSidebarTabClick('deploy')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+            className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'deploy' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
             }`}
           >
-            <UserPlus size={15} /> Deploy New Athlete
+            {activeTab === 'deploy' && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <UserPlus size={15} className="relative z-10" />
+            <span className="relative z-10">Deploy New Athlete</span>
           </button>
 
           <button 
             onClick={() => handleSidebarTabClick('management')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+            className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'management' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
             }`}
           >
-            <Settings size={15} /> Athlete Control
+            {activeTab === 'management' && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <Settings size={15} className="relative z-10" />
+            <span className="relative z-10">Athlete Control</span>
           </button>
 
           <button 
             onClick={() => handleSidebarTabClick('subscriptions')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+            className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'subscriptions' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
             }`}
           >
-            <CreditCard size={15} /> Subscriptions
+            {activeTab === 'subscriptions' && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <CreditCard size={15} className="relative z-10" />
+            <span className="relative z-10">Subscriptions</span>
           </button>
 
           <button 
             onClick={() => handleSidebarTabClick('profile')}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+            className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'profile' 
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
             }`}
           >
-            <User size={15} /> Profile Settings
+            {activeTab === 'profile' && (
+              <motion.div 
+                layoutId="activeTabBackground"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <User size={15} className="relative z-10" />
+            <span className="relative z-10">Profile Settings</span>
           </button>
 
           {coachUserId === OWNER_ID && (
             <button 
               onClick={() => handleSidebarTabClick('system')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+              className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
                 activeTab === 'system' 
-                  ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                  ? 'border-transparent text-white font-black' 
                   : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
               }`}
             >
-              <Shield size={15} /> System Console
+              {activeTab === 'system' && (
+                <motion.div 
+                  layoutId="activeTabBackground"
+                  className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+              <Shield size={15} className="relative z-10" />
+              <span className="relative z-10">System Console</span>
             </button>
           )}
 
           {coachUserId === OWNER_ID && (
             <button 
               onClick={() => handleSidebarTabClick('financials')}
-              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
+              className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
                 activeTab === 'financials' 
-                  ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 font-black' 
+                  ? 'border-transparent text-white font-black' 
                   : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
               }`}
             >
-              <DollarSign size={15} /> Financial Log
+              {activeTab === 'financials' && (
+                <motion.div 
+                  layoutId="activeTabBackground"
+                  className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+              <DollarSign size={15} className="relative z-10" />
+              <span className="relative z-10">Financial Log</span>
             </button>
           )}
         </aside>
