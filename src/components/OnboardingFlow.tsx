@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { 
   User, Lock, Dumbbell, Apple, Check, 
   ChevronLeft, ChevronRight, Plus, Trash2, 
-  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X
+  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X,
+  Users, UserPlus, Settings, CreditCard, ShieldCheck, AlertTriangle, Key, Save, Phone, RefreshCw, Activity
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SplashOverlay } from './SplashOverlay';
@@ -1618,194 +1619,497 @@ export default function OnboardingFlow({
       {/* Interactive Coach Guide Overlay - Step-by-Step Slider with HTML Website Previews */}
       <AnimatePresence>
         {showCoachGuide && (() => {
-          const stepsData = [
-            {
-              badge: "Step 01",
-              title: "Dashboard Cockpit & Permissions",
-              desc: "The primary dashboard displays real-time statistics, active workouts, and pending client updates. It acts as the central control room for coaches and system administrators. Here, you can review total active athletes, monthly completions, and pending subscriptions.",
-              content: (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-2 border-b border-gray-850">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-[10px]">LG</div>
-                      <span className="font-black tracking-wider text-[9px] text-white">COACH CONSOLE</span>
+          // Inner reusable mockup component for high-fidelity rendering
+          const BrowserPortalMockup = ({ activeTab, children }: { activeTab: string; children: React.ReactNode }) => {
+            return (
+              <div className="w-full bg-[#05060b] text-white flex flex-col h-full overflow-hidden text-[7px] border border-gray-850/60 rounded-xl">
+                {/* Top Header Bar */}
+                <div className="bg-[#08090f] border-b border-gray-850 px-2 py-1 flex items-center justify-between shrink-0 select-none">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3.5 h-3.5 bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black rounded-sm shrink-0">
+                      <Dumbbell size={8} />
                     </div>
-                    <span className="text-[7px] text-gray-550 bg-gray-900 border border-gray-800 px-2 py-0.5 rounded uppercase font-bold">Live Sync</span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-[#0b0c16]/80 border border-gray-850 rounded-xl p-2 space-y-1">
-                      <span className="text-[6px] font-black uppercase text-gray-500 block">👥 Clients</span>
-                      <span className="text-xs font-black text-white">48</span>
-                      <span className="text-[5px] text-emerald-450 block font-bold">+3 this week</span>
-                    </div>
-                    <div className="bg-[#0b0c16]/80 border border-gray-850 rounded-xl p-2 space-y-1">
-                      <span className="text-[6px] font-black uppercase text-gray-500 block">🔥 Compliance</span>
-                      <span className="text-xs font-black text-blue-400">92%</span>
-                      <span className="text-[5px] text-gray-550 block font-bold">1.8k verified</span>
-                    </div>
-                    <div className="bg-[#0b0c16]/80 border border-gray-850 rounded-xl p-2 space-y-1">
-                      <span className="text-[6px] font-black uppercase text-gray-500 block">⏱️ Slots</span>
-                      <span className="text-xs font-black text-purple-400">18/24</span>
-                      <span className="text-[5px] text-purple-400 block font-bold">active days</span>
+                    <div className="flex flex-col text-left">
+                      <span className="font-black tracking-widest text-[6px] uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent leading-none">LIFE GYM</span>
+                      <span className="text-[4px] text-gray-500 font-bold leading-none mt-0.5">Desktop Coach Portal / Version 3.0</span>
                     </div>
                   </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-[7px] font-black uppercase text-gray-550 block tracking-wider">Recent Live Logs</span>
-                    <div className="space-y-1">
-                      <div className="bg-[#0b0c16]/50 border border-gray-850/40 rounded-xl p-2 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="font-bold text-white truncate text-[9px]">Sarah Ahmed (#102)</span>
-                          <span className="text-gray-500 truncate text-[9px]">logged Push Day</span>
-                        </div>
-                        <span className="text-[6px] text-gray-550 font-mono shrink-0 ml-1">10m ago</span>
-                      </div>
-                      <div className="bg-[#0b0c16]/50 border border-gray-850/40 rounded-xl p-2 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="font-bold text-white truncate text-[9px]">Mohamed Yousry (#103)</span>
-                          <span className="text-gray-500 truncate text-[9px]">uploaded InBody scan</span>
-                        </div>
-                        <span className="text-[6px] text-gray-555 font-mono shrink-0 ml-1">24m ago</span>
-                      </div>
+                  
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-0.5 bg-emerald-950/30 border border-emerald-800/30 text-emerald-400 px-1 py-0.5 rounded-full text-[4px] font-black uppercase tracking-wider shrink-0">
+                      <span className="w-0.5 h-0.5 bg-emerald-400 rounded-full animate-pulse" />
+                      Database: ONLINE
+                    </div>
+                    <div className="bg-gray-950 border border-gray-850 text-gray-400 px-1 py-0.5 rounded flex items-center gap-0.5 text-[4px] font-bold shrink-0">
+                      <RefreshCw size={5} />
+                      Sync Data
+                    </div>
+                    <div className="bg-gray-900 border border-gray-850 text-gray-405 px-1 py-0.5 rounded flex items-center gap-0.5 text-[4px] font-bold shrink-0">
+                      <RefreshCw size={5} />
+                      Force Update
+                    </div>
+                    <div className="bg-red-950/20 border border-red-900/30 text-red-400 px-1 py-0.5 rounded flex items-center gap-0.5 text-[4px] font-bold shrink-0">
+                      <LogOut size={5} />
+                      Log Out
                     </div>
                   </div>
                 </div>
+
+                <div className="flex-1 flex overflow-hidden">
+                  {/* Left Sidebar */}
+                  <div className="w-20 bg-[#08090f] border-r border-gray-850 p-1 flex flex-col justify-between shrink-0 select-none text-left">
+                    <div className="space-y-1">
+                      <span className="text-[4px] font-black text-gray-650 uppercase tracking-widest block px-1">Main Navigation</span>
+                      <div className="space-y-0.5">
+                        {[
+                          { id: 'overview', label: 'Operational Overview', icon: <Activity size={6} /> },
+                          { id: 'directory', label: 'Athlete Directory', icon: <Users size={6} /> },
+                          { id: 'deploy', label: 'Deploy New Athlete', icon: <UserPlus size={6} /> },
+                          { id: 'control', label: 'Athlete Control', icon: <Settings size={6} /> },
+                          { id: 'subscriptions', label: 'Subscriptions', icon: <CreditCard size={6} /> },
+                          { id: 'profile', label: 'Profile Settings', icon: <User size={6} /> }
+                        ].map(item => {
+                          const isActive = activeTab === item.id;
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex items-center gap-1 px-1.5 py-1 rounded transition-colors text-[5.5px] font-bold ${
+                                isActive 
+                                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/10' 
+                                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                              }`}
+                            >
+                              {item.icon}
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    <div className="pt-1.5 border-t border-gray-900/50 text-center">
+                      <span className="text-[4px] font-black text-gray-700 uppercase tracking-widest">LIFE GYM</span>
+                    </div>
+                  </div>
+
+                  {/* Workspace Content Pane */}
+                  <div className="flex-1 bg-[#05060b] p-2 overflow-y-auto no-scrollbar">
+                    {children}
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          const stepsData = [
+            {
+              badge: "Step 01",
+              title: "Deploy New Athlete",
+              desc: "Deploy a new athlete in a single structured flow. Input their credentials (name, username, password, phone), configure their initial workout splits and customized baseline exercises, set their daily calorie/macro targets and water volume, select their subscription package, and deploy their profile instantly.",
+              content: (
+                <BrowserPortalMockup activeTab="deploy">
+                  <div className="space-y-2 text-left">
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-850">
+                      <span className="text-[7.5px] font-black uppercase text-blue-400">Deploy New Athlete</span>
+                      <span className="text-[5.5px] text-gray-500 font-semibold">Deploy new accounts to database</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5 bg-[#0c0e17]/65 border border-gray-850/60 p-2 rounded-xl">
+                        <span className="text-[5.5px] font-black text-blue-450 uppercase tracking-wider block">1. Credentials</span>
+                        <div className="space-y-1">
+                          <div>
+                            <label className="text-[5px] text-gray-550 block">Athlete Full Name</label>
+                            <input type="text" readOnly value="Sarah Ahmed" className="w-full bg-[#05060b] border border-gray-850 rounded p-0.5 text-[6px] text-white outline-none font-bold" />
+                          </div>
+                          <div>
+                            <label className="text-[5px] text-gray-550 block">Username</label>
+                            <input type="text" readOnly value="sarah_fit" className="w-full bg-[#05060b] border border-gray-850 rounded p-0.5 text-[6px] text-white outline-none font-bold" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <div>
+                              <label className="text-[5px] text-gray-550 block">Mobile</label>
+                              <input type="text" readOnly value="01128828954" className="w-full bg-[#05060b] border border-gray-850 rounded p-0.5 text-[6px] text-white outline-none font-bold" />
+                            </div>
+                            <div>
+                              <label className="text-[5px] text-gray-550 block">Passcode</label>
+                              <input type="text" readOnly value="sarah@998" className="w-full bg-[#05060b] border border-gray-850 rounded p-0.5 text-[6px] text-white outline-none font-bold" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 bg-[#0c0e17]/65 border border-gray-850/60 p-2 rounded-xl">
+                        <span className="text-[5.5px] font-black text-blue-455 uppercase tracking-wider block">2. Program &amp; Targets</span>
+                        <div className="space-y-1">
+                          <div>
+                            <label className="text-[5px] text-gray-555 block">Initial Split Days</label>
+                            <div className="flex gap-0.5 mt-0.5">
+                              {['Push', 'Pull', 'Legs'].map(sp => (
+                                <span key={sp} className="text-[5px] bg-blue-950/40 border border-blue-900/30 text-blue-400 px-1 py-0.2 rounded font-black">{sp}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <div>
+                              <label className="text-[5px] text-gray-555 block">Target Calories</label>
+                              <input type="text" readOnly value="2,400 kcal" className="w-full bg-[#05060b] border border-gray-850 rounded p-0.5 text-[6px] text-white outline-none font-bold" />
+                            </div>
+                            <div>
+                              <label className="text-[5px] text-gray-555 block">Water Goal</label>
+                              <input type="text" readOnly value="3.5 Liters" className="w-full bg-[#05060b] border border-gray-850 rounded p-0.5 text-[6px] text-white outline-none font-bold" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-0.5 text-center mt-1">
+                            <div className="bg-[#05060b] border border-gray-850 p-0.5 rounded">
+                              <span className="text-[4px] text-gray-500 block">P</span>
+                              <span className="text-[5.5px] font-black text-emerald-450">160g</span>
+                            </div>
+                            <div className="bg-[#05060b] border border-gray-850 p-0.5 rounded">
+                              <span className="text-[4px] text-gray-500 block">C</span>
+                              <span className="text-[5.5px] font-black text-amber-400">240g</span>
+                            </div>
+                            <div className="bg-[#05060b] border border-gray-850 p-0.5 rounded">
+                              <span className="text-[4px] text-gray-500 block">F</span>
+                              <span className="text-[5.5px] font-black text-purple-400">70g</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#0c0e17]/65 border border-gray-850/60 p-2 rounded-xl flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <span className="text-[5.5px] font-black text-blue-455 uppercase tracking-wider block">3. Membership Package</span>
+                        <span className="text-[5px] text-gray-500 block font-semibold">Select access duration period</span>
+                      </div>
+                      <div className="flex gap-1">
+                        {['1 Month', '3 Months', '6 Months'].map((pkg, i) => (
+                          <div key={pkg} className={`px-2 py-0.5 rounded border text-[5.5px] font-black cursor-pointer ${i === 0 ? 'bg-blue-600/10 border-blue-500 text-blue-400' : 'bg-[#05060b] border-gray-850 text-gray-550'}`}>
+                            {pkg}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-[6.5px] py-1.5 rounded-lg uppercase tracking-wider flex items-center justify-center gap-1 shadow-md shadow-blue-500/10 cursor-pointer">
+                      <UserPlus size={7} /> Deploy Client &amp; Program
+                    </button>
+                  </div>
+                </BrowserPortalMockup>
               )
             },
             {
               badge: "Step 02",
-              title: "Athlete Directory & Client Codes",
-              desc: "Add new athletes, edit their profiles, and track billing details. Every athlete gets a unique searchable code (e.g. #102) and has their Egyptian phone number formatted automatically. Suspended accounts are visually flagged with immediate renewal redirect triggers.",
+              title: "Operational Overview",
+              desc: "Monitor platform metrics and live status feeds in real time. Total system accounts, active coaches, and managed athletes are summarized instantly, while live feeds capture daily workout completions and calorie logging from your active athlete base.",
               content: (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center gap-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-650 w-3 h-3" />
-                      <input 
-                        type="text" 
-                        readOnly 
-                        value="Search athletes..." 
-                        className="w-full bg-[#0d111a] border border-gray-850 rounded-xl py-2 pl-7 pr-3 text-[8px] outline-none text-gray-400"
-                      />
-                    </div>
-                    <button className="bg-blue-600 text-white font-black text-[7px] px-2.5 py-2 rounded-xl uppercase shrink-0 tracking-wider">
-                      + Add Client
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 flex justify-between items-center hover:border-gray-800 transition-colors">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 bg-blue-900 rounded-full flex items-center justify-center text-blue-200 font-black text-xs shrink-0">
-                          S
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-white text-[9px] truncate">Sarah Ahmed</span>
-                            <span className="text-[6px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black shrink-0">#102</span>
-                          </div>
-                          <span className="text-gray-500 text-[7px] block truncate">@sarah_fit · 01128828954</span>
-                        </div>
+                <BrowserPortalMockup activeTab="overview">
+                  <div className="space-y-2 text-left">
+                    <div className="grid grid-cols-4 gap-1.5">
+                      <div className="bg-[#0c0e17] border border-gray-850 rounded p-1.5 space-y-0.5">
+                        <span className="text-[4.5px] font-black text-gray-555 uppercase tracking-widest block leading-none">Total System Accounts</span>
+                        <span className="text-sm font-black text-blue-450 leading-none">3</span>
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-[6px] text-gray-500 block uppercase font-bold">Passcode</span>
-                        <span className="font-mono font-black text-blue-400 text-[9px]">sarah@998</span>
+                      <div className="bg-[#0c0e17] border border-gray-850 rounded p-1.5 space-y-0.5">
+                        <span className="text-[4.5px] font-black text-gray-555 uppercase tracking-widest block leading-none">Coaches Active</span>
+                        <span className="text-sm font-black text-blue-450 leading-none">2</span>
+                      </div>
+                      <div className="bg-[#0c0e17] border border-gray-850 rounded p-1.5 space-y-0.5">
+                        <span className="text-[4.5px] font-black text-gray-555 uppercase tracking-widest block leading-none">Managed Athletes</span>
+                        <span className="text-sm font-black text-blue-450 leading-none">1</span>
+                      </div>
+                      <div className="bg-[#0c0e17] border border-gray-850 rounded p-1.5 space-y-0.5 flex flex-col justify-between">
+                        <span className="text-[4.5px] font-black text-gray-555 uppercase tracking-widest block leading-none">System Status</span>
+                        <span className="text-[7px] font-black text-emerald-450 flex items-center gap-0.5 leading-none">
+                          <ShieldCheck size={7} /> SECURE
+                        </span>
                       </div>
                     </div>
 
-                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 flex justify-between items-center hover:border-gray-800 transition-colors">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 bg-purple-900 rounded-full flex items-center justify-center text-purple-200 font-black text-xs shrink-0">
-                          M
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-white text-[9px] truncate">Mohamed Yousry</span>
-                            <span className="text-[6px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black shrink-0">#103</span>
-                          </div>
-                          <span className="text-gray-500 text-[7px] block truncate">@yousry_fit · 01062635950</span>
+                    <div className="bg-[#0c0e17]/80 border border-gray-850 rounded p-1.5 flex justify-between items-center text-[5px]">
+                      <div>
+                        <span className="font-black text-white uppercase block leading-none">Feed Activity Filter</span>
+                        <span className="text-gray-505 font-semibold block mt-0.5 leading-none">Toggle between monitoring all athlete activity across the platform or narrowing it down.</span>
+                      </div>
+                      <span className="bg-[#121624] border border-gray-800 text-[4.5px] font-black px-1.5 py-0.5 rounded text-gray-400 shrink-0">ALL SYSTEM ACTIVITY</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1 bg-[#0c0e17]/40 border border-gray-850/50 p-1.5 rounded-lg">
+                        <span className="text-[5.5px] font-black text-white uppercase tracking-wider block flex items-center gap-0.5">
+                          <Dumbbell size={6} className="text-blue-400" /> Workouts Completed Feed
+                        </span>
+                        <div className="space-y-1">
+                          {[
+                            { name: "lila wael", code: "#101", detail: "180 kg", desc: "Completed a PUSH day", date: "2026-06-05" },
+                            { name: "Haleem", code: null, detail: "Push", desc: "Completed a PUSH day", date: "2026-05-26" },
+                            { name: "Haleem", code: null, detail: "Run", desc: "Completed a RUN day", date: "2026-05-20" }
+                          ].map((w, idx) => (
+                            <div key={idx} className="bg-[#05060b] border border-gray-850 rounded p-1 flex justify-between items-start text-[5.5px] leading-tight">
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-bold text-white">{w.name}</span>
+                                  {w.code && <span className="bg-blue-950 text-blue-400 px-0.5 rounded text-[4.5px] font-black">{w.code}</span>}
+                                </div>
+                                <span className="text-gray-550 block mt-0.5">{w.desc}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-black text-white block">{w.detail}</span>
+                                <span className="text-[4px] text-gray-500 block">{w.date}</span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-[6px] text-gray-500 block uppercase font-bold">Passcode</span>
-                        <span className="font-mono font-black text-blue-400 text-[9px]">yousry@776</span>
+
+                      <div className="space-y-1 bg-[#0c0e17]/40 border border-gray-850/50 p-1.5 rounded-lg">
+                        <span className="text-[5.5px] font-black text-white uppercase tracking-wider block flex items-center gap-0.5">
+                          <Apple size={6} className="text-emerald-450" /> Nutritional Intake Feed
+                        </span>
+                        <div className="space-y-1">
+                          {[
+                            { name: "lila wael", code: "#101", detail: "450 kcal / 23g P", desc: "Tracked daily totals", date: "2026-06-05" },
+                            { name: "Haleem", code: null, detail: "403 kcal / 25g P", desc: "Tracked daily totals", date: "2026-06-01" },
+                            { name: "Haleem", code: null, detail: "841 kcal / 55g P", desc: "Tracked daily totals", date: "2026-05-30" }
+                          ].map((n, idx) => (
+                            <div key={idx} className="bg-[#05060b] border border-gray-850 rounded p-1 flex justify-between items-start text-[5.5px] leading-tight">
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-bold text-white">{n.name}</span>
+                                  {n.code && <span className="bg-blue-950 text-blue-400 px-0.5 rounded text-[4.5px] font-black">{n.code}</span>}
+                                </div>
+                                <span className="text-gray-550 block mt-0.5">{n.desc}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-black text-emerald-450 block">{n.detail}</span>
+                                <span className="text-[4px] text-gray-500 block">{n.date}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                </BrowserPortalMockup>
               )
             },
             {
               badge: "Step 03",
-              title: "Workout Customizer & Diet Architect",
-              desc: "Construct training plans and diet models tailored for each athlete. Assign target sets, reps, and rest periods, and build customized macronutrient goals based on gym days versus rest days. Syncs directly to client applications instantly.",
+              title: "Athlete Directory",
+              desc: "Access your client roster inside the Athlete Directory. Filter by your assigned athletes, lookup unique client codes (e.g. #101), review login passcodes, and monitor contact information. Direct toggle filters streamline directory searching.",
               content: (
-                <div className="space-y-4">
-                  <div className="bg-[#0d111a] p-0.5 rounded-lg flex gap-1 select-none shrink-0">
-                    <button className="flex-1 py-1 rounded text-[7px] font-black uppercase text-white bg-blue-600 text-center">Workouts</button>
-                    <button className="flex-1 py-1 rounded text-[7px] font-black uppercase text-gray-550 text-center">Diet Targets</button>
-                  </div>
+                <BrowserPortalMockup activeTab="directory">
+                  <div className="space-y-2 text-left">
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex-1 relative">
+                        <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 text-gray-650 w-2.5 h-2.5" />
+                        <input type="text" readOnly value="Search athletes by name or code..." className="w-full bg-[#0d111a] border border-gray-850 rounded py-1 pl-5 pr-2 text-[5.5px] text-gray-400 outline-none font-bold" />
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <input type="checkbox" id="mock-mine-dir" defaultChecked className="w-2.5 h-2.5 rounded border-gray-850 text-blue-600 focus:ring-0 cursor-pointer" />
+                        <label htmlFor="mock-mine-dir" className="text-[5px] text-gray-505 font-black uppercase select-none cursor-pointer">Filter Mine Only</label>
+                      </div>
+                      <button className="bg-blue-600 text-white font-black text-[5.5px] px-2.5 py-1 rounded-md uppercase tracking-wider shrink-0 cursor-pointer">+ Add Client</button>
+                    </div>
 
-                  <div className="space-y-2">
-                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 flex justify-between items-center" style={{ borderLeft: '3px solid #ef4444' }}>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-sm shrink-0">🔴</span>
-                        <div className="min-w-0">
-                          <span className="font-black text-white text-[8px] uppercase tracking-wider block">PUSH DAY</span>
-                          <span className="text-[7px] text-gray-550 block truncate">Chest, Shoulders, Triceps</span>
+                    <div className="space-y-1.5">
+                      {[
+                        { name: "Lila Wael", code: "#101", user: "@lila_wael", phone: "01062635950", passcode: "lila@554", status: "Active" },
+                        { name: "Sarah Ahmed", code: "#102", user: "@sarah_fit", phone: "01128828954", passcode: "sarah@998", status: "Active" },
+                        { name: "Mohamed Yousry", code: "#103", user: "@yousry_fit", phone: "01062635950", passcode: "yousry@776", status: "Suspended" }
+                      ].map((ath, idx) => (
+                        <div key={idx} className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2 flex justify-between items-center hover:border-gray-800 transition-colors">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-5.5 h-5.5 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-blue-500/10 text-blue-300 rounded-full flex items-center justify-center font-black text-[7.5px] shrink-0">
+                              {ath.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1">
+                                <span className="font-black text-white text-[7.5px] truncate">{ath.name}</span>
+                                <span className="bg-blue-950 text-blue-400 px-1 py-0.2 rounded text-[5px] font-black shrink-0">{ath.code}</span>
+                                {ath.status === "Suspended" && (
+                                  <span className="bg-amber-950/40 border border-amber-900/30 text-amber-400 px-1 py-0.2 rounded text-[4.5px] font-black uppercase shrink-0">Suspended</span>
+                                )}
+                              </div>
+                              <span className="text-gray-500 text-[6px] block truncate">{ath.user} · {ath.phone}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right shrink-0">
+                            <span className="text-[5px] text-gray-555 block uppercase font-black">Passcode</span>
+                            <span className="font-mono font-black text-blue-455 text-[7px]">{ath.passcode}</span>
+                          </div>
                         </div>
-                      </div>
-                      <span className="text-[6px] bg-gray-900 border border-gray-850 text-gray-400 px-2 py-0.5 rounded uppercase font-bold shrink-0">6 Exercises</span>
-                    </div>
-
-                    <div className="bg-[#0d111a]/40 border border-gray-850/50 rounded-xl p-2.5 space-y-1">
-                      <div className="flex justify-between items-center text-[7px]">
-                        <span className="text-gray-350 font-bold">1. Incline DB Bench Press (45°)</span>
-                        <span className="text-blue-400 font-mono">3 sets · 120s rest</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[7px]">
-                        <span className="text-gray-350 font-bold">2. DB Shoulder Press (seated neutral)</span>
-                        <span className="text-blue-400 font-mono">3 sets · 120s rest</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                </BrowserPortalMockup>
               )
             },
             {
               badge: "Step 04",
-              title: "System Settings & Bot Logs",
-              desc: "Connect your Telegram bot for real-time compliance logging, adjust default membership prices, and edit coach profile numbers. Any modification is secured by robust database policies and updates instantly.",
+              title: "Athlete Control Panel",
+              desc: "Unlock absolute control over individual athlete configurations. Manage subscription packages, temporarily suspend login profiles, clear or assign account passwords, and delete client records. Adjust daily splits, customize workout exercises, and tune macro ranges directly.",
               content: (
-                <div className="space-y-3">
-                  <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-white text-[8px]">Telegram log broadcasting</span>
-                      <span className="w-5 h-3 bg-blue-600 rounded-full relative inline-block"><span className="w-2 h-2 bg-white rounded-full absolute right-0.5 top-0.5" /></span>
+                <BrowserPortalMockup activeTab="control">
+                  <div className="space-y-2 text-left">
+                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2 flex justify-between items-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5.5 h-5.5 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-blue-500/10 text-blue-300 rounded-full flex items-center justify-center font-black text-[7.5px] shrink-0">S</div>
+                        <div className="min-w-0">
+                          <span className="font-black text-white text-[7.5px] block truncate">Sarah Ahmed</span>
+                          <span className="text-gray-500 text-[5.5px] block truncate">Configure access, split plans, and macro targets</span>
+                        </div>
+                      </div>
+                      <span className="bg-emerald-950/30 border border-emerald-900/30 text-emerald-400 px-1.5 py-0.5 rounded text-[4.5px] font-black uppercase shrink-0">Active</span>
                     </div>
-                    <div className="space-y-0.5">
-                      <label className="text-[6px] uppercase tracking-wider text-gray-500 block">Broadcasting Chat ID</label>
-                      <input type="text" readOnly value="-1001538316434" className="w-full bg-[#0d111a] border border-gray-850 rounded-lg p-1.5 text-[7px] font-mono text-gray-350 outline-none" />
-                    </div>
-                  </div>
 
-                  <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 space-y-1.5">
-                    <span className="font-bold text-white text-[8px] block">Standard package pricing</span>
+                    <div className="bg-[#05060b] border border-gray-850 p-0.5 rounded-lg flex gap-0.5">
+                      {['Overview', 'Diet targets', 'Training splits'].map((tb, idx) => (
+                        <span key={tb} className={`flex-1 text-center py-0.5 text-[5px] font-black uppercase rounded ${idx === 2 ? 'bg-blue-600 text-white' : 'text-gray-555'}`}>
+                          {tb}
+                        </span>
+                      ))}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-0.5">
-                        <label className="text-[6px] uppercase tracking-wider text-gray-500 block">1 Month package</label>
-                        <input type="text" readOnly value="3,500 EGP" className="w-full bg-[#0d111a] border border-gray-850 rounded-lg p-1.5 text-[7px] font-mono text-gray-350 outline-none" />
+                      <div className="bg-[#0c0e17]/50 border border-gray-850/50 p-1.5 rounded-lg space-y-1">
+                        <span className="text-[5px] font-black text-gray-550 uppercase tracking-wider block">Training Split (Push split)</span>
+                        <div className="space-y-0.5 text-[5px]">
+                          <div className="bg-[#05060b] p-1 rounded flex justify-between items-center text-gray-300 border border-gray-850/30">
+                            <span className="truncate">1. Incline DB Bench Press</span>
+                            <span className="text-blue-400 font-mono shrink-0 ml-1">3 sets</span>
+                          </div>
+                          <div className="bg-[#05060b] p-1 rounded flex justify-between items-center text-gray-300 border border-gray-850/30">
+                            <span className="truncate">2. DB Shoulder Press</span>
+                            <span className="text-blue-400 font-mono shrink-0 ml-1">3 sets</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-0.5">
-                        <label className="text-[6px] uppercase tracking-wider text-gray-500 block">3 Months package</label>
-                        <input type="text" readOnly value="8,500 EGP" className="w-full bg-[#0d111a] border border-gray-850 rounded-lg p-1.5 text-[7px] font-mono text-gray-350 outline-none" />
+
+                      <div className="space-y-1 bg-[#0c0e17]/50 border border-gray-850/50 p-1.5 rounded-lg flex flex-col justify-between">
+                        <div className="grid grid-cols-2 gap-1">
+                          <button className="bg-amber-600 hover:bg-amber-500 text-white font-black text-[4.5px] py-1 rounded uppercase tracking-wider flex items-center justify-center gap-0.5 cursor-pointer">
+                            <AlertTriangle size={5} /> Suspend
+                          </button>
+                          <button className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[4.5px] py-1 rounded uppercase tracking-wider flex items-center justify-center gap-0.5 cursor-pointer">
+                            <CreditCard size={5} /> Upgrade
+                          </button>
+                        </div>
+                        <button className="w-full bg-[#121624] border border-gray-850 hover:border-gray-800 text-white font-black text-[4.5px] py-1 rounded uppercase tracking-wider flex items-center justify-center gap-0.5 cursor-pointer">
+                          <Key size={5} /> Set Password
+                        </button>
+                        <button className="w-full bg-red-950/20 border border-red-900/30 hover:bg-red-900/20 text-red-400 font-black text-[4.5px] py-1 rounded uppercase tracking-wider flex items-center justify-center gap-0.5 cursor-pointer">
+                          <Trash2 size={5} /> Delete Client
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
+                </BrowserPortalMockup>
+              )
+            },
+            {
+              badge: "Step 05",
+              title: "Subscriptions Manager",
+              desc: "Supervise billing and subscription cycles in one centralized location. The Subscriptions panel lists package details, subscription start/end timestamps, and computes a live countdown of days remaining. Active, Expired, and Suspended tags are color-coded for quick visual action.",
+              content: (
+                <BrowserPortalMockup activeTab="subscriptions">
+                  <div className="space-y-2 text-left">
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-850">
+                      <span className="text-[7.5px] font-black uppercase text-blue-400">Subscriptions Manager</span>
+                      <span className="text-[5.5px] text-gray-500 font-semibold">Active client billing terms</span>
+                    </div>
+
+                    <div className="bg-[#0b0c16]/55 border border-gray-850 p-1.5 rounded-lg space-y-1">
+                      <div className="grid grid-cols-4 text-[4.5px] font-black text-gray-500 uppercase tracking-widest px-1 pb-0.5 border-b border-gray-900/30">
+                        <span>Athlete</span>
+                        <span>Package</span>
+                        <span>Billing Status</span>
+                        <span className="text-right">Actions</span>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        {[
+                          { name: "Lila Wael", code: "#101", period: "1 Month", left: "12 Days Left", status: "Active" },
+                          { name: "Sarah Ahmed", code: "#102", period: "3 Months", left: "64 Days Left", status: "Active" },
+                          { name: "Mohamed Yousry", code: "#103", period: "2 Weeks", left: "EXPIRED (SUSPENDED)", status: "Expired" }
+                        ].map((sub, idx) => (
+                          <div key={idx} className="grid grid-cols-4 items-center bg-[#05060b] border border-gray-850/60 p-1 rounded text-[5px] px-1 font-bold">
+                            <div className="flex items-center gap-0.5 min-w-0">
+                              <span className="text-white truncate">{sub.name}</span>
+                              <span className="text-[4px] text-gray-500 shrink-0">{sub.code}</span>
+                            </div>
+                            <span className="text-gray-400">{sub.period}</span>
+                            <span className={sub.status === "Expired" ? "text-red-400 font-black font-mono text-[4.5px]" : "text-emerald-450 font-black font-mono text-[4.5px]"}>
+                              {sub.left}
+                            </span>
+                            <div className="flex justify-end">
+                              <span className="bg-blue-600 text-white text-[4.5px] px-1.5 py-0.5 rounded font-black cursor-pointer hover:bg-blue-500 leading-none">Extend</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </BrowserPortalMockup>
+              )
+            },
+            {
+              badge: "Step 06",
+              title: "Profile Settings",
+              desc: "Manage your own credentials and support routing settings. Set your coaching display name, modify your login email address, manage portal authorization passcodes (with standard mask toggling), and set your WhatsApp phone number to enable instant notifications.",
+              content: (
+                <BrowserPortalMockup activeTab="profile">
+                  <div className="space-y-2 text-left">
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-850">
+                      <span className="text-[7.5px] font-black uppercase text-blue-400">Profile Settings</span>
+                      <span className="text-[5.5px] text-gray-555 font-semibold">Coach credentials &amp; contact</span>
+                    </div>
+
+                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 space-y-1.5 max-w-xs mx-auto">
+                      <div className="flex items-center gap-2 pb-1.5 border-b border-gray-850/55">
+                        <div className="w-5 h-5 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-black text-[8px] shrink-0">C</div>
+                        <div>
+                          <span className="font-black text-white text-[7.5px] block">Coach Ahmed</span>
+                          <span className="text-gray-500 text-[5px] block">Coach Portal Account Settings</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[5px] text-gray-550 block mb-0.5 uppercase tracking-wider">Coach Display Name</label>
+                          <input type="text" readOnly value="Coach Ahmed" className="w-full bg-[#05060b] border border-gray-850 rounded p-1 text-[5.5px] text-white outline-none font-bold" />
+                        </div>
+                        <div>
+                          <label className="text-[5px] text-gray-550 block mb-0.5 uppercase tracking-wider">Email Address</label>
+                          <input type="text" readOnly value="ahmed@stride.fit" className="w-full bg-[#05060b] border border-gray-850 rounded p-1 text-[5.5px] text-white outline-none font-bold" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[5px] text-gray-555 block mb-0.5 uppercase tracking-wider">Passcode</label>
+                          <div className="relative">
+                            <input type="password" readOnly value="ahmed@portal" className="w-full bg-[#05060b] border border-gray-850 rounded p-1 pr-3.5 text-[5.5px] text-white outline-none font-mono" />
+                            <Eye className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-600 w-2.5 h-2.5" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[5px] text-gray-555 block mb-0.5 uppercase tracking-wider">WhatsApp Contact</label>
+                          <div className="relative">
+                            <Phone className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-650 w-2 h-2" />
+                            <input type="text" readOnly value="+201128828954" className="w-full bg-[#05060b] border border-gray-850 rounded p-1 pl-3.5 text-[5.5px] text-white outline-none font-bold" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-[5.5px] py-1 rounded-md uppercase tracking-wider flex items-center justify-center gap-0.5 shadow-sm shadow-blue-500/10 mt-1 cursor-pointer">
+                        <Save size={6} /> Save Profile Settings
+                      </button>
+                    </div>
+                  </div>
+                </BrowserPortalMockup>
               )
             }
           ];
@@ -1855,9 +2159,9 @@ export default function OnboardingFlow({
 
                   {/* Right Side: Zoomed-out Browser View Mockup */}
                   <div className="w-full md:w-1/2 flex items-center justify-center">
-                    <div className="w-full max-w-sm transition-all duration-300 hover:scale-[1.02] relative">
+                    <div className="w-full max-w-md md:max-w-lg transition-all duration-300 hover:scale-[1.02] relative">
                       {/* Browser Shell Mockup */}
-                      <div className="w-full bg-[#07080e] border border-gray-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[280px] select-none text-left">
+                      <div className="w-full bg-[#07080e] border border-gray-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[340px] select-none text-left">
                         {/* Browser Header */}
                         <div className="bg-[#0b0c16] border-b border-gray-850 px-4 py-2.5 flex items-center justify-between shrink-0">
                           <div className="flex items-center gap-1.5">
@@ -1865,13 +2169,13 @@ export default function OnboardingFlow({
                             <span className="w-2 h-2 rounded-full bg-yellow-500/80 inline-block" />
                             <span className="w-2 h-2 rounded-full bg-green-500/80 inline-block" />
                           </div>
-                          <div className="bg-[#05060b] border border-gray-850/60 px-3 py-0.5 rounded-lg text-[7px] text-gray-500 font-mono w-44 text-center truncate">
+                          <div className="bg-[#05060b] border border-gray-850/60 px-3 py-0.5 rounded-lg text-[7px] text-gray-555 font-mono w-44 text-center truncate font-bold">
                             https://stride.fit/coach-portal
                           </div>
                           <div className="w-8" />
                         </div>
                         {/* Browser Body */}
-                        <div className="flex-1 p-4 bg-[#05060b] overflow-y-auto overflow-x-hidden relative text-gray-200 text-[9px] no-scrollbar">
+                        <div className="flex-1 bg-[#05060b] overflow-hidden relative text-gray-250 text-[9px] no-scrollbar">
                           <AnimatePresence mode="wait">
                             <motion.div
                               key={guideStep}
