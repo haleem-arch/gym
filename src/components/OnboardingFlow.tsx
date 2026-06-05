@@ -135,6 +135,7 @@ export default function OnboardingFlow({
   });
   const [showCoachGuide, setShowCoachGuide] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
 
   // Flying Arrow States & Refs
   const [showArrow, setShowArrow] = useState(false);
@@ -1614,174 +1615,329 @@ export default function OnboardingFlow({
         )}
       </AnimatePresence>
 
-      {/* Interactive Coach Guide Overlay - Scrolling Step-by-Step with Screenshots */}
+      {/* Interactive Coach Guide Overlay - Step-by-Step Slider with HTML Website Previews */}
       <AnimatePresence>
-        {showCoachGuide && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#05060b]/98 backdrop-blur-xl z-50 overflow-hidden flex flex-col p-6 md:p-12 font-sans text-gray-250"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-850 pb-5 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                  <Dumbbell size={18} />
+        {showCoachGuide && (() => {
+          const stepsData = [
+            {
+              badge: "Step 01",
+              title: "Dashboard Cockpit & Permissions",
+              desc: "The primary dashboard displays real-time statistics, active workouts, and pending client updates. It acts as the central control room for coaches and system administrators. Here, you can review total active athletes, monthly completions, and pending subscriptions.",
+              content: (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-850">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-[10px]">LG</div>
+                      <span className="font-black tracking-wider text-[9px] text-white">COACH CONSOLE</span>
+                    </div>
+                    <span className="text-[7px] text-gray-550 bg-gray-900 border border-gray-800 px-2 py-0.5 rounded uppercase font-bold">Live Sync</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-[#0b0c16]/80 border border-gray-850 rounded-xl p-2 space-y-1">
+                      <span className="text-[6px] font-black uppercase text-gray-500 block">👥 Clients</span>
+                      <span className="text-xs font-black text-white">48</span>
+                      <span className="text-[5px] text-emerald-450 block font-bold">+3 this week</span>
+                    </div>
+                    <div className="bg-[#0b0c16]/80 border border-gray-850 rounded-xl p-2 space-y-1">
+                      <span className="text-[6px] font-black uppercase text-gray-500 block">🔥 Compliance</span>
+                      <span className="text-xs font-black text-blue-400">92%</span>
+                      <span className="text-[5px] text-gray-550 block font-bold">1.8k verified</span>
+                    </div>
+                    <div className="bg-[#0b0c16]/80 border border-gray-850 rounded-xl p-2 space-y-1">
+                      <span className="text-[6px] font-black uppercase text-gray-500 block">⏱️ Slots</span>
+                      <span className="text-xs font-black text-purple-400">18/24</span>
+                      <span className="text-[5px] text-purple-400 block font-bold">active days</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[7px] font-black uppercase text-gray-550 block tracking-wider">Recent Live Logs</span>
+                    <div className="space-y-1">
+                      <div className="bg-[#0b0c16]/50 border border-gray-850/40 rounded-xl p-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="font-bold text-white truncate text-[9px]">Sarah Ahmed (#102)</span>
+                          <span className="text-gray-500 truncate text-[9px]">logged Push Day</span>
+                        </div>
+                        <span className="text-[6px] text-gray-550 font-mono shrink-0 ml-1">10m ago</span>
+                      </div>
+                      <div className="bg-[#0b0c16]/50 border border-gray-850/40 rounded-xl p-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="font-bold text-white truncate text-[9px]">Mohamed Yousry (#103)</span>
+                          <span className="text-gray-500 truncate text-[9px]">uploaded InBody scan</span>
+                        </div>
+                        <span className="text-[6px] text-gray-555 font-mono shrink-0 ml-1">24m ago</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Life Gym Coach Guide</h2>
-                  <p className="text-[10px] text-gray-550 font-bold uppercase tracking-wider mt-0.5">Interactive Setup &amp; Onboarding Tour</p>
+              )
+            },
+            {
+              badge: "Step 02",
+              title: "Athlete Directory & Client Codes",
+              desc: "Add new athletes, edit their profiles, and track billing details. Every athlete gets a unique searchable code (e.g. #102) and has their Egyptian phone number formatted automatically. Suspended accounts are visually flagged with immediate renewal redirect triggers.",
+              content: (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-650 w-3 h-3" />
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value="Search athletes..." 
+                        className="w-full bg-[#0d111a] border border-gray-850 rounded-xl py-2 pl-7 pr-3 text-[8px] outline-none text-gray-400"
+                      />
+                    </div>
+                    <button className="bg-blue-600 text-white font-black text-[7px] px-2.5 py-2 rounded-xl uppercase shrink-0 tracking-wider">
+                      + Add Client
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 flex justify-between items-center hover:border-gray-800 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 bg-blue-900 rounded-full flex items-center justify-center text-blue-200 font-black text-xs shrink-0">
+                          S
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white text-[9px] truncate">Sarah Ahmed</span>
+                            <span className="text-[6px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black shrink-0">#102</span>
+                          </div>
+                          <span className="text-gray-500 text-[7px] block truncate">@sarah_fit · 01128828954</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[6px] text-gray-500 block uppercase font-bold">Passcode</span>
+                        <span className="font-mono font-black text-blue-400 text-[9px]">sarah@998</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 flex justify-between items-center hover:border-gray-800 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 bg-purple-900 rounded-full flex items-center justify-center text-purple-200 font-black text-xs shrink-0">
+                          M
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white text-[9px] truncate">Mohamed Yousry</span>
+                            <span className="text-[6px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black shrink-0">#103</span>
+                          </div>
+                          <span className="text-gray-500 text-[7px] block truncate">@yousry_fit · 01062635950</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[6px] text-gray-500 block uppercase font-bold">Passcode</span>
+                        <span className="font-mono font-black text-blue-400 text-[9px]">yousry@776</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              badge: "Step 03",
+              title: "Workout Customizer & Diet Architect",
+              desc: "Construct training plans and diet models tailored for each athlete. Assign target sets, reps, and rest periods, and build customized macronutrient goals based on gym days versus rest days. Syncs directly to client applications instantly.",
+              content: (
+                <div className="space-y-4">
+                  <div className="bg-[#0d111a] p-0.5 rounded-lg flex gap-1 select-none shrink-0">
+                    <button className="flex-1 py-1 rounded text-[7px] font-black uppercase text-white bg-blue-600 text-center">Workouts</button>
+                    <button className="flex-1 py-1 rounded text-[7px] font-black uppercase text-gray-550 text-center">Diet Targets</button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 flex justify-between items-center" style={{ borderLeft: '3px solid #ef4444' }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">🔴</span>
+                        <div className="min-w-0">
+                          <span className="font-black text-white text-[8px] uppercase tracking-wider block">PUSH DAY</span>
+                          <span className="text-[7px] text-gray-550 block truncate">Chest, Shoulders, Triceps</span>
+                        </div>
+                      </div>
+                      <span className="text-[6px] bg-gray-900 border border-gray-850 text-gray-400 px-2 py-0.5 rounded uppercase font-bold shrink-0">6 Exercises</span>
+                    </div>
+
+                    <div className="bg-[#0d111a]/40 border border-gray-850/50 rounded-xl p-2.5 space-y-1">
+                      <div className="flex justify-between items-center text-[7px]">
+                        <span className="text-gray-350 font-bold">1. Incline DB Bench Press (45°)</span>
+                        <span className="text-blue-400 font-mono">3 sets · 120s rest</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[7px]">
+                        <span className="text-gray-350 font-bold">2. DB Shoulder Press (seated neutral)</span>
+                        <span className="text-blue-400 font-mono">3 sets · 120s rest</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              badge: "Step 04",
+              title: "System Settings & Bot Logs",
+              desc: "Connect your Telegram bot for real-time compliance logging, adjust default membership prices, and edit coach profile numbers. Any modification is secured by robust database policies and updates instantly.",
+              content: (
+                <div className="space-y-3">
+                  <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-white text-[8px]">Telegram log broadcasting</span>
+                      <span className="w-5 h-3 bg-blue-600 rounded-full relative inline-block"><span className="w-2 h-2 bg-white rounded-full absolute right-0.5 top-0.5" /></span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <label className="text-[6px] uppercase tracking-wider text-gray-500 block">Broadcasting Chat ID</label>
+                      <input type="text" readOnly value="-1001538316434" className="w-full bg-[#0d111a] border border-gray-850 rounded-lg p-1.5 text-[7px] font-mono text-gray-350 outline-none" />
+                    </div>
+                  </div>
+
+                  <div className="bg-[#0b0c16] border border-gray-850 rounded-xl p-2.5 space-y-1.5">
+                    <span className="font-bold text-white text-[8px] block">Standard package pricing</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-0.5">
+                        <label className="text-[6px] uppercase tracking-wider text-gray-500 block">1 Month package</label>
+                        <input type="text" readOnly value="3,500 EGP" className="w-full bg-[#0d111a] border border-gray-850 rounded-lg p-1.5 text-[7px] font-mono text-gray-350 outline-none" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <label className="text-[6px] uppercase tracking-wider text-gray-500 block">3 Months package</label>
+                        <input type="text" readOnly value="8,500 EGP" className="w-full bg-[#0d111a] border border-gray-850 rounded-lg p-1.5 text-[7px] font-mono text-gray-350 outline-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+          ];
+
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-[#05060b]/98 backdrop-blur-xl z-50 overflow-hidden flex flex-col p-6 md:p-12 font-sans text-gray-250"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-gray-850 pb-5 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <Dumbbell size={18} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black text-white uppercase tracking-widest">Life Gym Coach Guide</h2>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Interactive Setup &amp; Onboarding Tour</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowCoachGuide(false); setGuideStep(0); }}
+                  className="p-2.5 hover:bg-gray-800 rounded-xl transition-colors cursor-pointer text-gray-400 hover:text-white active:scale-95"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Slider Content Panel */}
+              <div className="flex-1 flex flex-col justify-center items-center mt-6 overflow-hidden relative w-full">
+                <div className="w-full max-w-4xl flex flex-col md:flex-row gap-8 items-center px-4 md:px-12 relative h-full">
+                  
+                  {/* Left Side: Step Card Text */}
+                  <div className="w-full md:w-1/2 space-y-4 text-left">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full w-max block">
+                      {stepsData[guideStep].badge}
+                    </span>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight leading-snug">
+                      {stepsData[guideStep].title}
+                    </h3>
+                    <p className="text-xs text-gray-450 leading-relaxed font-bold">
+                      {stepsData[guideStep].desc}
+                    </p>
+                  </div>
+
+                  {/* Right Side: Zoomed-out Browser View Mockup */}
+                  <div className="w-full md:w-1/2 flex items-center justify-center">
+                    <div className="w-full max-w-sm transition-all duration-300 hover:scale-[1.02] relative">
+                      {/* Browser Shell Mockup */}
+                      <div className="w-full bg-[#07080e] border border-gray-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[280px] select-none text-left">
+                        {/* Browser Header */}
+                        <div className="bg-[#0b0c16] border-b border-gray-850 px-4 py-2.5 flex items-center justify-between shrink-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-red-500/80 inline-block" />
+                            <span className="w-2 h-2 rounded-full bg-yellow-500/80 inline-block" />
+                            <span className="w-2 h-2 rounded-full bg-green-500/80 inline-block" />
+                          </div>
+                          <div className="bg-[#05060b] border border-gray-850/60 px-3 py-0.5 rounded-lg text-[7px] text-gray-500 font-mono w-44 text-center truncate">
+                            https://stride.fit/coach-portal
+                          </div>
+                          <div className="w-8" />
+                        </div>
+                        {/* Browser Body */}
+                        <div className="flex-1 p-4 bg-[#05060b] overflow-y-auto overflow-x-hidden relative text-gray-200 text-[9px] no-scrollbar">
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={guideStep}
+                              initial={{ opacity: 0, x: 10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: -10 }}
+                              transition={{ duration: 0.2 }}
+                              className="w-full h-full"
+                            >
+                              {stepsData[guideStep].content}
+                            </motion.div>
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
-              <button
-                onClick={() => setShowCoachGuide(false)}
-                className="p-2.5 hover:bg-gray-800 rounded-xl transition-colors cursor-pointer text-gray-400 hover:text-white active:scale-95"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* Scrolling Content Panel */}
-            <div className="flex-1 overflow-y-auto mt-6 pr-2 space-y-12 select-text no-scrollbar">
-              <div className="max-w-4xl mx-auto space-y-12 pb-16">
+              {/* Navigation controls at the bottom */}
+              <div className="border-t border-gray-850 pt-5 mt-6 flex justify-between items-center shrink-0 w-full max-w-4xl">
+                <div className="flex gap-1.5">
+                  {stepsData.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setGuideStep(idx)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        guideStep === idx ? 'bg-blue-500 w-4' : 'bg-gray-800 hover:bg-gray-700'
+                      }`}
+                    />
+                  ))}
+                </div>
                 
-                {/* Introduction */}
-                <div className="text-center space-y-2 py-4">
-                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
-                    Setup &amp; Onboarding Tour
-                  </span>
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tight">
-                    Welcome to the Cockpit
-                  </h3>
-                  <p className="text-xs text-gray-550 font-bold max-w-lg mx-auto leading-relaxed">
-                    Explore the full step-by-step operational setup of the premium Coach Portal. Read how to manage athletes, configure workout splits, parse InBody scans, and sync live Telegram feeds.
-                  </p>
-                </div>
+                <div className="flex gap-2.5">
+                  {guideStep > 0 && (
+                    <button
+                      onClick={() => setGuideStep(prev => prev - 1)}
+                      className="bg-gray-900 border border-gray-800 hover:border-gray-750 text-gray-300 hover:text-white px-5 py-3 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-95 cursor-pointer font-bold"
+                    >
+                      Previous Step
+                    </button>
+                  )}
 
-                {/* Step 1: Dashboard Overview */}
-                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
-                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
-                    Step 01
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-base font-black text-white uppercase tracking-wider">
-                      Dashboard Cockpit &amp; Permissions
-                    </h4>
-                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                      The primary dashboard displays real-time statistics, active workouts, and pending client updates. It acts as the central control room for coaches and system administrators. Here, you can review total active athletes, monthly completions, and pending subscriptions.
-                    </p>
-                  </div>
-                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
-                    <img 
-                      src="/coach_operational_overview_1780619676349.png" 
-                      alt="Coach Dashboard Overview" 
-                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                </div>
-
-                {/* Step 2: Athlete Directory */}
-                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
-                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
-                    Step 02
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-base font-black text-white uppercase tracking-wider">
-                      Athlete Directory &amp; Client Codes
-                    </h4>
-                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                      Add new athletes, edit their profiles, and track billing details. Every athlete gets a unique searchable code (e.g. #102) and has their Egyptian phone number formatted automatically. Suspended accounts are visually flagged with immediate renewal redirect triggers.
-                    </p>
-                  </div>
-                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
-                    <img 
-                      src="/coach_athlete_directory_1780619689973.png" 
-                      alt="Athlete Directory" 
-                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                </div>
-
-                {/* Step 3: Workout & Diet Control */}
-                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
-                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
-                    Step 03
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-base font-black text-white uppercase tracking-wider">
-                      Workout Customizer &amp; Diet Architect
-                    </h4>
-                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                      Construct training plans and diet models tailored for each athlete. Assign target sets, reps, and rest periods, and build customized macronutrient goals based on gym days versus rest days. Syncs directly to client applications instantly.
-                    </p>
-                  </div>
-                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
-                    <img 
-                      src="/coach_athlete_control_1780619703553.png" 
-                      alt="Workout &amp; Diet Control" 
-                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                </div>
-
-                {/* Step 4: Portal Settings */}
-                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
-                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
-                    Step 04
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-base font-black text-white uppercase tracking-wider">
-                      System Settings &amp; Bot Logs
-                    </h4>
-                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                      Connect your Telegram bot for real-time compliance logging, adjust default membership prices, and edit coach profile numbers. Any modification is secured by robust database policies and updates instantly.
-                    </p>
-                  </div>
-                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
-                    <img 
-                      src="/coach_portal_settings_mockup_1780618132731.png" 
-                      alt="Portal Settings" 
-                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-                </div>
-
-                {/* Divider & Start Trial CTA */}
-                <div className="border-t border-gray-850/80 pt-12 text-center space-y-5">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                    Ready to Start?
-                  </h3>
-                  <p className="text-xs text-gray-400 font-bold max-w-sm mx-auto leading-relaxed">
-                    Activate your 14-day free trial now to unlock the premium coach dashboard and manage your client roster.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                  {guideStep < stepsData.length - 1 ? (
+                    <button
+                      onClick={() => setGuideStep(prev => prev + 1)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1 font-bold"
+                    >
+                      <span>Next Step</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  ) : (
                     <button
                       onClick={() => setShowTrialModal(true)}
-                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-emerald-600/10 hover:shadow-emerald-500/20 active:scale-98 cursor-pointer flex items-center justify-center gap-2 font-bold"
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 font-bold"
                     >
                       <span>START FREE TRIAL</span>
                       <Check size={14} strokeWidth={2.5} />
                     </button>
-                    <button
-                      onClick={() => {
-                        setShowCoachGuide(false);
-                        setTimeout(() => {
-                          const inputEl = document.querySelector('input[type="text"]');
-                          if (inputEl) (inputEl as HTMLInputElement).focus();
-                        }, 50);
-                      }}
-                      className="w-full sm:w-auto bg-gray-900 border border-gray-800 hover:border-gray-600 text-gray-300 hover:text-white px-8 py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-98 cursor-pointer font-bold"
-                    >
-                      Login to Existing Account
-                    </button>
-                  </div>
+                  )}
                 </div>
-
               </div>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Trial Activation Success Modal */}
@@ -1822,6 +1978,7 @@ export default function OnboardingFlow({
                   onClick={() => {
                     setShowTrialModal(false);
                     setShowCoachGuide(false);
+                    setGuideStep(0);
                   }}
                   className="w-full bg-gray-900 border border-gray-850 hover:border-gray-750 text-gray-400 hover:text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-colors cursor-pointer"
                 >
