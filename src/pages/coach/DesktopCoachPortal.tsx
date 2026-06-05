@@ -3977,7 +3977,7 @@ export default function DesktopCoachPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-x-hidden">
+    <div className="h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar">
       {/* Warning banner for trials / low remaining duration */}
       {showCoachWarningBanner && (
         <div className={`w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 ${isTrialActive ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/90 text-white' : 'bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white'}`}>
