@@ -136,14 +136,18 @@ export default function ClientsListPage() {
 
       {/* Custom Confirmation Modal */}
       {showConfirmDeleteModal && targetClientToDelete && (() => {
-        const phoneNumber = targetClientToDelete.user?.targets?.phone_number;
-        const clientCode = targetClientToDelete.user?.targets?.client_code;
-        const expectedVerifyVal = phoneNumber || String(clientCode || '123');
-        const isMatched = deleteConfirmText === expectedVerifyVal;
+        const displayName = targetClientToDelete.user?.display_name || 'Unnamed Client';
+        const isMatched = deleteConfirmText.trim() === displayName;
 
         return (
           <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (isMatched) executeDeleteClient();
+              }}
+              className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl"
+            >
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-500">
                   <ShieldAlert size={24} />
@@ -156,29 +160,36 @@ export default function ClientsListPage() {
 
               <div className="space-y-3">
                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider text-center">
-                  Type verification value <span className="text-red-400 font-mono select-none">"{expectedVerifyVal}"</span> to confirm
+                  Type <span className="text-red-400 font-mono select-none">"{displayName}"</span> to confirm
                 </p>
                 <input
                   type="text"
                   value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type verification code..."
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDeleteConfirmText(val);
+                    if (val.trim() === displayName && !deleting) {
+                      executeDeleteClient();
+                    }
+                  }}
+                  placeholder="Type client name..."
                   className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-3 px-4 text-center text-xs outline-none focus:border-red-500 transition-colors text-white"
                 />
               </div>
 
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => {
                     setShowConfirmDeleteModal(false);
                     setTargetClientToDelete(null);
                   }}
-                  className="flex-1 bg-gray-900 border border-gray-850 hover:bg-gray-800 active:scale-95 text-gray-300 py-3 rounded-2xl font-bold text-xs uppercase transition-all cursor-pointer text-center"
+                  className="flex-1 bg-gray-900 border border-gray-850 hover:bg-gray-850 active:scale-95 text-gray-300 py-3 rounded-2xl font-bold text-xs uppercase transition-all cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={executeDeleteClient}
+                  type="submit"
                   disabled={!isMatched}
                   className={`flex-1 py-3 rounded-2xl font-bold text-xs uppercase transition-all text-center cursor-pointer active:scale-95 ${
                     isMatched
@@ -189,7 +200,7 @@ export default function ClientsListPage() {
                   Delete
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         );
       })()}

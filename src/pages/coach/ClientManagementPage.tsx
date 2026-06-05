@@ -819,7 +819,13 @@ export default function ClientManagementPage() {
 
           return (
             <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (isMatched) executeDeleteClient();
+                }}
+                className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl"
+              >
                 <div className="text-center space-y-2">
                   <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-500">
                     <Trash2 size={24} />
@@ -837,7 +843,13 @@ export default function ClientManagementPage() {
                   <input
                     type="text"
                     value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setDeleteConfirmText(val);
+                      if (val.trim() === displayName && !deleting) {
+                        executeDeleteClient();
+                      }
+                    }}
                     placeholder="Type client name..."
                     className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-3 px-4 text-center text-xs outline-none focus:border-red-500 transition-colors text-white"
                   />
@@ -845,6 +857,7 @@ export default function ClientManagementPage() {
 
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => {
                       setShowConfirmDeleteModal(false);
                       setDeleteConfirmText('');
@@ -854,7 +867,7 @@ export default function ClientManagementPage() {
                     Cancel
                   </button>
                   <button
-                    onClick={executeDeleteClient}
+                    type="submit"
                     disabled={!isMatched}
                     className={`flex-1 py-3 rounded-2xl font-bold text-xs uppercase transition-all text-center cursor-pointer active:scale-95 ${
                       isMatched
@@ -865,7 +878,7 @@ export default function ClientManagementPage() {
                     Delete
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           );
         })()
