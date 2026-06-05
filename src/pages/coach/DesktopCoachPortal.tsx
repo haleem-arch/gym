@@ -8512,7 +8512,14 @@ export default function DesktopCoachPortal() {
                     {selectedSubClient.full_name?.substring(0, 2) || 'AT'}
                   </div>
                   <div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-wider">{selectedSubClient.full_name}</h3>
+                    <h3 className="font-black text-white text-sm uppercase tracking-wider flex items-center gap-1.5">
+                      {selectedSubClient.full_name}
+                      {targets.client_code && (
+                        <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                          #{targets.client_code}
+                        </span>
+                      )}
+                    </h3>
                     <p className="text-[10px] text-gray-500 lowercase mt-0.5">{selectedSubClient.email}</p>
                   </div>
                 </div>
