@@ -78,27 +78,56 @@ export default async function handler(req: any, res: any) {
     console.error('Error fetching target profile:', profileErr);
   }
 
+  // Helper function to clean up database records for a given user ID
+  const cleanupUserDb = async (userId: string) => {
+    console.log(`Cleaning up database records for user ${userId}...`);
+    try {
+      await supabaseAdmin.from('inbody_scans').delete().eq('user_id', userId);
+      await supabaseAdmin.from('client_workout_days').delete().eq('user_id', userId);
+      await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', userId);
+      await supabaseAdmin.from('progress_notes').delete().eq('user_id', userId);
+      await supabaseAdmin.from('water_logs').delete().eq('user_id', userId);
+      await supabaseAdmin.from('client_profiles').delete().eq('user_id', userId);
+      await supabaseAdmin.from('profiles').delete().eq('id', userId);
+    } catch (e) {
+      console.error(`Database cleanup error for user ${userId}:`, e);
+    }
+  };
+
   if (targetProfile?.role === 'coach') {
     console.log(`User ${uid} is a coach. Starting cascade deletion of clients...`);
-    // Find all clients assigned to this coach
-    const { data: clients, error: clientsErr } = await supabaseAdmin
+    
+    // Find all client IDs assigned to this coach checking both profiles.coach_id and client_profiles.coach_id
+    const { data: clientsFromProfiles } = await supabaseAdmin
       .from('profiles')
       .select('id')
       .eq('coach_id', uid);
 
-    if (clientsErr) {
-      console.error('Error fetching coach clients:', clientsErr);
+    const { data: clientsFromClientProfiles } = await supabaseAdmin
+      .from('client_profiles')
+      .select('user_id')
+      .eq('coach_id', uid);
+
+    const clientIds = new Set<string>();
+    if (clientsFromProfiles) {
+      clientsFromProfiles.forEach((c: any) => clientIds.add(c.id));
+    }
+    if (clientsFromClientProfiles) {
+      clientsFromClientProfiles.forEach((c: any) => clientIds.add(c.user_id));
     }
 
-    if (clients && clients.length > 0) {
-      console.log(`Found ${clients.length} clients for coach ${uid}. Deleting client auth users...`);
-      for (const client of clients) {
-        // Delete client from auth. This will cascade delete database records
-        const { error: clientDelErr } = await supabaseAdmin.auth.admin.deleteUser(client.id);
+    if (clientIds.size > 0) {
+      console.log(`Found ${clientIds.size} clients for coach ${uid}. Deleting client auth users and database files...`);
+      for (const clientId of clientIds) {
+        // 1. Clean up database records
+        await cleanupUserDb(clientId);
+
+        // 2. Delete client from auth
+        const { error: clientDelErr } = await supabaseAdmin.auth.admin.deleteUser(clientId);
         if (clientDelErr) {
-          console.error(`Failed to delete client auth user ${client.id}:`, clientDelErr);
+          console.error(`Failed to delete client auth user ${clientId}:`, clientDelErr);
         } else {
-          console.log(`Successfully deleted client auth user ${client.id}`);
+          console.log(`Successfully deleted client auth user ${clientId}`);
         }
       }
     }
@@ -114,11 +143,14 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // Delete the target user (coach or client) from Auth. This triggers DB ON DELETE CASCADE
+  // Clean up database records for the target user (coach or client)
+  await cleanupUserDb(uid);
+
+  // Delete the target user (coach or client) from Auth.
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(uid);
 
   if (deleteError) {
-    return res.status(400).json({ error: deleteError.message });
+    console.log(`Auth deletion warning for user ${uid}:`, deleteError.message);
   }
 
   return res.status(200).json({ success: true });

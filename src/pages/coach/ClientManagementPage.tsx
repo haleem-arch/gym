@@ -815,7 +815,10 @@ export default function ClientManagementPage() {
       {showConfirmDeleteModal && (
         (() => {
           const displayName = client.user?.display_name || 'Unnamed Client';
-          const isMatched = deleteConfirmText === displayName;
+          const username = client.user?.username || '';
+          const checkText = deleteConfirmText.trim().toLowerCase();
+          const isMatched = checkText === displayName.toLowerCase() ||
+                            (username && checkText === username.toLowerCase());
 
           return (
             <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -846,7 +849,10 @@ export default function ClientManagementPage() {
                     onChange={(e) => {
                       const val = e.target.value;
                       setDeleteConfirmText(val);
-                      if (val.trim() === displayName && !deleting) {
+                      const currentCheck = val.trim().toLowerCase();
+                      const currentMatched = currentCheck === displayName.toLowerCase() ||
+                                             (username && currentCheck === username.toLowerCase());
+                      if (currentMatched && !deleting) {
                         executeDeleteClient();
                       }
                     }}

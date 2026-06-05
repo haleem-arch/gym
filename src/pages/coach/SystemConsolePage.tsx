@@ -892,8 +892,13 @@ export default function SystemConsolePage() {
 
       {/* Custom Confirmation Modal */}
       {showConfirmDeleteModal && targetUserToDelete && (() => {
-        const displayName = targetUserToDelete.display_name || targetUserToDelete.email.split('@')[0];
-        const isMatched = deleteConfirmText === displayName;
+        const displayName = targetUserToDelete.display_name || 'Unnamed User';
+        const username = targetUserToDelete.username || '';
+        const emailPrefix = targetUserToDelete.email?.split('@')[0] || '';
+        const checkText = deleteConfirmText.trim().toLowerCase();
+        const isMatched = checkText === displayName.toLowerCase() ||
+                          (username && checkText === username.toLowerCase()) ||
+                          (emailPrefix && checkText === emailPrefix.toLowerCase());
 
         return (
           <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -924,7 +929,11 @@ export default function SystemConsolePage() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setDeleteConfirmText(val);
-                    if (val.trim() === displayName && !isDeletingUser) {
+                    const currentCheck = val.trim().toLowerCase();
+                    const currentMatched = currentCheck === displayName.toLowerCase() ||
+                                           (username && currentCheck === username.toLowerCase()) ||
+                                           (emailPrefix && currentCheck === emailPrefix.toLowerCase());
+                    if (currentMatched && !isDeletingUser) {
                       executeDeleteUser(targetUserToDelete.id);
                     }
                   }}

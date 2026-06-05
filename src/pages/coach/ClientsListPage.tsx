@@ -137,7 +137,10 @@ export default function ClientsListPage() {
       {/* Custom Confirmation Modal */}
       {showConfirmDeleteModal && targetClientToDelete && (() => {
         const displayName = targetClientToDelete.user?.display_name || 'Unnamed Client';
-        const isMatched = deleteConfirmText.trim() === displayName;
+        const username = targetClientToDelete.user?.username || '';
+        const checkText = deleteConfirmText.trim().toLowerCase();
+        const isMatched = checkText === displayName.toLowerCase() ||
+                          (username && checkText === username.toLowerCase());
 
         return (
           <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -168,7 +171,10 @@ export default function ClientsListPage() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setDeleteConfirmText(val);
-                    if (val.trim() === displayName && !deleting) {
+                    const currentCheck = val.trim().toLowerCase();
+                    const currentMatched = currentCheck === displayName.toLowerCase() ||
+                                           (username && currentCheck === username.toLowerCase());
+                    if (currentMatched && !deleting) {
                       executeDeleteClient();
                     }
                   }}
