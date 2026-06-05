@@ -738,15 +738,42 @@ export default function OnboardingFlow({
   }).slice(0, 5); // display top 5 matches
 
   return (
-    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#060610] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">
+    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#05060b] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">
       
+      {/* Dynamic tech-grid background overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
       {/* Dynamic brand blue ribbon glow background */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
+      <motion.div 
+        animate={{
+          scale: [1, 1.15, 1],
+          x: [0, 20, 0],
+          y: [0, -20, 0]
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/[0.08] rounded-full blur-[110px] pointer-events-none" 
+      />
+      <motion.div 
+        animate={{
+          scale: [1, 1.2, 1],
+          x: [0, -20, 0],
+          y: [0, 20, 0]
+        }}
+        transition={{
+          duration: 15,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/[0.06] rounded-full blur-[110px] pointer-events-none" 
+      />
 
       {/* Header Bar */}
       <div 
-        className="px-5 pb-5 flex items-center justify-between border-b border-gray-800 bg-[#060610]/80 backdrop-blur-md z-30 sticky top-0"
+        className="px-5 pb-5 flex items-center justify-between border-b border-gray-850 bg-[#05060b]/80 backdrop-blur-md z-30 sticky top-0"
         style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))' }}
       >
         <div className="flex items-center gap-2">
@@ -829,16 +856,16 @@ export default function OnboardingFlow({
               <div ref={cardRef} className="space-y-5 relative">
                 <div className="text-center">
                   <LoginLogo className="mx-auto mb-3" errorMsg={errorMsg} />
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                  <h2 className="text-3xl font-extrabold text-white tracking-tight">
                     Welcome Back
                   </h2>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-1 font-semibold">
                     Sign in to continue your training journey
                   </p>
                 </div>
 
                 {currentUser ? (
-                  <div className="bg-[#121620]/80 border border-gray-800 rounded-2xl p-5 text-center space-y-4 shadow-xl">
+                  <div className="bg-[#0d111a]/85 backdrop-blur-2xl border border-gray-850 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
                     <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
                       <Check size={24} />
                     </div>
@@ -849,7 +876,7 @@ export default function OnboardingFlow({
                     <div className="flex gap-2 pt-2">
                       <button 
                         onClick={handleLogOut} 
-                        className="flex-1 py-2.5 rounded-xl border border-gray-800 text-gray-400 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                        className="flex-1 py-2.5 rounded-xl border border-gray-850 text-gray-400 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
                       >
                         <LogOut size={13} /> Sign Out
                       </button>
@@ -863,26 +890,26 @@ export default function OnboardingFlow({
                   </div>
                 ) : (
                   /* ── SIGN IN FORM ── */
-                  <form onSubmit={handleSignInAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Username</label>
+                  <form onSubmit={handleSignInAuth} className="space-y-4 bg-[#0d111a]/85 backdrop-blur-2xl border border-gray-850 p-6 rounded-3xl shadow-2xl">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-1.5">Username</label>
                       <div className="relative">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input 
                           type="text" required value={email} onChange={e => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }} 
                           placeholder="e.g. ahmed" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#05050b]/80 border border-gray-850 rounded-2xl py-3.5 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.08)] transition-all placeholder-gray-700 font-medium" 
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Password</label>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-1.5">Password</label>
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input 
                           type={showPassword ? "text" : "password"} required value={password} onChange={e => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} 
                           placeholder="••••••••" 
-                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
+                          className="w-full bg-[#05050b]/80 border border-gray-850 rounded-2xl py-3.5 pl-10 pr-10 text-white text-xs outline-none focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.08)] transition-all placeholder-gray-700 font-medium" 
                         />
                         <button 
                           type="button" onClick={() => setShowPassword(!showPassword)}
@@ -893,7 +920,7 @@ export default function OnboardingFlow({
                       </div>
                     </div>
                     {/* Legal Checkbox */}
-                    <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1.5 pb-1 select-none relative">
+                    <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1 pb-1 select-none relative">
                       <input 
                         type="checkbox" 
                         id="legal-accept-onboarding"
@@ -904,7 +931,7 @@ export default function OnboardingFlow({
                             setShowArrow(false);
                           }
                         }} 
-                        className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
+                        className="mt-0.5 h-4 w-4 rounded border-gray-850 bg-[#05050b] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#0d111a] focus:ring-2 cursor-pointer transition-colors"
                       />
                       <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
                         I agree to the{' '}
@@ -921,7 +948,7 @@ export default function OnboardingFlow({
                     <button 
                       ref={loginButtonRef}
                       type="submit" disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-1"
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 active:scale-98 cursor-pointer mt-1"
                     >
                       {loading ? 'Signing In...' : 'Sign In'}
                     </button>
@@ -935,7 +962,7 @@ export default function OnboardingFlow({
                         }
                         window.location.reload();
                       }}
-                      className="w-full mt-1 py-2 text-[10px] text-gray-600 hover:text-gray-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full mt-2 py-2 text-[10px] text-gray-650 hover:text-gray-450 transition-colors flex items-center justify-center gap-1 cursor-pointer font-bold uppercase tracking-wider"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                       Clear cache &amp; hard refresh
