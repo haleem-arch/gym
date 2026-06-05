@@ -4502,14 +4502,21 @@ export default function DesktopCoachPortal() {
                         <button
                           key={tab.id}
                           onClick={() => handleClientSubTabClick(tab.id)}
-                          className={`pb-2 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                          className={`relative pb-2 text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
                             clientActiveTab === tab.id
-                              ? 'border-blue-500 text-blue-400 font-extrabold'
-                              : 'border-transparent text-gray-500 hover:text-gray-300'
+                              ? 'text-blue-400 font-extrabold'
+                              : 'text-gray-500 hover:text-gray-300'
                           }`}
                         >
                           {tab.icon}
                           {tab.label}
+                          {clientActiveTab === tab.id && (
+                            <motion.div 
+                              layoutId="activeSubTabUnderline"
+                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-500"
+                              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                            />
+                          )}
                         </button>
                       ))}
                     </div>
