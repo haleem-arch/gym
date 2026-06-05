@@ -134,7 +134,7 @@ export default function OnboardingFlow({
     return window.location.pathname.startsWith('/coach-portal') ? 'coach' : 'athlete';
   });
   const [showCoachGuide, setShowCoachGuide] = useState(false);
-  const [activeGuideTab, setActiveGuideTab] = useState<'overview' | 'capabilities' | 'tutorial' | 'faq'>('overview');
+  const [showTrialModal, setShowTrialModal] = useState(false);
 
   // Flying Arrow States & Refs
   const [showArrow, setShowArrow] = useState(false);
@@ -1129,16 +1129,15 @@ export default function OnboardingFlow({
                     </form>
                   )}
 
-                  {/* New Here? button for coaches (Only on desktop) */}
+                  {/* Start Now button for coaches (Only on desktop) */}
                   {!currentUser && (
-                    <div className="hidden md:block pt-4 border-t border-gray-850/50 text-center space-y-2 mt-4 z-10 relative">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block">New Here?</span>
+                    <div className="hidden md:block pt-4 border-t border-gray-850/50 text-center mt-4 z-10 relative">
                       <button
                         type="button"
                         onClick={() => setShowCoachGuide(true)}
-                        className="w-full bg-blue-600/5 hover:bg-blue-600/10 text-blue-400 hover:text-blue-300 border border-blue-900/30 py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-1.5"
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 active:scale-98 cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <span>Explore Coach Guide &amp; FAQ</span>
+                        <span>START NOW</span>
                         <ArrowRight size={13} />
                       </button>
                     </div>
@@ -1615,7 +1614,7 @@ export default function OnboardingFlow({
         )}
       </AnimatePresence>
 
-      {/* Interactive Coach Guide & FAQ Overlay */}
+      {/* Interactive Coach Guide Overlay - Scrolling Step-by-Step with Screenshots */}
       <AnimatePresence>
         {showCoachGuide && (
           <motion.div
@@ -1625,14 +1624,14 @@ export default function OnboardingFlow({
             className="fixed inset-0 bg-[#05060b]/98 backdrop-blur-xl z-50 overflow-hidden flex flex-col p-6 md:p-12 font-sans text-gray-250"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-850 pb-5">
+            <div className="flex items-center justify-between border-b border-gray-850 pb-5 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                   <Dumbbell size={18} />
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-white uppercase tracking-widest">Life Gym Coach Guide</h2>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Interactive Operations Manual &amp; FAQ</p>
+                  <p className="text-[10px] text-gray-550 font-bold uppercase tracking-wider mt-0.5">Interactive Setup &amp; Onboarding Tour</p>
                 </div>
               </div>
               <button
@@ -1643,228 +1642,194 @@ export default function OnboardingFlow({
               </button>
             </div>
 
-            {/* Split Content */}
-            <div className="flex-1 flex flex-col md:flex-row gap-8 min-h-0 mt-6 overflow-hidden">
-              {/* Sidebar Tabs */}
-              <div className="flex md:flex-col gap-1.5 shrink-0 overflow-x-auto md:overflow-x-visible pb-3 md:pb-0 border-b md:border-b-0 md:border-r border-gray-850/60 pr-0 md:pr-6 md:w-64">
-                {([
-                  { id: 'overview', label: 'Dashboard Overview', desc: 'Cockpit & permissions' },
-                  { id: 'capabilities', label: 'Key Capabilities', desc: 'Workouts, diet, and InBody' },
-                  { id: 'tutorial', label: 'Setup Guide', desc: '4-step onboarding' },
-                  { id: 'faq', label: 'FAQ & Troubleshoot', desc: 'Egyptian SMS, cascade, RLS' },
-                ] as const).map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveGuideTab(tab.id)}
-                    className={`w-full text-left p-3.5 rounded-xl transition-all flex flex-col gap-1 cursor-pointer shrink-0 md:shrink border ${
-                      activeGuideTab === tab.id
-                        ? 'bg-blue-600/10 border-blue-500/30 text-white'
-                        : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-900/40'
-                    }`}
-                  >
-                    <span className="text-xs font-black uppercase tracking-wider">{tab.label}</span>
-                    <span className="text-[9px] font-bold text-gray-500 block">{tab.desc}</span>
-                  </button>
-                ))}
+            {/* Scrolling Content Panel */}
+            <div className="flex-1 overflow-y-auto mt-6 pr-2 space-y-12 select-text no-scrollbar">
+              <div className="max-w-4xl mx-auto space-y-12 pb-16">
+                
+                {/* Introduction */}
+                <div className="text-center space-y-2 py-4">
+                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
+                    Setup &amp; Onboarding Tour
+                  </span>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                    Welcome to the Cockpit
+                  </h3>
+                  <p className="text-xs text-gray-550 font-bold max-w-lg mx-auto leading-relaxed">
+                    Explore the full step-by-step operational setup of the premium Coach Portal. Read how to manage athletes, configure workout splits, parse InBody scans, and sync live Telegram feeds.
+                  </p>
+                </div>
+
+                {/* Step 1: Dashboard Overview */}
+                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
+                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
+                    Step 01
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-base font-black text-white uppercase tracking-wider">
+                      Dashboard Cockpit &amp; Permissions
+                    </h4>
+                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
+                      The primary dashboard displays real-time statistics, active workouts, and pending client updates. It acts as the central control room for coaches and system administrators. Here, you can review total active athletes, monthly completions, and pending subscriptions.
+                    </p>
+                  </div>
+                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
+                    <img 
+                      src="/coach_operational_overview_1780619676349.png" 
+                      alt="Coach Dashboard Overview" 
+                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                </div>
+
+                {/* Step 2: Athlete Directory */}
+                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
+                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
+                    Step 02
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-base font-black text-white uppercase tracking-wider">
+                      Athlete Directory &amp; Client Codes
+                    </h4>
+                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
+                      Add new athletes, edit their profiles, and track billing details. Every athlete gets a unique searchable code (e.g. #102) and has their Egyptian phone number formatted automatically. Suspended accounts are visually flagged with immediate renewal redirect triggers.
+                    </p>
+                  </div>
+                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
+                    <img 
+                      src="/coach_athlete_directory_1780619689973.png" 
+                      alt="Athlete Directory" 
+                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                </div>
+
+                {/* Step 3: Workout & Diet Control */}
+                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
+                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
+                    Step 03
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-base font-black text-white uppercase tracking-wider">
+                      Workout Customizer &amp; Diet Architect
+                    </h4>
+                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
+                      Construct training plans and diet models tailored for each athlete. Assign target sets, reps, and rest periods, and build customized macronutrient goals based on gym days versus rest days. Syncs directly to client applications instantly.
+                    </p>
+                  </div>
+                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
+                    <img 
+                      src="/coach_athlete_control_1780619703553.png" 
+                      alt="Workout &amp; Diet Control" 
+                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                </div>
+
+                {/* Step 4: Portal Settings */}
+                <div className="bg-[#0b0c16]/55 border border-gray-850/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative group hover:border-blue-500/25 transition-all">
+                  <div className="absolute -top-3 left-6 bg-blue-600/90 text-white text-[9px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg shadow-blue-600/20">
+                    Step 04
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-base font-black text-white uppercase tracking-wider">
+                      System Settings &amp; Bot Logs
+                    </h4>
+                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
+                      Connect your Telegram bot for real-time compliance logging, adjust default membership prices, and edit coach profile numbers. Any modification is secured by robust database policies and updates instantly.
+                    </p>
+                  </div>
+                  <div className="border border-gray-850/60 rounded-2xl overflow-hidden shadow-inner bg-[#05060b] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all">
+                    <img 
+                      src="/coach_portal_settings_mockup_1780618132731.png" 
+                      alt="Portal Settings" 
+                      className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                </div>
+
+                {/* Divider & Start Trial CTA */}
+                <div className="border-t border-gray-850/80 pt-12 text-center space-y-5">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    Ready to Start?
+                  </h3>
+                  <p className="text-xs text-gray-400 font-bold max-w-sm mx-auto leading-relaxed">
+                    Activate your 14-day free trial now to unlock the premium coach dashboard and manage your client roster.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                    <button
+                      onClick={() => setShowTrialModal(true)}
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-emerald-600/10 hover:shadow-emerald-500/20 active:scale-98 cursor-pointer flex items-center justify-center gap-2 font-bold"
+                    >
+                      <span>START FREE TRIAL</span>
+                      <Check size={14} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCoachGuide(false);
+                        setTimeout(() => {
+                          const inputEl = document.querySelector('input[type="text"]');
+                          if (inputEl) (inputEl as HTMLInputElement).focus();
+                        }, 50);
+                      }}
+                      className="w-full sm:w-auto bg-gray-900 border border-gray-800 hover:border-gray-600 text-gray-300 hover:text-white px-8 py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-98 cursor-pointer font-bold"
+                    >
+                      Login to Existing Account
+                    </button>
+                  </div>
+                </div>
+
               </div>
-
-              {/* Scrolling Content Panel */}
-              <div className="flex-1 overflow-y-auto pr-2 space-y-6 scrollbar-thin select-text">
-                {activeGuideTab === 'overview' && (
-                  <div className="space-y-5">
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Coach Dashboard Overview</h3>
-                      <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                        Welcome to the Life Gym Coach Portal documentation. This command center empowers coaches and system administrators to manage their entire client base, track diet and workout compliance, parse biometric data, and sync activity feeds in real-time.
-                      </p>
-                    </div>
-                    <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-3">
-                      <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider">User Roles &amp; Authorization</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-white bg-blue-600/20 px-2 py-0.5 rounded">Coaches</span>
-                          <p className="text-[10px] text-gray-500 leading-relaxed font-bold mt-1">
-                            Authorized to manage assigned athletes, configure workouts and sets, set custom dietary targets, review compliance logs, and import InBody biometrics.
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-white bg-purple-600/20 px-2 py-0.5 rounded">System Owner (Owner ID)</span>
-                          <p className="text-[10px] text-gray-500 leading-relaxed font-bold mt-1">
-                            Holds master privileges. Accesses the System Console to review database status, register new coaches, and configure the Telegram Bot parameters.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeGuideTab === 'capabilities' && (
-                  <div className="space-y-5">
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Key Portal Capabilities</h3>
-                      <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                        The dashboard integrates several core modules to eliminate administrative friction and provide a high-fidelity coaching experience.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Dumbbell size={14} className="text-blue-400" />
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">AI Workout Builder</h4>
-                        </div>
-                        <p className="text-[10px] text-gray-550 leading-relaxed font-bold">
-                          Design custom workout programs. Create splits (e.g. Push, Pull, Legs) and add specific exercises, sets, reps, and target rest timers. Clients see their daily workout directly on their mobile homepage.
-                        </p>
-                      </div>
-
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Scale size={14} className="text-blue-400" />
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">InBody Parser &amp; CSV logs</h4>
-                        </div>
-                        <p className="text-[10px] text-gray-550 leading-relaxed font-bold">
-                          Zero manual entry. Import official InBody CSV logs for instant biometric scanning. The platform parses weight, skeletal muscle mass (SMM), body fat mass (BFM), and segmental lean distribution to chart progression.
-                        </p>
-                      </div>
-
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Apple size={14} className="text-blue-400" />
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">Diet Architect</h4>
-                        </div>
-                        <p className="text-[10px] text-gray-550 leading-relaxed font-bold">
-                          Configure custom nutritional targets. Define baseline calories and macronutrient ratios (Protein, Carbs, Fats) or set custom targets based on training days vs rest days (e.g. High Carb vs Low Carb days).
-                        </p>
-                      </div>
-
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <User size={14} className="text-blue-400" />
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">Telegram Bot logs</h4>
-                        </div>
-                        <p className="text-[10px] text-gray-555 leading-relaxed font-bold">
-                          Connect Telegram bot notifications to your gym chat. Live feeds stream athlete completions, check-ins, and diet receipts in real-time to keep your community engaged.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeGuideTab === 'tutorial' && (
-                  <div className="space-y-5">
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Step-by-Step Setup Guide</h3>
-                      <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                        Follow these steps to onboard a client, configure their accounts, and link Telegram logs.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4 font-bold">
-                      <div className="flex gap-4">
-                        <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-xs shrink-0 font-black">1</div>
-                        <div>
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">Onboard a Client</h4>
-                          <p className="text-[10px] text-gray-550 leading-relaxed mt-1">
-                            Go to 'Clients' tab and click 'Add Client'. Specify their display name, Egyptian mobile number, and auth username. Mobile numbers are normalized to the Egypt WhatsApp format automatically.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-xs shrink-0 font-black">2</div>
-                        <div>
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">Assign Client Code</h4>
-                          <p className="text-[10px] text-gray-555 leading-relaxed mt-1">
-                            Every client gets an automatic unique client code (e.g. #102). Client codes appear next to client names everywhere and are searchable in the Directory.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-xs shrink-0 font-black">3</div>
-                        <div>
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">Setup Telegram Bot Integration</h4>
-                          <p className="text-[10px] text-gray-555 leading-relaxed mt-1">
-                            Create your Telegram bot and add it to your gym channel. Retrieve the unique Chat ID and save it in the System Console panel to start broadcasting activity logs.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-xs shrink-0 font-black">4</div>
-                        <div>
-                          <h4 className="text-xs font-black text-white uppercase tracking-wider">Manage Billing &amp; Expirations</h4>
-                          <p className="text-[10px] text-gray-555 leading-relaxed mt-1">
-                            Track subscription durations inside the Subscriptions Manager tab. Accounts are automatically locked upon expiration to protect your services.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeGuideTab === 'faq' && (
-                  <div className="space-y-5">
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">FAQ &amp; Troubleshoot</h3>
-                      <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                        Common operational questions regarding Egyptian phone normalization, cascade deletions, and database policies.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4 font-bold">
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">WhatsApp Renewal Requests</h4>
-                        <p className="text-[10px] text-gray-555 leading-relaxed">
-                          When a client account is suspended due to expiration, they see a 'Renew Subscription' button. Clicking it redirects them to WhatsApp with a Egypt Egyptian localized message containing their client code to initiate Egypt WhatsApp billing.
-                        </p>
-                      </div>
-
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">System Deletions &amp; Cascade Triggers</h4>
-                        <p className="text-[10px] text-gray-555 leading-relaxed">
-                          Deleting a coach or user triggers secure cascade APIs. It wipes all associated workout split tables, diet logs, biometric scans, and Auth database records immediately, keeping the system clean.
-                        </p>
-                      </div>
-
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Egyptian Mobile Number Normalization</h4>
-                        <p className="text-[10px] text-gray-555 leading-relaxed">
-                          Egyptian mobile Egypt numbers Egypt Egypt format can be entered as `01xxxxxxxxx` or `1xxxxxxxxx`. The WhatsApp Egypt Egypt Egyptian normalizer Egyptian Egypt formatting handles Egyptian normalization (`20` Egypt prefix) dynamically.
-                        </p>
-                      </div>
-
-                      <div className="bg-[#0b0c16] border border-gray-850 rounded-2xl p-4 space-y-2">
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">RLS Policies &amp; SELECT Access</h4>
-                        <p className="text-[10px] text-gray-555 leading-relaxed">
-                          Row Level Security check `auth.uid() = OWNER_ID` is enforced on the profiles database, granting owners select access to all rows and preventing unauthorized client reads.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer Start Now Action */}
-            <div className="border-t border-gray-850 pt-5 mt-6 flex justify-end">
-              <button
-                onClick={() => {
-                  setShowCoachGuide(false);
-                  // Focus the email field if it is present
-                  setTimeout(() => {
-                    const inputEl = document.querySelector('input[type="text"]');
-                    if (inputEl) (inputEl as HTMLInputElement).focus();
-                  }, 50);
-                }}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 active:scale-98 cursor-pointer flex items-center gap-2"
-              >
-                <span>Start Now</span>
-                <ArrowRight size={13} />
-              </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Trial Activation Success Modal */}
+      <AnimatePresence>
+        {showTrialModal && (
+          <div className="fixed inset-0 bg-[#020204]/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0b0c16] border border-gray-850 w-full max-w-md rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <Check size={28} strokeWidth={3} />
+              </div>
+              <div className="space-y-2">
+                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block bg-emerald-950/30 border border-emerald-900/30 px-3 py-1 rounded-full w-max mx-auto">
+                  Trial Initiated
+                </span>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                  TRIAL ACTIVATED!
+                </h3>
+                <p className="text-xs text-gray-400 leading-relaxed font-bold">
+                  Your 14-day free trial has been successfully registered. Please contact the administrator via WhatsApp to receive your official coach portal login credentials.
+                </p>
+              </div>
+              <div className="space-y-2.5 pt-2">
+                <a
+                  href="https://wa.me/201128828954?text=Hello%20Haleem,%20I%20just%20started%20my%20Life%20Gym%20Coach%20free%20trial.%20Could%20I%20get%20my%20login%20credentials?"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-emerald-500/10 active:scale-98 cursor-pointer flex items-center justify-center gap-2 font-bold"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.003 5.324 5.328 0 11.832 0c3.15.001 6.111 1.229 8.339 3.458 2.228 2.229 3.454 5.192 3.453 8.342-.003 6.507-5.327 11.832-11.83 11.832-2.002-.001-3.97-.512-5.713-1.488L0 24zm6.758-2.917c1.673.993 3.321 1.482 5.068 1.483 5.4 0 9.792-4.393 9.795-9.797.001-2.617-1.018-5.079-2.87-6.932C16.896 3.985 14.432 2.965 11.83 2.964c-5.4 0-9.791 4.394-9.794 9.798 0 1.859.5 3.674 1.448 5.252L2.5 21.5l3.39-1.096c1.6.868 3.1 1.353 4.92 1.353v.001zm11.96-7.387c-.266-.134-1.57-.775-1.814-.864-.243-.089-.42-.134-.596.134-.177.266-.685.864-.84 1.041-.154.177-.31.199-.576.066-.266-.134-1.12-.413-2.133-1.317-.788-.703-1.32-1.572-1.474-1.838-.155-.266-.017-.41.117-.543.12-.12.266-.31.399-.465.133-.155.177-.266.266-.443.089-.177.044-.332-.022-.465-.067-.134-.596-1.439-.817-1.97-.215-.518-.453-.448-.596-.456-.134-.008-.288-.01-.443-.01-.155 0-.409.058-.62.288-.21.23-.807.788-.807 1.921s.823 2.23 1.054 2.54c.23.31 1.62 2.474 3.924 3.468.548.236 1.066.388 1.431.504.606.192 1.157.165 1.593.1.486-.072 1.57-.642 1.792-1.261.222-.619.222-1.151.155-1.261-.067-.11-.243-.199-.51-.332z"/></svg>
+                  <span>WhatsApp Admin</span>
+                </a>
+                <button
+                  onClick={() => {
+                    setShowTrialModal(false);
+                    setShowCoachGuide(false);
+                  }}
+                  className="w-full bg-gray-900 border border-gray-850 hover:border-gray-750 text-gray-400 hover:text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
