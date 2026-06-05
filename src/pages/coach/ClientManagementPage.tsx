@@ -309,6 +309,15 @@ export default function ClientManagementPage() {
     toast.success('Copied client credentials to clipboard!');
   };
 
+  // Deletion Loading Screen
+  if (deleting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#060610]">
+        <DumbbellLoader label="Deleting client account. Please wait..." size={100} />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#060610]">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { DumbbellLoader } from '../../components/DumbbellLoader';
 import {
   Lock, ArrowLeft, RefreshCw, ShieldAlert, UserCheck, UserX,
   Search, Shield, Key, Plus, Activity, CheckCircle, Database
@@ -434,6 +435,15 @@ export default function SystemConsolePage() {
             ← Back
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Deletion Loading Screen
+  if (isDeletingUser) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <DumbbellLoader label="Deleting user account. Please wait..." size={100} />
       </div>
     );
   }

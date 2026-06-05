@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useCoachClients } from '../../hooks/useCoachClients';
 import { Card } from '../../components/Card';
 import { Link } from 'react-router-dom';
@@ -8,6 +9,15 @@ import { toast } from 'react-hot-toast';
 
 export default function ClientsListPage() {
   const { clients, loading, refetch } = useCoachClients();
+  const [deleting, setDeleting] = useState(false);
+
+  if (deleting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#060610]">
+        <DumbbellLoader label="Deleting client account. Please wait..." size={100} />
+      </div>
+    );
+  }
 
   const handleDeleteClient = async (client: any) => {
     const phoneNumber = client.user?.targets?.phone_number;
@@ -28,6 +38,7 @@ export default function ClientsListPage() {
       return;
     }
 
+    setDeleting(true);
     const toastId = toast.loading(`Deleting ${displayName}...`);
     try {
       const uid = client.user_id;
@@ -66,6 +77,8 @@ export default function ClientsListPage() {
     } catch (err: any) {
       console.error(err);
       toast.error('Unable to delete client. Please check your connection.', { id: toastId });
+    } finally {
+      setDeleting(false);
     }
   };
 
