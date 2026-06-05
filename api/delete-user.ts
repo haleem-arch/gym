@@ -67,9 +67,54 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Missing uid parameter' });
   }
 
+  // Get user role before deletion to check if they are a coach
+  const { data: targetProfile, error: profileErr } = await supabaseAdmin
+    .from('profiles')
+    .select('role')
+    .eq('id', uid)
+    .maybeSingle();
 
+  if (profileErr) {
+    console.error('Error fetching target profile:', profileErr);
+  }
 
+  if (targetProfile?.role === 'coach') {
+    console.log(`User ${uid} is a coach. Starting cascade deletion of clients...`);
+    // Find all clients assigned to this coach
+    const { data: clients, error: clientsErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('coach_id', uid);
 
+    if (clientsErr) {
+      console.error('Error fetching coach clients:', clientsErr);
+    }
+
+    if (clients && clients.length > 0) {
+      console.log(`Found ${clients.length} clients for coach ${uid}. Deleting client auth users...`);
+      for (const client of clients) {
+        // Delete client from auth. This will cascade delete database records
+        const { error: clientDelErr } = await supabaseAdmin.auth.admin.deleteUser(client.id);
+        if (clientDelErr) {
+          console.error(`Failed to delete client auth user ${client.id}:`, clientDelErr);
+        } else {
+          console.log(`Successfully deleted client auth user ${client.id}`);
+        }
+      }
+    }
+
+    // Delete any progress notes referencing this coach directly to satisfy NOT NULL constraints
+    const { error: notesDelErr } = await supabaseAdmin
+      .from('progress_notes')
+      .delete()
+      .eq('coach_id', uid);
+    
+    if (notesDelErr) {
+      console.error('Error deleting coach progress notes:', notesDelErr);
+    }
+  }
+
+  // Delete the target user (coach or client) from Auth. This triggers DB ON DELETE CASCADE
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(uid);
 
   if (deleteError) {
