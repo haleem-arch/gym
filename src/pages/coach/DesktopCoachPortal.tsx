@@ -4099,7 +4099,7 @@ export default function DesktopCoachPortal() {
             {activeTab === 'overview' && (
               <motion.div 
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
@@ -4118,7 +4118,7 @@ export default function DesktopCoachPortal() {
             {activeTab === 'clients' && (
               <motion.div 
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
@@ -4137,7 +4137,7 @@ export default function DesktopCoachPortal() {
             {activeTab === 'deploy' && (
               <motion.div 
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
@@ -4156,7 +4156,7 @@ export default function DesktopCoachPortal() {
             {activeTab === 'management' && (
               <motion.div 
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
@@ -4169,13 +4169,13 @@ export default function DesktopCoachPortal() {
             className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'subscriptions' 
                 ? 'border-transparent text-white font-black' 
-                : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-900/40'
+                : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-950/20'
             }`}
           >
             {activeTab === 'subscriptions' && (
               <motion.div 
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
@@ -4194,7 +4194,7 @@ export default function DesktopCoachPortal() {
             {activeTab === 'profile' && (
               <motion.div 
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
@@ -4214,7 +4214,7 @@ export default function DesktopCoachPortal() {
               {activeTab === 'system' && (
                 <motion.div 
                   layoutId="activeTabBackground"
-                  className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                  className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
@@ -4235,7 +4235,7 @@ export default function DesktopCoachPortal() {
               {activeTab === 'financials' && (
                 <motion.div 
                   layoutId="activeTabBackground"
-                  className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl -z-10 shadow-lg shadow-blue-500/10"
+                  className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
