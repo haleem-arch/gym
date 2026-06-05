@@ -6,7 +6,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { SwipeToDeleteRow } from '../../components/SwipeToDeleteRow';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { Trash2, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 export default function ClientsListPage() {
   const { clients, loading, refetch } = useCoachClients();
@@ -136,7 +136,6 @@ export default function ClientsListPage() {
 
       {/* Custom Confirmation Modal */}
       {showConfirmDeleteModal && targetClientToDelete && (() => {
-        const displayName = targetClientToDelete.user?.display_name || 'Unnamed Client';
         const phoneNumber = targetClientToDelete.user?.targets?.phone_number;
         const clientCode = targetClientToDelete.user?.targets?.client_code;
         const expectedVerifyVal = phoneNumber || String(clientCode || '123');
