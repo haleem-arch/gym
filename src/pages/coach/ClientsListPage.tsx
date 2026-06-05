@@ -6,10 +6,14 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { SwipeToDeleteRow } from '../../components/SwipeToDeleteRow';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
+import { Trash2, ShieldAlert } from 'lucide-react';
 
 export default function ClientsListPage() {
   const { clients, loading, refetch } = useCoachClients();
   const [deleting, setDeleting] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [targetClientToDelete, setTargetClientToDelete] = useState<any | null>(null);
 
   if (deleting) {
     return (
@@ -19,25 +23,18 @@ export default function ClientsListPage() {
     );
   }
 
-  const handleDeleteClient = async (client: any) => {
-    const phoneNumber = client.user?.targets?.phone_number;
-    const clientCode = client.user?.targets?.client_code;
+  const handleDeleteClientClick = (client: any) => {
+    setTargetClientToDelete(client);
+    setDeleteConfirmText('');
+    setShowConfirmDeleteModal(true);
+  };
+
+  const executeDeleteClient = async () => {
+    if (!targetClientToDelete) return;
+    const client = targetClientToDelete;
     const displayName = client.user?.display_name || 'this client';
     
-    // Legacy support fallback if phone number is not defined
-    const expectedVerifyVal = phoneNumber || String(clientCode || '123');
-
-    const input = window.prompt(
-      `To delete client "${displayName}", please enter their Phone Number (verification: ${expectedVerifyVal}):`
-    );
-
-    if (input !== expectedVerifyVal) {
-      if (input !== null) {
-        toast.error('Incorrect verification value. Deletion cancelled.');
-      }
-      return;
-    }
-
+    setShowConfirmDeleteModal(false);
     setDeleting(true);
     const toastId = toast.loading(`Deleting ${displayName}...`);
     try {
@@ -71,6 +68,7 @@ export default function ClientsListPage() {
       await supabase.from('profiles').delete().eq('id', uid);
 
       toast.success(`${displayName} deleted successfully`, { id: toastId });
+      setTargetClientToDelete(null);
       
       // Refetch clients list
       refetch();
@@ -104,9 +102,9 @@ export default function ClientsListPage() {
           <Link to="/coach/clients/new" className="text-blue-400 hover:underline">Register your first client</Link>
         </div>
       ) : (
-        <div className="grid gap-3">
+         <div className="grid gap-3">
           {clients.map(client => (
-            <SwipeToDeleteRow key={client.id} onDelete={() => handleDeleteClient(client)} backgroundRounded="rounded-xl">
+            <SwipeToDeleteRow key={client.id} onDelete={() => handleDeleteClientClick(client)} backgroundRounded="rounded-xl">
               <Link to={`/coach/clients/${client.user?.id}`}>
                 <Card className="flex justify-between items-center p-4 hover:bg-gray-700 transition-colors">
                   <div className="flex items-center gap-4">
@@ -135,6 +133,67 @@ export default function ClientsListPage() {
           ))}
         </div>
       )}
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmDeleteModal && targetClientToDelete && (() => {
+        const displayName = targetClientToDelete.user?.display_name || 'Unnamed Client';
+        const phoneNumber = targetClientToDelete.user?.targets?.phone_number;
+        const clientCode = targetClientToDelete.user?.targets?.client_code;
+        const expectedVerifyVal = phoneNumber || String(clientCode || '123');
+        const isMatched = deleteConfirmText === expectedVerifyVal;
+
+        return (
+          <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-500">
+                  <ShieldAlert size={24} />
+                </div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Delete Client Account?</h3>
+                <p className="text-[10px] text-gray-400 leading-relaxed">
+                  This action is permanent and will completely delete the client account and all of their historical records.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider text-center">
+                  Type verification value <span className="text-red-400 font-mono select-none">"{expectedVerifyVal}"</span> to confirm
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type verification code..."
+                  className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-3 px-4 text-center text-xs outline-none focus:border-red-500 transition-colors text-white"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowConfirmDeleteModal(false);
+                    setTargetClientToDelete(null);
+                  }}
+                  className="flex-1 bg-gray-900 border border-gray-850 hover:bg-gray-800 active:scale-95 text-gray-300 py-3 rounded-2xl font-bold text-xs uppercase transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeDeleteClient}
+                  disabled={!isMatched}
+                  className={`flex-1 py-3 rounded-2xl font-bold text-xs uppercase transition-all text-center cursor-pointer active:scale-95 ${
+                    isMatched
+                      ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20'
+                      : 'bg-red-950/20 text-red-400/30 border border-red-950/40 cursor-not-allowed'
+                  }`}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

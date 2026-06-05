@@ -53,6 +53,11 @@ export default function SystemConsolePage() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
+  // Confirmation Modal States
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [targetUserToDelete, setTargetUserToDelete] = useState<any | null>(null);
+
   // Live Activity Feed
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
   const [recentDiets, setRecentDiets] = useState<any[]>([]);
@@ -351,21 +356,17 @@ export default function SystemConsolePage() {
     }
   };
 
+  // Triggered by delete button in UI - opens the custom confirmation modal
+  const handleDeleteUserClick = (user: any) => {
+    setTargetUserToDelete(user);
+    setDeleteConfirmText('');
+    setShowConfirmDeleteModal(true);
+  };
+
   // Delete Selected User completely from Auth and Database
-  const handleDeleteUser = async (uid: string) => {
-    if (!selectedUser) return;
-    const displayName = selectedUser.display_name || selectedUser.email.split('@')[0];
-    const confirmName = window.prompt(
-      `WARNING: This action is permanent and will completely delete the user/coach account, including all records. \n\nType the user's name "${displayName}" to confirm deletion:`
-    );
-
-    if (confirmName !== displayName) {
-      if (confirmName !== null) {
-        toast.error('Name did not match. Deletion cancelled.');
-      }
-      return;
-    }
-
+  const executeDeleteUser = async (uid: string) => {
+    if (!targetUserToDelete) return;
+    setShowConfirmDeleteModal(false);
     setIsDeletingUser(true);
     const toastId = toast.loading(`Deleting account...`);
     try {
@@ -395,6 +396,7 @@ export default function SystemConsolePage() {
 
       toast.success('User account deleted successfully', { id: toastId });
       setSelectedUser(null);
+      setTargetUserToDelete(null);
       
       // Refresh user list
       fetchBaseData();
@@ -817,7 +819,7 @@ export default function SystemConsolePage() {
               <button
                 type="button"
                 disabled={isDeletingUser}
-                onClick={() => handleDeleteUser(selectedUser.id)}
+                onClick={() => handleDeleteUserClick(selectedUser)}
                 className="w-full bg-red-950/20 border border-red-900/30 hover:bg-red-600 hover:text-white text-red-400 font-extrabold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 {isDeletingUser ? 'Deleting Account...' : 'Delete Account Completely'}
@@ -887,6 +889,64 @@ export default function SystemConsolePage() {
           )}
         </div>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmDeleteModal && targetUserToDelete && (() => {
+        const displayName = targetUserToDelete.display_name || targetUserToDelete.email.split('@')[0];
+        const isMatched = deleteConfirmText === displayName;
+
+        return (
+          <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-500">
+                  <ShieldAlert size={24} />
+                </div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Delete User Account?</h3>
+                <p className="text-[10px] text-gray-450 leading-relaxed">
+                  This action is permanent and will completely delete the user/coach account, including all records.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider text-center">
+                  Type <span className="text-red-400 font-mono select-none">"{displayName}"</span> to confirm
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type name here..."
+                  className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-3 px-4 text-center text-xs outline-none focus:border-red-500 transition-colors text-white"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowConfirmDeleteModal(false);
+                    setTargetUserToDelete(null);
+                  }}
+                  className="flex-1 bg-gray-900 border border-gray-850 hover:bg-gray-800 active:scale-95 text-gray-300 py-3 rounded-2xl font-bold text-xs uppercase transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => executeDeleteUser(targetUserToDelete.id)}
+                  disabled={!isMatched}
+                  className={`flex-1 py-3 rounded-2xl font-bold text-xs uppercase transition-all text-center cursor-pointer active:scale-95 ${
+                    isMatched
+                      ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20'
+                      : 'bg-red-950/20 text-red-400/30 border border-red-950/40 cursor-not-allowed'
+                  }`}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -34,6 +34,8 @@ export default function ClientManagementPage() {
   const [newPassword, setNewPassword] = useState('');
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   
   const [aiQuotaInput, setAiQuotaInput] = useState<number>(20);
   const [updatingQuota, setUpdatingQuota] = useState(false);
@@ -252,18 +254,13 @@ export default function ClientManagementPage() {
     }
   };
 
-  const handleDeleteClient = async () => {
-    const confirmName = window.prompt(
-      `WARNING: This action is permanent and will completely delete the client account, including workouts, diet targets, composition history, and log records. \n\nType the client's name "${client.user?.display_name}" to confirm deletion:`
-    );
+  const handleDeleteClientClick = () => {
+    setDeleteConfirmText('');
+    setShowConfirmDeleteModal(true);
+  };
 
-    if (confirmName !== client.user?.display_name) {
-      if (confirmName !== null) {
-        toast.error('Name did not match. Deletion cancelled.');
-      }
-      return;
-    }
-
+  const executeDeleteClient = async () => {
+    setShowConfirmDeleteModal(false);
     setDeleting(true);
     try {
       const uid = client.user_id;
@@ -800,7 +797,7 @@ export default function ClientManagementPage() {
             Deleting this client will immediately terminate their active account and wipe all history (InBody, water, workouts, notes) from the system. This cannot be undone.
           </p>
           <button
-            onClick={handleDeleteClient}
+            onClick={handleDeleteClientClick}
             disabled={deleting}
             className="w-full bg-red-600/90 hover:bg-red-500 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-red-900/10 transition-all active:scale-[0.98] cursor-pointer mt-1 flex items-center justify-center gap-1.5"
           >
@@ -813,6 +810,66 @@ export default function ClientManagementPage() {
         </div>
 
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmDeleteModal && (
+        (() => {
+          const displayName = client.user?.display_name || 'Unnamed Client';
+          const isMatched = deleteConfirmText === displayName;
+
+          return (
+            <div className="fixed inset-0 bg-[#05050b]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-6 space-y-5 relative z-10 shadow-2xl">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-500">
+                    <Trash2 size={24} />
+                  </div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Delete Client Account?</h3>
+                  <p className="text-[10px] text-gray-400 leading-relaxed">
+                    This action is permanent and will completely delete the client account, including workouts, diet targets, and log records.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider text-center">
+                    Type <span className="text-red-400 font-mono select-none">"{displayName}"</span> to confirm
+                  </p>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="Type client name..."
+                    className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-3 px-4 text-center text-xs outline-none focus:border-red-500 transition-colors text-white"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowConfirmDeleteModal(false);
+                      setDeleteConfirmText('');
+                    }}
+                    className="flex-1 bg-gray-900 border border-gray-800 hover:bg-gray-800 active:scale-95 text-gray-300 py-3 rounded-2xl font-bold text-xs uppercase transition-all cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executeDeleteClient}
+                    disabled={!isMatched}
+                    className={`flex-1 py-3 rounded-2xl font-bold text-xs uppercase transition-all text-center cursor-pointer active:scale-95 ${
+                      isMatched
+                        ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20'
+                        : 'bg-red-950/20 text-red-400/30 border border-red-950/40 cursor-not-allowed'
+                    }`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()
+      )}
     </div>
   );
 }
