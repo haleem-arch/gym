@@ -6,11 +6,11 @@ import { GymReceipt } from '../../components/GymReceipt';
 import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Lock, Dumbbell, ChevronLeft, ChevronRight, Trash2,
+  Dumbbell, ChevronLeft, ChevronRight, Trash2,
   LogOut, Search, X, Calendar, Sparkles, ArrowLeft,
   Plus, CheckCircle2, Clock, Droplets,
   ChevronDown, ChevronUp, Edit3, Save, FileText, RefreshCw,
-  Activity, Droplet, Flame, Users
+  Activity, Droplet, Flame, Users, Delete, ClipboardList, Apple
 } from 'lucide-react';
 
 const getLocalDateString = (d: Date = new Date()) => {
@@ -23,9 +23,9 @@ const db = supabase;
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+    <div className="w-full h-1.5 bg-white/[0.03] border border-white/[0.02] rounded-full overflow-hidden">
       <div
-        className="h-full rounded-full transition-all duration-700"
+        className="h-full rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(255,255,255,0.1)]"
         style={{ width: `${pct}%`, backgroundColor: color }}
       />
     </div>
@@ -37,13 +37,13 @@ function StatCard({ label, value, max, unit, color, emoji }: {
 }) {
   const pct = max > 0 ? Math.min(Math.round((value / max) * 100), 100) : 0;
   return (
-    <div className="bg-[#111827] border border-gray-800/80 rounded-2xl p-3.5 flex flex-col gap-2">
+    <div className="bg-[#0c0d16]/70 border border-white/[0.04] backdrop-blur-sm rounded-2xl p-3.5 flex flex-col gap-2 shadow-sm transition-all duration-200 hover:border-white/[0.08]">
       <div className="flex justify-between items-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{emoji} {label}</span>
-        <span className="text-[11px] font-black" style={{ color }}>{pct}%</span>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">{emoji} {label}</span>
+        <span className="text-[10px] font-extrabold font-mono" style={{ color }}>{pct}%</span>
       </div>
       <ProgressBar value={value} max={max} color={color} />
-      <div className="flex justify-between text-[10px] text-gray-500 font-bold">
+      <div className="flex justify-between text-[9px] text-gray-500 font-semibold font-mono">
         <span style={{ color }}>{value.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
         <span>/ {max.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
       </div>
@@ -270,9 +270,8 @@ export default function DashboardPage() {
 
 
   // ─── AUTH ────────────────────────────────────────────────
-  const handleUnlock = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passcode === '425336') {
+  const handleUnlockSubmit = (code: string) => {
+    if (code === '425336') {
       sessionStorage.setItem('coach_hub_authed', 'true');
       setIsAuthed(true);
       toast.success('Welcome Coach! 💪');
@@ -282,6 +281,24 @@ export default function DashboardPage() {
       setPasscode('');
       setTimeout(() => setShake(false), 600);
     }
+  };
+
+
+
+  const handleNumPress = (num: string) => {
+    if (passcode.length < 6) {
+      const val = passcode + num;
+      setPasscode(val);
+      if (val.length === 6) {
+        setTimeout(() => {
+          handleUnlockSubmit(val);
+        }, 150);
+      }
+    }
+  };
+
+  const handleNumBackspace = () => {
+    setPasscode(prev => prev.slice(0, -1));
   };
 
   const handleLogOut = () => {
@@ -745,35 +762,88 @@ export default function DashboardPage() {
   // ─── LOCK SCREEN ─────────────────────────────────────────
   if (!isAuthed) {
     return (
-      <div className="flex flex-col items-center justify-center p-5 min-h-[80vh] relative z-10 text-center">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
-        <div className={`w-full max-w-xs bg-[#0d1220] border border-gray-800 rounded-3xl p-8 space-y-7 relative z-10 shadow-2xl transition-all duration-300 ${shake ? 'scale-95 border-red-800' : ''}`}>
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center">
-              <Dumbbell className="text-blue-400" size={28} />
+      <div className="flex flex-col items-center justify-center p-5 min-h-[90vh] relative z-10 text-center w-full max-w-[390px] mx-auto">
+        {/* Glow */}
+        <div className="absolute top-[-10%] left-[-10%] w-[80vw] h-[80vw] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+        
+        <motion.div
+          animate={shake ? { x: [-10, 10, -10, 10, -5, 5, -2, 2, 0] } : {}}
+          transition={{ duration: 0.5 }}
+          className={`w-full bg-[#0c0d16]/85 border backdrop-blur-md rounded-3xl p-8 space-y-8 relative z-10 shadow-2xl transition-all duration-300 ${shake ? 'border-red-500/40' : 'border-white/[0.05]'}`}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-inner">
+              <Dumbbell size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-white uppercase tracking-wider">Coach Hub</h2>
+              <p className="text-[10px] text-gray-500 font-medium tracking-wide mt-1">Enter passcode to unlock roster dossier</p>
             </div>
           </div>
-          <div>
-            <h2 className="text-xl font-black text-white tracking-tight">Coach Hub</h2>
-            <p className="text-xs text-gray-500 mt-1.5">Enter passcode to unlock</p>
-          </div>
-          <form onSubmit={handleUnlock} className="space-y-3">
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-              <input
-                type="password" required value={passcode} onChange={e => setPasscode(e.target.value)}
-                placeholder="••••••" autoFocus
-                className="w-full bg-[#131b2e] border border-gray-700 rounded-2xl py-4 pl-11 pr-4 text-white text-center text-lg tracking-[0.4em] outline-none focus:border-blue-500 transition-colors"
+
+          {/* Pin Dots Indicators */}
+          <div className="flex justify-center gap-4 my-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{
+                  scale: passcode.length > i ? 1.25 : 1,
+                  backgroundColor: passcode.length > i ? '#fbbf24' : '#1f2937',
+                  boxShadow: passcode.length > i ? '0 0 10px rgba(251, 191, 36, 0.6)' : 'none',
+                  borderColor: passcode.length > i ? '#fbbf24' : '#374151'
+                }}
+                className="w-3.5 h-3.5 rounded-full border transition-all duration-150"
               />
-            </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white py-4 rounded-2xl font-black text-sm tracking-wider uppercase transition-all shadow-lg shadow-blue-500/20 cursor-pointer">
-              Unlock
+            ))}
+          </div>
+
+          {/* Vault Numpad Keys Grid */}
+          <div className="grid grid-cols-3 gap-y-4 gap-x-6 max-w-[260px] mx-auto pt-2">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => handleNumPress(num)}
+                className="w-16 h-16 rounded-full bg-white/[0.02] active:bg-white/[0.1] border border-white/[0.05] flex items-center justify-center text-xl font-bold text-white transition-all duration-150 active:scale-90 cursor-pointer shadow-inner"
+              >
+                {num}
+              </button>
+            ))}
+            
+            {/* Back to App / Cancel */}
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="w-16 h-16 rounded-full flex items-center justify-center text-[10px] uppercase font-bold text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+            >
+              Cancel
             </button>
-          </form>
-          <button onClick={() => navigate(-1)} className="text-xs text-gray-600 hover:text-gray-400 transition-colors cursor-pointer block mx-auto">
-            ← Back to Dashboard
-          </button>
-        </div>
+            
+            {/* 0 Key */}
+            <button
+              key="0"
+              type="button"
+              onClick={() => handleNumPress('0')}
+              className="w-16 h-16 rounded-full bg-white/[0.02] active:bg-white/[0.1] border border-white/[0.05] flex items-center justify-center text-xl font-bold text-white transition-all duration-150 active:scale-90 cursor-pointer shadow-inner"
+            >
+              0
+            </button>
+
+            {/* Backspace Key */}
+            <button
+              type="button"
+              onClick={handleNumBackspace}
+              className="w-16 h-16 rounded-full bg-white/[0.02] active:bg-white/[0.08] border border-white/[0.05] flex items-center justify-center text-gray-400 active:text-white transition-all duration-150 active:scale-90 cursor-pointer shadow-inner"
+              title="Delete last digit"
+            >
+              <Delete size={18} />
+            </button>
+          </div>
+
+          <div className="pt-2 text-center text-[9px] text-gray-600 font-mono font-bold tracking-wider">
+            SECURE ACCESS ONLY
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -816,13 +886,13 @@ export default function DashboardPage() {
       </div>
 
       {/* ── ATHLETE SELECTOR ── */}
-      <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+      <div className="bg-[#0c0d16]/80 border border-white/[0.05] backdrop-blur-md rounded-2xl overflow-hidden p-1 shadow-lg">
         <button
-          onClick={() => setShowUserPanel(!showUserPanel)}
-          className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/20 transition-colors"
+          onClick={() => setShowUserPanel(true)}
+          className="w-full flex items-center justify-between p-3.5 cursor-pointer hover:bg-white/[0.02] transition-colors rounded-xl"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600/15 border border-blue-500/20 flex items-center justify-center text-sm font-black text-blue-400">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/10 border border-blue-500/25 flex items-center justify-center text-sm font-black text-blue-400">
               {currentClient?.display_name?.charAt(0) || '?'}
             </div>
             <div className="text-left">
@@ -830,57 +900,111 @@ export default function DashboardPage() {
               <p className="text-[10px] text-gray-500">{currentClient?.email}</p>
             </div>
           </div>
-          {showUserPanel ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+          <ChevronDown size={16} className="text-gray-400" />
         </button>
-
-        {showUserPanel && (
-          <div className="border-t border-gray-800 p-3 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-              <input
-                value={searchUserQuery} onChange={e => setSearchUserQuery(e.target.value)}
-                placeholder="Search athletes..."
-                className="w-full bg-[#131b2e] border border-gray-700 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button 
-                onClick={() => navigate('/coach/clients')} 
-                className="flex-1 bg-[#131b2e] hover:bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-650 py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Users size={13} className="text-gray-400" />
-                Manage Clients
-              </button>
-              <button 
-                onClick={() => navigate('/coach/clients/new')} 
-                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Plus size={13} />
-                Add Client
-              </button>
-            </div>
-            <div className="max-h-52 overflow-y-auto space-y-1" style={{ touchAction: 'pan-y' }}>
-              {filteredProfiles.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => { setSelectedUserId(p.id); setShowUserPanel(false); setSearchUserQuery(''); setActiveSplitEditKey(null); }}
-                  className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer ${selectedUserId === p.id ? 'bg-blue-600/20 border border-blue-500/30' : 'hover:bg-gray-800/40'}`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-black text-gray-300">
-                    {p.display_name?.charAt(0) || '?'}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">{p.display_name || 'No name'}</p>
-                    <p className="text-[10px] text-gray-500">{p.email}</p>
-                  </div>
-                  {selectedUserId === p.id && <CheckCircle2 size={14} className="text-blue-400 ml-auto" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Bottom Sheet Drawer Overlay */}
+      <AnimatePresence>
+        {showUserPanel && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowUserPanel(false)}
+              className="fixed inset-0 bg-black/80 z-[100] backdrop-blur-sm"
+            />
+            {/* Drawer container */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-[#090a12] border-t border-white/[0.08] rounded-t-3xl p-5 z-[101] flex flex-col gap-4 shadow-2xl max-h-[75vh]"
+            >
+              {/* Drag Handle Indicator */}
+              <div className="w-10 h-1 bg-white/10 rounded-full mx-auto -mt-1 mb-1 shrink-0" />
+
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-white/[0.05] pb-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-blue-400" />
+                  <h3 className="font-extrabold text-white text-xs uppercase tracking-wider">Select Athlete</h3>
+                </div>
+                <button
+                  onClick={() => setShowUserPanel(false)}
+                  className="p-1.5 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Search bar */}
+              <div className="relative shrink-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+                <input
+                  value={searchUserQuery}
+                  onChange={e => setSearchUserQuery(e.target.value)}
+                  placeholder="Search by name or email..."
+                  className="w-full bg-white/[0.03] border border-white/[0.05] focus:border-blue-500/50 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none transition-colors"
+                />
+              </div>
+
+              {/* Action shortcuts */}
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => { setShowUserPanel(false); navigate('/coach/clients'); }}
+                  className="flex-1 bg-white/[0.02] hover:bg-white/[0.06] text-gray-300 border border-white/[0.05] py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Users size={11} className="text-gray-400" />
+                  Manage Roster
+                </button>
+                <button
+                  onClick={() => { setShowUserPanel(false); navigate('/coach/clients/new'); }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-md shadow-blue-600/10"
+                >
+                  <Plus size={11} />
+                  Add Client
+                </button>
+              </div>
+
+              {/* Athletes List */}
+              <div className="overflow-y-auto space-y-1 pr-1 flex-1 no-scrollbar" style={{ touchAction: 'pan-y' }}>
+                {filteredProfiles.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setSelectedUserId(p.id);
+                      setShowUserPanel(false);
+                      setSearchUserQuery('');
+                      setActiveSplitEditKey(null);
+                    }}
+                    className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border ${
+                      selectedUserId === p.id 
+                        ? 'bg-blue-600/10 border-blue-500/30' 
+                        : 'bg-transparent border-transparent hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-xs font-black text-gray-300">
+                      {p.display_name?.charAt(0) || '?'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-white truncate">{p.display_name || 'No name'}</p>
+                      <p className="text-[9px] text-gray-500 truncate mt-0.5">{p.email}</p>
+                    </div>
+                    {selectedUserId === p.id && <CheckCircle2 size={13} className="text-blue-400 shrink-0" />}
+                  </button>
+                ))}
+                {filteredProfiles.length === 0 && (
+                  <p className="text-center py-6 text-xs text-gray-600 font-bold uppercase tracking-wider">No matching athletes found</p>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       {/* ── OWNER PERSONAL DASHBOARD LINK ── */}
       {coachUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' && (
         <button
@@ -899,7 +1023,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── DATE NAVIGATOR ── */}
-      <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-3 flex items-center justify-between gap-2">
+      <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-3 flex items-center justify-between gap-2">
         <button onClick={() => shiftDate(-1)} className="p-3 hover:bg-gray-800 rounded-xl transition-colors active:scale-95 cursor-pointer text-gray-400 hover:text-white">
           <ChevronLeft size={16} />
         </button>
@@ -921,7 +1045,7 @@ export default function DashboardPage() {
           <button
             key={val}
             onClick={() => setActiveDateStr(val)}
-            className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer ${activeDateStr === val ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-[#0d1220] border border-gray-800 text-gray-400'}`}
+            className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer ${activeDateStr === val ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl text-gray-400'}`}
           >
             {label}
           </button>
@@ -944,52 +1068,52 @@ export default function DashboardPage() {
             <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Daily Compliance</h2>
             <div className="grid grid-cols-3 gap-2.5">
               {/* Calories */}
-              <div className="bg-[#0d1220] border border-orange-900/30 rounded-2xl p-3.5 flex flex-col gap-2">
-                <div className="text-lg">🔥</div>
+              <div className="bg-[#0c0d16]/70 border border-white/[0.04] backdrop-blur-sm rounded-2xl p-3 flex flex-col justify-between gap-1 shadow-sm">
+                <div className="text-base select-none">🔥</div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Calories</p>
-                  <p className="text-base font-black text-white mt-0.5">{Math.round(consumedMacros.kcal)}</p>
-                  <p className="text-[10px] text-orange-400 font-bold">/ {targetKcal}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Calories</p>
+                  <p className="text-sm font-black text-white mt-0.5">{Math.round(consumedMacros.kcal)}</p>
+                  <p className="text-[9px] text-orange-400 font-semibold font-mono">/ {targetKcal}</p>
                 </div>
                 <ProgressBar value={consumedMacros.kcal} max={targetKcal} color="#f97316" />
               </div>
               {/* Water */}
-              <div className="bg-[#0d1220] border border-sky-900/30 rounded-2xl p-3.5 flex flex-col gap-2">
-                <div className="text-lg">💧</div>
+              <div className="bg-[#0c0d16]/70 border border-white/[0.04] backdrop-blur-sm rounded-2xl p-3 flex flex-col justify-between gap-1 shadow-sm">
+                <div className="text-base select-none">💧</div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Water</p>
-                  <p className="text-base font-black text-white mt-0.5">{(waterTotalMl / 1000).toFixed(1)}L</p>
-                  <p className="text-[10px] text-sky-400 font-bold">/ {targetWaterLiters}L</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Water</p>
+                  <p className="text-sm font-black text-white mt-0.5">{(waterTotalMl / 1000).toFixed(1)}L</p>
+                  <p className="text-[9px] text-sky-400 font-semibold font-mono">/ {targetWaterLiters}L</p>
                 </div>
                 <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#38bdf8" />
               </div>
               {/* Training */}
-              <div className="bg-[#0d1220] border border-violet-900/30 rounded-2xl p-3.5 flex flex-col gap-2">
-                <div className="text-lg">🏋️</div>
+              <div className="bg-[#0c0d16]/70 border border-white/[0.04] backdrop-blur-sm rounded-2xl p-3 flex flex-col justify-between gap-1 shadow-sm">
+                <div className="text-base select-none">🏋️</div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Training</p>
-                  <p className={`text-base font-black mt-0.5 ${workoutStatus === 1.0 ? 'text-green-400' : workoutStatus === 0.5 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Training</p>
+                  <p className={`text-sm font-black mt-0.5 ${workoutStatus === 1.0 ? 'text-green-400' : workoutStatus === 0.5 ? 'text-yellow-400' : 'text-gray-500'}`}>
                     {workoutStatus === 1.0 ? '✓ Done' : workoutStatus === 0.5 ? '⚡ Active' : 'Pending'}
                   </p>
-                  <p className="text-[10px] text-violet-400 font-bold">{workoutsList.length} session{workoutsList.length !== 1 ? 's' : ''}</p>
+                  <p className="text-[9px] text-violet-400 font-semibold font-mono">{workoutsList.length} session{workoutsList.length !== 1 ? 's' : ''}</p>
                 </div>
                 <ProgressBar value={workoutStatus} max={1} color="#a78bfa" />
               </div>
             </div>
 
             {/* AI Coach Usage Card */}
-            <div className="bg-[#0d1220] border border-blue-900/30 rounded-2xl p-3.5 flex items-center justify-between gap-4">
+            <div className="bg-[#0c0d16]/70 border border-white/[0.04] backdrop-blur-sm rounded-2xl p-3.5 flex items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <span className="text-lg select-none">🤖</span>
+                <span className="text-base select-none">🤖</span>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">AI Coach Usage</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">AI Coach Usage</p>
                   {(() => {
                     const selectedProfile = profiles.find(p => p.id === selectedUserId);
                     const isCoachUser = selectedProfile?.role === 'coach' || selectedUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
                     if (isCoachUser) {
                       return (
-                        <p className="text-base font-black text-white mt-0.5">
-                          Unlimited <span className="text-xs text-gray-500 font-bold">(Coach)</span>
+                        <p className="text-sm font-black text-white mt-0.5">
+                          Unlimited <span className="text-[10px] text-gray-500 font-bold">(Coach)</span>
                         </p>
                       );
                     }
@@ -997,8 +1121,8 @@ export default function DashboardPage() {
                     const usage = profileTargets?.ai_usage || { date: '', count: 0 };
                     const count = usage.date === activeDateStr ? usage.count : 0;
                     return (
-                      <p className="text-base font-black text-white mt-0.5">
-                        {count} <span className="text-xs text-gray-500 font-bold">/ {limit} msgs</span>
+                      <p className="text-sm font-black text-white mt-0.5">
+                        {count} <span className="text-[10px] text-gray-500 font-bold">/ {limit} msgs</span>
                       </p>
                     );
                   })()}
@@ -1028,58 +1152,65 @@ export default function DashboardPage() {
           </div>
 
           {/* ── TABS ── */}
-          <div className="grid grid-cols-5 bg-[#0d1220] border border-gray-800 rounded-2xl p-1 gap-1">
+          <div className="grid grid-cols-5 bg-[#0c0d16]/80 border border-white/[0.05] backdrop-blur-md rounded-2xl p-1 relative gap-0.5 z-10 shadow-lg">
             {([
-              { id: 'overview', label: 'Plan', emoji: '📋' },
-              { id: 'diet', label: 'Diet', emoji: '🍎' },
-              { id: 'water', label: 'Water', emoji: '💧' },
-              { id: 'workouts', label: 'Gym', emoji: '🏋️' },
-              { id: 'inbody', label: 'InBody', emoji: '📊' },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-2.5 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer text-center ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <span className="block text-sm mb-0.5">{tab.emoji}</span>
-                {tab.label}
-              </button>
-            ))}
+              { id: 'overview', label: 'Plan', icon: <ClipboardList size={14} className="group-hover:scale-110 transition-transform" />, color: 'text-amber-400', activeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-400' },
+              { id: 'diet', label: 'Diet', icon: <Apple size={14} className="group-hover:scale-110 transition-transform" />, color: 'text-emerald-400', activeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
+              { id: 'water', label: 'Water', icon: <Droplets size={14} className="group-hover:scale-110 transition-transform" />, color: 'text-sky-400', activeBg: 'bg-sky-500/10 border-sky-500/20 text-sky-400' },
+              { id: 'workouts', label: 'Gym', icon: <Dumbbell size={14} className="group-hover:scale-110 transition-transform" />, color: 'text-violet-400', activeBg: 'bg-violet-500/10 border-violet-500/20 text-violet-400' },
+              { id: 'inbody', label: 'InBody', icon: <Activity size={14} className="group-hover:scale-110 transition-transform" />, color: 'text-gray-400', activeBg: 'bg-white/10 border-white/20 text-white' },
+            ] as const).map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`group relative py-2 rounded-xl transition-all duration-300 cursor-pointer text-center flex flex-col items-center justify-center gap-1 border border-transparent ${
+                    isActive 
+                      ? `${tab.activeBg} font-black` 
+                      : 'text-gray-500 hover:text-gray-300 active:scale-95'
+                  }`}
+                >
+                  <span className={isActive ? '' : 'text-gray-500'}>{tab.icon}</span>
+                  <span className="text-[9px] font-bold tracking-wide">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* ── TAB: PLAN / DAY-TYPE NUTRITION ── */}
           {activeTab === 'overview' && (
             <div className="space-y-4">
               {/* Daily Baseline Targets Card */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3 relative shadow-xl">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-4 space-y-3 relative shadow-xl">
                 <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider flex items-center gap-1.5">🔥 Daily Baseline Targets</h3>
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Calories (kcal)</label>
                     <input 
                       type="number" value={targetKcal} onChange={e => setTargetKcal(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                      className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2 text-xs text-white outline-none font-bold" 
                     />
                   </div>
                   <div>
                     <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Protein (g)</label>
                     <input 
                       type="number" value={targetProtein} onChange={e => setTargetProtein(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                      className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2 text-xs text-white outline-none font-bold" 
                     />
                   </div>
                   <div>
                     <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Carbs (g)</label>
                     <input 
                       type="number" value={targetCarbs} onChange={e => setTargetCarbs(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                      className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2 text-xs text-white outline-none font-bold" 
                     />
                   </div>
                   <div>
                     <label className="text-[9px] text-gray-500 block mb-0.5 font-bold uppercase">Fat (g)</label>
                     <input 
                       type="number" value={targetFat} onChange={e => setTargetFat(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full bg-[#181d29] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none font-bold" 
+                      className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2 text-xs text-white outline-none font-bold" 
                     />
                   </div>
                 </div>
@@ -1091,7 +1222,7 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📋 Nutrition By Day Type</h3>
                   <p className="text-[10px] text-gray-500">Tap to set macros per day</p>
@@ -1108,7 +1239,7 @@ export default function DashboardPage() {
                       const dn = dayNutrition[dt];
                       const isEditing = editingDayType === dt;
                       return (
-                        <div key={dt} className="bg-[#111827] border border-gray-800/80 rounded-xl overflow-hidden">
+                        <div key={dt} className="bg-[#0c0d16]/70 border border-white/[0.04] backdrop-blur-sm rounded-xl overflow-hidden">
                           <button
                             onClick={() => isEditing ? setEditingDayType(null) : handleOpenDayEdit(dt)}
                             className="w-full flex items-center justify-between p-3.5 cursor-pointer hover:bg-gray-800/20 transition-colors"
@@ -1137,7 +1268,7 @@ export default function DashboardPage() {
                                     <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">{label}</label>
                                     <input
                                       type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
-                                      className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-sm text-white outline-none focus:border-blue-500 text-center font-bold"
+                                      className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 text-sm text-white outline-none focus:border-blue-500 text-center font-bold"
                                     />
                                   </div>
                                 ))}
@@ -1161,7 +1292,7 @@ export default function DashboardPage() {
 
               {/* Latest InBody quick view */}
               {scans.length > 0 && (
-                <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+                <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-4 space-y-3">
                   <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📊 Latest Body Composition</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -1186,7 +1317,7 @@ export default function DashboardPage() {
           {/* ── TAB: DIET ── */}
           {activeTab === 'diet' && (
             <div className="space-y-4">
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-800">
                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">
                     Meals <span className="text-gray-600">({meals.length})</span>
@@ -1201,7 +1332,7 @@ export default function DashboardPage() {
                     <input
                       type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
                       placeholder="Meal name (e.g. Chicken & Rice)"
-                      className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                      className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
                     />
                     <div className="grid grid-cols-4 gap-2">
                       {[
@@ -1213,7 +1344,7 @@ export default function DashboardPage() {
                         <div key={label}>
                           <p className="text-[9px] text-gray-500 font-bold text-center mb-1">{label}</p>
                           <input type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
-                            className="w-full bg-[#0d1220] border border-gray-800 rounded-xl p-2 text-xs text-white text-center outline-none font-bold" />
+                            className="w-full bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-xl p-2 text-xs text-white text-center outline-none font-bold" />
                         </div>
                       ))}
                     </div>
@@ -1256,14 +1387,14 @@ export default function DashboardPage() {
           {activeTab === 'water' && (
             <div className="space-y-4">
               {/* Goal editor */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-4 space-y-3">
                 <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider flex items-center gap-2">
                   <Droplets size={14} /> Daily Water Goal for {currentClient?.display_name}
                 </h3>
                 <div className="flex items-center gap-3">
                   <input
                     type="number" step="0.25" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                    className="flex-1 min-w-0 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-lg font-black text-white outline-none focus:border-blue-500 text-center"
+                    className="flex-1 min-w-0 bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 text-lg font-black text-white outline-none focus:border-blue-500 text-center"
                   />
                   <span className="shrink-0 text-sm font-bold text-gray-400">L</span>
                   <button onClick={handleSaveWaterGoal} className="shrink-0 px-5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-xl active:scale-95 transition-all cursor-pointer">
@@ -1281,7 +1412,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Add water */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-4 space-y-3">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">Log Water</h3>
                   {waterLogs.length > 0 && (
@@ -1299,7 +1430,7 @@ export default function DashboardPage() {
                 <div className="flex gap-2">
                   <input
                     type="number" step="50" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
-                    className="flex-1 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-sm font-bold text-white outline-none focus:border-sky-500 text-center"
+                    className="flex-1 bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 text-sm font-bold text-white outline-none focus:border-sky-500 text-center"
                   />
                   <span className="self-center text-sm font-bold text-gray-500">ml</span>
                   <button onClick={handleAddWater} className="px-5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-all cursor-pointer whitespace-nowrap">
@@ -1310,7 +1441,7 @@ export default function DashboardPage() {
 
               {/* Water log list */}
               {waterLogs.length > 0 && (
-                <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+                <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
                   <div className="divide-y divide-gray-800/60">
                     {waterLogs.map(log => (
                       <div key={log.id} className="flex items-center justify-between p-3.5">
@@ -1333,7 +1464,7 @@ export default function DashboardPage() {
               )}
 
               {waterLogs.length === 0 && (
-                <div className="bg-[#0d1220] border border-gray-800/60 rounded-2xl p-6 text-center">
+                <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl/60 rounded-2xl p-6 text-center">
                   <p className="text-2xl mb-2">💧</p>
                   <p className="text-xs text-gray-600 font-bold">{currentClient?.display_name} hasn't logged water today</p>
                 </div>
@@ -1345,7 +1476,7 @@ export default function DashboardPage() {
           {activeTab === 'workouts' && (
             <div className="space-y-4">
               {/* Sessions for the day */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-gray-800">
                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">
                     Sessions on {activeDateStr} <span className="text-gray-600">({workoutsList.length})</span>
@@ -1399,7 +1530,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Split Plans Manager */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-800">
                   <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">
                     Workout Splits
@@ -1416,7 +1547,7 @@ export default function DashboardPage() {
                       <input
                         type="text" value={newSplitDayName} onChange={e => setNewSplitDayName(e.target.value)}
                         placeholder="Day name (e.g. UPPER, FUN, YOGA)"
-                        className="flex-1 bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 uppercase font-black"
+                        className="flex-1 bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 uppercase font-black"
                       />
                       <button type="submit" className="px-4 bg-blue-600 text-white rounded-xl font-bold text-xs active:scale-95 cursor-pointer">Create</button>
                     </form>
@@ -1477,7 +1608,7 @@ export default function DashboardPage() {
                               ) : (
                                 <div className="space-y-1.5">
                                   {plan.exercises.map((ex: any, idx: number) => (
-                                    <div key={ex.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#0d1220] border border-gray-800 rounded-xl p-3 gap-2">
+                                    <div key={ex.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-xl p-3 gap-2">
                                       <div>
                                         <p className="text-xs font-bold text-gray-200">{ex.name}</p>
                                         <p className="text-[9px] text-gray-600 uppercase font-bold">{ex.muscle_group}</p>
@@ -1489,7 +1620,7 @@ export default function DashboardPage() {
                                             min="1"
                                             value={ex.sets || 3}
                                             onChange={e => handleUpdateExerciseStats(dt, ex.id, parseInt(e.target.value) || 3, ex.rest || 120)}
-                                            className="w-10 bg-[#131b2e] border border-gray-700 rounded px-1.5 py-1 text-[11px] font-bold text-center text-white outline-none focus:border-blue-500"
+                                            className="w-10 bg-white/[0.03] border border-white/[0.05] rounded px-1.5 py-1 text-[11px] font-bold text-center text-white outline-none focus:border-blue-500"
                                             title="Sets"
                                           />
                                           <span className="text-[10px] text-gray-500 font-bold">sets</span>
@@ -1501,7 +1632,7 @@ export default function DashboardPage() {
                                             step="5"
                                             value={ex.rest || 120}
                                             onChange={e => handleUpdateExerciseStats(dt, ex.id, ex.sets || 3, parseInt(e.target.value) || 0)}
-                                            className="w-14 bg-[#131b2e] border border-gray-700 rounded px-1.5 py-1 text-[11px] font-bold text-center text-white outline-none focus:border-blue-500"
+                                            className="w-14 bg-white/[0.03] border border-white/[0.05] rounded px-1.5 py-1 text-[11px] font-bold text-center text-white outline-none focus:border-blue-500"
                                             title="Rest (seconds)"
                                           />
                                           <span className="text-[10px] text-gray-500 font-bold">s rest</span>
@@ -1522,7 +1653,7 @@ export default function DashboardPage() {
                                 <input
                                   value={searchExerciseQuery} onChange={e => setSearchExerciseQuery(e.target.value)}
                                   placeholder="Search exercises to add..."
-                                  className="w-full bg-[#131b2e] border border-gray-700 rounded-xl py-2.5 pl-9 pr-9 text-xs text-white outline-none focus:border-blue-500"
+                                  className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl py-2.5 pl-9 pr-9 text-xs text-white outline-none focus:border-blue-500"
                                 />
                                 {searchExerciseQuery && (
                                   <button onClick={() => setSearchExerciseQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer">
@@ -1558,7 +1689,7 @@ export default function DashboardPage() {
           {activeTab === 'inbody' && (
             <div className="space-y-4">
               {/* CSV Upload Zone */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between relative overflow-hidden gap-4">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between relative overflow-hidden gap-4">
                 <div className="absolute right-0 top-0 w-32 h-32 bg-blue-600/10 rounded-full blur-[40px] pointer-events-none" />
                 <div className="flex-1 text-center sm:text-left z-10">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
@@ -1580,7 +1711,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Add scan manual */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-800">
                   <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider">📊 Log Manual Scan</h3>
                   <button onClick={() => setShowAddScanForm(!showAddScanForm)} className="text-xs font-black text-blue-400 hover:text-white cursor-pointer flex items-center gap-1">
@@ -1592,23 +1723,23 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>
                         <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Scan Date</label>
-                        <input type="date" value={newScanDate} onChange={e => setNewScanDate(e.target.value)} required className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                        <input type="date" value={newScanDate} onChange={e => setNewScanDate(e.target.value)} required className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
                       </div>
                       <div>
                         <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">InBody Score</label>
-                        <input type="number" value={newScanScore} onChange={e => setNewScanScore(parseInt(e.target.value) || 0)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white text-center font-bold outline-none focus:border-blue-500" />
+                        <input type="number" value={newScanScore} onChange={e => setNewScanScore(parseInt(e.target.value) || 0)} className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 text-xs text-white text-center font-bold outline-none focus:border-blue-500" />
                       </div>
                       <div>
                         <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Weight (kg)</label>
-                        <input type="number" step="any" required placeholder="e.g. 78.5" value={newScanWeight} onChange={e => setNewScanWeight(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                        <input type="number" step="any" required placeholder="e.g. 78.5" value={newScanWeight} onChange={e => setNewScanWeight(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
                       </div>
                       <div>
                         <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Body Fat %</label>
-                        <input type="number" step="any" placeholder="e.g. 14.8" value={newScanBfPercent} onChange={e => setNewScanBfPercent(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                        <input type="number" step="any" placeholder="e.g. 14.8" value={newScanBfPercent} onChange={e => setNewScanBfPercent(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
                       </div>
                       <div className="col-span-2">
                         <label className="text-[9px] text-gray-500 block mb-1 font-bold uppercase">Muscle Mass SMM (kg)</label>
-                        <input type="number" step="any" placeholder="e.g. 36.5" value={newScanSmm} onChange={e => setNewScanSmm(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
+                        <input type="number" step="any" placeholder="e.g. 36.5" value={newScanSmm} onChange={e => setNewScanSmm(e.target.value)} className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500" />
                       </div>
                     </div>
                     <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl active:scale-95 transition-all cursor-pointer">
@@ -1619,7 +1750,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Scan History */}
-              <div className="bg-[#0d1220] border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-gray-800">
                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-wider">History <span className="text-gray-600">({scans.length} scans)</span></h3>
                 </div>
