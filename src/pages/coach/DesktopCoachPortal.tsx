@@ -9,7 +9,8 @@ import {
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
-  DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck
+  DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
+  ArrowRight
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -673,7 +674,7 @@ export default function DesktopCoachPortal() {
       const timeStr = `${daysVal}d ${hoursVal}h ${minutesVal}m ${secondsVal}s`;
       setCoachCountdownText(timeStr);
 
-      const trial = myCoachProfile.targets?.is_free_trial === true;
+      const trial = myCoachProfile.targets?.is_free_trial === true || myCoachProfile.targets?.subscription_status === 'trial';
       setIsTrialActive(trial);
 
       // Warning banner is displayed for Free Trials OR if subscription is under 7 days (7 * 24 * 3600 * 1000)
@@ -2244,6 +2245,7 @@ export default function DesktopCoachPortal() {
         ...currentTargets,
         is_deactivated: isDeactivated,
         is_free_trial: coachReactivateIsFreeTrial,
+        subscription_status: coachReactivateIsFreeTrial ? 'trial' : 'active',
         subscription_start_date: startDate.toISOString(),
         subscription_end_date: endDate ? endDate.toISOString() : null,
         subscription_duration: coachReactivatePeriod,
@@ -2631,6 +2633,7 @@ export default function DesktopCoachPortal() {
         ...currentTargets,
         is_deactivated: false, // reactivate coach access automatically on renewal
         is_free_trial: coachSubIsFreeTrial,
+        subscription_status: coachSubIsFreeTrial ? 'trial' : 'active',
         subscription_start_date: startDate.toISOString(),
         subscription_end_date: endDate ? endDate.toISOString() : null,
         subscription_duration: coachSubPeriod,
@@ -2710,6 +2713,7 @@ export default function DesktopCoachPortal() {
           targets: {
             is_deactivated: false,
             is_free_trial: registerCoachSubIsFreeTrial,
+            subscription_status: registerCoachSubIsFreeTrial ? 'trial' : 'active',
             subscription_start_date: startDate.toISOString(),
             subscription_end_date: endDate ? endDate.toISOString() : null,
             subscription_duration: registerCoachSubPeriod,
@@ -4202,7 +4206,11 @@ export default function DesktopCoachPortal() {
               <img src="/icon.svg" alt="Life Gym Logo" className="w-10 h-10 object-contain" />
             </div>
 
-            <h3 className="text-xl font-black text-white tracking-tight uppercase">
+            <h2 className="text-4xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-wider mb-2 animate-pulse">
+              Hello Coach!
+            </h2>
+            
+            <h3 className="text-sm font-extrabold text-white tracking-tight uppercase mt-2">
               Welcome, {myCoachProfile?.display_name || 'Coach'}!
             </h3>
             
@@ -7647,7 +7655,7 @@ export default function DesktopCoachPortal() {
                             } else if (isPending) {
                               statusLabel = 'PENDING';
                               statusColor = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
-                            } else if (tg.is_free_trial === true) {
+                            } else if (tg.is_free_trial === true || tg.subscription_status === 'trial') {
                               statusLabel = 'ACTIVE (FREE TRIAL)';
                             }
 
@@ -7663,12 +7671,12 @@ export default function DesktopCoachPortal() {
                               if (diffDays < 0) {
                                 daysRemainingLabel = `Expired (${Math.abs(diffDays)}d ago)`;
                               } else if (diffDays === 0) {
-                                daysRemainingLabel = tg.is_free_trial === true ? 'Free Trial - Expires today' : 'Expires today';
+                                daysRemainingLabel = (tg.is_free_trial === true || tg.subscription_status === 'trial') ? 'Free Trial - Expires today' : 'Expires today';
                               } else {
-                                daysRemainingLabel = tg.is_free_trial === true ? `Free Trial - ${diffDays} days remaining` : `${diffDays} days remaining`;
+                                daysRemainingLabel = (tg.is_free_trial === true || tg.subscription_status === 'trial') ? `Free Trial - ${diffDays} days remaining` : `${diffDays} days remaining`;
                               }
                             } else {
-                              daysRemainingLabel = tg.is_free_trial === true ? 'Free Trial - No Active Plan' : 'No Active Plan';
+                              daysRemainingLabel = (tg.is_free_trial === true || tg.subscription_status === 'trial') ? 'Free Trial - No Active Plan' : 'No Active Plan';
                             }
 
                             // Format dates
@@ -7700,7 +7708,7 @@ export default function DesktopCoachPortal() {
                                   // Pre-fill fields for update/billing
                                   setCoachSubPeriod(tg.subscription_duration || '1 month');
                                   setCoachSubDelay(tg.subscription_delay || '0');
-                                  setCoachSubIsFreeTrial(tg.is_free_trial === true);
+                                  setCoachSubIsFreeTrial(tg.is_free_trial === true || tg.subscription_status === 'trial');
                                   setCoachSubCustomEnd(tg.subscription_end_date ? getLocalDateTimeString(new Date(tg.subscription_end_date)) : getLocalDateTimeString());
                                 }}
                                 className="group hover:bg-blue-500/[0.02] active:scale-[0.995] transition-all duration-200 cursor-pointer text-xs"
@@ -7745,7 +7753,7 @@ export default function DesktopCoachPortal() {
                                 <td className="py-4 px-4 space-y-1">
                                   <div className="flex items-center gap-1.5 text-gray-300 font-mono text-[11px]">
                                     <Mail size={10} className="text-gray-500 shrink-0" />
-                                    <span className="truncate max-w-[150px]">{coach.email}</span>
+                                    <span className="truncate max-w-[150px]">{coach.email || tg.contact_email || 'Not added'}</span>
                                   </div>
                                   {tg.phone_number && (
                                     <div className="flex items-center gap-1.5 text-gray-400 text-[10px]">
@@ -9899,7 +9907,7 @@ export default function DesktopCoachPortal() {
                         } else if (start && now < start) {
                           statusText = 'Scheduled';
                           statusClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
-                        } else if (tg.is_free_trial === true) {
+                        } else if (tg.is_free_trial === true || tg.subscription_status === 'trial') {
                           statusText = 'Active (Free Trial)';
                           statusClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
                         }
@@ -9940,7 +9948,7 @@ export default function DesktopCoachPortal() {
                         setCoachReactivateName(currentCoach.display_name);
                         setCoachReactivatePeriod(tg.subscription_duration || '1 month');
                         setCoachReactivateDelay(tg.subscription_delay || '0');
-                        setCoachReactivateIsFreeTrial(tg.is_free_trial === true);
+                        setCoachReactivateIsFreeTrial(tg.is_free_trial === true || tg.subscription_status === 'trial');
                         if (tg.subscription_end_date) {
                           setCoachReactivateCustomEnd(new Date(tg.subscription_end_date).toISOString().substring(0, 16));
                         } else {
@@ -10146,7 +10154,7 @@ export default function DesktopCoachPortal() {
                         } else if (isPending) {
                           statusLabel = "PENDING";
                           statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-                        } else if (tg.is_free_trial === true) {
+                        } else if (tg.is_free_trial === true || tg.subscription_status === 'trial') {
                           statusLabel = "ACTIVE (FREE TRIAL)";
                           statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
                         }

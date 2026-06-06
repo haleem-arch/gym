@@ -764,7 +764,7 @@ export default function SystemConsolePage() {
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
           {filteredUsers.map(user => {
             const isSuspended = user.targets?.is_deactivated === true;
-            const isFreeTrial = user.targets?.is_free_trial === true;
+            const isFreeTrial = user.targets?.is_free_trial === true || user.targets?.subscription_status === 'trial';
             let statusLabel = 'Active';
             let statusClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
             if (isSuspended) {
@@ -811,7 +811,27 @@ export default function SystemConsolePage() {
             <div className="flex justify-between items-start pb-2 border-b border-gray-800">
               <div>
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">{selectedUser.display_name || 'Selected User'}</h4>
-                <p className="text-[10px] text-gray-500">{selectedUser.email}</p>
+                <p className="text-[10px] text-gray-550 font-mono mt-0.5">{selectedUser.email || selectedUser.targets?.email || 'No email'}</p>
+                {selectedUser.role === 'coach' && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[8px] bg-blue-950 text-blue-400 font-extrabold px-1.5 py-0.5 rounded border border-blue-900/50 uppercase tracking-wide">
+                      Coach
+                    </span>
+                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
+                      selectedUser.targets?.is_deactivated === true
+                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                        : (selectedUser.targets?.is_free_trial === true || selectedUser.targets?.subscription_status === 'trial')
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    }`}>
+                      {selectedUser.targets?.is_deactivated === true
+                        ? 'Suspended'
+                        : (selectedUser.targets?.is_free_trial === true || selectedUser.targets?.subscription_status === 'trial')
+                        ? 'Active (Free Trial)'
+                        : 'Active'}
+                    </span>
+                  </div>
+                )}
               </div>
               <button 
                 onClick={() => setSelectedUser(null)} 
