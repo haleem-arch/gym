@@ -525,6 +525,41 @@ export default function DesktopCoachPortal() {
     }
   }, [showTutorial, spotlightIndex, activeTab, deployStep]);
 
+  // Synchronize layout active tab, step, and selection with spotlightIndex
+  useEffect(() => {
+    if (showTutorial && tutorialStep === 2) {
+      if (spotlightIndex >= 0 && spotlightIndex <= 3) {
+        if (activeTab !== 'deploy') {
+          setActiveTab('deploy');
+        }
+        const targetStep = spotlightIndex + 1;
+        if (deployStep !== targetStep) {
+          setDeployStep(targetStep as 1 | 2 | 3 | 4);
+        }
+      } else if (spotlightIndex >= 4 && spotlightIndex <= 9) {
+        if (activeTab !== 'clients') {
+          setActiveTab('clients');
+        }
+        if (selectedClientId !== 'fake_deployed_thor') {
+          fetchClientDetails('fake_deployed_thor', true);
+        }
+        const subTabs = ['overview', 'diet', 'water', 'workouts', 'inbody', 'history'] as const;
+        const targetSubTab = subTabs[spotlightIndex - 4];
+        if (clientActiveTab !== targetSubTab) {
+          handleClientSubTabClick(targetSubTab, true);
+        }
+      } else if (spotlightIndex === 10) {
+        if (activeTab !== 'management') {
+          setActiveTab('management');
+        }
+        if (managementSelectedClientId !== 'fake_deployed_thor') {
+          setManagementSelectedClientId('fake_deployed_thor');
+          fetchManagementClientDetails('fake_deployed_thor');
+        }
+      }
+    }
+  }, [showTutorial, tutorialStep, spotlightIndex, activeTab, deployStep, selectedClientId, clientActiveTab, managementSelectedClientId]);
+
   useEffect(() => {
     if (showTutorial && tutorialStep === 2) {
       const updateRect = () => {
@@ -1297,7 +1332,7 @@ export default function DesktopCoachPortal() {
     if (!silent) setLoadingClientDetails(true);
     setExpandedMealId(null);
     try {
-      if (userId.startsWith('fake_client_')) {
+      if (userId.startsWith('fake_client_') || userId === 'fake_deployed_thor') {
         const mockData = getMockClientData(userId, dateStr);
         setClientDietLog(mockData.dietLog);
         setClientMeals(mockData.meals);
@@ -1945,18 +1980,11 @@ export default function DesktopCoachPortal() {
     if (!clientId) return;
     setLoadingHistory(true);
     try {
-      if (clientId.startsWith('fake_client_')) {
+      if (clientId.startsWith('fake_client_') || clientId === 'fake_deployed_thor') {
         const mockData = getMockClientData(clientId, clientActiveDateStr);
         setClientHistoryWorkouts(mockData.workoutsList);
         setClientHistoryDiets([mockData.dietLog]);
         setClientHistoryWater(mockData.waterLogs.map(w => ({ ...w, date: clientActiveDateStr })));
-        setLoadingHistory(false);
-        return;
-      }
-      if (clientId === 'fake_deployed_thor') {
-        setClientHistoryWorkouts([]);
-        setClientHistoryDiets([]);
-        setClientHistoryWater([]);
         setLoadingHistory(false);
         return;
       }
@@ -4544,7 +4572,27 @@ export default function DesktopCoachPortal() {
             </p>
 
             <button
-              onClick={() => setTutorialStep(2)}
+              onClick={() => {
+                setActiveTab('deploy');
+                setDeployStep(1);
+                setFormData({
+                  displayName: 'Thor Odinson',
+                  username: 'thor_god_of_thunder',
+                  password: 'mjolnir_password',
+                  clientCode: '2011',
+                  phoneNumber: '+1-555-ASGARD',
+                  age: '1500',
+                  height: '198',
+                  experience_level: 'advanced',
+                  subscriptionPeriod: '12 months',
+                  subscriptionStartDelay: '0',
+                  customSubscriptionEnd: '',
+                  injuries_notes: 'Missing right eye, reconstructed with prosthetic. Prone to lightning discharges.',
+                  goals: 'Maintain lightning channel capacity, cardiorespiratory endurance, and high volume lifting.'
+                });
+                setTutorialStep(2);
+                setSpotlightIndex(0);
+              }}
               className="w-full py-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer mt-8 flex items-center justify-center gap-2"
             >
               <span>Start Walkthrough</span>
@@ -4559,12 +4607,20 @@ export default function DesktopCoachPortal() {
     if (tutorialStep === 2) {
       const tourSteps = [
         {
-          title: "Your Command Center",
-          desc: "This sidebar is your central control dashboard. Use it to switch between operational charts (Overview), the client roster (Athlete Directory), deployment tools (Deploy New Athlete), login security (Athlete Control), client active licenses (Subscriptions), and administrative profile controls (Profile Settings). Click Next to proceed."
+          title: "Deploy Wizard — Identity",
+          desc: "Step 1: Identity and Auth Credentials. Register a client profile by specifying their name, handle, age, height, phone number, and a custom secure passcode. We've prefilled Thor Odinson's profile to get started."
         },
         {
-          title: "Athlete Directory",
-          desc: "This panel displays all active and simulated athletes assigned to your coaching license. We have loaded two simulated clients, Steve Rogers and Tony Stark. Selecting an athlete displays their comprehensive files. Click Next to review Steve's details."
+          title: "Deploy Wizard — Workouts Split",
+          desc: "Step 2: Training Split & Weekly Schedule defaults. Look at the default Push, Pull, and Legs templates. The Push accordion automatically opens to display planned exercises."
+        },
+        {
+          title: "Deploy Wizard — Nutrition",
+          desc: "Step 3: Nutrition targets. Establish base work-day calories and macronutrient splits (Protein, Carbs, Fat) along with rest-day overrides."
+        },
+        {
+          title: "Deploy Wizard — Biometrics & Setup",
+          desc: "Step 4: Baseline Biometrics. Review final details, upload optional InBody scan files, and click Deploy to trigger the simulated deployment sequence."
         },
         {
           title: "Dossier: Overview Tab",
@@ -4591,32 +4647,8 @@ export default function DesktopCoachPortal() {
           desc: "The chronological feed lists every single completion record for this athlete: workouts completed, diet logs saved, water logs updated, and weight scans recorded, providing a complete historical narrative."
         },
         {
-          title: "Deploy Wizard — Identity",
-          desc: "Step 1: Identity and Auth Credentials. Register a client profile by specifying their name, handle, age, height, phone number, and a custom secure passcode. We've prefilled Thor Odinson's profile to get started."
-        },
-        {
-          title: "Deploy Wizard — Workouts Split Day",
-          desc: "Step 2: Training Split & Weekly Schedule defaults. Look at the animated blue arrows pointing to your Push, Pull, and Legs templates. The Push accordion automatically opens to display planned exercises."
-        },
-        {
-          title: "Deploy Wizard — Nutrition",
-          desc: "Step 3: Nutrition targets. Establish base work-day calories and macronutrient splits (Protein, Carbs, Fat) along with rest-day overrides."
-        },
-        {
-          title: "Deploy Wizard — Biometrics & Setup",
-          desc: "Step 4: Baseline Biometrics. Review final details, upload optional InBody scan files, and trigger the deployment loading sequence."
-        },
-        {
           title: "Athlete Control Center",
           desc: "Manage athlete login credentials, suspend/restore access, set AI Coach query quotas, or completely delete client profiles."
-        },
-        {
-          title: "Subscriptions Manager",
-          desc: "Monitor active athlete subscription details: subscription tier, activation dates, expiration countdowns, and suspend status."
-        },
-        {
-          title: "Profile Settings",
-          desc: "Configure coach profile details, reset your admin password, check payment subscriptions, and review administrative activity logs."
         }
       ];
 
@@ -4731,53 +4763,12 @@ export default function DesktopCoachPortal() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (spotlightIndex === 1) {
-                      setActiveTab('overview');
-                      setSelectedClientId(null);
-                      setSpotlightIndex(0);
-                    } else if (spotlightIndex === 2) {
-                      setSelectedClientId(null);
-                      setSpotlightIndex(1);
-                    } else if (spotlightIndex === 3) {
-                      handleClientSubTabClick('overview', true);
-                      setSpotlightIndex(2);
-                    } else if (spotlightIndex === 4) {
-                      handleClientSubTabClick('diet', true);
-                      setSpotlightIndex(3);
-                    } else if (spotlightIndex === 5) {
-                      handleClientSubTabClick('water', true);
-                      setSpotlightIndex(4);
-                    } else if (spotlightIndex === 6) {
-                      handleClientSubTabClick('workouts', true);
-                      setSpotlightIndex(5);
-                    } else if (spotlightIndex === 7) {
-                      handleClientSubTabClick('inbody', true);
-                      setSpotlightIndex(6);
-                    } else if (spotlightIndex === 8) {
-                      setActiveTab('clients');
-                      handleClientSubTabClick('history', true);
-                      setSpotlightIndex(7);
-                    } else if (spotlightIndex === 9) {
-                      setDeployStep(1);
-                      setSpotlightIndex(8);
-                    } else if (spotlightIndex === 10) {
-                      setDeployStep(2);
-                      setSpotlightIndex(9);
-                    } else if (spotlightIndex === 11) {
-                      setDeployStep(3);
-                      setSpotlightIndex(10);
-                    } else if (spotlightIndex === 12) {
-                      setActiveTab('deploy');
-                      setDeployStep(4);
+                    if (spotlightIndex === 4) {
                       setDeploySuccessData(null);
                       setSimulatedDeployedClient(null);
-                      setSpotlightIndex(11);
-                    } else if (spotlightIndex === 13) {
-                      setActiveTab('management');
-                      setSpotlightIndex(12);
-                    } else if (spotlightIndex === 14) {
-                      setActiveTab('subscriptions');
-                      setSpotlightIndex(13);
+                      setSpotlightIndex(3);
+                    } else if (spotlightIndex > 0) {
+                      setSpotlightIndex(spotlightIndex - 1);
                     }
                   }}
                   className={`text-[9px] font-black uppercase tracking-wider cursor-pointer bg-transparent border-none py-1 transition-colors ${spotlightIndex > 0 ? 'text-gray-400 hover:text-white' : 'text-gray-600 pointer-events-none'}`}
@@ -4789,58 +4780,9 @@ export default function DesktopCoachPortal() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (spotlightIndex === 0) {
-                      setActiveTab('clients');
-                      setSpotlightIndex(1);
-                    } else if (spotlightIndex === 1) {
-                      handleClientSelectClick('fake_client_1');
-                      handleClientSubTabClick('overview', true);
-                      setSpotlightIndex(2);
-                    } else if (spotlightIndex === 2) {
-                      handleClientSubTabClick('diet', true);
-                      setSpotlightIndex(3);
+                    if (spotlightIndex < 3) {
+                      setSpotlightIndex(spotlightIndex + 1);
                     } else if (spotlightIndex === 3) {
-                      handleClientSubTabClick('water', true);
-                      setSpotlightIndex(4);
-                    } else if (spotlightIndex === 4) {
-                      handleClientSubTabClick('workouts', true);
-                      setSpotlightIndex(5);
-                    } else if (spotlightIndex === 5) {
-                      handleClientSubTabClick('inbody', true);
-                      setSpotlightIndex(6);
-                    } else if (spotlightIndex === 6) {
-                      handleClientSubTabClick('history', true);
-                      setSpotlightIndex(7);
-                    } else if (spotlightIndex === 7) {
-                      setActiveTab('deploy');
-                      setDeployStep(1);
-                      setFormData({
-                        displayName: 'Thor Odinson',
-                        username: 'thor_god_of_thunder',
-                        password: 'mjolnir_password',
-                        clientCode: '2011',
-                        phoneNumber: '+1-555-ASGARD',
-                        age: '1500',
-                        height: '198',
-                        experience_level: 'advanced',
-                        subscriptionPeriod: '12 months',
-                        subscriptionStartDelay: '0',
-                        customSubscriptionEnd: '',
-                        injuries_notes: 'Missing right eye, reconstructed with prosthetic. Prone to lightning discharges.',
-                        goals: 'Maintain lightning channel capacity, cardiorespiratory endurance, and high volume lifting.'
-                      });
-                      setSpotlightIndex(8);
-                    } else if (spotlightIndex === 8) {
-                      setDeployStep(2);
-                      setSpotlightIndex(9);
-                    } else if (spotlightIndex === 9) {
-                      setDeployStep(3);
-                      setDeployActiveSplitKey(null);
-                      setSpotlightIndex(10);
-                    } else if (spotlightIndex === 10) {
-                      setDeployStep(4);
-                      setSpotlightIndex(11);
-                    } else if (spotlightIndex === 11) {
                       setIsSimulatingDeployment(true);
                       setTimeout(() => {
                         setDeploySuccessData({
@@ -4869,18 +4811,12 @@ export default function DesktopCoachPortal() {
                           }
                         });
                         setIsSimulatingDeployment(false);
-                        setActiveTab('management');
-                        setManagementSelectedClientId('fake_deployed_thor');
-                        fetchManagementClientDetails('fake_deployed_thor');
-                        setSpotlightIndex(12);
+                        fetchClientDetails('fake_deployed_thor', true);
+                        setSpotlightIndex(4);
                       }, 2000);
-                    } else if (spotlightIndex === 12) {
-                      setActiveTab('subscriptions');
-                      setSpotlightIndex(13);
-                    } else if (spotlightIndex === 13) {
-                      setActiveTab('profile');
-                      setSpotlightIndex(14);
-                    } else if (spotlightIndex === 14) {
+                    } else if (spotlightIndex >= 4 && spotlightIndex < 10) {
+                      setSpotlightIndex(spotlightIndex + 1);
+                    } else if (spotlightIndex === 10) {
                       setTutorialStep(3);
                     }
                   }}
@@ -4896,7 +4832,7 @@ export default function DesktopCoachPortal() {
                       Deploying...
                     </span>
                   ) : (
-                    spotlightIndex === tourSteps.length - 1 ? 'Finish Tour' : 'Next'
+                    spotlightIndex === tourSteps.length - 1 ? 'Finish Tour' : (spotlightIndex === 3 ? 'Deploy Athlete' : 'Next')
                   )}
                 </button>
               </div>
@@ -5038,7 +4974,8 @@ export default function DesktopCoachPortal() {
               setShowTutorial(true);
               setTutorialStep(1);
               setSpotlightIndex(0);
-              setActiveTab('overview');
+              setActiveTab('deploy');
+              setDeployStep(1);
               setSelectedClientId(null);
               setSelectedClientProfile(null);
               toast.success("Tutorial mode activated! Roster pre-filled with mock athletes.");
