@@ -5015,9 +5015,10 @@ export default function DesktopCoachPortal() {
           </div>
           <button 
             onClick={() => handleSidebarTabClick('profile', true)}
-            className="text-[9px] uppercase font-black tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-1.5 rounded-full shadow-md shadow-blue-500/20 hover:shadow-blue-500/35 transition-all active:scale-95 cursor-pointer border border-blue-400/20"
+            className="text-[9px] uppercase font-black tracking-widest bg-[#0c0d1e] border border-blue-500/30 hover:border-blue-500 text-blue-400 hover:text-white px-4 py-2 rounded-xl shadow-lg shadow-blue-500/5 hover:shadow-blue-500/15 transition-all duration-300 active:scale-95 cursor-pointer flex items-center gap-1.5"
           >
-            {isTrialActive ? 'Upgrade License' : 'Manage Subscription'}
+            <Sparkles size={10} className="shrink-0" />
+            <span>{isTrialActive ? 'Upgrade License' : 'Manage Subscription'}</span>
           </button>
         </div>
       )}
