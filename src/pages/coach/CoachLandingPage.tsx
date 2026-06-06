@@ -177,6 +177,21 @@ export default function CoachLandingPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
 
+  const [clientCount, setClientCount] = useState(15);
+  const [leadEmail, setLeadEmail] = useState('');
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadLoading, setLeadLoading] = useState(false);
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadEmail.trim()) return;
+    setLeadLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setLeadLoading(false);
+    setLeadSubmitted(true);
+    toast.success('Blueprint guide sent successfully!');
+  };
+
   const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
   const [attemptedStep2Submit, setAttemptedStep2Submit] = useState(false);
   const [isEmailChecking, setIsEmailChecking] = useState(false);
@@ -705,6 +720,65 @@ export default function CoachLandingPage() {
           </div>
         </div>
 
+        {/* Interactive ROI & Time Calculator */}
+        <div className="bg-[#111326]/30 border border-white/[0.04] p-8 rounded-[32px] mb-16 max-w-3xl mx-auto shadow-2xl relative overflow-hidden backdrop-blur-md">
+          <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-purple-500/5 rounded-full blur-[70px] pointer-events-none" />
+          
+          <div className="relative z-10 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="text-left space-y-1">
+                <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Estimate Your Roster Size</span>
+                <div className="text-3xl font-black text-white flex items-baseline gap-1.5">
+                  <span>{clientCount}</span>
+                  <span className="text-xs text-blue-400 font-extrabold uppercase tracking-widest">Active Athletes</span>
+                </div>
+              </div>
+              <div className="flex-1 max-w-md w-full">
+                <input
+                  type="range"
+                  min="5"
+                  max="100"
+                  value={clientCount}
+                  onChange={(e) => setClientCount(Number(e.target.value))}
+                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"
+                />
+                <div className="flex justify-between text-[9px] text-gray-500 font-black mt-2 uppercase tracking-wider">
+                  <span>5 clients</span>
+                  <span>50 clients</span>
+                  <span>100 clients</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-white/[0.04]">
+              <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03] text-left space-y-1">
+                <div className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">Admin Time Saved</div>
+                <div className="text-lg font-black text-blue-400">{Math.round(clientCount * 1.5)} Hours<span className="text-[10px] text-gray-500 font-bold">/wk</span></div>
+                <p className="text-[8.5px] text-gray-400 leading-relaxed font-medium">Reclaimed from Excel data entry, message logs & PDFs.</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03] text-left space-y-1">
+                <div className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">Hours Back / Month</div>
+                <div className="text-lg font-black text-purple-400">{Math.round(clientCount * 1.5 * 4)} Hours</div>
+                <p className="text-[8.5px] text-gray-400 leading-relaxed font-medium">Extra personal time or capacity to take on new clients.</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03] text-left space-y-1">
+                <div className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">Coach Revenue Potential</div>
+                <div className="text-lg font-black text-emerald-400">{(clientCount * 500).toLocaleString()} <span className="text-[10px] font-bold text-emerald-500">EGP</span></div>
+                <p className="text-[8.5px] text-gray-400 leading-relaxed font-medium">Based on an average monthly fee of 500 EGP per athlete.</p>
+              </div>
+            </div>
+
+            <div className="text-center p-3.5 rounded-2xl bg-blue-500/5 border border-blue-500/10 text-[10.5px] font-bold text-gray-300 flex items-center justify-center gap-1.5">
+              <Sparkles size={13} className="text-blue-400 animate-pulse" />
+              <span>
+                <strong className="text-blue-400 font-black uppercase tracking-wider">Recommended Tier: </strong>
+                {clientCount <= 15 ? '1 Month Plan — Great for starting coaches' : clientCount <= 45 ? '3 Months Plan — Save 20% on billing' : '6 Months Plan — Maximum savings for high-volume gyms'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <motion.div 
           variants={cardsContainerVariants}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"
@@ -848,6 +922,80 @@ export default function CoachLandingPage() {
             </div>
           </motion.div>
         </motion.div>
+      </motion.section>
+
+      {/* LEAD CAPTURE SECTION */}
+      <motion.section 
+        id="lead-capture" 
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: false, amount: 0.12 }}
+        className="relative z-10 max-w-4xl mx-auto px-6 py-16 border-t border-white/[0.03]"
+      >
+        <div className="bg-gradient-to-br from-[#111326]/60 to-[#161a35]/40 border border-white/[0.05] rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden text-center md:text-left md:flex md:items-center md:justify-between md:gap-8 backdrop-blur-md">
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[90px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
+
+          <div className="space-y-4 max-w-md relative z-10 text-left">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[9px] font-black uppercase tracking-wider text-purple-400">
+              Free Growth Resource
+            </span>
+            <h3 className="text-2xl font-black text-white tracking-tight leading-tight">
+              Scale Your Coaching Roster Instantly
+            </h3>
+            <p className="text-xs text-gray-400 leading-relaxed font-medium">
+              Enter your email to receive our free guide: <strong className="text-white">"The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint"</strong>. Learn the exact methods elite coaches use to retain 95%+ of their athletes.
+            </p>
+          </div>
+
+          <div className="mt-8 md:mt-0 max-w-xs w-full shrink-0 relative z-10">
+            {leadSubmitted ? (
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl text-center space-y-3"
+              >
+                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">
+                  <Check size={18} />
+                </div>
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">Check Your Inbox!</h4>
+                <p className="text-[9px] text-gray-400 leading-relaxed">
+                  We've sent the PDF guide to <strong className="text-white">{leadEmail}</strong>. Download link is active for 24 hours.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setLeadSubmitted(false)}
+                  className="text-[9px] text-emerald-400 hover:text-emerald-300 font-bold underline bg-transparent border-none cursor-pointer"
+                >
+                  Submit another email
+                </button>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleLeadSubmit} className="space-y-3">
+                <div className="space-y-1 text-left">
+                  <label className="text-[8px] uppercase tracking-wider text-gray-500 font-black pl-1">Email Address</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={leadEmail} 
+                    onChange={e => setLeadEmail(e.target.value.replace(/\s/g, ''))} 
+                    placeholder="coach@yourgym.com"
+                    className="w-full bg-[#060712]/60 border border-white/[0.06] focus:border-purple-500/50 rounded-xl p-3 text-xs text-white outline-none placeholder-gray-600 transition-all" 
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={leadLoading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-800 disabled:to-gray-800 text-white font-extrabold text-[10px] uppercase tracking-wider py-3.5 rounded-xl shadow-lg shadow-purple-600/10 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {leadLoading ? 'Sending...' : 'Send Me the Blueprint'}
+                </button>
+                <p className="text-[8px] text-gray-650 font-bold text-center">No spam. Unsubscribe anytime in 1-click.</p>
+              </form>
+            )}
+          </div>
+        </div>
       </motion.section>
 
       {/* FAQ SECTION */}
