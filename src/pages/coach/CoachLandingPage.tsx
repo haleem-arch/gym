@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import LegalModal from '../../components/LegalModals';
 import { 
-  Dumbbell, 
   Activity, 
   Apple, 
   Scale, 
@@ -139,6 +139,7 @@ const FAQ_CATEGORIES = [
 ];
 
 export default function CoachLandingPage() {
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -184,13 +185,31 @@ export default function CoachLandingPage() {
     setLoading(true);
     setErrorMessage(null);
 
+    const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
       if (error) throw error;
+      if (!authData.user) throw new Error('Sign in failed.');
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      if (profile && profile.role !== 'coach' && authData.user.id !== OWNER_ID) {
+        await supabase.auth.signOut();
+        setErrorMessage('athlete_detected');
+        return;
+      }
+
       setShowAuthModal(false);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to sign in.');
@@ -274,7 +293,7 @@ export default function CoachLandingPage() {
       setShowAuthModal(false);
 
       // Redirect to log them in automatically
-      window.location.href = '/coach-portal';
+      navigate('/coach-portal');
     } catch (err: any) {
       localStorage.removeItem('signup_in_progress');
       setErrorMessage(err.message || 'Failed to register account.');
@@ -347,12 +366,12 @@ export default function CoachLandingPage() {
       {/* HEADER NAVBAR */}
       <header className="relative z-10 max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-white/[0.04]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Dumbbell size={20} className="text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center shadow-lg border border-blue-500/20">
+            <img src="/icon.svg" alt="Life Gym Logo" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-base font-black tracking-wider text-white">LIFE GYM</h1>
-            <p className="text-[9px] text-emerald-400 font-black tracking-widest uppercase">COACH PORTAL</p>
+            <p className="text-[9px] text-emerald-400 font-black tracking-widest uppercase">YOUR ULTIMATE FITNESS COACHING APP</p>
           </div>
         </div>
 
@@ -360,23 +379,24 @@ export default function CoachLandingPage() {
           <a href="#features" className="hover:text-white transition-colors">Features</a>
           <a href="#preview" className="hover:text-white transition-colors">Platform Preview</a>
           <a href="#pricing" className="hover:text-white transition-colors">Pricing Plans</a>
+          <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <a 
-            href="/client-login"
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
-          >
-            Athlete Login
-          </a>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+            <span>Already have an account?</span>
+            <button 
+              onClick={() => openAuth('login')}
+              className="text-blue-400 hover:text-blue-300 bg-transparent border-none p-0 cursor-pointer font-black"
+            >
+              Log In (Coaches Only)
+            </button>
+          </div>
           <button 
-            onClick={() => openAuth('login')}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-300 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
-          >
-            Coach Login
-          </button>
-          <button 
-            onClick={() => openAuth('register')}
+            onClick={() => {
+              const el = document.getElementById('pricing');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
             className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-95 cursor-pointer"
           >
             Start Free Trial
@@ -405,15 +425,26 @@ export default function CoachLandingPage() {
             Design workouts splits, build nutrition targets, track body composition scans, and communicate with athletes on a single premium dashboard.
           </p>
 
-          <div className="pt-6 flex flex-col items-center justify-center gap-2">
-            <button
-              onClick={() => openAuth('register')}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-            >
-              <span>Start 14-Day Free Trial</span>
-              <ArrowRight size={14} />
-            </button>
-            <p className="text-[10px] text-gray-500 font-bold tracking-wide mt-1">No card needed</p>
+          <div className="pt-6 flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  const el = document.getElementById('pricing');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Start 14-Day Free Trial</span>
+                <ArrowRight size={14} />
+              </button>
+              <button
+                onClick={() => openAuth('login')}
+                className="w-full sm:w-auto bg-white/5 border border-white/10 hover:bg-white/10 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              >
+                Coach Login
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500 font-bold tracking-wide">Already have an account? <span onClick={() => openAuth('login')} className="text-blue-400 hover:text-blue-300 cursor-pointer underline">Log In</span> (Coaches Only)</p>
           </div>
         </motion.div>
       </section>
@@ -513,7 +544,7 @@ export default function CoachLandingPage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
               </div>
               <div className="w-48 h-4 bg-white/5 rounded-md flex items-center justify-center text-[8px] font-bold text-gray-400">
-                app.lifegym.com/coach-hub
+                app.lifegym.com/coach-portal
               </div>
               <div className="w-6 h-4" />
             </div>
@@ -541,6 +572,19 @@ export default function CoachLandingPage() {
         <div className="text-center space-y-3 mb-16">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Simple, Flexible Billing</h3>
           <p className="text-xs text-gray-400">Choose a package tailored to your coaching business goals. Swap tiers anytime.</p>
+          <p className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider mt-1">No payment or credit card required to start your free trial</p>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('faq');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline"
+            >
+              View Billing FAQ
+            </button>
+          </div>
         </div>
 
         <motion.div 
@@ -809,8 +853,8 @@ export default function CoachLandingPage() {
 
               {/* MODAL HEADER */}
               <div className="p-6 pb-4 border-b border-white/[0.04] bg-[#0c0d1b] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center">
-                  <Dumbbell size={16} className="text-white" />
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center border border-blue-500/20">
+                  <img src="/icon.svg" alt="Life Gym Logo" className="w-5 h-5 object-contain" />
                 </div>
                 <div>
                   <h4 className="text-xs font-black tracking-wider text-white">LIFE GYM COACH HUB</h4>
@@ -819,7 +863,7 @@ export default function CoachLandingPage() {
               </div>
 
               {/* error message bar */}
-              {errorMessage && (
+              {errorMessage && errorMessage !== 'athlete_detected' && (
                 <div className="bg-red-500/10 border-b border-red-500/20 text-red-400 text-[10px] font-bold p-3 text-center">
                   {errorMessage}
                 </div>
@@ -828,8 +872,29 @@ export default function CoachLandingPage() {
               {/* MODAL BODY CONTROLLER */}
               <div className="p-6">
                 {authMode === 'login' ? (
-                  /* LOGIN VIEW */
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  errorMessage === 'athlete_detected' ? (
+                    <div className="space-y-4 text-center p-2">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12" y2="18"></line></svg>
+                      </div>
+                      <h5 className="text-sm font-black text-white uppercase tracking-wider">Athlete Account Detected</h5>
+                      <p className="text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto">
+                        You are registered as an athlete. To view your workouts, log meals, and update body stats, please log in from your mobile phone.
+                      </p>
+                      <div className="p-3.5 bg-[#080910] rounded-2xl border border-white/[0.04] text-xs text-blue-400 font-extrabold break-all select-all text-center">
+                        app.lifegym.com/client-login
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setErrorMessage(null)}
+                        className="mt-4 text-xs text-blue-400 hover:text-blue-300 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline transition-all"
+                      >
+                        Back to Login
+                      </button>
+                    </div>
+                  ) : (
+                    /* LOGIN VIEW */
+                    <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Account Email</label>
                       <input 
@@ -854,7 +919,8 @@ export default function CoachLandingPage() {
                       Don't have an account? <span onClick={() => { setAuthMode('register'); setOnboardingStep(1); }} className="text-blue-400 hover:text-blue-300 font-black cursor-pointer">Register Trial</span>
                     </p>
                   </form>
-                ) : (
+                )
+              ) : (
                   /* MULTI-STEP REGISTER TRIAL VIEW */
                   <form onSubmit={e => e.preventDefault()} className="space-y-4">
                     
@@ -972,19 +1038,44 @@ export default function CoachLandingPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-start gap-2.5 my-3 text-left">
-                          <input 
-                            type="checkbox" 
-                            id="terms-checkbox"
-                            checked={acceptedTerms} 
-                            onChange={e => setAcceptedTerms(e.target.checked)}
-                            className="mt-0.5 w-3.5 h-3.5 rounded border-white/10 bg-[#060712]/60 text-blue-600 focus:ring-blue-500/30 accent-blue-600 cursor-pointer"
-                          />
-                          <label htmlFor="terms-checkbox" className="text-[10px] text-gray-400 font-medium leading-relaxed select-none">
+                        <div 
+                          onClick={() => setAcceptedTerms(!acceptedTerms)}
+                          className="flex items-start gap-3 my-3 text-left cursor-pointer group"
+                        >
+                          <div className="relative mt-0.5 shrink-0">
+                            <input 
+                              type="checkbox" 
+                              checked={acceptedTerms} 
+                              onChange={() => {}} 
+                              className="sr-only"
+                            />
+                            <motion.div 
+                              animate={{
+                                backgroundColor: acceptedTerms ? "rgba(16, 185, 129, 0.2)" : "rgba(255, 255, 255, 0.02)",
+                                borderColor: acceptedTerms ? "#10b981" : "rgba(255, 255, 255, 0.12)"
+                              }}
+                              className="w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-200"
+                            >
+                              {acceptedTerms && (
+                                <motion.svg 
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="w-2.5 h-2.5 text-emerald-400"
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  strokeWidth="3.5" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </motion.svg>
+                              )}
+                            </motion.div>
+                          </div>
+                          <span className="text-[10px] text-gray-400 font-medium leading-normal select-none">
                             I agree to the{' '}
                             <button 
                               type="button"
-                              onClick={() => openLegalModal('privacy')}
+                              onClick={(e) => { e.stopPropagation(); openLegalModal('privacy'); }}
                               className="text-blue-400 hover:text-blue-300 underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
                             >
                               Privacy Policy
@@ -992,12 +1083,12 @@ export default function CoachLandingPage() {
                             and{' '}
                             <button 
                               type="button"
-                              onClick={() => openLegalModal('terms')}
+                              onClick={(e) => { e.stopPropagation(); openLegalModal('terms'); }}
                               className="text-blue-400 hover:text-blue-300 underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
                             >
                               Terms of Use
                             </button>.
-                          </label>
+                          </span>
                         </div>
 
                         <div className="flex flex-col items-center gap-2 mt-2 w-full">

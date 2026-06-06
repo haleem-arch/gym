@@ -764,6 +764,16 @@ export default function SystemConsolePage() {
         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
           {filteredUsers.map(user => {
             const isSuspended = user.targets?.is_deactivated === true;
+            const isFreeTrial = user.targets?.is_free_trial === true;
+            let statusLabel = 'Active';
+            let statusClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            if (isSuspended) {
+              statusLabel = 'Suspended';
+              statusClass = 'bg-red-500/10 text-red-400 border-red-500/20';
+            } else if (isFreeTrial) {
+              statusLabel = 'Active (Free Trial)';
+              statusClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            }
             return (
               <div
                 key={user.id}
@@ -786,10 +796,8 @@ export default function SystemConsolePage() {
                   <p className="text-[10px] text-gray-500 font-medium">{user.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                    isSuspended ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  }`}>
-                    {isSuspended ? 'Suspended' : 'Active'}
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusClass}`}>
+                    {statusLabel}
                   </span>
                 </div>
               </div>

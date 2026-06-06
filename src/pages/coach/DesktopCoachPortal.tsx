@@ -6978,6 +6978,17 @@ export default function DesktopCoachPortal() {
                   <p className="text-xs text-gray-500 mt-1">
                     Track statuses, expiration countdowns, and manage reactivations for all athletes.
                   </p>
+                  <p className="text-[10px] text-blue-400 mt-1.5 font-bold uppercase tracking-wider">
+                    Need help? View our{' '}
+                    <a 
+                      href="/#faq" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="underline hover:text-blue-300 transition-colors"
+                    >
+                      Subscriptions FAQ
+                    </a>
+                  </p>
                 </div>
               </div>
 
@@ -9621,6 +9632,9 @@ export default function DesktopCoachPortal() {
                         } else if (start && now < start) {
                           statusText = 'Scheduled';
                           statusClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                        } else if (tg.is_free_trial === true) {
+                          statusText = 'Active (Free Trial)';
+                          statusClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
                         }
                         
                         return (
@@ -9865,6 +9879,9 @@ export default function DesktopCoachPortal() {
                         } else if (isPending) {
                           statusLabel = "PENDING";
                           statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                        } else if (tg.is_free_trial === true) {
+                          statusLabel = "ACTIVE (FREE TRIAL)";
+                          statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
                         }
                         return (
                           <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${statusColor}`}>
