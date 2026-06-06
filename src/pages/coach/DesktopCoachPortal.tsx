@@ -7685,7 +7685,8 @@ export default function DesktopCoachPortal() {
                                       }, 3000);
                                     }
                                   }}
-                                  className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border bg-blue-600 hover:bg-blue-500 border-blue-500/25 text-white transition-all active:scale-95 cursor-pointer"
+                                  disabled={deletingClient}
+                                  className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border bg-blue-600 hover:bg-blue-500 border-blue-500/25 text-white transition-all active:scale-95 cursor-pointer disabled:bg-gray-800 disabled:text-gray-500 disabled:border-gray-800"
                                 >
                                   Reactivate
                                 </button>
@@ -7693,12 +7694,12 @@ export default function DesktopCoachPortal() {
                                 <button
                                   type="button"
                                   onClick={handleToggleManagementSuspension}
-                                  disabled={managementUpdatingSuspension}
+                                  disabled={managementUpdatingSuspension || deletingClient}
                                   className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
                                     isManualDeactivated
                                       ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white'
                                       : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
-                                  }`}
+                                  } disabled:bg-gray-800 disabled:text-gray-500 disabled:border-gray-800 disabled:cursor-not-allowed`}
                                 >
                                   {managementUpdatingSuspension ? 'Updating...' : (isManualDeactivated ? 'Reactivate' : 'Suspend')}
                                 </button>
@@ -7716,13 +7717,14 @@ export default function DesktopCoachPortal() {
                             type="text"
                             value={managementNewPassword}
                             onChange={e => setManagementNewPassword(e.target.value)}
+                            disabled={managementUpdatingPassword || deletingClient}
                             placeholder="New passcode (Min 6 chars)"
-                            className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                            className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500 disabled:opacity-50"
                           />
                           <button
                             type="submit"
-                            disabled={managementUpdatingPassword || !managementNewPassword.trim()}
-                            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase px-4 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                            disabled={managementUpdatingPassword || deletingClient || !managementNewPassword.trim()}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase px-4 py-2 rounded-xl transition-all cursor-pointer disabled:bg-gray-850 disabled:text-gray-500 disabled:cursor-not-allowed"
                           >
                             Update
                           </button>

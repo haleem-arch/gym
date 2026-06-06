@@ -2853,12 +2853,12 @@ export default function DashboardPage() {
                   <div className="border-t border-white/[0.04] pt-3 flex gap-3.5 select-none">
                     <button
                       onClick={() => handleUpdateClientSuspension(!profileTargets?.is_deactivated)}
-                      disabled={managementUpdatingSuspension}
+                      disabled={managementUpdatingSuspension || deletingClient}
                       className={`flex-1 py-3 text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all shadow-md ${
                         profileTargets?.is_deactivated
                           ? 'bg-emerald-600 hover:bg-emerald-500'
                           : 'bg-amber-600 hover:bg-amber-500'
-                      }`}
+                      } disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed`}
                     >
                       {profileTargets?.is_deactivated ? 'Reactivate access' : 'Suspend client'}
                     </button>
@@ -2877,12 +2877,13 @@ export default function DashboardPage() {
                     placeholder="New client passcode PIN (min 6 characters)"
                     value={managementNewPassword}
                     onChange={e => setManagementNewPassword(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-bold"
+                    disabled={managementUpdatingPassword || deletingClient}
+                    className="w-full bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 font-bold disabled:opacity-50"
                   />
                   <button
                     onClick={handleUpdateClientPassword}
-                    disabled={managementUpdatingPassword}
-                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all shadow-md select-none"
+                    disabled={managementUpdatingPassword || deletingClient}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all shadow-md select-none"
                   >
                     Save client passcode
                   </button>

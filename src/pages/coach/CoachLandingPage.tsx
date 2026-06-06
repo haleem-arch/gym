@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Sparkles,
   Phone,
-  Calendar
+  Calendar,
+  Dumbbell
 } from 'lucide-react';
 
 const FAQ_CATEGORIES = [
@@ -145,6 +146,9 @@ export default function CoachLandingPage() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showCreationLoader, setShowCreationLoader] = useState(false);
+  const [creationProgress, setCreationProgress] = useState(0);
+  const [creationText, setCreationText] = useState('Here we start...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [legalModalOpen, setLegalModalOpen] = useState(false);
@@ -283,55 +287,61 @@ export default function CoachLandingPage() {
 
     setLoading(true);
     setErrorMessage(null);
+    setShowCreationLoader(true);
+    setCreationProgress(5);
+    setCreationText('Here we start...');
+
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     // Set signup in progress flag to bypass App.tsx signout race condition
     localStorage.setItem('signup_in_progress', 'true');
 
     try {
-      // 1. Create authentication user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-      });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('User creation failed.');
-
-      // 2. Normalize username
-      const baseUser = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-      const uniqueUsername = `${baseUser}${Math.floor(1000 + Math.random() * 9000)}`;
-
-      // Use display name or default for gymName internally to keep Supabase payload correct
-      const finalGymName = displayName.trim() + " Gym";
-
-      // 3. Insert profile record with role = 'coach'
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          username: uniqueUsername,
+      // 1. Start background database registration
+      const registrationPromise = (async () => {
+        // Create authentication user
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: email.trim(),
-          display_name: displayName.trim(),
-          role: 'coach',
-          targets: {
-            onboarding_completed: true,
-            is_new_signup: false,
-            show_welcome_animation: true,
-            phone_number: phone.trim(),
-            gym_name: finalGymName,
-            subscription_plan: selectedPlan || '1_month',
-            subscription_status: 'trial',
-            trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-            age: parseInt(age) || null,
-            gender: gender
-          }
+          password,
         });
 
-      if (profileError) throw profileError;
+        if (authError) throw authError;
+        if (!authData.user) throw new Error('User creation failed.');
 
-      // Notify Owner via Telegram Bot
-      try {
-        await fetch('/api/notify-new-coach', {
+        // Normalize username
+        const baseUser = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const uniqueUsername = `${baseUser}${Math.floor(1000 + Math.random() * 9000)}`;
+
+        // Use display name or default for gymName internally to keep Supabase payload correct
+        const finalGymName = displayName.trim() + " Gym";
+
+        // Insert profile record with role = 'coach'
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            username: uniqueUsername,
+            email: email.trim(),
+            display_name: displayName.trim(),
+            role: 'coach',
+            targets: {
+              onboarding_completed: true,
+              is_new_signup: false,
+              show_welcome_animation: true,
+              phone_number: phone.trim(),
+              gym_name: finalGymName,
+              subscription_plan: selectedPlan || '1_month',
+              subscription_status: 'trial',
+              trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              age: parseInt(age) || null,
+              gender: gender
+            }
+          });
+
+        if (profileError) throw profileError;
+
+        // Notify Owner via Telegram Bot (Non-blocking background fetch)
+        fetch('/api/notify-new-coach', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -343,19 +353,59 @@ export default function CoachLandingPage() {
             age: age,
             gender: gender
           })
+        }).catch(notifyErr => {
+          console.error('Failed to notify owner:', notifyErr);
         });
-      } catch (notifyErr) {
-        console.error('Failed to notify owner:', notifyErr);
+
+        // Clean signup flag so App knows they are fully ready
+        localStorage.setItem('is_new_signup', 'false');
+        localStorage.removeItem('signup_in_progress');
+      })();
+
+      // 2. Animate progress bar smoothly in parallel
+      let currentProgress = 5;
+      const progressTexts = [
+        { min: 0, max: 20, text: 'Here we start...' },
+        { min: 20, max: 40, text: 'Creating ur acc...' },
+        { min: 40, max: 60, text: 'Organizing ur experience...' },
+        { min: 60, max: 80, text: 'Prepparing tutorial...' },
+        { min: 80, max: 95, text: 'Organizing clients...' },
+        { min: 95, max: 100, text: 'Almost ready...' }
+      ];
+
+      while (currentProgress < 95) {
+        currentProgress += 1;
+        setCreationProgress(currentProgress);
+
+        const activeTextObj = progressTexts.find(t => currentProgress >= t.min && currentProgress < t.max);
+        if (activeTextObj) {
+          setCreationText(activeTextObj.text);
+        }
+
+        await delay(30); // ~3.0 seconds minimum loading experience
       }
 
-      // Clean signup flag so App knows they are fully ready
-      localStorage.setItem('is_new_signup', 'false');
-      localStorage.removeItem('signup_in_progress');
+      // 3. Await the database inserts to complete
+      await registrationPromise;
+
+      // 4. Finish animation
+      while (currentProgress < 100) {
+        currentProgress += 1;
+        setCreationProgress(currentProgress);
+        setCreationText('Almost ready...');
+        await delay(25);
+      }
+
+      setCreationText('Ready!');
+      await delay(600);
+
       setShowAuthModal(false);
+      setShowCreationLoader(false);
 
       // Redirect to log them in automatically
       navigate('/coach-portal');
     } catch (err: any) {
+      setShowCreationLoader(false);
       localStorage.removeItem('signup_in_progress');
       setErrorMessage(err.message || 'Failed to register account.');
     } finally {
@@ -1226,6 +1276,81 @@ export default function CoachLandingPage() {
             onClose={() => setLegalModalOpen(false)} 
             type={legalModalType} 
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCreationLoader && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#060713]/98 backdrop-blur-lg z-[150] flex flex-col items-center justify-center p-6 text-center select-none"
+          >
+            {/* Glowing background highlights */}
+            <div className="absolute w-72 h-72 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute w-72 h-72 bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none" style={{ transform: 'translate(100px, 100px)' }} />
+
+            <div className="space-y-8 max-w-xs relative z-10">
+              {/* Animated Lifting Dumbbell */}
+              <div className="relative flex items-center justify-center">
+                {/* Glowing ring */}
+                <motion.div
+                  animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20"
+                />
+                
+                {/* Dumbbell Icon with lifting translation */}
+                <motion.div
+                  animate={{ y: [0, -14, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border border-blue-500/35 flex items-center justify-center text-blue-400 shadow-xl shadow-blue-500/10"
+                >
+                  <Dumbbell size={32} />
+                </motion.div>
+              </div>
+
+              {/* Progress Count & Bar */}
+              <div className="space-y-4">
+                <div>
+                  <motion.span 
+                    key={creationProgress}
+                    initial={{ scale: 0.9, opacity: 0.8 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="text-4xl font-black text-white tracking-widest font-mono"
+                  >
+                    {creationProgress}
+                  </motion.span>
+                  <span className="text-sm font-black text-blue-400 tracking-wider ml-1">%</span>
+                </div>
+
+                {/* Progress bar container */}
+                <div className="w-56 h-2.5 bg-gray-950 border border-white/[0.04] rounded-full overflow-hidden p-0.5">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 via-teal-500 to-emerald-500 rounded-full transition-all duration-75"
+                    style={{ width: `${creationProgress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Animated Status Text */}
+              <div className="h-6 flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={creationText}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                    className="text-xs text-blue-400 font-extrabold tracking-widest uppercase"
+                  >
+                    {creationText}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
