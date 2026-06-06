@@ -5843,33 +5843,45 @@ export default function DesktopCoachPortal() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-1 space-y-2 no-scrollbar">
-                  {filteredClients.map(client => (
-                    <button
-                      key={client.id}
-                      onClick={() => handleClientSelectClick(client.id)}
-                      className={`w-full p-3.5 rounded-[18px] border text-left transition-all flex items-center gap-3 cursor-pointer ${
-                        selectedClientId === client.id
-                          ? 'bg-blue-600/10 border-blue-500/30 shadow-md shadow-blue-500/5'
-                          : 'bg-[#0a0b16]/40 border-white/[0.03] hover:border-white/[0.08]'
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-black flex items-center justify-center text-xs uppercase shrink-0">
-                        {client.display_name?.charAt(0) || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
-                          {client.display_name || 'Unnamed Client'}
-                          {client.targets?.client_code && (
-                            <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
-                              #{client.targets.client_code}
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-[10px] text-gray-500 truncate">@{client.username}</p>
-                      </div>
-                      <ChevronRight size={13} className="text-gray-600" />
-                    </button>
-                  ))}
+                  {filteredClients.map(client => {
+                    const isSelected = selectedClientId === client.id;
+                    return (
+                      <button
+                        key={client.id}
+                        onClick={() => handleClientSelectClick(client.id)}
+                        className={`w-full p-3.5 rounded-[18px] border text-left transition-all flex items-center gap-3 cursor-pointer relative ${
+                          isSelected
+                            ? 'border-transparent shadow-md shadow-blue-500/5'
+                            : 'bg-[#0a0b16]/40 border-white/[0.03] hover:border-white/[0.08]'
+                        }`}
+                      >
+                        {isSelected && (
+                          <motion.div
+                            layoutId="activeAthleteIndicator"
+                            className="absolute inset-0 bg-blue-600/10 border border-blue-500/30 rounded-[18px] pointer-events-none"
+                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                          />
+                        )}
+                        <div className="z-10 flex items-center gap-3 w-full">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-black flex items-center justify-center text-xs uppercase shrink-0">
+                            {client.display_name?.charAt(0) || '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                              {client.display_name || 'Unnamed Client'}
+                              {client.targets?.client_code && (
+                                <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                  #{client.targets.client_code}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-gray-500 truncate">@{client.username}</p>
+                          </div>
+                          <ChevronRight size={13} className="text-gray-600 shrink-0" />
+                        </div>
+                      </button>
+                    );
+                  })}
                   {filteredClients.length === 0 && (
                     <p className="text-xs text-gray-500 italic text-center py-12">No athletes found.</p>
                   )}
@@ -7063,30 +7075,38 @@ export default function DesktopCoachPortal() {
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500 block mb-1">Sex</label>
-                            <div className="flex gap-2">
+                            <div className={`grid grid-cols-2 p-1 bg-[#121624]/60 border rounded-xl relative transition-all ${
+                              attemptedStep1Submit && deployGender === null ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                            }`}>
                               <button
                                 type="button" onClick={() => setDeployGender('male')}
-                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${
-                                  deployGender === 'male' 
-                                    ? 'bg-blue-600 border-blue-500 text-white' 
-                                    : attemptedStep1Submit && deployGender === null
-                                      ? 'bg-gray-900 border-red-500 ring-1 ring-red-500 text-gray-400'
-                                      : 'bg-gray-900 border-gray-800 text-gray-400'
+                                className={`py-2 text-xs font-bold rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${
+                                  deployGender === 'male' ? 'text-white' : 'text-gray-500'
                                 }`}
                               >
                                 Male
+                                {deployGender === 'male' && (
+                                  <motion.div
+                                    layoutId="deploy-gender-pill"
+                                    className="absolute inset-0 bg-blue-600/20 border border-blue-500/30 rounded-lg z-[-1]"
+                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                  />
+                                )}
                               </button>
                               <button
                                 type="button" onClick={() => setDeployGender('female')}
-                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${
-                                  deployGender === 'female' 
-                                    ? 'bg-blue-600 border-blue-500 text-white' 
-                                    : attemptedStep1Submit && deployGender === null
-                                      ? 'bg-gray-900 border-red-500 ring-1 ring-red-500 text-gray-400'
-                                      : 'bg-gray-900 border-gray-800 text-gray-400'
+                                className={`py-2 text-xs font-bold rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${
+                                  deployGender === 'female' ? 'text-white' : 'text-gray-550'
                                 }`}
                               >
                                 Female
+                                {deployGender === 'female' && (
+                                  <motion.div
+                                    layoutId="deploy-gender-pill"
+                                    className="absolute inset-0 bg-purple-600/20 border border-purple-500/30 rounded-lg z-[-1]"
+                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                  />
+                                )}
                               </button>
                             </div>
                           </div>

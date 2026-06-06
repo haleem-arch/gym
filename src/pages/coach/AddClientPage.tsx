@@ -1029,32 +1029,40 @@ export default function AddClientPage() {
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Gender</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid grid-cols-2 gap-4 p-1 bg-[#121620]/60 border rounded-2xl relative transition-all ${
+                    attemptedStep1Submit && gender === null ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                  }`}>
                     <button
                       type="button"
                       onClick={() => setGender('male')}
-                      className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
-                        gender === 'male'
-                          ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.25)]'
-                          : attemptedStep1Submit && gender === null
-                            ? 'bg-[#121620]/60 border-red-500 ring-1 ring-red-500 text-gray-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
-                            : 'bg-[#121620]/60 border-gray-800 text-gray-500 hover:border-gray-700'
+                      className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-300 relative z-10 cursor-pointer ${
+                        gender === 'male' ? 'text-blue-400 font-bold' : 'text-gray-500'
                       }`}
                     >
+                      {gender === 'male' && (
+                        <motion.div
+                          layoutId="client-gender-pill"
+                          className="absolute inset-0 bg-blue-600/20 border border-blue-500/30 rounded-xl z-[-1]"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
                       <span className="text-xl">👨</span>
                       <span className="text-xs font-bold uppercase tracking-wider">Male</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setGender('female')}
-                      className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
-                        gender === 'female'
-                          ? 'bg-purple-600/20 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.25)]'
-                          : attemptedStep1Submit && gender === null
-                            ? 'bg-[#121620]/60 border-red-500 ring-1 ring-red-500 text-gray-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
-                            : 'bg-[#121620]/60 border-gray-800 text-gray-500 hover:border-gray-700'
+                      className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-300 relative z-10 cursor-pointer ${
+                        gender === 'female' ? 'text-purple-400 font-bold' : 'text-gray-500'
                       }`}
                     >
+                      {gender === 'female' && (
+                        <motion.div
+                          layoutId="client-gender-pill"
+                          className="absolute inset-0 bg-purple-600/20 border border-purple-500/30 rounded-xl z-[-1]"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
                       <span className="text-xl">👩</span>
                       <span className="text-xs font-bold uppercase tracking-wider">Female</span>
                     </button>
