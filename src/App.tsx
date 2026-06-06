@@ -97,7 +97,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = ({ userRole, userId }: { userRole: string | null; userId: string | null }) => {
+const AppContent = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
 
@@ -105,12 +105,7 @@ const AppContent = ({ userRole, userId }: { userRole: string | null; userId: str
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
 
-  useEffect(() => {
-    const isCoachOrOwner = userRole === 'coach' || userId === OWNER_ID;
-    if (isCoachOrOwner && !location.pathname.startsWith('/coach-portal') && !location.pathname.startsWith('/coach/')) {
-      navigate('/coach-portal', { replace: true });
-    }
-  }, [userRole, userId, location.pathname, navigate]);
+
 
   let direction = 1;
   if (currentIndex > prevIndex.current) direction = 1;
@@ -600,7 +595,7 @@ function App() {
                   {showWelcomeSplash ? (
                     <div className="w-full h-screen bg-[#060713]" />
                   ) : (
-                    <AppContent userRole={userRole} userId={session?.user?.id || null} />
+                    <AppContent />
                   )}
                 </>
               } />

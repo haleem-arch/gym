@@ -5073,6 +5073,16 @@ export default function DesktopCoachPortal() {
 
           <button 
             onClick={() => {
+              window.location.href = '/';
+            }}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/60 text-[10px] font-bold text-gray-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title="Go back to the athlete view of the app"
+          >
+            <ChevronLeft size={11} className="text-gray-400" /> Back to App
+          </button>
+
+          <button 
+            onClick={() => {
               setIsTutorialModeActive(true);
               setShowTutorial(true);
               setTutorialStep(1);
