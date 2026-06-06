@@ -242,46 +242,6 @@ export default function DesktopCoachPortal() {
     }
   }, [loading, coachUserId]);
 
-  useEffect(() => {
-    if (showTutorial && tutorialStep === 2) {
-      const updateRect = () => {
-        const stepIds = [
-          'tutorial-sidebar',
-          'tutorial-client-list-container',
-          'tutorial-client-tabs-container',
-          'tutorial-deploy-container',
-          'tutorial-deploy-container',
-          'tutorial-deploy-container',
-          'tutorial-deploy-container',
-          'tutorial-management-container'
-        ];
-        const id = stepIds[spotlightIndex];
-        const el = document.getElementById(id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          setSpotlightRect({
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height
-          });
-        } else {
-          setSpotlightRect(null);
-        }
-      };
-
-      const timer = setTimeout(updateRect, 100);
-      window.addEventListener('resize', updateRect);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('resize', updateRect);
-      };
-    } else {
-      setSpotlightRect(null);
-    }
-  }, [showTutorial, tutorialStep, spotlightIndex]);
-
-
   // Selected Client (Clients Tab)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedClientProfile, setSelectedClientProfile] = useState<any | null>(null);
@@ -555,6 +515,61 @@ export default function DesktopCoachPortal() {
   const [deployBfm, setDeployBfm] = useState('');
   const [deployInbodyScore, setDeployInbodyScore] = useState(75);
   const [deployCsvScans, setDeployCsvScans] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showTutorial && spotlightIndex === 9 && activeTab === 'deploy' && deployStep === 2) {
+      const timer = setTimeout(() => {
+        setDeployActiveSplitKey('PUSH');
+      }, 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [showTutorial, spotlightIndex, activeTab, deployStep]);
+
+  useEffect(() => {
+    if (showTutorial && tutorialStep === 2) {
+      const updateRect = () => {
+        const stepIds = [
+          'tutorial-sidebar',
+          'tutorial-client-list-container',
+          'tutorial-client-tabs-container', // Overview
+          'tutorial-client-tabs-container', // Diet
+          'tutorial-client-tabs-container', // Water
+          'tutorial-client-tabs-container', // Workouts
+          'tutorial-client-tabs-container', // InBody
+          'tutorial-client-tabs-container', // History
+          'tutorial-deploy-container',       // Identity
+          'tutorial-deploy-container',       // Workouts
+          'tutorial-deploy-container',       // Nutrition
+          'tutorial-deploy-container',       // Biometrics
+          'tutorial-management-container',   // Athlete Control
+          'tutorial-subscriptions-container', // Subscriptions
+          'tutorial-profile-container'       // Profile Settings
+        ];
+        const id = stepIds[spotlightIndex];
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          setSpotlightRect({
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+          });
+        } else {
+          setSpotlightRect(null);
+        }
+      };
+
+      const timer = setTimeout(updateRect, 100);
+      window.addEventListener('resize', updateRect);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', updateRect);
+      };
+    } else {
+      setSpotlightRect(null);
+    }
+  }, [showTutorial, tutorialStep, spotlightIndex, activeTab, clientActiveTab, selectedClientId, deployStep, managementSelectedClientId]);
 
 
 
@@ -4465,28 +4480,56 @@ export default function DesktopCoachPortal() {
           desc: "Here is your athlete list. We've loaded two simulated athletes: Steve Rogers and Tony Stark. Choose Steve Rogers or click Next to open his dossier."
         },
         {
-          title: "Athlete Dossier & Profile Tabs",
-          desc: "Great! You are now viewing Steve's file. Explore his targets by clicking the tabs (Overview, Diet, Water, Workouts, InBody, History) in the highlighted window. Click Next to switch to Deploy New Athlete."
+          title: "Dossier: Overview Tab",
+          desc: "In the Overview tab, check the athlete's primary details: weight, height, age, and dynamic nutrition targets (Calories, Protein, Carbs, Fat, Water)."
         },
         {
-          title: "Deploy New Athlete — Identity",
+          title: "Dossier: Diet Logs Tab",
+          desc: "In the Diet Logs tab, check the daily meals logged by the athlete. Click on any log to open a receipt details view showing exact items, calories, and macronutrients."
+        },
+        {
+          title: "Dossier: Water Logs Tab",
+          desc: "In the Water Logs tab, track client hydration levels. Review daily fluid intake trends against targets."
+        },
+        {
+          title: "Dossier: Training Plans Tab",
+          desc: "In the Training Plans tab, configure work/rest day types and view scheduled exercises. Tap calendar days to review workout routines."
+        },
+        {
+          title: "Dossier: InBody Scans Tab",
+          desc: "In the InBody Scans tab, analyze body composition scans (Weight, Skeletal Muscle Mass, Percent Body Fat, and Segmental Lean distribution)."
+        },
+        {
+          title: "Dossier: History Timeline",
+          desc: "In the History tab, view a chronological feed of all client activity: workouts completed, diet logs recorded, weight scans, and fluid intake logs."
+        },
+        {
+          title: "Deploy Wizard — Identity",
           desc: "Step 1 of the Deployment Wizard: Identity & Auth Credentials. We have prefilled Thor's basic information. Click Next to review workouts configuration."
         },
         {
-          title: "Deploy New Athlete — Workouts",
-          desc: "Step 2 of the wizard: Training Split & Weekly Schedule defaults. Click Next to proceed to nutrition targets."
+          title: "Deploy Wizard — Workouts & Split Day Animations",
+          desc: "Step 2 of the wizard: Training Split & Weekly Schedule defaults. Look at the animated arrows pointing to the splits. Push Split Day expands to show exercise details!"
         },
         {
-          title: "Deploy New Athlete — Nutrition",
+          title: "Deploy Wizard — Nutrition",
           desc: "Step 3 of the wizard: Baseline nutrition macros. Set calorie targets and protein, carbohydrate, and fat splits. Click Next to go to biometrics."
         },
         {
-          title: "Deploy New Athlete — Biometrics & Setup",
+          title: "Deploy Wizard — Biometrics & Setup",
           desc: "Step 4 of the wizard: Baseline Biometrics. Review all details and click Next to run the simulated deployment setup!"
         },
         {
           title: "Athlete Control Center",
-          desc: "Deployment successful! In the Athlete Control Center, you can manage login passcodes, adjust parameters, or suspend athlete access. Click Finish Tour to complete the onboarding guide!"
+          desc: "Deployment successful! In the Athlete Control Center, you can manage login passcodes, adjust parameters, or suspend athlete access. Click Next to review Subscriptions."
+        },
+        {
+          title: "Subscriptions Manager",
+          desc: "In the Subscriptions tab, monitor client subscription remaining duration, expiration dates, countdowns, and suspend status."
+        },
+        {
+          title: "Profile Settings",
+          desc: "In the Profile tab, manage your administrative coach settings, update login credentials, configure payments, and review activity logs."
         }
       ];
 
@@ -4533,10 +4576,14 @@ export default function DesktopCoachPortal() {
               layoutId="spotlight-card"
               className="fixed bg-[#111326]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-2xl w-[280px] pointer-events-auto z-[101] flex flex-col"
               style={{
-                left: spotlightRect.left + spotlightRect.width + 20 > window.innerWidth - 300 
-                  ? spotlightRect.left - 300 
-                  : spotlightRect.left + spotlightRect.width + 20,
-                top: Math.max(20, Math.min(window.innerHeight - 300, spotlightRect.top - 10))
+                left: spotlightRect.width > 500
+                  ? window.innerWidth - 320
+                  : (spotlightRect.left + spotlightRect.width + 20 > window.innerWidth - 300 
+                      ? Math.max(320, spotlightRect.left - 300) 
+                      : spotlightRect.left + spotlightRect.width + 20),
+                top: spotlightRect.width > 500
+                  ? window.innerHeight - 260
+                  : Math.max(20, Math.min(window.innerHeight - 300, spotlightRect.top - 10))
               }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
             >
@@ -4568,24 +4615,45 @@ export default function DesktopCoachPortal() {
                       setSelectedClientId(null);
                       setSpotlightIndex(1);
                     } else if (spotlightIndex === 3) {
-                      setActiveTab('clients');
-                      handleClientSelectClick('fake_client_1');
+                      handleClientSubTabClick('overview');
                       setSpotlightIndex(2);
                     } else if (spotlightIndex === 4) {
-                      setDeployStep(1);
+                      handleClientSubTabClick('diet');
                       setSpotlightIndex(3);
                     } else if (spotlightIndex === 5) {
-                      setDeployStep(2);
+                      handleClientSubTabClick('water');
                       setSpotlightIndex(4);
                     } else if (spotlightIndex === 6) {
-                      setDeployStep(3);
+                      handleClientSubTabClick('workouts');
                       setSpotlightIndex(5);
                     } else if (spotlightIndex === 7) {
+                      handleClientSubTabClick('inbody');
+                      setSpotlightIndex(6);
+                    } else if (spotlightIndex === 8) {
+                      setActiveTab('clients');
+                      handleClientSubTabClick('history');
+                      setSpotlightIndex(7);
+                    } else if (spotlightIndex === 9) {
+                      setDeployStep(1);
+                      setSpotlightIndex(8);
+                    } else if (spotlightIndex === 10) {
+                      setDeployStep(2);
+                      setSpotlightIndex(9);
+                    } else if (spotlightIndex === 11) {
+                      setDeployStep(3);
+                      setSpotlightIndex(10);
+                    } else if (spotlightIndex === 12) {
                       setActiveTab('deploy');
                       setDeployStep(4);
                       setDeploySuccessData(null);
                       setSimulatedDeployedClient(null);
-                      setSpotlightIndex(6);
+                      setSpotlightIndex(11);
+                    } else if (spotlightIndex === 13) {
+                      setActiveTab('management');
+                      setSpotlightIndex(12);
+                    } else if (spotlightIndex === 14) {
+                      setActiveTab('subscriptions');
+                      setSpotlightIndex(13);
                     }
                   }}
                   className={`text-[9px] font-black uppercase tracking-wider cursor-pointer bg-transparent border-none py-1 transition-colors ${spotlightIndex > 0 ? 'text-gray-400 hover:text-white' : 'text-gray-600 pointer-events-none'}`}
@@ -4602,8 +4670,24 @@ export default function DesktopCoachPortal() {
                       setSpotlightIndex(1);
                     } else if (spotlightIndex === 1) {
                       handleClientSelectClick('fake_client_1');
+                      handleClientSubTabClick('overview');
                       setSpotlightIndex(2);
                     } else if (spotlightIndex === 2) {
+                      handleClientSubTabClick('diet');
+                      setSpotlightIndex(3);
+                    } else if (spotlightIndex === 3) {
+                      handleClientSubTabClick('water');
+                      setSpotlightIndex(4);
+                    } else if (spotlightIndex === 4) {
+                      handleClientSubTabClick('workouts');
+                      setSpotlightIndex(5);
+                    } else if (spotlightIndex === 5) {
+                      handleClientSubTabClick('inbody');
+                      setSpotlightIndex(6);
+                    } else if (spotlightIndex === 6) {
+                      handleClientSubTabClick('history');
+                      setSpotlightIndex(7);
+                    } else if (spotlightIndex === 7) {
                       setActiveTab('deploy');
                       setDeployStep(1);
                       setFormData({
@@ -4621,17 +4705,18 @@ export default function DesktopCoachPortal() {
                         injuries_notes: 'Missing right eye, reconstructed with prosthetic. Prone to lightning discharges.',
                         goals: 'Maintain lightning channel capacity, cardiorespiratory endurance, and high volume lifting.'
                       });
-                      setSpotlightIndex(3);
-                    } else if (spotlightIndex === 3) {
+                      setSpotlightIndex(8);
+                    } else if (spotlightIndex === 8) {
                       setDeployStep(2);
-                      setSpotlightIndex(4);
-                    } else if (spotlightIndex === 4) {
+                      setSpotlightIndex(9);
+                    } else if (spotlightIndex === 9) {
                       setDeployStep(3);
-                      setSpotlightIndex(5);
-                    } else if (spotlightIndex === 5) {
+                      setDeployActiveSplitKey(null);
+                      setSpotlightIndex(10);
+                    } else if (spotlightIndex === 10) {
                       setDeployStep(4);
-                      setSpotlightIndex(6);
-                    } else if (spotlightIndex === 6) {
+                      setSpotlightIndex(11);
+                    } else if (spotlightIndex === 11) {
                       setIsSimulatingDeployment(true);
                       setTimeout(() => {
                         setDeploySuccessData({
@@ -4663,9 +4748,15 @@ export default function DesktopCoachPortal() {
                         setActiveTab('management');
                         setManagementSelectedClientId('fake_deployed_thor');
                         fetchManagementClientDetails('fake_deployed_thor');
-                        setSpotlightIndex(7);
+                        setSpotlightIndex(12);
                       }, 2000);
-                    } else if (spotlightIndex === 7) {
+                    } else if (spotlightIndex === 12) {
+                      setActiveTab('subscriptions');
+                      setSpotlightIndex(13);
+                    } else if (spotlightIndex === 13) {
+                      setActiveTab('profile');
+                      setSpotlightIndex(14);
+                    } else if (spotlightIndex === 14) {
                       setTutorialStep(3);
                     }
                   }}
@@ -5633,7 +5724,7 @@ export default function DesktopCoachPortal() {
                     <p className="text-xs max-w-[280px] leading-relaxed">Select an athlete from the side directory to view their complete nutrition goals, training split templates, biometrics, and scan records.</p>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div id="tutorial-client-tabs-container" className="space-y-6">
                     
                     {/* Detail Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.05] pb-4">
@@ -5666,7 +5757,7 @@ export default function DesktopCoachPortal() {
                     </div>
 
                     {/* Client Detail Sub-Tabs Navigation */}
-                    <div id="tutorial-client-tabs-container" className="flex border-b border-white/[0.05] gap-4 mt-4 font-sans no-scrollbar overflow-x-auto pb-[2px]">
+                    <div className="flex border-b border-white/[0.05] gap-4 mt-4 font-sans no-scrollbar overflow-x-auto pb-[2px]">
                       {([
                         { id: 'overview', label: 'Overview', icon: <Activity size={13} /> },
                         { id: 'diet', label: 'Diet Logs', icon: <Apple size={13} /> },
@@ -6564,7 +6655,10 @@ export default function DesktopCoachPortal() {
 
           {/* TAB 3: DEPLOY NEW ATHLETE (Stepped Wizard Form) */}
           {activeTab === 'deploy' && (
-            <div id="tutorial-deploy-container" className="max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6">
+            <div 
+              id="tutorial-deploy-container" 
+              className={`max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6 max-h-[calc(100vh-190px)] overflow-y-auto no-scrollbar ${showTutorial ? 'pointer-events-none select-none' : ''}`}
+            >
               
               <div className="flex justify-between items-start border-b border-gray-800 pb-4">
                 <div>
@@ -6836,7 +6930,51 @@ export default function DesktopCoachPortal() {
 
                     {/* STEP 2: WORKOUTS TEMPLATE PROGRAM */}
                     {deployStep === 2 && (
-                      <div className="space-y-4">
+                      <div className="space-y-4 relative">
+                        {showTutorial && spotlightIndex === 9 && (
+                          <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+                            <svg className="w-full h-full" style={{ position: 'absolute', top: 0, left: 0 }}>
+                              <defs>
+                                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                                </marker>
+                              </defs>
+                              {/* Arrow 1 to Push Split */}
+                              <motion.path
+                                d="M 580,20 Q 400,20 180,60"
+                                fill="transparent"
+                                stroke="#3b82f6"
+                                strokeWidth="2.5"
+                                markerEnd="url(#arrow)"
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                              />
+                              {/* Arrow 2 to Pull Split */}
+                              <motion.path
+                                d="M 580,20 Q 400,80 180,120"
+                                fill="transparent"
+                                stroke="#3b82f6"
+                                strokeWidth="2.5"
+                                markerEnd="url(#arrow)"
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                              />
+                              {/* Arrow 3 to Legs Split */}
+                              <motion.path
+                                d="M 580,20 Q 400,140 180,185"
+                                fill="transparent"
+                                stroke="#3b82f6"
+                                strokeWidth="2.5"
+                                markerEnd="url(#arrow)"
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+                              />
+                            </svg>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                           <h3 className="text-xs font-black uppercase text-blue-400">Step 2: Training template splits ({deploySplits.length} splits)</h3>
                           <div className="flex gap-2">
@@ -7156,7 +7294,7 @@ export default function DesktopCoachPortal() {
                   <select
                     value={managementSelectedClientId}
                     onChange={e => setManagementSelectedClientId(e.target.value)}
-                    className="bg-transparent text-xs font-black text-white outline-none cursor-pointer max-w-[200px]"
+                    className="bg-transparent text-xs font-black text-white outline-none cursor-pointer max-w-[320px]"
                   >
                     <option value="" disabled className="bg-[#0b0c16]">Select client...</option>
                     {activeClientsList
@@ -7602,7 +7740,7 @@ export default function DesktopCoachPortal() {
 
           {/* TAB 5: SUBSCRIPTIONS */}
           {activeTab === 'subscriptions' && (
-            <div className="space-y-6">
+            <div id="tutorial-subscriptions-container" className="space-y-6">
               {/* Header */}
               <div className="flex justify-between items-center bg-[#0c1020]/40 p-6 border border-gray-850 rounded-3xl">
                 <div>
@@ -8149,7 +8287,7 @@ export default function DesktopCoachPortal() {
           )}
 
           {activeTab === 'profile' && (
-            <div className="space-y-8 max-w-4xl">
+            <div id="tutorial-profile-container" className="space-y-8 max-w-4xl">
               <div className="border-b border-gray-800/80 pb-6">
                 <h2 className="text-3xl font-black text-white uppercase tracking-wider bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
                   Coach Portal Profile Settings
