@@ -562,9 +562,11 @@ export default function DesktopCoachPortal() {
 
       const timer = setTimeout(updateRect, 100);
       window.addEventListener('resize', updateRect);
+      window.addEventListener('scroll', updateRect, true);
       return () => {
         clearTimeout(timer);
         window.removeEventListener('resize', updateRect);
+        window.removeEventListener('scroll', updateRect, true);
       };
     } else {
       setSpotlightRect(null);
@@ -4473,63 +4475,63 @@ export default function DesktopCoachPortal() {
       const tourSteps = [
         {
           title: "Your Command Center",
-          desc: "This sidebar allows you to quickly toggle between your client roster, onboarding tools, subscriptions, and profile configurations. Click Next to go to the Athlete Directory."
+          desc: "This sidebar is your central control dashboard. Use it to switch between operational charts (Overview), the client roster (Athlete Directory), deployment tools (Deploy New Athlete), login security (Athlete Control), client active licenses (Subscriptions), and administrative profile controls (Profile Settings). Click Next to proceed."
         },
         {
           title: "Athlete Directory",
-          desc: "Here is your athlete list. We've loaded two simulated athletes: Steve Rogers and Tony Stark. Choose Steve Rogers or click Next to open his dossier."
+          desc: "This panel displays all active and simulated athletes assigned to your coaching license. We have loaded two simulated clients, Steve Rogers and Tony Stark. Selecting an athlete displays their comprehensive files. Click Next to review Steve's details."
         },
         {
           title: "Dossier: Overview Tab",
-          desc: "In the Overview tab, check the athlete's primary details: weight, height, age, and dynamic nutrition targets (Calories, Protein, Carbs, Fat, Water)."
+          desc: "The Overview tab displays the athlete's key biometrics: current body weight, height, age, active daily targets (Calories, Protein, Carbs, Fat, Water), and daily macro charts. It provides an immediate snapshot of their baseline physical profile."
         },
         {
           title: "Dossier: Diet Logs Tab",
-          desc: "In the Diet Logs tab, check the daily meals logged by the athlete. Click on any log to open a receipt details view showing exact items, calories, and macronutrients."
+          desc: "This tab monitors daily food entries logged by the athlete. Tap any logged entry to review a detailed receipt breakdown of meals, macronutrients, and logged times. Ideal for auditing diet adherence in real-time."
         },
         {
           title: "Dossier: Water Logs Tab",
-          desc: "In the Water Logs tab, track client hydration levels. Review daily fluid intake trends against targets."
+          desc: "Track daily hydration benchmarks against the active target goal. Review historical daily timeline water logs, log instant intake volumes, or clear the day's records."
         },
         {
           title: "Dossier: Training Plans Tab",
-          desc: "In the Training Plans tab, configure work/rest day types and view scheduled exercises. Tap calendar days to review workout routines."
+          desc: "Review the client's current weekly training splits. Click on individual split day cards (e.g. Push, Pull, Legs) to preview exercise descriptions, target sets, reps, and rest periods, and configure work or rest day types."
         },
         {
           title: "Dossier: InBody Scans Tab",
-          desc: "In the InBody Scans tab, analyze body composition scans (Weight, Skeletal Muscle Mass, Percent Body Fat, and Segmental Lean distribution)."
+          desc: "Analyze body composition scans. View progress metrics like Skeletal Muscle Mass (SMM), Percent Body Fat (PBF), and Segmental Lean distribution (analyzing muscle balance across both arms, legs, and trunk)."
         },
         {
           title: "Dossier: History Timeline",
-          desc: "In the History tab, view a chronological feed of all client activity: workouts completed, diet logs recorded, weight scans, and fluid intake logs."
+          desc: "The chronological feed lists every single completion record for this athlete: workouts completed, diet logs saved, water logs updated, and weight scans recorded, providing a complete historical narrative."
         },
         {
           title: "Deploy Wizard — Identity",
-          desc: "Step 1 of the Deployment Wizard: Identity & Auth Credentials. We have prefilled Thor's basic information. Click Next to review workouts configuration."
+          desc: "Step 1: Identity and Auth Credentials. Register a client profile by specifying their name, handle, age, height, phone number, and a custom secure passcode. We've prefilled Thor Odinson's profile to get started."
         },
         {
-          title: "Deploy Wizard — Workouts & Split Day Animations",
-          desc: "Step 2 of the wizard: Training Split & Weekly Schedule defaults. Look at the animated arrows pointing to the splits. Push Split Day expands to show exercise details!"
+          title: "Deploy Wizard — Workouts Split Day",
+          desc: "Step 2: Training Split & Weekly Schedule defaults. Look at the animated blue arrows pointing to your Push, Pull, and Legs templates. The Push accordion automatically opens to display planned exercises."
         },
         {
           title: "Deploy Wizard — Nutrition",
-          desc: "Step 3 of the wizard: Baseline nutrition macros. Set calorie targets and protein, carbohydrate, and fat splits. Click Next to go to biometrics."
+          desc: "Step 3: Nutrition targets. Establish base work-day calories and macronutrient splits (Protein, Carbs, Fat) along with rest-day overrides."
         },
         {
           title: "Deploy Wizard — Biometrics & Setup",
-          desc: "Step 4 of the wizard: Baseline Biometrics. Review all details and click Next to run the simulated deployment setup!"
+          desc: "Step 4: Baseline Biometrics. Review final details, upload optional InBody scan files, and trigger the deployment loading sequence."
         },
         {
           title: "Athlete Control Center",
-          desc: "Deployment successful! In the Athlete Control Center, you can manage login passcodes, adjust parameters, or suspend athlete access. Click Next to review Subscriptions."
+          desc: "Manage athlete login credentials, suspend/restore access, set AI Coach query quotas, or completely delete client profiles."
         },
         {
           title: "Subscriptions Manager",
-          desc: "In the Subscriptions tab, monitor client subscription remaining duration, expiration dates, countdowns, and suspend status."
+          desc: "Monitor active athlete subscription details: subscription tier, activation dates, expiration countdowns, and suspend status."
         },
         {
           title: "Profile Settings",
-          desc: "In the Profile tab, manage your administrative coach settings, update login credentials, configure payments, and review activity logs."
+          desc: "Configure coach profile details, reset your admin password, check payment subscriptions, and review administrative activity logs."
         }
       ];
 
@@ -4576,14 +4578,31 @@ export default function DesktopCoachPortal() {
               layoutId="spotlight-card"
               className="fixed bg-[#111326]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-2xl w-[280px] pointer-events-auto z-[101] flex flex-col"
               style={{
-                left: spotlightRect.width > 500
-                  ? window.innerWidth - 320
-                  : (spotlightRect.left + spotlightRect.width + 20 > window.innerWidth - 300 
-                      ? Math.max(320, spotlightRect.left - 300) 
-                      : spotlightRect.left + spotlightRect.width + 20),
-                top: spotlightRect.width > 500
-                  ? window.innerHeight - 260
-                  : Math.max(20, Math.min(window.innerHeight - 300, spotlightRect.top - 10))
+                left: (() => {
+                  const cardWidth = 280;
+                  const spaceLeft = spotlightRect.left;
+                  const spaceRight = window.innerWidth - (spotlightRect.left + spotlightRect.width);
+                  
+                  // Rule: If spotlight is the sidebar, place card on the right
+                  if (spotlightIndex === 0) {
+                    return spotlightRect.left + spotlightRect.width + 20;
+                  }
+                  // Rule: Prefer placing card to the left if space permits, so it is "out of the box"
+                  if (spaceLeft > cardWidth + 40) {
+                    return spotlightRect.left - cardWidth - 20;
+                  }
+                  // Otherwise place it on the right of the spotlight
+                  if (spaceRight > cardWidth + 40) {
+                    return spotlightRect.left + spotlightRect.width + 20;
+                  }
+                  // Fallback: place on the left margin (e.g. over the sidebar)
+                  return 20;
+                })(),
+                top: (() => {
+                  const cardHeight = 250;
+                  // Keep card aligned with spotlight top, but bounded within the viewport safely
+                  return Math.max(40, Math.min(window.innerHeight - cardHeight - 40, spotlightRect.top));
+                })()
               }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
             >
@@ -6657,7 +6676,7 @@ export default function DesktopCoachPortal() {
           {activeTab === 'deploy' && (
             <div 
               id="tutorial-deploy-container" 
-              className={`max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6 max-h-[calc(100vh-190px)] overflow-y-auto no-scrollbar ${showTutorial ? 'pointer-events-none select-none' : ''}`}
+              className="max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6 max-h-[calc(100vh-190px)] overflow-y-auto no-scrollbar"
             >
               
               <div className="flex justify-between items-start border-b border-gray-800 pb-4">
@@ -7233,8 +7252,8 @@ export default function DesktopCoachPortal() {
                   <div className="flex justify-between items-center gap-4 bg-gray-950/20 p-4 border border-gray-800 rounded-2xl">
                     <button 
                       onClick={() => { if (deployStep > 1) setDeployStep(prev => prev - 1); }} 
-                      disabled={deployStep === 1}
-                      className="px-4 py-2.5 bg-gray-900 border border-gray-850 hover:border-gray-700 disabled:opacity-50 text-gray-400 hover:text-white rounded-xl text-xs uppercase font-black"
+                      disabled={deployStep === 1 || showTutorial}
+                      className="px-4 py-2.5 bg-gray-900 border border-gray-850 hover:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-400 hover:text-white rounded-xl text-xs uppercase font-black"
                     >
                       Back Step
                     </button>
@@ -7248,14 +7267,15 @@ export default function DesktopCoachPortal() {
                           setDeployError(null);
                           setDeployStep(prev => prev + 1);
                         }}
-                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs uppercase font-black"
+                        disabled={showTutorial}
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs uppercase font-black"
                       >
                         Next Step
                       </button>
                     ) : (
                       <button 
                         onClick={handleDeployAthlete} 
-                        disabled={deployLoading}
+                        disabled={deployLoading || showTutorial}
                         className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-xs uppercase font-black shadow-lg shadow-blue-500/20"
                       >
                         {deployLoading ? '⏳ Deploying...' : '🚀 Deploy Athlete'}
