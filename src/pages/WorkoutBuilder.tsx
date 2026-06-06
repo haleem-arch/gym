@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
-  ArrowLeft, Plus, Trash2, GripVertical, Search, Check,
-  Save, Play, Dumbbell, X, BookOpen, Edit2
+  Plus, Trash2, GripVertical, Search, Check,
+  Save, Play, Dumbbell, X, BookOpen, Edit2, ChevronLeft
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -697,10 +697,10 @@ const WorkoutBuilder = () => {
       {/* ── Header ── */}
       <div className="flex items-center gap-3.5">
         <button
-          onClick={() => navigate('/workout')}
-          className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center justify-center active:scale-90 cursor-pointer"
+          onClick={() => navigate(-1)}
+          className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center"
         >
-          <ArrowLeft size={18} />
+          <ChevronLeft size={16} className="text-gray-400" />
         </button>
         <div>
           <h1 className="text-lg font-black text-white uppercase tracking-widest leading-tight">

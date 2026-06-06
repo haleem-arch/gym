@@ -5,7 +5,7 @@ import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import type { WorkoutExercise } from '../hooks/useActiveWorkout';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { RestTimer } from '../components/RestTimer';
-import { Check, ArrowLeft, Clock } from 'lucide-react';
+import { Check, Clock, ChevronLeft } from 'lucide-react';
 
 const WorkoutTracker = () => {
   const { state } = useLocation();
@@ -184,8 +184,8 @@ const WorkoutTracker = () => {
   return (
     <div className="flex flex-col min-h-full bg-background relative pb-28">
       <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between">
-        <button onClick={() => navigate('/workout')} className="text-gray-400 hover:text-white p-1">
-          <ArrowLeft size={24} />
+        <button onClick={() => navigate(-1)} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center">
+          <ChevronLeft size={16} className="text-gray-400" />
         </button>
         <div className="text-center">
           <h1 className="font-bold text-white tracking-tight">{workout.title}</h1>

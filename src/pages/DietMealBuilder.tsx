@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus, ChevronLeft } from 'lucide-react';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { useDiet, type DietMeal, type DietMealItem } from '../hooks/useDiet';
 import { DumbbellLoader } from '../components/DumbbellLoader';
@@ -66,8 +66,8 @@ const DietMealBuilder = () => {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background">
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-gray-800 p-4 flex items-center gap-4">
-        <button onClick={() => navigate('/diet')} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
-          <ArrowLeft size={24} />
+        <button onClick={() => navigate(-1)} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center">
+          <ChevronLeft size={16} className="text-gray-400" />
         </button>
         <h1 className="text-xl font-bold text-white flex-1">{meal.name}</h1>
       </div>

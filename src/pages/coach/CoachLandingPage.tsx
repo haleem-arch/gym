@@ -13,7 +13,6 @@ import {
   Lock, 
   Shield, 
   X,
-  Play,
   CheckCircle2,
   Sparkles
 } from 'lucide-react';
@@ -31,11 +30,9 @@ export default function CoachLandingPage() {
   const [displayName, setDisplayName] = useState('');
   const [gymName, setGymName] = useState('');
   const [phone, setPhone] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro' | 'agency'>('pro');
+  const [selectedPlan, setSelectedPlan] = useState<'2_weeks' | '1_month' | '3_months' | '6_months'>('1_month');
 
-
-
-  const openAuth = (mode: 'login' | 'register', plan?: 'starter' | 'pro' | 'agency') => {
+  const openAuth = (mode: 'login' | 'register', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
     setAuthMode(mode);
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
@@ -132,10 +129,54 @@ export default function CoachLandingPage() {
     }
   };
 
+  // Framer Motion variants for section slide down
+  const sectionVariants = {
+    hidden: { opacity: 0, y: -45 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }
+    }
+  };
 
+  // Staggered card container variants
+  const cardsContainerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.08
+      }
+    }
+  };
+
+  // Card slide-down entrance
+  const cardEntranceVariants = {
+    hidden: { opacity: 0, y: -25 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring" as const, stiffness: 120, damping: 15 }
+    }
+  };
+
+  // Icon interactive hover and load variants
+  const iconVariants = {
+    hidden: { scale: 0.75, rotate: -15, opacity: 0 },
+    visible: { 
+      scale: 1, 
+      rotate: 0, 
+      opacity: 1,
+      transition: { type: "spring" as const, stiffness: 220, damping: 15 }
+    },
+    hover: { 
+      scale: 1.25, 
+      rotate: [0, -10, 15, -5, 0],
+      transition: { duration: 0.45, ease: "easeInOut" as const }
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#060713] text-gray-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#060713] text-gray-100 font-sans selection:bg-blue-500/30 scroll-smooth no-scrollbar">
       
       {/* BACKGROUND DECORATIONS */}
       <div className="absolute top-0 left-0 right-0 h-[800px] bg-gradient-to-b from-blue-600/10 via-purple-600/5 to-transparent blur-[120px] pointer-events-none" />
@@ -161,15 +202,21 @@ export default function CoachLandingPage() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <a 
+            href="/client-login"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+          >
+            Client Login
+          </a>
           <button 
             onClick={() => openAuth('login')}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-300 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-300 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
           >
             Coach Login
           </button>
           <button 
             onClick={() => openAuth('register')}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-95 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-95 cursor-pointer"
           >
             Start Free Trial
           </button>
@@ -184,7 +231,7 @@ export default function CoachLandingPage() {
           transition={{ duration: 0.5 }}
           className="space-y-6"
         >
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-wider text-blue-400">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-wider text-blue-400 animate-pulse">
             <Sparkles size={11} /> Next-Gen Fitness SaaS Platform
           </span>
 
@@ -197,7 +244,7 @@ export default function CoachLandingPage() {
             Design workouts splits, build nutrition targets, track body composition scans, and communicate with athletes on a single premium dashboard.
           </p>
 
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
             <button
               onClick={() => openAuth('register')}
               className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
@@ -205,25 +252,42 @@ export default function CoachLandingPage() {
               <span>Start 14-Day Free Trial</span>
               <ArrowRight size={14} />
             </button>
-            <a
-              href="#preview"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl text-xs font-bold text-gray-300 hover:text-white border border-white/[0.05] hover:bg-white/5 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            <button
+              onClick={() => openAuth('login')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl text-xs font-bold text-gray-300 hover:text-white border border-white/[0.05] hover:bg-white/5 transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent"
             >
-              <Play size={12} fill="currentColor" />
-              <span>Explore Platform</span>
+              <Lock size={12} />
+              <span>Coach Login</span>
+            </button>
+            <a
+              href="/client-login"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl text-xs font-bold text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:bg-blue-500/5 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Users size={12} />
+              <span>Client Portal Login</span>
             </a>
           </div>
         </motion.div>
       </section>
 
       {/* CORE FEATURES GRID */}
-      <section id="features" className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03]">
+      <motion.section 
+        id="features" 
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: false, amount: 0.12 }}
+        className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03]"
+      >
         <div className="text-center space-y-3 mb-16">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Engineered for Peak Performance</h3>
           <p className="text-xs text-gray-400 max-w-md mx-auto">Everything you need to deliver a premium service and keep your athletes accountable.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div 
+          variants={cardsContainerVariants}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
           {[
             {
               icon: <Activity className="text-blue-400" size={24} />,
@@ -256,22 +320,34 @@ export default function CoachLandingPage() {
               desc: "Integrate with our custom verification bot. Send automated client updates and handle payments easily."
             }
           ].map((feat, idx) => (
-            <div 
+            <motion.div 
               key={idx}
-              className="p-8 rounded-[24px] bg-[#111326]/30 border border-white/[0.04] hover:border-white/[0.1] hover:bg-[#111326]/50 transition-all group shadow-lg"
+              variants={cardEntranceVariants}
+              whileHover="hover"
+              className="p-8 rounded-[24px] bg-[#111326]/30 border border-white/[0.04] hover:border-white/[0.1] hover:bg-[#111326]/50 transition-all shadow-lg flex flex-col group cursor-default"
             >
-              <div className="w-12 h-12 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <motion.div 
+                variants={iconVariants}
+                className="w-12 h-12 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center mb-6"
+              >
                 {feat.icon}
-              </div>
+              </motion.div>
               <h4 className="text-sm font-black text-white mb-3 tracking-wide">{feat.title}</h4>
               <p className="text-xs text-gray-400 leading-relaxed font-medium">{feat.desc}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
       {/* PLATFORM PREVIEW MOCKUP */}
-      <section id="preview" className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.03] text-center">
+      <motion.section 
+        id="preview" 
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: false, amount: 0.12 }}
+        className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.03] text-center"
+      >
         <div className="text-center space-y-3 mb-12">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">A Look Inside the Portal</h3>
           <p className="text-xs text-gray-400">Manage your roster using our responsive grid, macros charts, and check-in trackers.</p>
@@ -335,96 +411,154 @@ export default function CoachLandingPage() {
 
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* PRICING PLANS */}
-      <section id="pricing" className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.03]">
+      <motion.section 
+        id="pricing" 
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: false, amount: 0.12 }}
+        className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03]"
+      >
         <div className="text-center space-y-3 mb-16">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Simple, Flexible Billing</h3>
-          <p className="text-xs text-gray-400">Choose a package tailored to your client roster size. Swap tiers anytime.</p>
+          <p className="text-xs text-gray-400">Choose a package tailored to your coaching business goals. Swap tiers anytime.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          
-          {/* Starter Plan */}
-          <div className="p-8 bg-[#111326]/30 border border-white/[0.04] rounded-[32px] flex flex-col justify-between relative shadow-lg">
+        <motion.div 
+          variants={cardsContainerVariants}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"
+        >
+          {/* 2 Weeks Plan */}
+          <motion.div 
+            variants={cardEntranceVariants}
+            whileHover="hover"
+            className="p-6 bg-[#111326]/30 border border-white/[0.04] rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-white/[0.1] hover:bg-[#111326]/40 transition-all group"
+          >
             <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">Starter</span>
-              <div className="flex items-baseline gap-1.5 pt-3">
-                <span className="text-3xl font-black text-white">$29</span>
-                <span className="text-xs text-gray-500 font-bold">/ month</span>
+              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">2 Weeks</span>
+              <div className="flex items-baseline gap-1.5 pt-2">
+                <span className="text-2xl font-black text-white">2,000</span>
+                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-gray-500 font-bold">/ 2 weeks</span>
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">Perfect for independent trainers getting started with their first roster.</p>
-              <ul className="space-y-2.5 pt-4 text-xs font-medium text-gray-300">
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Up to 10 clients</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Custom Workout Templates</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Macro targets management</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Basic PDF history exports</li>
+              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Perfect for testing the waters and experiencing the premium coaching tools.</p>
+              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
               </ul>
             </div>
             <button 
-              onClick={() => openAuth('register', 'starter')}
-              className="mt-8 w-full py-3.5 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl border border-white/10 transition-all cursor-pointer"
+              onClick={() => openAuth('register', '2_weeks')}
+              className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
             >
-              Start Starter Trial
+              Start 2-Week Trial
             </button>
-          </div>
+          </motion.div>
 
-          {/* Growth Plan (Popular) */}
-          <div className="p-8 bg-[#161a35]/60 border border-blue-500/30 rounded-[32px] flex flex-col justify-between relative shadow-xl scale-105">
-            <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
+          {/* 1 Month Plan (Popular) */}
+          <motion.div 
+            variants={cardEntranceVariants}
+            whileHover="hover"
+            className="p-6 bg-[#161a35]/60 border border-blue-500/30 rounded-[28px] flex flex-col justify-between relative shadow-xl scale-105 hover:border-blue-500/50 transition-all group"
+          >
+            <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white font-black text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg z-10">
               Most Popular
             </div>
             <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">Growth</span>
-              <div className="flex items-baseline gap-1.5 pt-3">
-                <span className="text-4xl font-black text-white">$79</span>
-                <span className="text-xs text-gray-500 font-bold">/ month</span>
+              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">1 Month</span>
+              <div className="flex items-baseline gap-1.5 pt-2">
+                <span className="text-2xl font-black text-white">3,500</span>
+                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-gray-500 font-bold">/ month</span>
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">For scaling professional coaches offering comprehensive, data-driven programs.</p>
-              <ul className="space-y-2.5 pt-4 text-xs font-medium text-gray-300">
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Up to 40 clients</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Unlimited Splits &amp; Workouts</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Segmental InBody scan analyzer</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Unified log reports &amp; Excel downloads</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Telegram chatbot triggers</li>
+              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Our standard monthly commitment, ideal for consistent training and tracking.</p>
+              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
               </ul>
             </div>
             <button 
-              onClick={() => openAuth('register', 'pro')}
-              className="mt-8 w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer"
+              onClick={() => openAuth('register', '1_month')}
+              className="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer"
             >
-              Start Growth Trial
+              Start 1-Month Trial
             </button>
-          </div>
+          </motion.div>
 
-          {/* Agency Plan */}
-          <div className="p-8 bg-[#111326]/30 border border-white/[0.04] rounded-[32px] flex flex-col justify-between relative shadow-lg">
+          {/* 3 Months Plan */}
+          <motion.div 
+            variants={cardEntranceVariants}
+            whileHover="hover"
+            className="p-6 bg-[#111326]/30 border border-white/[0.04] rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-white/[0.1] hover:bg-[#111326]/40 transition-all group"
+          >
             <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">Agency</span>
-              <div className="flex items-baseline gap-1.5 pt-3">
-                <span className="text-3xl font-black text-white">$149</span>
-                <span className="text-xs text-gray-500 font-bold">/ month</span>
+              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">3 Months</span>
+              <div className="flex items-baseline gap-1.5 pt-2">
+                <span className="text-2xl font-black text-white">8,500</span>
+                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-gray-500 font-bold">/ 3 months</span>
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">Enterprise package tailored for commercial gym centers and coaching teams.</p>
-              <ul className="space-y-2.5 pt-4 text-xs font-medium text-gray-300">
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Unlimited clients</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Shared exercises library</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Comprehensive staff dashboards</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Custom branding (white-labeling)</li>
-                <li className="flex items-center gap-2"><Check size={14} className="text-blue-400" /> Dedicated database capacity</li>
+              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Accelerate your progress with a quarterly plan. Highly recommended for transformations.</p>
+              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
               </ul>
             </div>
             <button 
-              onClick={() => openAuth('register', 'agency')}
-              className="mt-8 w-full py-3.5 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl border border-white/10 transition-all cursor-pointer"
+              onClick={() => openAuth('register', '3_months')}
+              className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
             >
-              Start Agency Trial
+              Start 3-Month Trial
             </button>
-          </div>
+          </motion.div>
 
-        </div>
-      </section>
+          {/* 6 Months Plan */}
+          <motion.div 
+            variants={cardEntranceVariants}
+            whileHover="hover"
+            className="p-6 bg-[#111326]/30 border border-white/[0.04] rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-white/[0.1] hover:bg-[#111326]/40 transition-all group"
+          >
+            <div className="space-y-4">
+              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">6 Months</span>
+              <div className="flex items-baseline gap-1.5 pt-2">
+                <span className="text-2xl font-black text-white">14,000</span>
+                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-gray-500 font-bold">/ 6 months</span>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">The ultimate commitment to your goals. Best value for serious, long-term coaches.</p>
+              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
+              </ul>
+            </div>
+            <button 
+              onClick={() => openAuth('register', '6_months')}
+              className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+            >
+              Start 6-Month Trial
+            </button>
+          </motion.div>
+        </motion.div>
+      </motion.section>
 
       {/* FOOTER */}
       <footer className="relative z-10 max-w-7xl mx-auto px-6 py-12 border-t border-white/[0.04] text-center md:flex md:justify-between md:items-center">
@@ -572,7 +706,12 @@ export default function CoachLandingPage() {
                         </div>
                         <div className="bg-[#0a0b16]/40 p-4 border border-white/[0.03] rounded-2xl flex items-center justify-between">
                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Plan Selected</span>
-                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">{selectedPlan}</span>
+                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
+                            {selectedPlan === '2_weeks' ? '2 Weeks - 2,000 EGP' :
+                             selectedPlan === '1_month' ? '1 Month - 3,500 EGP' :
+                             selectedPlan === '3_months' ? '3 Months - 8,500 EGP' :
+                             '6 Months - 14,000 EGP'}
+                          </span>
                         </div>
                         <div className="flex gap-3 mt-4">
                           <button

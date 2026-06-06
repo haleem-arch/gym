@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Clock, CalendarDays, Zap, TrendingUp, Heart, Award, Sparkles, Activity, MapPin } from 'lucide-react';
+import { Clock, CalendarDays, Zap, TrendingUp, Heart, Award, Sparkles, Activity, MapPin, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polyline as LeafletPolyline, useMap } from 'react-leaflet';
@@ -237,8 +237,8 @@ const WorkoutDetail = () => {
     <div className="flex flex-col min-h-[100dvh] bg-background relative pb-28 overflow-x-hidden">
       {/* Header */}
       <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-md">
-        <button onClick={() => navigate('/workout')} className="text-gray-400 hover:text-white p-1">
-          <ArrowLeft size={24} />
+        <button onClick={() => navigate(-1)} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center">
+          <ChevronLeft size={16} className="text-gray-400" />
         </button>
         <div className="text-center font-bold text-white tracking-tight flex items-center gap-1.5">
           {isRun ? <Activity size={18} className="text-blue-400" /> : null}
