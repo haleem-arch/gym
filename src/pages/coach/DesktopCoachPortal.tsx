@@ -7371,70 +7371,61 @@ export default function DesktopCoachPortal() {
             const pendingReviewList = allLogs.filter(l => l.status === 'pending');
 
             return (
-              <div className="space-y-6 animate-fade-in text-gray-200 font-bold text-xs">
+              <div className="space-y-8 animate-fade-in text-gray-200 text-xs font-semibold">
                 
-                {/* 1. Statistics Cards Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
-                    <div className="flex justify-between items-center text-gray-500">
-                      <p className="text-[10px] font-black uppercase tracking-wider">Total Revenue</p>
-                      <DollarSign size={14} className="text-blue-400" />
-                    </div>
-                    <p className="text-3xl font-black text-white mt-1.5 font-mono">
-                      {totalRevenue.toLocaleString()} <span className="text-sm font-black text-gray-400">EGP</span>
-                    </p>
-                  </Card>
-
-                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
-                    <div className="flex justify-between items-center text-gray-500">
-                      <p className="text-[10px] font-black uppercase tracking-wider">Approved Plan Renewals</p>
-                      <TrendingUp size={14} className="text-emerald-400" />
-                    </div>
-                    <p className="text-3xl font-black text-emerald-400 mt-1.5 font-mono">
-                      {approvedCount}
-                    </p>
-                  </Card>
-
-                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
-                    <div className="flex justify-between items-center text-gray-500">
-                      <p className="text-[10px] font-black uppercase tracking-wider">Awaiting Review</p>
-                      <RefreshCw size={14} className={`text-amber-400 ${pendingCount > 0 ? 'animate-spin-slow' : ''}`} />
-                    </div>
-                    <p className={`text-3xl font-black mt-1.5 font-mono ${pendingCount > 0 ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`}>
-                      {pendingCount}
-                    </p>
-                  </Card>
-
-                  <Card className="p-5 flex flex-col gap-1 bg-[#0b0c16]/80 border border-gray-800 rounded-3xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
-                    <div className="flex justify-between items-center text-gray-500">
-                      <p className="text-[10px] font-black uppercase tracking-wider">Plan Rejections</p>
-                      <AlertTriangle size={14} className="text-red-400" />
-                    </div>
-                    <p className="text-3xl font-black text-red-400 mt-1.5 font-mono">
-                      {rejectedCount}
-                    </p>
-                  </Card>
+                {/* 1. Dashboard Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-900 pb-6">
+                  <div>
+                    <h2 className="text-base font-black text-white uppercase tracking-widest flex items-center gap-2">
+                      <CreditCard className="text-zinc-400" size={18} />
+                      Financial Logs &amp; Subscriptions
+                    </h2>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">Audit trail, transaction verification, and rate settings</p>
+                  </div>
+                  <div className="bg-zinc-950 px-3 py-1.5 border border-zinc-900 rounded-xl text-[9px] text-zinc-400 font-black uppercase tracking-widest">
+                    Portal Audit Mode
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                {/* 2. Statistics Cards Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {[
+                    { label: 'Total Revenue', value: `${totalRevenue.toLocaleString()} EGP`, icon: <DollarSign size={15} className="text-zinc-400" />, glow: 'from-zinc-500/10 to-transparent', border: 'border-zinc-900' },
+                    { label: 'Approved Plan Renewals', value: approvedCount, icon: <TrendingUp size={15} className="text-zinc-400" />, glow: 'from-zinc-500/10 to-transparent', border: 'border-zinc-900' },
+                    { label: 'Awaiting Review', value: pendingCount, icon: <RefreshCw size={15} className={`text-zinc-400 ${pendingCount > 0 ? 'animate-spin-slow' : ''}`} />, glow: 'from-zinc-500/10 to-transparent', border: 'border-zinc-900', animate: pendingCount > 0 },
+                    { label: 'Plan Rejections', value: rejectedCount, icon: <AlertTriangle size={15} className="text-zinc-400" />, glow: 'from-zinc-500/10 to-transparent', border: 'border-zinc-900' }
+                  ].map((stat, idx) => (
+                    <Card key={idx} className={`p-6 flex flex-col gap-1.5 bg-[#08080c] border ${stat.border} rounded-2xl relative overflow-hidden shadow-lg`}>
+                      <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.glow} rounded-full filter blur-xl pointer-events-none`} />
+                      <div className="flex justify-between items-center text-zinc-500">
+                        <p className="text-[9px] font-black uppercase tracking-widest">{stat.label}</p>
+                        <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-900 flex items-center justify-center">
+                          {stat.icon}
+                        </div>
+                      </div>
+                      <p className={`text-2xl font-black mt-2 font-mono tracking-tight ${stat.animate ? 'text-amber-500 animate-pulse' : 'text-white'}`}>
+                        {stat.value}
+                      </p>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                   
                   {/* Left column - 2/3 width */}
-                  <div className="lg:col-span-2 space-y-6">
-                    {/* 2. Web Registrations / Subscription Payments Review Section */}
+                  <div className="lg:col-span-2 space-y-8">
+                    
+                    {/* Pending Web Registrations Card */}
                     {pendingReviewList.length > 0 && (
-                      <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-[#1b1510]/95 via-[#1a140f]/90 to-[#120d09]/98 p-6 shadow-2xl backdrop-blur-md">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-                        <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-4">
+                      <div className="relative overflow-hidden rounded-[24px] border border-amber-500/20 bg-gradient-to-br from-[#100c08] via-[#090705] to-[#000000] p-6 shadow-2xl backdrop-blur-md">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full filter blur-3xl pointer-events-none" />
+                        <div className="flex items-center gap-3.5 border-b border-zinc-900/80 pb-4 mb-4">
                           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner flex-shrink-0 animate-pulse">
                             <Clock size={16} />
                           </div>
                           <div>
-                            <h3 className="text-sm font-black uppercase text-amber-400 tracking-wider">Pending Web Registrations</h3>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Please verify deposit transactions and approve or reject access.</p>
+                            <h3 className="text-xs font-black uppercase text-amber-400 tracking-widest">Pending Web Registrations</h3>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase mt-0.5">Please verify deposit transactions and approve or reject access.</p>
                           </div>
                         </div>
 
@@ -7445,25 +7436,27 @@ export default function DesktopCoachPortal() {
                             const isProcessing = processingPaymentId === item.coachId;
 
                             return (
-                              <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#080910]/80 border border-gray-850">
-                                <div className="flex items-start gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 font-extrabold uppercase shrink-0">
+                              <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-black border border-zinc-900 hover:border-zinc-800 transition-colors">
+                                <div className="flex items-start gap-3.5">
+                                  <div className="w-10 h-10 rounded-xl bg-zinc-905 border border-zinc-850 flex items-center justify-center text-zinc-300 font-black text-sm uppercase shrink-0">
                                     {item.coachName.charAt(0)}
                                   </div>
                                   <div>
-                                    <p className="font-extrabold text-white text-xs">{item.coachName}</p>
-                                    <p className="text-[10px] text-gray-500 font-mono">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
-                                    <p className="text-[10px] text-amber-400 mt-1.5 flex items-center gap-1.5">
-                                      <span className="bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-widest font-extrabold text-[8px]">
+                                    <p className="font-black text-white text-xs tracking-tight">{item.coachName}</p>
+                                    <p className="text-[9px] text-zinc-500 font-bold font-mono mt-0.5">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
+                                    
+                                    <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                                      <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-black text-[8px] uppercase tracking-wider">
                                         {pendingPay.duration} Plan ({pendingPay.amount})
                                       </span>
-                                      <span className="text-gray-500 font-mono">
+                                      <span className="text-zinc-650 font-mono text-[9px] font-bold">
                                         Submitted: {new Date(item.timestamp).toLocaleString()}
                                       </span>
-                                    </p>
+                                    </div>
+                                    
                                     {pendingPay.receipt && (
-                                      <div className="mt-3 flex items-center gap-2">
-                                        <span className="text-[9px] text-gray-400 font-bold uppercase">Screenshot Attached:</span>
+                                      <div className="mt-3.5 flex items-center gap-2">
+                                        <span className="text-[8px] text-zinc-500 font-black uppercase tracking-wider">Screenshot:</span>
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -7472,7 +7465,7 @@ export default function DesktopCoachPortal() {
                                               win.document.write(`<iframe src="${pendingPay.receipt}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
                                             }
                                           }}
-                                          className="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 text-[9px] text-blue-400 hover:text-blue-300 cursor-pointer hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                                          className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[8px] text-zinc-400 hover:text-white cursor-pointer hover:bg-zinc-800 transition-colors uppercase font-black tracking-wider"
                                         >
                                           View Receipt Screenshot
                                         </button>
@@ -7489,7 +7482,7 @@ export default function DesktopCoachPortal() {
                                       const reason = window.prompt("Enter rejection reason (e.g. Invalid Screenshot, Wrong Amount, Not Received):", "Invalid Screenshot");
                                       if (reason) handleRejectPaymentDirect(item.coachId, reason);
                                     }}
-                                    className="px-4 py-2 border border-red-500/30 hover:border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-red-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
+                                    className="px-3.5 py-2 border border-zinc-800 hover:border-red-500 bg-red-950/15 hover:bg-red-950/35 disabled:opacity-50 text-red-400 rounded-xl uppercase tracking-widest text-[9px] font-black cursor-pointer transition-all"
                                   >
                                     {isProcessing ? 'Processing...' : '❌ Reject'}
                                   </button>
@@ -7501,7 +7494,7 @@ export default function DesktopCoachPortal() {
                                         handleApprovePaymentDirect(item.coachId);
                                       }
                                     }}
-                                    className="px-4 py-2 border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent text-emerald-400 rounded-xl uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
+                                    className="px-3.5 py-2 border border-zinc-800 hover:border-emerald-500 bg-emerald-950/15 hover:bg-emerald-950/35 disabled:opacity-50 text-emerald-400 rounded-xl uppercase tracking-widest text-[9px] font-black cursor-pointer transition-all"
                                   >
                                     {isProcessing ? 'Processing...' : '✅ Approve & Add Plan'}
                                   </button>
@@ -7513,27 +7506,27 @@ export default function DesktopCoachPortal() {
                       </div>
                     )}
 
-                    {/* 3. Transaction Audit Ledger Table */}
-                    <div className="space-y-4">
+                    {/* Transaction Audit Ledger Table */}
+                    <div className="space-y-5">
                       {/* Search and Filters */}
                       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                         <div className="relative w-full sm:w-[320px]">
-                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
                           <input 
                             type="text"
                             value={financialsSearchQuery}
                             onChange={e => setFinancialsSearchQuery(e.target.value)}
                             placeholder="Search by coach name, plan, or details..."
-                            className="w-full bg-[#0b0c16] border border-gray-800 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                            className="w-full bg-[#050508] border border-zinc-900 hover:border-zinc-800 focus:border-zinc-700 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white outline-none transition-colors placeholder-zinc-750 font-bold"
                           />
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs font-bold text-gray-400 self-stretch sm:self-center justify-end">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest self-stretch sm:self-center justify-end">
                           <span>Filter status:</span>
                           <select
                             value={financialsStatusFilter}
                             onChange={e => setFinancialsStatusFilter(e.target.value as any)}
-                            className="bg-[#0b0c16] border border-gray-800 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-blue-500 font-bold"
+                            className="bg-black border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-zinc-700 font-bold cursor-pointer"
                           >
                             <option value="all">All Logs</option>
                             <option value="approved">Approved</option>
@@ -7543,48 +7536,48 @@ export default function DesktopCoachPortal() {
                         </div>
                       </div>
 
-                      {/* Dynamic Audit Ledger Table */}
-                      <Card className="bg-[#0b0c16] border border-gray-800 rounded-3xl overflow-hidden p-2">
+                      {/* Dynamic Audit Ledger Table Card */}
+                      <Card className="bg-black border border-zinc-900 rounded-2xl overflow-hidden p-2">
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse">
                             <thead>
-                              <tr className="border-b border-gray-800 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                <th className="py-4 px-5">Date & Time</th>
+                              <tr className="border-b border-zinc-900 text-[8px] font-black uppercase tracking-widest text-zinc-500">
+                                <th className="py-4 px-5">Date &amp; Time</th>
                                 <th className="py-4 px-5">Coach Profile</th>
                                 <th className="py-4 px-5">Plan Duration</th>
-                                <th className="py-4 px-5">EGP Amount</th>
-                                <th className="py-4 px-5">Verification Status</th>
+                                <th className="py-4 px-5">Amount</th>
+                                <th className="py-4 px-5">Status</th>
                                 <th className="py-4 px-5">Transaction Details Log</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-850">
+                            <tbody className="divide-y divide-zinc-950">
                               {filteredLogs.map(log => (
-                                <tr key={log.id} className="hover:bg-gray-900/40 transition-colors text-xs font-semibold">
-                                  <td className="py-4 px-5 text-gray-500 font-mono text-[10px]">
+                                <tr key={log.id} className="hover:bg-zinc-950/40 transition-colors text-xs font-semibold">
+                                  <td className="py-4 px-5 text-zinc-500 font-mono text-[9px]">
                                     {new Date(log.timestamp).toLocaleString()}
                                   </td>
                                   <td className="py-4 px-5">
-                                    <p className="font-extrabold text-white">{log.coachName}</p>
-                                    <p className="text-[10px] text-gray-500 font-mono">{log.coachEmail}</p>
+                                    <p className="font-black text-white text-xs">{log.coachName}</p>
+                                    <p className="text-[9px] text-zinc-500 font-mono mt-0.5">{log.coachEmail}</p>
                                   </td>
-                                  <td className="py-4 px-5 font-mono text-[11px] text-gray-300">
+                                  <td className="py-4 px-5 font-mono text-[10px] text-zinc-400">
                                     {log.duration}
                                   </td>
-                                  <td className="py-4 px-5 font-mono text-[11px] text-blue-400 font-black">
+                                  <td className="py-4 px-5 font-mono text-xs text-white font-black">
                                     {log.amount}
                                   </td>
                                   <td className="py-4 px-5">
-                                    <span className={`px-2 py-0.5 border rounded text-[8px] uppercase tracking-wider font-mono font-black ${
+                                    <span className={`px-2 py-0.5 border rounded text-[7px] uppercase tracking-wider font-mono font-black ${
                                       log.status === 'approved'
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                        ? 'bg-[#0a0f0d] border-emerald-500/20 text-emerald-400'
                                         : log.status === 'pending'
-                                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                        : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                        ? 'bg-[#0f0c0a] border-amber-500/20 text-amber-400'
+                                        : 'bg-[#0f0a0a] border-red-500/20 text-red-400'
                                     }`}>
                                       {log.status}
                                     </span>
                                   </td>
-                                  <td className="py-4 px-5 text-gray-400 font-mono text-[10px]">
+                                  <td className="py-4 px-5 text-zinc-500 font-mono text-[9px] max-w-[200px] truncate" title={log.details}>
                                     {log.details}
                                   </td>
                                 </tr>
@@ -7592,9 +7585,9 @@ export default function DesktopCoachPortal() {
 
                               {filteredLogs.length === 0 && (
                                 <tr>
-                                  <td colSpan={6} className="py-12 text-center text-gray-500 italic">
-                                    <PieChart className="w-8 h-8 text-gray-800 mx-auto mb-2 animate-pulse" />
-                                    No financial records match the selected filters.
+                                  <td colSpan={6} className="py-16 text-center text-zinc-500">
+                                    <PieChart className="w-8 h-8 text-zinc-800 mx-auto mb-2 animate-pulse" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider">No audit logs found</span>
                                   </td>
                                 </tr>
                               )}
@@ -7607,81 +7600,46 @@ export default function DesktopCoachPortal() {
 
                   {/* Right column - 1/3 width Settings Card */}
                   <div className="space-y-6">
-                    <Card className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/95 via-[#0d1228]/90 to-[#0b0c1b]/98 p-6 shadow-2xl backdrop-blur-md">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <Card className="relative overflow-hidden rounded-[24px] border border-zinc-900 bg-[#070709] p-6 shadow-xl">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-zinc-500/5 rounded-full filter blur-2xl pointer-events-none" />
                       
-                      <div className="flex items-center gap-3 border-b border-gray-800/80 pb-4 mb-5">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner shrink-0">
+                      <div className="flex items-center gap-3.5 border-b border-zinc-900 pb-4 mb-5">
+                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-zinc-400 shadow-inner shrink-0">
                           <Settings size={16} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Plan Prices Settings</h3>
-                          <p className="text-[10px] text-gray-400 mt-0.5 font-medium">Change subscription package rates in real time.</p>
+                          <h3 className="text-xs font-black uppercase text-white tracking-widest">Plan Prices Settings</h3>
+                          <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5">Change subscription package rates</p>
                         </div>
                       </div>
 
-                      <div className="space-y-4 font-bold text-xs text-gray-200">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">2 Weeks Subscription Price</label>
-                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
-                            <input
-                              type="text"
-                              value={editPrices2Weeks}
-                              onChange={e => setEditPrices2Weeks(e.target.value)}
-                              placeholder="e.g. 2,000"
-                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
-                            />
-                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
+                      <div className="space-y-4 font-bold text-xs text-zinc-200">
+                        {[
+                          { label: '2 Weeks Price', val: editPrices2Weeks, setVal: setEditPrices2Weeks },
+                          { label: '1 Month Price', val: editPrices1Month, setVal: setEditPrices1Month },
+                          { label: '3 Months Price', val: editPrices3Months, setVal: setEditPrices3Months },
+                          { label: '6 Months Price', val: editPrices6Months, setVal: setEditPrices6Months }
+                        ].map((priceInput, idx) => (
+                          <div key={idx} className="space-y-1.5">
+                            <label className="text-[9px] uppercase tracking-widest text-zinc-500 block">{priceInput.label}</label>
+                            <div className="flex items-center bg-black border border-zinc-900 rounded-xl px-4 py-3 group focus-within:border-zinc-700 transition-colors">
+                              <input
+                                type="text"
+                                value={priceInput.val}
+                                onChange={e => priceInput.setVal(e.target.value)}
+                                placeholder="e.g. 2,000"
+                                className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold p-0"
+                              />
+                              <span className="text-[9px] text-zinc-500 font-black ml-2 font-mono">EGP</span>
+                            </div>
                           </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">1 Month Subscription Price</label>
-                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
-                            <input
-                              type="text"
-                              value={editPrices1Month}
-                              onChange={e => setEditPrices1Month(e.target.value)}
-                              placeholder="e.g. 3,500"
-                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
-                            />
-                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">3 Months Subscription Price</label>
-                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
-                            <input
-                              type="text"
-                              value={editPrices3Months}
-                              onChange={e => setEditPrices3Months(e.target.value)}
-                              placeholder="e.g. 8,500"
-                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
-                            />
-                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] uppercase tracking-wider text-gray-500 block">6 Months Subscription Price</label>
-                          <div className="flex items-center bg-[#080910] border border-gray-850 rounded-xl px-4 py-3">
-                            <input
-                              type="text"
-                              value={editPrices6Months}
-                              onChange={e => setEditPrices6Months(e.target.value)}
-                              placeholder="e.g. 14,000"
-                              className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold"
-                            />
-                            <span className="text-[10px] text-gray-500 font-bold ml-2 font-mono">EGP</span>
-                          </div>
-                        </div>
+                        ))}
 
                         <button
                           type="button"
                           disabled={updatingPlanPrices}
                           onClick={handleSavePlanPricesDirect}
-                          className="w-full mt-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg hover:shadow-blue-500/10 active:scale-95"
+                          className="w-full mt-3 bg-white hover:bg-zinc-100 disabled:opacity-50 text-black font-black py-3.5 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg active:scale-95 border border-white"
                         >
                           {updatingPlanPrices ? 'Saving Prices...' : <><Save size={13} /> Update Plan Prices</>}
                         </button>
