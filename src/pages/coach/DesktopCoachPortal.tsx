@@ -949,7 +949,7 @@ export default function DesktopCoachPortal() {
         `"${(c.display_name || 'Athlete').replace(/"/g, '""')}"`,
         `"${(c.username || '').replace(/"/g, '""')}"`,
         `"${(c.email || '').replace(/"/g, '""')}"`,
-        c.gender || 'Not Set',
+        c.targets?.gender || 'Not Set',
         age,
         `"${duration.replace(/"/g, '""')}"`,
         expDate,
@@ -4691,20 +4691,20 @@ export default function DesktopCoachPortal() {
                         const avgAge = ages.length > 0 ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(1) : 'N/A';
                         
                         const maleAges = athletes
-                          .filter(a => a.gender === 'male')
+                          .filter(a => a.targets?.gender === 'male')
                           .map(a => analyticsAges[a.id])
                           .filter(age => typeof age === 'number' && age > 0);
                         const avgMaleAge = maleAges.length > 0 ? (maleAges.reduce((sum, age) => sum + age, 0) / maleAges.length).toFixed(1) : 'N/A';
                         
                         const femaleAges = athletes
-                          .filter(a => a.gender === 'female')
+                          .filter(a => a.targets?.gender === 'female')
                           .map(a => analyticsAges[a.id])
                           .filter(age => typeof age === 'number' && age > 0);
                         const avgFemaleAge = femaleAges.length > 0 ? (femaleAges.reduce((sum, age) => sum + age, 0) / femaleAges.length).toFixed(1) : 'N/A';
                         
                         // Genders
-                        const totalMales = athletes.filter(a => a.gender === 'male').length;
-                        const totalFemales = athletes.filter(a => a.gender === 'female').length;
+                        const totalMales = athletes.filter(a => a.targets?.gender === 'male').length;
+                        const totalFemales = athletes.filter(a => a.targets?.gender === 'female').length;
                         
                         // Plan counts
                         const plans = ['2 weeks', '1 month', '3 months', '6 months', '12 months', '24 months'];
@@ -4839,7 +4839,7 @@ export default function DesktopCoachPortal() {
                                         <tr key={i} className="hover:bg-blue-500/[0.01] transition-colors">
                                           <td className="py-2 px-3 font-mono text-[9px]">#{c.targets?.client_code || 'N/A'}</td>
                                           <td className="py-2 px-3 font-black text-white">{c.display_name}</td>
-                                          <td className="py-2 px-3 uppercase text-[10px]">{c.gender || 'Not Set'}</td>
+                                          <td className="py-2 px-3 uppercase text-[10px]">{c.targets?.gender || 'Not Set'}</td>
                                           <td className="py-2 px-3 font-mono">{age}</td>
                                           <td className="py-2 px-3 uppercase text-[10px]">{duration}</td>
                                           <td className="py-2 px-3 font-mono text-[10px] text-slate-550">{expDate}</td>
