@@ -4528,6 +4528,9 @@ export default function DesktopCoachPortal() {
     setDeployStep(1);
     setSelectedClientId(null);
     setSelectedClientProfile(null);
+    setManagementSelectedClientId('');
+    setManagementClientProfile(null);
+    setActiveTab('overview');
     setFormData({
       displayName: '',
       username: '',
@@ -4896,7 +4899,7 @@ export default function DesktopCoachPortal() {
   };
 
   return (
-    <div className="h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar">
+    <div className={`h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar ${showTutorial && tutorialStep === 2 ? 'pointer-events-none select-none' : ''}`}>
       {/* Warning banner for trials / low remaining duration */}
       {showCoachWarningBanner && (
         <div className="w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 bg-gradient-to-r from-[#0b0c16]/95 via-blue-950/20 to-[#0b0c16]/95 border-b border-blue-500/20 backdrop-blur-md text-gray-200">
