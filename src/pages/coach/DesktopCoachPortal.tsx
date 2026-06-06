@@ -5995,7 +5995,8 @@ export default function DesktopCoachPortal() {
                   <button
                     type="button"
                     onClick={() => {
-                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nEmail: ${deploySuccessData.username}@stride.fit\nPasscode: ${deploySuccessData.password}`;
+                      const loginUrl = `${window.location.origin}/login`;
+                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nEmail: ${deploySuccessData.username}@stride.fit\nPasscode: ${deploySuccessData.password}\n\nLogin URL: ${loginUrl}`;
                       navigator.clipboard.writeText(text);
                       toast.success('All credentials copied!');
                     }}

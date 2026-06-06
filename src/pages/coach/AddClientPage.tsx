@@ -737,7 +737,8 @@ export default function AddClientPage() {
           <div className="flex gap-2 pt-2">
             <button
               onClick={() => {
-                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nEmail: ${deployedData.username}@stride.fit\nPassword: ${deployedData.password}`;
+                const loginUrl = `${window.location.origin}/login`;
+                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nEmail: ${deployedData.username}@stride.fit\nPassword: ${deployedData.password}\n\nLogin URL: ${loginUrl}`;
                 navigator.clipboard.writeText(text);
                 toast.success('Credentials copied to clipboard!');
               }}

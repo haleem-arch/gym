@@ -12,7 +12,6 @@ import {
   ArrowRight, 
   Lock, 
   Shield, 
-  CreditCard, 
   X,
   Play,
   CheckCircle2,
@@ -34,10 +33,7 @@ export default function CoachLandingPage() {
   const [phone, setPhone] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro' | 'agency'>('pro');
 
-  // Credit Card mock states
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
+
 
   const openAuth = (mode: 'login' | 'register', plan?: 'starter' | 'pro' | 'agency') => {
     setAuthMode(mode);
@@ -109,6 +105,23 @@ export default function CoachLandingPage() {
 
       if (profileError) throw profileError;
 
+      // Notify Owner via Telegram Bot
+      try {
+        await fetch('/api/notify-new-coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            displayName: displayName.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            gymName: gymName.trim(),
+            plan: selectedPlan
+          })
+        });
+      } catch (notifyErr) {
+        console.error('Failed to notify owner:', notifyErr);
+      }
+
       // Clean signup flag so App knows they are fully ready
       localStorage.setItem('is_new_signup', 'false');
       setShowAuthModal(false);
@@ -119,22 +132,7 @@ export default function CoachLandingPage() {
     }
   };
 
-  const handleCardNumberChange = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
-    const parts = [];
 
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-
-    if (parts.length > 0) {
-      setCardNumber(parts.join(' '));
-    } else {
-      setCardNumber(v);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#060713] text-gray-100 font-sans selection:bg-blue-500/30 overflow-x-hidden">
@@ -475,7 +473,7 @@ export default function CoachLandingPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-black tracking-wider text-white">STRIDE-RITE COACH HUB</h4>
-                  <p className="text-[8px] text-gray-400 font-black uppercase tracking-wider">{authMode === 'login' ? 'Authentication' : `Start Free Trial: Step ${onboardingStep} of 3`}</p>
+                  <p className="text-[8px] text-gray-400 font-black uppercase tracking-wider">{authMode === 'login' ? 'Authentication' : `Start Free Trial: Step ${onboardingStep} of 2`}</p>
                 </div>
               </div>
 
@@ -584,65 +582,8 @@ export default function CoachLandingPage() {
                             Back
                           </button>
                           <button
-                            type="button" disabled={!gymName || !phone} onClick={() => setOnboardingStep(3)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
-                          >
-                            <span>Verify Billing info</span>
-                            <ArrowRight size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* STEP 3: BILLING / TRIAL VALIDATION */}
-                    {onboardingStep === 3 && (
-                      <div className="space-y-4">
-                        <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl flex items-start gap-3">
-                          <Shield size={16} className="text-blue-400 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-[10px] font-black text-white uppercase tracking-wider">14-Day Free Trial Secured</p>
-                            <p className="text-[9px] text-gray-400 mt-1 leading-relaxed">No charges will be made today. Cancel anytime from your subscription console before the trial ends.</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Credit Card Number</label>
-                          <div className="relative">
-                            <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                            <input 
-                              type="text" required value={cardNumber} onChange={e => handleCardNumberChange(e.target.value)} maxLength={19} placeholder="4000 1234 5678 9010"
-                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl py-3 pl-10 pr-4 text-xs text-white outline-none" 
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Expiry Date</label>
-                            <input 
-                              type="text" required value={expiry} onChange={e => setExpiry(e.target.value)} maxLength={5} placeholder="MM/YY"
-                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none text-center" 
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">CVC Code</label>
-                            <input 
-                              type="password" required value={cvc} onChange={e => setCvc(e.target.value)} maxLength={3} placeholder="•••"
-                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none text-center" 
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3 mt-4">
-                          <button
-                            type="button" onClick={() => setOnboardingStep(2)}
-                            className="px-4 py-3.5 bg-[#0a0b16] border border-white/[0.05] text-gray-400 font-bold text-xs rounded-xl hover:text-white transition-colors"
-                          >
-                            Back
-                          </button>
-                          <button
-                            type="button" disabled={loading || cardNumber.length < 15 || expiry.length < 5 || cvc.length < 3} onClick={handleRegister}
-                            className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                            type="button" disabled={loading || !gymName || !phone} onClick={handleRegister}
+                            className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             {loading ? 'Starting Trial...' : <><CheckCircle2 size={12} /> Start My Free Trial</>}
                           </button>
