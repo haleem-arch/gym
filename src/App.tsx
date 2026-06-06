@@ -590,6 +590,7 @@ function App() {
                     <SplashOverlay
                       show={showWelcomeSplash}
                       welcomeName={welcomeName}
+                      role={userRole}
                       onComplete={() => setShowWelcomeSplash(false)}
                     />
                   )}

@@ -26,7 +26,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { displayName, email, phone, gymName, plan } = req.body;
+    const { displayName, email, phone, gymName, plan, age, gender } = req.body;
 
     if (!displayName || !email) {
       return res.status(400).json({ error: 'Missing required parameters: displayName, email' });
@@ -56,10 +56,12 @@ export default async function handler(req: any, res: any) {
     const messageText = `✨ <b>New Coach Registered</b>\n\n` +
       `👤 <b>Name:</b> ${displayName}\n` +
       `📧 <b>Email:</b> ${email}\n` +
-      `📞 <b>Phone:</b> ${phone || 'N/A'}\n` +
+      `📞 <b>Phone (WhatsApp):</b> ${phone || 'N/A'}\n` +
       `🏢 <b>Gym Name:</b> ${gymName || 'N/A'}\n` +
+      `🎂 <b>Age:</b> ${age || 'N/A'}\n` +
+      `👤 <b>Gender:</b> ${gender || 'N/A'}\n` +
       `💳 <b>Selected Plan:</b> ${plan?.toUpperCase() || 'N/A'}\n\n` +
-      `🚀 Started a 14-day free trial trial!`;
+      `🚀 Started a 14-day free trial!`;
 
     const telegramResp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',

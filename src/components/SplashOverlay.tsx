@@ -5,6 +5,7 @@ interface SplashOverlayProps {
   onComplete?: () => void;
   hideText?: boolean;
   welcomeName?: string;
+  role?: string | null;
 }
 
 /**
@@ -20,7 +21,7 @@ interface SplashOverlayProps {
  *   2.60s  Overlay fades to nothing       (0.4s)
  *   3.00s  onComplete() fires
  */
-export function SplashOverlay({ show, onComplete, hideText = false, welcomeName }: SplashOverlayProps) {
+export function SplashOverlay({ show, onComplete, hideText = false, welcomeName, role }: SplashOverlayProps) {
   const [shiftUp, setShiftUp] = useState(false);
   const [showText, setShowText] = useState(false);
   const [randomPhrase, setRandomPhrase] = useState('');
@@ -46,7 +47,11 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName 
     }
 
     if (welcomeName) {
-      setRandomPhrase(`WELCOME, ${welcomeName.toUpperCase()}! 👋`);
+      if (role === 'coach') {
+        setRandomPhrase(`COACH HUB ACTIVATED: WELCOME ${welcomeName.toUpperCase()}! ⚡`);
+      } else {
+        setRandomPhrase(`WELCOME, ${welcomeName.toUpperCase()}! 👋`);
+      }
     } else {
       // Set a random congratulatory phrase from the array of 10 phrases
       const randomIdx = Math.floor(Math.random() * PHRASES.length);

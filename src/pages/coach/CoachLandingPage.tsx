@@ -30,6 +30,8 @@ export default function CoachLandingPage() {
   const [displayName, setDisplayName] = useState('');
   const [gymName, setGymName] = useState('');
   const [phone, setPhone] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [selectedPlan, setSelectedPlan] = useState<'2_weeks' | '1_month' | '3_months' | '6_months'>('1_month');
 
   const openAuth = (mode: 'login' | 'register', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
@@ -96,7 +98,9 @@ export default function CoachLandingPage() {
             gym_name: gymName.trim(),
             subscription_plan: selectedPlan,
             subscription_status: 'trial',
-            trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+            trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            age: parseInt(age) || null,
+            gender: gender
           }
         });
 
@@ -112,7 +116,9 @@ export default function CoachLandingPage() {
             email: email.trim(),
             phone: phone.trim(),
             gymName: gymName.trim(),
-            plan: selectedPlan
+            plan: selectedPlan,
+            age: age,
+            gender: gender
           })
         });
       } catch (notifyErr) {
@@ -175,6 +181,19 @@ export default function CoachLandingPage() {
     }
   };
 
+  const sharedFeaturesList = [
+    { text: "Manage up to 50 active athletes from one dashboard" },
+    { text: "Build custom workout splits per athlete" },
+    { text: "Set gym day & rest day macros separately for each day" },
+    { text: "Parse & track InBody scans (body fat %, muscle mass, BMR)" },
+    { text: "Set & monitor daily water intake goals per athlete" },
+    { text: "Each athlete gets their own portal to track everything" },
+    { text: "Update workouts & nutrition — syncs to client instantly" },
+    { text: "Suspend, reset passwords & control access per athlete" },
+    { text: "Renew your clients subscription instantly" },
+    { text: "Real-time tracking for each athlete" }
+  ];
+
   return (
     <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#060713] text-gray-100 font-sans selection:bg-blue-500/30 scroll-smooth no-scrollbar">
       
@@ -231,7 +250,7 @@ export default function CoachLandingPage() {
           transition={{ duration: 0.5 }}
           className="space-y-6"
         >
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-wider text-blue-400 animate-pulse">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-wider text-blue-400">
             <Sparkles size={11} /> Next-Gen Fitness SaaS Platform
           </span>
 
@@ -339,7 +358,7 @@ export default function CoachLandingPage() {
         </motion.div>
       </motion.section>
 
-      {/* PLATFORM PREVIEW MOCKUP */}
+      {/* PLATFORM PREVIEW MOCKUP (HIGH FIDELITY MOCK COACH PORTAL) */}
       <motion.section 
         id="preview" 
         variants={sectionVariants}
@@ -350,7 +369,7 @@ export default function CoachLandingPage() {
       >
         <div className="text-center space-y-3 mb-12">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">A Look Inside the Portal</h3>
-          <p className="text-xs text-gray-400">Manage your roster using our responsive grid, macros charts, and check-in trackers.</p>
+          <p className="text-xs text-gray-400">Roster control panel, active check-in tracking logs, and athlete metrics compliance board.</p>
         </div>
 
         <div className="bg-[#111326]/50 border border-white/[0.06] rounded-[32px] p-4 shadow-2xl relative overflow-hidden backdrop-blur-md">
@@ -364,48 +383,109 @@ export default function CoachLandingPage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
               </div>
-              <div className="w-48 h-4 bg-white/5 rounded-md flex items-center justify-center text-[8px] font-bold text-gray-500">
+              <div className="w-48 h-4 bg-white/5 rounded-md flex items-center justify-center text-[8px] font-bold text-gray-550">
                 app.striderite.com/coach-portal
               </div>
               <div className="w-6 h-4" />
             </div>
 
-            {/* Mock Content Layout */}
-            <div className="flex-1 flex overflow-hidden">
+            {/* High Fidelity Mock Content Layout */}
+            <div className="flex-1 flex overflow-hidden text-left">
               {/* Mock Sidebar */}
-              <div className="w-1/5 bg-[#0a0b16] border-r border-white/[0.03] p-3 flex flex-col gap-2.5">
-                <div className="w-full h-8 bg-blue-600/10 border border-blue-500/20 rounded-lg" />
-                <div className="w-full h-4 bg-white/5 rounded-md" />
-                <div className="w-full h-4 bg-white/5 rounded-md" />
-                <div className="w-full h-4 bg-white/5 rounded-md" />
+              <div className="w-1/5 bg-[#0a0b16] border-r border-white/[0.03] p-3 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-600/10 border border-blue-500/20">
+                    <Dumbbell size={11} className="text-blue-400" />
+                    <span className="text-[9px] font-black text-white uppercase tracking-wider">Stride-Rite</span>
+                  </div>
+                  <nav className="space-y-1">
+                    <div className="px-2 py-1 bg-white/5 text-[8px] font-bold text-white rounded-md flex items-center gap-1.5">
+                      📊 <span>Overview</span>
+                    </div>
+                    <div className="px-2 py-1 text-[8px] font-bold text-gray-500 rounded-md flex items-center gap-1.5 hover:text-gray-300">
+                      👥 <span>Roster (32)</span>
+                    </div>
+                    <div className="px-2 py-1 text-[8px] font-bold text-gray-500 rounded-md flex items-center gap-1.5 hover:text-gray-300">
+                      🚀 <span>Deploy</span>
+                    </div>
+                    <div className="px-2 py-1 text-[8px] font-bold text-gray-500 rounded-md flex items-center gap-1.5 hover:text-gray-300">
+                      💳 <span>Billing</span>
+                    </div>
+                  </nav>
+                </div>
+                <div className="px-2 py-1.5 border-t border-white/[0.03] flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[7px] font-black text-white">CA</div>
+                  <span className="text-[7px] font-bold text-gray-400 truncate">Coach Ahmed</span>
+                </div>
               </div>
 
               {/* Mock Main Board */}
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar">
-                <div className="flex justify-between items-center">
-                  <div className="w-24 h-4 bg-white/10 rounded-md" />
-                  <div className="w-16 h-5 bg-blue-600/20 border border-blue-500/30 rounded-lg" />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white/5 border border-white/[0.03] h-20 rounded-2xl p-3 flex flex-col justify-between">
-                    <span className="w-12 h-2.5 bg-blue-400/20 rounded" />
-                    <span className="w-8 h-4 bg-white/20 rounded" />
+              <div className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar bg-[#060713]">
+                {/* Header */}
+                <div className="flex justify-between items-center border-b border-white/[0.02] pb-3">
+                  <div>
+                    <h4 className="text-[10px] font-black text-white">Welcome back, Coach Ahmed 👋</h4>
+                    <p className="text-[7px] text-gray-550 font-bold uppercase tracking-wider">Roster overview &amp; real-time compliance tracker</p>
                   </div>
-                  <div className="bg-white/5 border border-white/[0.03] h-20 rounded-2xl p-3 flex flex-col justify-between">
-                    <span className="w-12 h-2.5 bg-purple-400/20 rounded" />
-                    <span className="w-8 h-4 bg-white/20 rounded" />
-                  </div>
-                  <div className="bg-white/5 border border-white/[0.03] h-20 rounded-2xl p-3 flex flex-col justify-between">
-                    <span className="w-12 h-2.5 bg-emerald-400/20 rounded" />
-                    <span className="w-8 h-4 bg-white/20 rounded" />
+                  <div className="flex items-center gap-1.5 bg-white/5 border border-white/[0.03] px-2 py-1 rounded-md text-[7px] font-bold text-gray-550">
+                    🔍 Search athlete...
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/[0.03] h-36 rounded-2xl p-4 flex flex-col justify-between">
-                  <div className="w-32 h-3 bg-white/10 rounded" />
-                  <div className="w-full h-20 bg-white/5 border border-white/[0.03] rounded-xl flex items-center justify-center text-[10px] text-gray-500">
-                    📊 Weight &amp; Body Fat progression chart
+
+                {/* KPI stats */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-[#111326]/50 border border-white/[0.03] p-2.5 rounded-xl flex flex-col justify-between">
+                    <span className="text-[6.5px] font-extrabold text-gray-500 uppercase tracking-widest">Active Athletes</span>
+                    <span className="text-[11px] font-black text-white mt-1">32 / 50</span>
+                  </div>
+                  <div className="bg-[#111326]/50 border border-white/[0.03] p-2.5 rounded-xl flex flex-col justify-between">
+                    <span className="text-[6.5px] font-extrabold text-gray-500 uppercase tracking-widest">Compliance Rate</span>
+                    <span className="text-[11px] font-black text-emerald-400 mt-1">84.6%</span>
+                  </div>
+                  <div className="bg-[#111326]/50 border border-white/[0.03] p-2.5 rounded-xl flex flex-col justify-between">
+                    <span className="text-[6.5px] font-extrabold text-gray-500 uppercase tracking-widest">Completed Sessions</span>
+                    <span className="text-[11px] font-black text-blue-400 mt-1">18 today</span>
                   </div>
                 </div>
+
+                {/* Roster Table Grid */}
+                <div className="bg-[#111326]/30 border border-white/[0.04] rounded-2xl overflow-hidden shadow-sm">
+                  <div className="bg-[#0b0c16] px-3 py-1.5 border-b border-white/[0.03] flex justify-between text-[7px] font-black text-gray-500 uppercase tracking-wider">
+                    <span className="w-1/4">Athlete Name</span>
+                    <span className="w-1/4">Daily Diet Logs</span>
+                    <span className="w-1/6">Water</span>
+                    <span className="w-1/4">Workout Status</span>
+                  </div>
+                  <div className="divide-y divide-white/[0.02]">
+                    {[
+                      { name: "Omar Sherif", code: "#102", diet: "1,980 / 2,400 kcal", macros: "P: 152g / C: 210g / F: 65g", water: "3.0 / 3.5 L", workout: "🔴 PUSH Day (Done)", workStyle: "bg-red-500/10 text-red-400 border border-red-500/20" },
+                      { name: "Youssef Aly", code: "#105", diet: "2,250 / 2,400 kcal", macros: "P: 162g / C: 220g / F: 78g", water: "3.5 / 3.5 L", workout: "🔵 PULL Day (Done)", workStyle: "bg-blue-500/10 text-blue-400 border border-blue-500/20" },
+                      { name: "Hassan Ibrahim", code: "#108", diet: "850 / 2,100 kcal", macros: "P: 60g / C: 100g / F: 25g", water: "1.5 / 3.5 L", workout: "💤 REST Day", workStyle: "bg-gray-800 text-gray-500 border border-gray-700" },
+                      { name: "Mariam Tarek", code: "#112", diet: "1,640 / 1,800 kcal", macros: "P: 118g / C: 180g / F: 48g", water: "2.0 / 3.0 L", workout: "🟡 LEGS Day (Done)", workStyle: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" },
+                      { name: "Mostafa Kamel", code: "#115", diet: "Subscription Expired", macros: "P: -- / C: -- / F: --", water: "--", workout: "🔐 Suspended", workStyle: "bg-red-900/10 text-red-500 border border-red-950" }
+                    ].map((row, rIdx) => (
+                      <div key={rIdx} className="px-3 py-2 flex items-center justify-between text-[7.5px] font-bold text-gray-300">
+                        <div className="w-1/4 flex flex-col">
+                          <span className="text-white font-black">{row.name}</span>
+                          <span className="text-[6px] text-gray-500 font-mono">{row.code}</span>
+                        </div>
+                        <div className="w-1/4 flex flex-col">
+                          <span className={row.diet.includes("Expired") ? "text-red-400 font-medium animate-pulse" : "text-emerald-400 font-mono"}>{row.diet}</span>
+                          <span className="text-[5.5px] text-gray-500 font-mono">{row.macros}</span>
+                        </div>
+                        <div className="w-1/6 text-blue-400 font-mono">
+                          {row.water}
+                        </div>
+                        <div className="w-1/4">
+                          <span className={`px-1.5 py-0.5 rounded-md text-[6px] font-black uppercase ${row.workStyle}`}>
+                            {row.workout}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -440,18 +520,18 @@ export default function CoachLandingPage() {
             <div className="space-y-4">
               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">2 Weeks</span>
               <div className="flex items-baseline gap-1.5 pt-2">
-                <span className="text-2xl font-black text-white">2,000</span>
+                <span className="text-2xl font-black text-white">2,200</span>
                 <span className="text-xs text-gray-400 font-extrabold">EGP</span>
                 <span className="text-[10px] text-gray-500 font-bold">/ 2 weeks</span>
               </div>
               <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Perfect for testing the waters and experiencing the premium coaching tools.</p>
               <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
+                {sharedFeaturesList.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                    <span>{f.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
             <button 
@@ -480,12 +560,12 @@ export default function CoachLandingPage() {
               </div>
               <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Our standard monthly commitment, ideal for consistent training and tracking.</p>
               <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
+                {sharedFeaturesList.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                    <span>{f.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
             <button 
@@ -511,12 +591,12 @@ export default function CoachLandingPage() {
               </div>
               <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Accelerate your progress with a quarterly plan. Highly recommended for transformations.</p>
               <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
+                {sharedFeaturesList.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                    <span>{f.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
             <button 
@@ -542,12 +622,12 @@ export default function CoachLandingPage() {
               </div>
               <p className="text-[11px] text-gray-400 leading-relaxed font-medium">The ultimate commitment to your goals. Best value for serious, long-term coaches.</p>
               <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Up to 40 client slots</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Custom Workout Splits</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Macro nutrition templates</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Segmental InBody scans</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> PDF &amp; Excel data exports</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-blue-400" /> Telegram owner bot sync</li>
+                {sharedFeaturesList.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                    <span>{f.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
             <button 
@@ -651,11 +731,11 @@ export default function CoachLandingPage() {
                   /* MULTI-STEP REGISTER TRIAL VIEW */
                   <form onSubmit={e => e.preventDefault()} className="space-y-4">
                     
-                    {/* STEP 1: CREDENTIALS */}
+                    {/* STEP 1: ACCOUNT CREDENTIALS */}
                     {onboardingStep === 1 && (
                       <div className="space-y-4">
                         <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Your Display Name</label>
+                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Full Name</label>
                           <input 
                             type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g. Captain Coach"
                             className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
@@ -681,15 +761,41 @@ export default function CoachLandingPage() {
                           onClick={() => setOnboardingStep(2)}
                           className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
                         >
-                          <span>Continue to Gym Setup</span>
+                          <span>Continue to Profile Setup</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
                     )}
 
-                    {/* STEP 2: BRAND / METADATA */}
+                    {/* STEP 2: PROFILE DETAILS */}
                     {onboardingStep === 2 && (
                       <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Phone Number (WhatsApp)</label>
+                          <input 
+                            type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
+                            className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Age</label>
+                            <input 
+                              type="number" required value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 28"
+                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Gender</label>
+                            <select 
+                              value={gender} onChange={e => setGender(e.target.value as 'male' | 'female')}
+                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none"
+                            >
+                              <option value="male" className="bg-[#111326] text-white">Male</option>
+                              <option value="female" className="bg-[#111326] text-white">Female</option>
+                            </select>
+                          </div>
+                        </div>
                         <div className="space-y-1.5">
                           <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Gym / Brand Name</label>
                           <input 
@@ -697,17 +803,10 @@ export default function CoachLandingPage() {
                             className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
                           />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Contact Phone Number</label>
-                          <input 
-                            type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
-                            className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
-                          />
-                        </div>
-                        <div className="bg-[#0a0b16]/40 p-4 border border-white/[0.03] rounded-2xl flex items-center justify-between">
-                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Plan Selected</span>
-                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
-                            {selectedPlan === '2_weeks' ? '2 Weeks - 2,000 EGP' :
+                        <div className="bg-[#0a0b16]/40 p-3.5 border border-white/[0.03] rounded-2xl flex items-center justify-between">
+                          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Plan Selected</span>
+                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
+                            {selectedPlan === '2_weeks' ? '2 Weeks - 2,200 EGP' :
                              selectedPlan === '1_month' ? '1 Month - 3,500 EGP' :
                              selectedPlan === '3_months' ? '3 Months - 8,500 EGP' :
                              '6 Months - 14,000 EGP'}
@@ -721,7 +820,7 @@ export default function CoachLandingPage() {
                             Back
                           </button>
                           <button
-                            type="button" disabled={loading || !gymName || !phone} onClick={handleRegister}
+                            type="button" disabled={loading || !gymName || !phone || !age} onClick={handleRegister}
                             className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             {loading ? 'Starting Trial...' : <><CheckCircle2 size={12} /> Start My Free Trial</>}
