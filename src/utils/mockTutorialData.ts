@@ -1,4 +1,4 @@
-// Simulated Onboarding Tutorial Mock Data (Steve Rogers & Tony Stark)
+// Simulated Onboarding Tutorial Mock Data (Steve Rogers, Tony Stark, Bruce Banner, Natasha Romanoff)
 
 export const FAKE_CLIENTS = [
   {
@@ -30,42 +30,184 @@ export const FAKE_CLIENTS = [
       fat: 70,
       water_goal_ml: 3000
     }
+  },
+  {
+    id: 'fake_client_3',
+    display_name: 'Bruce Banner',
+    username: 'incredible_hulk',
+    role: 'client',
+    coach_id: 'tutorial_coach',
+    targets: {
+      client_code: '1962',
+      kcal: 3500,
+      protein: 240,
+      carbs: 450,
+      fat: 85,
+      water_goal_ml: 4500
+    }
+  },
+  {
+    id: 'fake_client_4',
+    display_name: 'Natasha Romanoff',
+    username: 'black_widow',
+    role: 'client',
+    coach_id: 'tutorial_coach',
+    targets: {
+      client_code: '1964',
+      kcal: 2200,
+      protein: 160,
+      carbs: 240,
+      fat: 65,
+      water_goal_ml: 3500
+    }
   }
 ];
 
 export const getMockClientProfile = (clientId: string) => {
-  if (clientId === 'fake_client_1') {
+  if (clientId === 'fake_client_1' || clientId === 'fake_client_3') {
+    const userObj = FAKE_CLIENTS.find(c => c.id === clientId) || FAKE_CLIENTS[0];
     return {
-      id: 'fake_cp_1',
-      user_id: 'fake_client_1',
+      id: 'fake_cp_1_' + clientId,
+      user_id: clientId,
       coach_id: 'tutorial_coach',
-      age: 105,
-      height: 188,
+      age: clientId === 'fake_client_3' ? 54 : 105,
+      height: clientId === 'fake_client_3' ? 178 : 188,
       experience_level: 'advanced',
       workouts_per_week: 6,
-      goals: 'Maintain peak strength, increase agility, and practice shield throwing forms.',
-      injuries_notes: 'None (Super Soldier serum is active).',
+      goals: clientId === 'fake_client_3' ? 'Anger management, heart rate containment, and core breathing.' : 'Maintain peak strength, increase agility, and practice shield throwing forms.',
+      injuries_notes: clientId === 'fake_client_3' ? 'Avoid high stress exercises.' : 'None (Super Soldier serum is active).',
       has_active_plan: true,
-      user: FAKE_CLIENTS[0]
+      user: userObj
     };
   }
+  const userObj = FAKE_CLIENTS.find(c => c.id === clientId) || FAKE_CLIENTS[1];
   return {
-    id: 'fake_cp_2',
-    user_id: 'fake_client_2',
+    id: 'fake_cp_2_' + clientId,
+    user_id: clientId,
     coach_id: 'tutorial_coach',
-    age: 53,
-    height: 185,
+    age: clientId === 'fake_client_4' ? 39 : 53,
+    height: clientId === 'fake_client_4' ? 170 : 185,
     experience_level: 'intermediate',
     workouts_per_week: 3,
-    goals: 'Cardio conditioning, chest arc-reactor mobility recovery, and light endurance lifting.',
-    injuries_notes: 'Cardiovascular recovery following surgery; shoulder tightness.',
+    goals: clientId === 'fake_client_4' ? 'Agility training, reflex work, and low-volume bodyweight splits.' : 'Cardio conditioning, chest arc-reactor mobility recovery, and light endurance lifting.',
+    injuries_notes: clientId === 'fake_client_4' ? 'Minor wrist stiffness.' : 'Cardiovascular recovery following surgery; shoulder tightness.',
     has_active_plan: true,
-    user: FAKE_CLIENTS[1]
+    user: userObj
   };
 };
 
 export const getMockClientData = (clientId: string, dateStr: string) => {
-  const isRogers = clientId === 'fake_client_1';
+  if (clientId === 'fake_deployed_thor') {
+    return {
+      dietLog: {
+        id: 'fake_dl_thor',
+        user_id: clientId,
+        date: dateStr,
+        daily_totals: { kcal: 3950, protein: 245, carbs: 435, fat: 88 }
+      },
+      meals: [
+        {
+          id: 'fake_m_thor_1',
+          diet_log_id: 'fake_dl_thor',
+          name: 'Asgardian Feast',
+          time: '08:00:00',
+          items: [
+            { name: 'Roast Wild Boar', grams: 400, serving_type: 'grams', macros: { kcal: 1800, protein: 120, carbs: 0, fat: 50 } },
+            { name: 'Golden Apples of Idunn', grams: 300, serving_type: 'grams', macros: { kcal: 280, protein: 3, carbs: 65, fat: 2 } },
+            { name: 'Asgardian Mead', grams: 500, serving_type: 'grams', macros: { kcal: 420, protein: 12, carbs: 80, fat: 6 } }
+          ]
+        },
+        {
+          id: 'fake_m_thor_2',
+          diet_log_id: 'fake_dl_thor',
+          name: 'Thunderbolt Post-Workout',
+          time: '14:30:00',
+          items: [
+            { name: 'Lightning-Grilled Ribeye', grams: 350, serving_type: 'grams', macros: { kcal: 910, protein: 84, carbs: 0, fat: 25 } },
+            { name: 'Mashed Potatoes (Asgard Style)', grams: 400, serving_type: 'grams', macros: { kcal: 540, protein: 12, carbs: 110, fat: 5 } },
+            { name: 'God of Thunder Shake', grams: 80, serving_type: 'grams', macros: { kcal: 400, protein: 60, carbs: 25, fat: 5 } }
+          ]
+        }
+      ],
+      waterLogs: [
+        { id: 'fake_w_thor_1', amount_ml: 2000, time: '08:15' },
+        { id: 'fake_w_thor_2', amount_ml: 1500, time: '13:00' },
+        { id: 'fake_w_thor_3', amount_ml: 1500, time: '17:30' }
+      ],
+      workoutsList: [
+        {
+          id: 'fake_wo_thor',
+          user_id: clientId,
+          date: dateStr,
+          day_type: 'PUSH',
+          duration: 5400,
+          total_volume: 24500,
+          notes: 'Felt extremely strong. Discharged minor lightning into the barbell.'
+        }
+      ],
+      scans: [
+        {
+          id: 'fake_s_thor_1',
+          user_id: clientId,
+          date: '2026-06-01',
+          weight: 198.0,
+          smm: 98.5,
+          bfm: 12.5,
+          bf_percent: 6.3,
+          bmr: 3850,
+          score: 99,
+          segmental: {}
+        },
+        {
+          id: 'fake_s_thor_2',
+          user_id: clientId,
+          date: '2026-05-15',
+          weight: 197.5,
+          smm: 97.8,
+          bfm: 13.0,
+          bf_percent: 6.5,
+          bmr: 3820,
+          score: 98,
+          segmental: {}
+        }
+      ],
+      workoutPlans: [
+        {
+          id: 'fake_wp_thor_1',
+          user_id: clientId,
+          plan_type: 'PUSH',
+          exercises: [
+            { name: 'Barbell Bench Press', sets: [{ setNum: 1, reps: 8, weight: 180 }, { setNum: 2, reps: 6, weight: 200 }] },
+            { name: 'Military Press', sets: [{ setNum: 1, reps: 8, weight: 120 }] }
+          ]
+        },
+        {
+          id: 'fake_wp_thor_2',
+          user_id: clientId,
+          plan_type: 'PULL',
+          exercises: [
+            { name: 'Deadlifts', sets: [{ setNum: 1, reps: 5, weight: 280 }, { setNum: 2, reps: 3, weight: 310 }] }
+          ]
+        }
+      ],
+      schedule: {
+        id: 'fake_sc_thor',
+        user_id: clientId,
+        week_start: '2026-06-01',
+        days: {
+          'Monday': { type: 'PUSH', exercises: [] },
+          'Tuesday': { type: 'PULL', exercises: [] },
+          'Wednesday': { type: 'REST', exercises: [] },
+          'Thursday': { type: 'PUSH', exercises: [] },
+          'Friday': { type: 'PULL', exercises: [] },
+          'Saturday': { type: 'REST', exercises: [] },
+          'Sunday': { type: 'REST', exercises: [] }
+        }
+      }
+    };
+  }
+
+  const isRogers = clientId === 'fake_client_1' || clientId === 'fake_client_3';
   return {
     dietLog: {
       id: isRogers ? 'fake_dl_1' : 'fake_dl_2',
@@ -82,13 +224,13 @@ export const getMockClientData = (clientId: string, dateStr: string) => {
         name: isRogers ? 'Super Soldier Breakfast' : 'Billionaire Power Breakfast',
         time: '08:00:00',
         items: isRogers ? [
-          { name: 'Oatmeal with Honey', grams: 150, kcal: 380, protein: 12, carbs: 65, fat: 6 },
-          { name: 'Boiled Eggs (6 Whole)', grams: 300, kcal: 460, protein: 38, carbs: 3, fat: 33 },
-          { name: 'Whey Protein Shake', grams: 50, kcal: 200, protein: 40, carbs: 3, fat: 2 }
+          { name: 'Oatmeal with Honey', grams: 150, serving_type: 'grams', macros: { kcal: 380, protein: 12, carbs: 65, fat: 6 } },
+          { name: 'Boiled Eggs (6 Whole)', grams: 300, serving_type: 'grams', macros: { kcal: 460, protein: 38, carbs: 3, fat: 33 } },
+          { name: 'Whey Protein Shake', grams: 50, serving_type: 'grams', macros: { kcal: 200, protein: 40, carbs: 3, fat: 2 } }
         ] : [
-          { name: 'Avocado Toast with Poached Egg', grams: 200, kcal: 450, protein: 16, carbs: 36, fat: 26 },
-          { name: 'Black Coffee', grams: 250, kcal: 5, protein: 0, carbs: 0, fat: 0 },
-          { name: 'Smoked Salmon Slice', grams: 100, kcal: 180, protein: 22, carbs: 0, fat: 10 }
+          { name: 'Avocado Toast with Poached Egg', grams: 200, serving_type: 'grams', macros: { kcal: 450, protein: 16, carbs: 36, fat: 26 } },
+          { name: 'Black Coffee', grams: 250, serving_type: 'grams', macros: { kcal: 5, protein: 0, carbs: 0, fat: 0 } },
+          { name: 'Smoked Salmon Slice', grams: 100, serving_type: 'grams', macros: { kcal: 180, protein: 22, carbs: 0, fat: 10 } }
         ]
       },
       {
@@ -97,13 +239,13 @@ export const getMockClientData = (clientId: string, dateStr: string) => {
         name: 'Post-Workout Fuel',
         time: '14:30:00',
         items: isRogers ? [
-          { name: 'Grilled Chicken Breast', grams: 250, kcal: 410, protein: 78, carbs: 0, fat: 9 },
-          { name: 'White Rice (Cooked)', grams: 300, kcal: 390, protein: 8, carbs: 85, fat: 1 },
-          { name: 'Mixed Vegetables', grams: 150, kcal: 80, protein: 4, carbs: 14, fat: 1 }
+          { name: 'Grilled Chicken Breast', grams: 250, serving_type: 'grams', macros: { kcal: 410, protein: 78, carbs: 0, fat: 9 } },
+          { name: 'White Rice (Cooked)', grams: 300, serving_type: 'grams', macros: { kcal: 390, protein: 8, carbs: 85, fat: 1 } },
+          { name: 'Mixed Vegetables', grams: 150, serving_type: 'grams', macros: { kcal: 80, protein: 4, carbs: 14, fat: 1 } }
         ] : [
-          { name: 'Double Espresso', grams: 50, kcal: 5, protein: 0, carbs: 0, fat: 0 },
-          { name: 'Mixed Nuts', grams: 50, kcal: 320, protein: 10, carbs: 12, fat: 28 },
-          { name: 'Isolate Protein Bar', grams: 60, kcal: 220, protein: 20, carbs: 22, fat: 6 }
+          { name: 'Double Espresso', grams: 50, serving_type: 'grams', macros: { kcal: 5, protein: 0, carbs: 0, fat: 0 } },
+          { name: 'Mixed Nuts', grams: 50, serving_type: 'grams', macros: { kcal: 320, protein: 10, carbs: 12, fat: 28 } },
+          { name: 'Isolate Protein Bar', grams: 60, serving_type: 'grams', macros: { kcal: 220, protein: 20, carbs: 22, fat: 6 } }
         ]
       }
     ],

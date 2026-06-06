@@ -517,7 +517,7 @@ export default function DesktopCoachPortal() {
   const [deployCsvScans, setDeployCsvScans] = useState<any[]>([]);
 
   useEffect(() => {
-    if (showTutorial && spotlightIndex === 9 && activeTab === 'deploy' && deployStep === 2) {
+    if (showTutorial && spotlightIndex === 1 && activeTab === 'deploy' && deployStep === 2) {
       const timer = setTimeout(() => {
         setDeployActiveSplitKey('PUSH');
       }, 1600);
@@ -555,21 +555,17 @@ export default function DesktopCoachPortal() {
         }
 
         const stepIds = [
-          'tutorial-sidebar',
-          'tutorial-client-list-container',
-          'tutorial-client-tabs-container', // Overview
-          'tutorial-client-tabs-container', // Diet
-          'tutorial-client-tabs-container', // Water
-          'tutorial-client-tabs-container', // Workouts
-          'tutorial-client-tabs-container', // InBody
-          'tutorial-client-tabs-container', // History
-          'tutorial-deploy-container',       // Identity
-          'tutorial-deploy-container',       // Workouts
-          'tutorial-deploy-container',       // Nutrition
-          'tutorial-deploy-container',       // Biometrics
-          'tutorial-management-container',   // Athlete Control
-          'tutorial-subscriptions-container', // Subscriptions
-          'tutorial-profile-container'       // Profile Settings
+          'tutorial-deploy-container',       // 0: Deploy Identity
+          'tutorial-deploy-container',       // 1: Deploy Workouts
+          'tutorial-deploy-container',       // 2: Deploy Nutrition
+          'tutorial-deploy-container',       // 3: Deploy Biometrics
+          'tutorial-client-tabs-container',  // 4: Overview
+          'tutorial-client-tabs-container',  // 5: Diet
+          'tutorial-client-tabs-container',  // 6: Water
+          'tutorial-client-tabs-container',  // 7: Workouts
+          'tutorial-client-tabs-container',  // 8: InBody
+          'tutorial-client-tabs-container',  // 9: History
+          'tutorial-management-container'    // 10: Athlete Control
         ];
         const id = stepIds[spotlightIndex];
         const el = document.getElementById(id);
@@ -1180,13 +1176,11 @@ export default function DesktopCoachPortal() {
   };
 
   const handleClientSelectClick = (newClientId: string) => {
+    if (showTutorial) return;
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'client', payload: newClientId });
     } else {
       fetchClientDetails(newClientId, true);
-      if (showTutorial && spotlightIndex === 1 && newClientId.startsWith('fake_client_')) {
-        setSpotlightIndex(2);
-      }
     }
   };
 
@@ -1196,8 +1190,39 @@ export default function DesktopCoachPortal() {
       setLoadingClientDetails(true);
       setSelectedClientId(clientId);
 
-      if (clientId && clientId.startsWith('fake_client_')) {
-        const clientProfile = getMockClientProfile(clientId);
+      if (clientId && (clientId.startsWith('fake_client_') || clientId === 'fake_deployed_thor')) {
+        const clientProfile = clientId === 'fake_deployed_thor' ? {
+          id: 'fake_cp_thor',
+          user_id: 'fake_deployed_thor',
+          coach_id: 'tutorial_coach',
+          age: 1500,
+          height: 198,
+          experience_level: 'advanced',
+          workouts_per_week: 5,
+          goals: 'Maintain lightning channel capacity, cardiorespiratory endurance, and high volume lifting.',
+          injuries_notes: 'Missing right eye, reconstructed with prosthetic. Prone to lightning discharges.',
+          has_active_plan: true,
+          user: {
+            id: 'fake_deployed_thor',
+            display_name: 'Thor Odinson',
+            username: 'thor_god_of_thunder',
+            role: 'client',
+            coach_id: 'tutorial_coach',
+            targets: {
+              client_code: '2011',
+              kcal: 4000,
+              protein: 250,
+              carbs: 450,
+              fat: 90,
+              water_goal_ml: 5000,
+              ai_quota_limit: 50,
+              subscription_duration: '12 months',
+              subscription_delay_days: '0',
+              is_deactivated: false
+            }
+          }
+        } : getMockClientProfile(clientId);
+
         setSelectedClientProfile(clientProfile);
         const targets = clientProfile.user?.targets || {};
         const dbKcal = targets.kcal || 2400;
