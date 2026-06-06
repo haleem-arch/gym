@@ -10915,8 +10915,8 @@ export default function DesktopCoachPortal() {
           );
         })()}
       </div>
-      {showTutorial && renderGuidedTutorial()}
     </div>
+    {showTutorial && renderGuidedTutorial()}
   </>
 );
 }
