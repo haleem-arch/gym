@@ -57,7 +57,6 @@ export default async function handler(req: any, res: any) {
       `👤 <b>Name:</b> ${displayName}\n` +
       `📧 <b>Email:</b> ${email}\n` +
       `📞 <b>Phone (WhatsApp):</b> ${phone || 'N/A'}\n` +
-      `🏢 <b>Gym Name:</b> ${gymName || 'N/A'}\n` +
       `🎂 <b>Age:</b> ${age || 'N/A'}\n` +
       `👤 <b>Gender:</b> ${gender || 'N/A'}\n` +
       `💳 <b>Selected Plan:</b> ${plan?.toUpperCase() || 'N/A'}\n\n` +

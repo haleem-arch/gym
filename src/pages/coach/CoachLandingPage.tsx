@@ -14,7 +14,6 @@ import {
   X,
   CheckCircle2,
   Sparkles,
-  LayoutDashboard,
   CreditCard,
   Rocket,
   Search
@@ -69,6 +68,9 @@ export default function CoachLandingPage() {
     setLoading(true);
     setErrorMessage(null);
 
+    // Set signup in progress flag to bypass App.tsx signout race condition
+    localStorage.setItem('signup_in_progress', 'true');
+
     try {
       // 1. Create authentication user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -101,7 +103,7 @@ export default function CoachLandingPage() {
             show_welcome_animation: true,
             phone_number: phone.trim(),
             gym_name: finalGymName,
-            subscription_plan: selectedPlan,
+            subscription_plan: selectedPlan || '1_month',
             subscription_status: 'trial',
             trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
             age: parseInt(age) || null,
@@ -121,7 +123,7 @@ export default function CoachLandingPage() {
             email: email.trim(),
             phone: phone.trim(),
             gymName: finalGymName,
-            plan: selectedPlan,
+            plan: selectedPlan || '1_month',
             age: age,
             gender: gender
           })
@@ -132,8 +134,13 @@ export default function CoachLandingPage() {
 
       // Clean signup flag so App knows they are fully ready
       localStorage.setItem('is_new_signup', 'false');
+      localStorage.removeItem('signup_in_progress');
       setShowAuthModal(false);
+
+      // Redirect to log them in automatically
+      window.location.href = '/coach-portal';
     } catch (err: any) {
+      localStorage.removeItem('signup_in_progress');
       setErrorMessage(err.message || 'Failed to register account.');
     } finally {
       setLoading(false);
@@ -187,16 +194,10 @@ export default function CoachLandingPage() {
   };
 
   const sharedFeaturesList = [
-    { text: "Manage up to 50 active athletes from one dashboard" },
-    { text: "Build custom workout splits per athlete" },
-    { text: "Set gym day & rest day macros separately for each day" },
-    { text: "Parse & track InBody scans (body fat %, muscle mass, BMR)" },
-    { text: "Set & monitor daily water intake goals per athlete" },
-    { text: "Each athlete gets their own portal to track everything" },
-    { text: "Update workouts & nutrition — syncs to client instantly" },
-    { text: "Suspend, reset passwords & control access per athlete" },
-    { text: "Renew your clients subscription instantly" },
-    { text: "Real-time tracking for each athlete" }
+    { text: "Manage up to 50 active athletes" },
+    { text: "Custom workout splits & day-type macros" },
+    { text: "Parse InBody scans & daily water goals" },
+    { text: "Athlete portal access with instant syncing" }
   ];
 
   return (
@@ -268,7 +269,7 @@ export default function CoachLandingPage() {
             Design workouts splits, build nutrition targets, track body composition scans, and communicate with athletes on a single premium dashboard.
           </p>
 
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
+          <div className="pt-6 flex flex-col items-center justify-center gap-2">
             <button
               onClick={() => openAuth('register')}
               className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
@@ -276,6 +277,7 @@ export default function CoachLandingPage() {
               <span>Start 14-Day Free Trial</span>
               <ArrowRight size={14} />
             </button>
+            <p className="text-[10px] text-gray-500 font-bold tracking-wide mt-1">No card needed</p>
           </div>
         </motion.div>
       </section>
@@ -323,6 +325,11 @@ export default function CoachLandingPage() {
               icon: <Users className="text-pink-400" size={24} />,
               title: "Direct Athlete Directory",
               desc: "Manage profiles, onboarding statuses, suspensions, and targets from a centralized dossier catalog."
+            },
+            {
+              icon: <Sparkles className="text-cyan-400" size={24} />,
+              title: "Instant Athlete Sync",
+              desc: "Updates to workouts, nutrition splits, and water targets synchronize to the athlete portal in real-time with zero delay."
             }
           ].map((feat, idx) => (
             <motion.div 
@@ -373,113 +380,200 @@ export default function CoachLandingPage() {
                 app.striderite.com/coach-portal
               </div>
               <div className="w-6 h-4" />
-            </div>
-
-            {/* High Fidelity Mock Content Layout */}
-            <div className="flex-1 flex overflow-hidden text-left">
-              {/* Mock Sidebar */}
-              <div className="w-1/5 bg-[#0a0b16] border-r border-white/[0.03] p-3 flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.05] shadow-inner">
-                    <Dumbbell size={12} className="text-blue-500" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-wider">STRIDE-RITE</span>
+            </div>            {/* High Fidelity Mock Content Layout */}
+            <div className="flex-1 flex flex-col overflow-hidden text-left bg-[#070814]">
+              {/* Mock Top Navigation Bar */}
+              <div className="h-12 border-b border-white/[0.04] bg-[#070814] px-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <Dumbbell size={16} className="text-blue-500" />
+                  <div>
+                    <h5 className="text-[10px] font-black text-white leading-none">LIFE GYM</h5>
+                    <span className="text-[6.5px] text-gray-500 font-bold mt-0.5 block">Desktop Coach Portal / Version 3.0</span>
                   </div>
-                  <nav className="space-y-1">
-                    <div className="px-3 py-2 bg-white/[0.07] text-[8.5px] font-black text-white rounded-xl flex items-center gap-2 shadow-sm">
-                      <LayoutDashboard size={11} className="text-blue-400" />
-                      <span>Overview</span>
-                    </div>
-                    <div className="px-3 py-2 text-[8.5px] font-bold text-gray-500 rounded-xl flex items-center gap-2 hover:text-gray-300 transition-colors">
-                      <Users size={11} />
-                      <span>Roster (32)</span>
-                    </div>
-                    <div className="px-3 py-2 text-[8.5px] font-bold text-gray-500 rounded-xl flex items-center gap-2 hover:text-gray-300 transition-colors">
-                      <Rocket size={11} />
-                      <span>Deploy</span>
-                    </div>
-                    <div className="px-3 py-2 text-[8.5px] font-bold text-gray-500 rounded-xl flex items-center gap-2 hover:text-gray-300 transition-colors">
-                      <CreditCard size={11} />
-                      <span>Billing</span>
-                    </div>
-                  </nav>
                 </div>
-                <div className="px-3 py-2.5 border-t border-white/[0.03] pt-4 flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[7.5px] font-black text-white shadow-md shadow-blue-500/10 shrink-0">CA</div>
-                  <span className="text-[8.5px] font-black text-white truncate">Coach Ahmed</span>
+                <div className="flex items-center gap-2">
+                  <button className="px-2 py-1 border border-[#10b981]/35 rounded text-[7px] font-black text-[#10b981] bg-[#10b981]/5 tracking-wide hover:bg-[#10b981]/10 transition-all cursor-default">Sync Data</button>
+                  <button className="px-2 py-1 border border-[#3b82f6]/35 rounded text-[7px] font-black text-[#3b82f6] bg-[#3b82f6]/5 tracking-wide hover:bg-[#3b82f6]/10 transition-all cursor-default">Force Update (Hard Reload)</button>
+                  <button className="px-2 py-1 border border-red-500/35 rounded text-[7px] font-black text-red-500 bg-red-500/5 tracking-wide hover:bg-red-500/10 transition-all cursor-default">Log Out</button>
                 </div>
               </div>
 
-              {/* Mock Main Board */}
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar bg-[#060713]">
-                {/* Header */}
-                <div className="flex justify-between items-center border-b border-white/[0.02] pb-3">
-                  <div>
-                    <h4 className="text-[12px] font-black text-white">Welcome back, Coach Ahmed 👋</h4>
-                    <p className="text-[7.5px] text-gray-500 font-extrabold uppercase tracking-widest mt-0.5">ROSTER OVERVIEW &amp; REAL-TIME COMPLIANCE TRACKER</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/5 border border-white/[0.04] px-2.5 py-1.5 rounded-full text-[7.5px] font-bold text-gray-400 w-36 shadow-inner">
-                    <Search size={9} className="text-gray-600 shrink-0" />
-                    <span>Search athlete...</span>
+              {/* Sidebar and Workspace Body */}
+              <div className="flex-1 flex overflow-hidden">
+                {/* Mock Sidebar */}
+                <div className="w-1/5 bg-[#0a0b16] border-r border-white/[0.03] p-3 flex flex-col justify-between shrink-0">
+                  <div className="space-y-4">
+                    <span className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest block px-2">Main Navigation</span>
+                    <nav className="space-y-1">
+                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
+                        <Activity size={10} />
+                        <span>Operational Overview</span>
+                      </div>
+                      <div className="px-2.5 py-1.5 bg-blue-600 text-[8px] font-black text-white rounded-lg flex items-center gap-2 shadow-md">
+                        <Users size={10} />
+                        <span>Athlete Directory</span>
+                      </div>
+                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
+                        <Rocket size={10} />
+                        <span>Deploy New Athlete</span>
+                      </div>
+                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
+                        <Dumbbell size={10} />
+                        <span>Athlete Control</span>
+                      </div>
+                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
+                        <CreditCard size={10} />
+                        <span>Subscriptions</span>
+                      </div>
+                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
+                        <Users size={10} />
+                        <span>Profile Settings</span>
+                      </div>
+                    </nav>
                   </div>
                 </div>
 
-                {/* KPI stats */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-[#111326]/50 border border-white/[0.04] p-3 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[7px] font-extrabold text-gray-500 uppercase tracking-widest">Active Athletes</span>
-                    <span className="text-[13px] font-black text-white mt-1">32 / 50</span>
+                {/* Workspace Body */}
+                <div className="flex-1 flex overflow-hidden">
+                  {/* Athlete List Middle Panel (1/3 width) */}
+                  <div className="w-1/3 border-r border-white/[0.03] p-3 flex flex-col bg-[#070814] shrink-0">
+                    {/* Search Bar */}
+                    <div className="relative mb-3 flex items-center">
+                      <Search size={9} className="absolute left-2.5 text-gray-500" />
+                      <input 
+                        type="text" disabled placeholder="Search athletes..." 
+                        className="w-full bg-[#111326]/40 border border-white/[0.05] rounded-full pl-7 pr-3 py-1.5 text-[7.5px] text-gray-300 outline-none placeholder:text-gray-650"
+                      />
+                    </div>
+                    {/* Athlete Cards list */}
+                    <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
+                      {[
+                        { name: "ahmed", code: "#101", handle: "@zhmodd", initial: "A", active: true },
+                        { name: "essam", code: "#104", handle: "@essam", initial: "E", active: false },
+                        { name: "malak", code: "#106", handle: "@malak", initial: "M", active: false },
+                        { name: "mohamed", code: "#105", handle: "@mohamed", initial: "M", active: false },
+                        { name: "mostafa ahmed", code: "#107", handle: "@mostafa", initial: "M", active: false },
+                        { name: "nada", code: "#103", handle: "@nada", initial: "N", active: false },
+                        { name: "reem", code: "#102", handle: "@reem", initial: "R", active: false }
+                      ].map((ath, idx) => (
+                        <div key={idx} className={`p-2 rounded-xl border flex items-center justify-between cursor-default transition-all ${ath.active ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-[#111326]/10 border-white/[0.02] hover:border-white/[0.05]'}`}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-[9px] font-black text-blue-400 shrink-0">
+                              {ath.initial}
+                            </div>
+                            <div className="min-w-0 animate-pulse-slow">
+                              <div className="flex items-center gap-1">
+                                <span className="text-[8px] font-black text-white truncate">{ath.name}</span>
+                                <span className="text-[6px] font-bold text-blue-400 bg-blue-500/10 px-1 rounded-sm">{ath.code}</span>
+                              </div>
+                              <span className="text-[6.5px] text-gray-500 font-medium truncate block">{ath.handle}</span>
+                            </div>
+                          </div>
+                          <ArrowRight size={8} className="text-gray-550 shrink-0" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="bg-[#111326]/50 border border-white/[0.04] p-3 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[7px] font-extrabold text-gray-500 uppercase tracking-widest">Compliance Rate</span>
-                    <span className="text-[13px] font-black text-[#10b981] mt-1">84.6%</span>
-                  </div>
-                  <div className="bg-[#111326]/50 border border-white/[0.04] p-3 rounded-2xl flex flex-col justify-between">
-                    <span className="text-[7px] font-extrabold text-gray-500 uppercase tracking-widest">Completed Sessions</span>
-                    <span className="text-[13px] font-black text-[#60a5fa] mt-1">18 today</span>
-                  </div>
-                </div>
 
-                {/* Roster Table Grid */}
-                <div className="bg-[#111326]/30 border border-white/[0.04] rounded-2xl overflow-hidden shadow-sm">
-                  <div className="bg-[#0b0c16] px-4 py-2 border-b border-white/[0.03] flex justify-between text-[8px] font-black text-gray-500 uppercase tracking-wider">
-                    <span className="w-1/4">Athlete Name</span>
-                    <span className="w-1/4">Daily Diet Logs</span>
-                    <span className="w-1/6">Water</span>
-                    <span className="w-1/4">Workout Status</span>
-                  </div>
-                  <div className="divide-y divide-white/[0.02]">
-                    {[
-                      { name: "Omar Sherif", code: "#1102", diet: "1,980 / 2,400 kcal", macros: "Pr: 212g / Cr: 210g / Ft: 65g", water: "3.0 / 3.5 L", workout: "🔴 PUSH Day (Done)", workStyle: "bg-red-500/10 text-red-400 border border-red-500/20" },
-                      { name: "Youssef Aly", code: "#1125", diet: "2,250 / 2,500 kcal", macros: "Pr: 162g / Cr: 230g / Ft: 78g", water: "3.5 / 3.5 L", workout: "🔵 PULL Day (Done)", workStyle: "bg-blue-500/10 text-blue-400 border border-blue-500/20" },
-                      { name: "Hassan Ibrahim", code: "#1108", diet: "850 / 2,100 kcal", macros: "Pr: 60g / Cr: 100g / Ft: 25g", water: "1.5 / 3.5 L", workout: "💤 REST Day", workStyle: "bg-gray-800/40 text-gray-500 border border-gray-700/50" },
-                      { name: "Mariam Tarek", code: "#1112", diet: "1,640 / 1,800 kcal", macros: "Pr: 114g / Cr: 180g / Ft: 48g", water: "2.0 / 3.0 L", workout: "🟡 LEGS Day (Done)", workStyle: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" },
-                      { name: "Mostafa Kamel", code: "#1115", diet: "Subscription Expired", macros: "Pr: -- / Cr: -- / Ft: --", water: "--", workout: "🔒 Suspended", workStyle: "bg-red-950/20 text-red-500 border border-red-950/40" }
-                    ].map((row, rIdx) => (
-                      <div key={rIdx} className="px-4 py-2.5 flex items-center justify-between text-[8px] font-bold text-gray-300">
-                        <div className="w-1/4 flex flex-col">
-                          <span className="text-white font-black text-[9px]">{row.name}</span>
-                          <span className="text-[7px] text-gray-500 font-mono mt-0.5">{row.code}</span>
-                        </div>
-                        <div className="w-1/4 flex flex-col">
-                          <span className={row.diet.includes("Expired") ? "text-red-400 font-medium" : "text-[#10b981] font-bold"}>{row.diet}</span>
-                          <span className="text-[7px] text-gray-550 font-mono mt-0.5">{row.macros}</span>
-                        </div>
-                        <div className="w-1/6 text-[#60a5fa] font-bold">
-                          {row.water}
-                        </div>
-                        <div className="w-1/4">
-                          <span className={`px-2 py-0.5 rounded-full text-[6.5px] font-black uppercase tracking-wider ${row.workStyle}`}>
-                            {row.workout}
-                          </span>
+                  {/* Right Details Panel (2/3 width) */}
+                  <div className="flex-1 p-3 overflow-y-auto no-scrollbar bg-[#060713] space-y-4">
+                    {/* Navigation tabs header */}
+                    <div className="border-b border-white/[0.03] pb-2 flex gap-4 text-[7.5px] font-black text-gray-500 tracking-wider">
+                      <span>OVERVIEW</span>
+                      <span>DIET LOGS</span>
+                      <span>WATER LOGS</span>
+                      <span className="text-blue-400 border-b border-blue-400 pb-2 -mb-[9px] z-10">TRAINING PLANS</span>
+                      <span>INBODY SCANS</span>
+                      <span>HISTORY</span>
+                    </div>
+
+                    {/* Completed Sessions Block */}
+                    <div className="bg-[#111326]/20 border border-white/[0.03] rounded-xl p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[7.5px] font-black text-white uppercase tracking-wider">Completed Sessions</span>
+                        <div className="text-[6.5px] font-mono text-gray-550 border border-white/[0.05] bg-white/5 px-1.5 py-0.5 rounded">
+                          &lt; 2026-06-06 &gt;
                         </div>
                       </div>
-                    ))}
+                      <div className="py-4 text-center text-[7.5px] font-medium text-gray-500 italic">
+                        No completed workouts logged on this date.
+                      </div>
+                    </div>
+
+                    {/* Weekly Schedule Planner Block */}
+                    <div className="bg-[#111326]/20 border border-white/[0.03] rounded-xl p-3">
+                      <span className="text-[7.5px] font-black text-white uppercase tracking-wider flex items-center gap-1 mb-2">
+                        🗓️ Weekly Schedule Planner
+                      </span>
+                      <div className="grid grid-cols-7 gap-1">
+                        {[
+                          { day: 'Mon', date: 'Jun 1', active: false },
+                          { day: 'Tue', date: 'Jun 2', active: false },
+                          { day: 'Wed', date: 'Jun 3', active: false },
+                          { day: 'Thu', date: 'Jun 4', active: false },
+                          { day: 'Fri', date: 'Jun 5', active: false },
+                          { day: 'Sat', date: 'Jun 6', active: true },
+                          { day: 'Sun', date: 'Jun 7', active: false }
+                        ].map((d, dIdx) => (
+                          <div 
+                            key={dIdx} 
+                            className={`border rounded-lg p-1 text-center flex flex-col justify-between aspect-[3/4.5] ${
+                              d.active 
+                                ? 'bg-blue-600/10 border-blue-500/30' 
+                                : 'bg-[#111326]/40 border-white/[0.03]'
+                            }`}
+                          >
+                            <div>
+                              <span className={`text-[6.5px] font-black block leading-none ${d.active ? 'text-blue-400' : 'text-gray-400'}`}>{d.day}</span>
+                              <span className="text-[5px] text-gray-500 font-bold block mt-0.5 leading-none">{d.date}</span>
+                            </div>
+                            <div className="flex items-center justify-between bg-black/30 border border-white/[0.05] rounded px-1 py-0.5 mt-1 text-[5.5px] text-gray-300 w-full">
+                              <span>REST</span>
+                              <span className="text-[4px] text-gray-550">▼</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Gym Program Templates Splits (3) Block */}
+                    <div className="bg-[#111326]/20 border border-white/[0.03] rounded-xl p-3">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-[7.5px] font-black text-white uppercase tracking-wider">Gym Program Templates Splits (3)</span>
+                        <div className="flex gap-1 items-center shrink-0">
+                          <input 
+                            type="text" disabled placeholder="E.G. PUSH, LEGS" 
+                            className="bg-[#070814] border border-white/[0.04] rounded px-2 py-1 text-[6.5px] text-gray-400 outline-none w-24"
+                          />
+                          <button className="bg-blue-600 text-white font-black text-[6.5px] px-2 py-1 rounded shadow cursor-default">+ ADD SPLIT</button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { title: "PUSH", exercises: "6 exercises", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+                          { title: "PULL", exercises: "6 exercises", color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
+                          { title: "LEGS", exercises: "6 exercises", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" }
+                        ].map((split, sIdx) => (
+                          <div key={sIdx} className="p-2 rounded-lg border border-white/[0.02] bg-[#111326]/30 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[6.5px] font-black uppercase border ${split.color}`}>{split.title}</span>
+                              <span className="text-[7px] text-gray-550 font-bold">({split.exercises})</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-550 text-[8px] cursor-default">
+                              <span>✏️</span>
+                              <span>🗑️</span>
+                              <span>▼</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
                 </div>
+              </div>
 
               </div>
-            </div>
-
           </div>
         </div>
       </motion.section>
@@ -525,12 +619,15 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <button 
-              onClick={() => openAuth('register', '2_weeks')}
-              className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
-            >
-              Start 2-Week Trial
-            </button>
+            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+              <button 
+                onClick={() => openAuth('register', '2_weeks')}
+                className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+              >
+                Start Free Trial
+              </button>
+              <span className="text-[9px] text-gray-500 font-bold">No card needed</span>
+            </div>
           </motion.div>
 
           {/* 1 Month Plan (Popular) */}
@@ -559,12 +656,15 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <button 
-              onClick={() => openAuth('register', '1_month')}
-              className="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer"
-            >
-              Start 1-Month Trial
-            </button>
+            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+              <button 
+                onClick={() => openAuth('register', '1_month')}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer"
+              >
+                Start Free Trial
+              </button>
+              <span className="text-[9px] text-gray-550 font-bold">No card needed</span>
+            </div>
           </motion.div>
 
           {/* 3 Months Plan */}
@@ -590,12 +690,15 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <button 
-              onClick={() => openAuth('register', '3_months')}
-              className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
-            >
-              Start 3-Month Trial
-            </button>
+            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+              <button 
+                onClick={() => openAuth('register', '3_months')}
+                className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+              >
+                Start Free Trial
+              </button>
+              <span className="text-[9px] text-gray-500 font-bold">No card needed</span>
+            </div>
           </motion.div>
 
           {/* 6 Months Plan */}
@@ -621,12 +724,15 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <button 
-              onClick={() => openAuth('register', '6_months')}
-              className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
-            >
-              Start 6-Month Trial
-            </button>
+            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+              <button 
+                onClick={() => openAuth('register', '6_months')}
+                className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+              >
+                Start Free Trial
+              </button>
+              <span className="text-[9px] text-gray-550 font-bold">No card needed</span>
+            </div>
           </motion.div>
         </motion.div>
       </motion.section>
@@ -787,28 +893,22 @@ export default function CoachLandingPage() {
                             </select>
                           </div>
                         </div>
-                        <div className="bg-[#0a0b16]/40 p-3.5 border border-white/[0.03] rounded-2xl flex items-center justify-between">
-                          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Plan Selected</span>
-                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-lg">
-                            {selectedPlan === '2_weeks' ? '2 Weeks - 2,200 EGP' :
-                             selectedPlan === '1_month' ? '1 Month - 3,500 EGP' :
-                             selectedPlan === '3_months' ? '3 Months - 8,500 EGP' :
-                             '6 Months - 14,000 EGP'}
-                          </span>
-                        </div>
-                        <div className="flex gap-3 mt-4">
-                          <button
-                            type="button" onClick={() => setOnboardingStep(1)}
-                            className="px-4 py-3.5 bg-[#0a0b16] border border-white/[0.05] text-gray-400 font-bold text-xs rounded-xl hover:text-white transition-colors"
-                          >
-                            Back
-                          </button>
-                          <button
-                            type="button" disabled={loading || !phone || !age} onClick={handleRegister}
-                            className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            {loading ? 'Starting Trial...' : <><CheckCircle2 size={12} /> Start My Free Trial</>}
-                          </button>
+                        <div className="flex flex-col items-center gap-2 mt-4">
+                          <div className="flex gap-3 w-full">
+                            <button
+                              type="button" onClick={() => setOnboardingStep(1)}
+                              className="px-4 py-3.5 bg-[#0a0b16] border border-white/[0.05] text-gray-400 font-bold text-xs rounded-xl hover:text-white transition-colors"
+                            >
+                              Back
+                            </button>
+                            <button
+                              type="button" disabled={loading || !phone || !age} onClick={handleRegister}
+                              className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              {loading ? 'Starting Trial...' : <><CheckCircle2 size={12} /> Start My Free Trial</>}
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-gray-500 font-bold tracking-wide mt-1">No card needed</span>
                         </div>
                       </div>
                     )}

@@ -303,9 +303,13 @@ function App() {
           .eq('id', session.user.id)
           .maybeSingle();
 
-        // If no profile exists for this auth user, the account was deleted.
-        // Sign them out immediately so they can't access the app.
+        // If no profile exists for this auth user, check if we are in the middle of onboarding/signup
         if (!profile) {
+          const signupInProgress = localStorage.getItem('signup_in_progress') === 'true';
+          if (signupInProgress) {
+            console.log('Signup in progress, waiting for profile insert...');
+            return;
+          }
           console.warn('Authenticated user has no profile — account deleted. Signing out.');
           await supabase.auth.signOut();
           setSession(null);
@@ -506,6 +510,14 @@ function App() {
 
   return (
     <Router>
+      {showWelcomeSplash && (
+        <SplashOverlay
+          show={showWelcomeSplash}
+          welcomeName={welcomeName}
+          role={userRole}
+          onComplete={() => setShowWelcomeSplash(false)}
+        />
+      )}
       <Routes>
         {/* ── Standalone HR dashboard — no auth required ── */}
         <Route path="/hr" element={<HRDashboard />} />
@@ -586,14 +598,6 @@ function App() {
                 <>
                   <CookieConsent />
                   <AppContent userRole={userRole} userId={session?.user?.id || null} />
-                  {showWelcomeSplash && (
-                    <SplashOverlay
-                      show={showWelcomeSplash}
-                      welcomeName={welcomeName}
-                      role={userRole}
-                      onComplete={() => setShowWelcomeSplash(false)}
-                    />
-                  )}
                 </>
               } />
             )}
