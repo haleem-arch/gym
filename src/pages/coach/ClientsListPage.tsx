@@ -30,6 +30,7 @@ export default function ClientsListPage() {
   };
 
   const executeDeleteClient = async () => {
+    if (deleting) return;
     if (!targetClientToDelete) return;
     const client = targetClientToDelete;
     const displayName = client.user?.display_name || 'this client';

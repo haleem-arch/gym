@@ -185,6 +185,7 @@ export default function DashboardPage() {
 
   // Deploy Athlete State
   const [deployStep, setDeployStep] = useState<1 | 2 | 3 | 4>(1);
+  const [deletingClient, setDeletingClient] = useState(false);
   const [deployLoading, setDeployLoading] = useState(false);
   const [deploySuccessData, setDeploySuccessData] = useState<any | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
@@ -1337,6 +1338,8 @@ export default function DashboardPage() {
 
   const handleDeleteManagementClient = async () => {
     if (!selectedUserId || !selectedClientProfile) return;
+    if (deletingClient) return;
+
     const name = selectedClientProfile.user?.display_name || 'this client';
     const conf = window.prompt(`Type "${name}" to confirm complete account deletion (workouts, InBody, and auth logs will be wiped):`);
     if (conf !== name) {
@@ -1344,6 +1347,7 @@ export default function DashboardPage() {
       return;
     }
 
+    setDeletingClient(true);
     const toastId = toast.loading('Deleting athlete account...');
     try {
       // Cascade delete client records
@@ -1397,6 +1401,8 @@ export default function DashboardPage() {
     } catch (err: any) {
       console.error(err);
       toast.error('Wipe failed: ' + err.message, { id: toastId });
+    } finally {
+      setDeletingClient(false);
     }
   };
 
@@ -2893,9 +2899,10 @@ export default function DashboardPage() {
                 </p>
                 <button
                   onClick={handleDeleteManagementClient}
-                  className="w-full py-3.5 bg-red-950/40 hover:bg-red-900 border border-red-900/40 text-red-400 hover:text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
+                  disabled={deletingClient}
+                  className="w-full py-3.5 bg-red-950/40 hover:bg-red-900 border border-red-900/40 text-red-400 hover:text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:border-gray-800 disabled:cursor-not-allowed font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
                 >
-                  <Trash size={12} /> Delete athlete dossiers
+                  <Trash size={12} /> {deletingClient ? 'Deleting dossier...' : 'Delete athlete dossiers'}
                 </button>
               </div>
             </div>

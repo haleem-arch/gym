@@ -344,6 +344,7 @@ export default function DesktopCoachPortal() {
   const [managementUpdatingSuspension, setManagementUpdatingSuspension] = useState(false);
   const [managementUpdatingQuota, setManagementUpdatingQuota] = useState(false);
   const [managementUpdatingFeatures, setManagementUpdatingFeatures] = useState(false);
+  const [deletingClient, setDeletingClient] = useState(false);
   const [managementAiQuotaInput, setManagementAiQuotaInput] = useState<number>(20);
   const [editSubscriptionPeriod, setEditSubscriptionPeriod] = useState('1 month');
   const [editSubscriptionDelay, setEditSubscriptionDelay] = useState('0');
@@ -3140,6 +3141,8 @@ export default function DesktopCoachPortal() {
 
   const handleDeleteManagementClient = async () => {
     if (!managementSelectedClientId || !managementClientProfile) return;
+    if (deletingClient) return;
+
     const name = managementClientProfile.user?.display_name || 'this client';
     const conf = window.prompt(`Type "${name}" to confirm complete account deletion (workouts, InBody, and auth logs will be wiped):`);
     if (conf !== name) {
@@ -3147,6 +3150,7 @@ export default function DesktopCoachPortal() {
       return;
     }
 
+    setDeletingClient(true);
     const toastId = toast.loading('Deleting athlete account...');
     if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
       setTimeout(() => {
@@ -3156,6 +3160,7 @@ export default function DesktopCoachPortal() {
         }
         setManagementSelectedClientId('');
         setManagementClientProfile(null);
+        setDeletingClient(false);
       }, 800);
       return;
     }
@@ -3262,6 +3267,8 @@ export default function DesktopCoachPortal() {
     } catch (err: any) {
       console.error(err);
       toast.error('Wipe failed: ' + err.message, { id: toastId });
+    } finally {
+      setDeletingClient(false);
     }
   };
 
@@ -7735,9 +7742,10 @@ export default function DesktopCoachPortal() {
                         </p>
                         <button
                           onClick={handleDeleteManagementClient}
-                          className="w-full bg-red-650 hover:bg-red-650 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                          disabled={deletingClient}
+                          className="w-full bg-red-650 hover:bg-red-650 text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 cursor-pointer transition-all flex items-center justify-center gap-1.5"
                         >
-                          <Trash2 size={13} /> Complete Cascade Wipe
+                          <Trash2 size={13} /> {deletingClient ? 'Deleting...' : 'Complete Cascade Wipe'}
                         </button>
                       </div>
                     </div>

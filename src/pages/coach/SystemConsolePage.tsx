@@ -412,6 +412,7 @@ export default function SystemConsolePage() {
 
   // Delete Selected User completely from Auth and Database
   const executeDeleteUser = async (uid: string) => {
+    if (isDeletingUser) return;
     if (!targetUserToDelete) return;
     setShowConfirmDeleteModal(false);
     setIsDeletingUser(true);

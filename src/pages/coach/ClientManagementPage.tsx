@@ -260,6 +260,7 @@ export default function ClientManagementPage() {
   };
 
   const executeDeleteClient = async () => {
+    if (deleting) return;
     setShowConfirmDeleteModal(false);
     setDeleting(true);
     try {
