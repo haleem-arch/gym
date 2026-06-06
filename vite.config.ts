@@ -17,6 +17,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon.svg'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 3000000
+      },
       manifest: {
         name: 'Haleem',
         short_name: 'Haleem',
