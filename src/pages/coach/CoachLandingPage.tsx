@@ -366,7 +366,6 @@ export default function CoachLandingPage() {
       })();
 
       // 2. Animate progress bar smoothly in parallel
-      let currentProgress = 5;
       const progressTexts = [
         { min: 0, max: 20, text: 'Here we start...' },
         { min: 20, max: 40, text: 'Creating ur acc...' },
@@ -376,31 +375,43 @@ export default function CoachLandingPage() {
         { min: 95, max: 100, text: 'Almost ready...' }
       ];
 
-      while (currentProgress < 95) {
-        currentProgress += 1;
-        setCreationProgress(currentProgress);
+      const timerPromise = delay(2500); // 2.5 seconds minimum parallel delay
+      const startTime = Date.now();
+      const climbDuration = 2300; // Climb to 95% over 2.3 seconds
 
-        const activeTextObj = progressTexts.find(t => currentProgress >= t.min && currentProgress < t.max);
+      while (true) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= climbDuration) {
+          setCreationProgress(95);
+          setCreationText('Almost ready...');
+          break;
+        }
+
+        const currentPct = 5 + Math.floor((elapsed / climbDuration) * 90);
+        setCreationProgress(currentPct);
+
+        const activeTextObj = progressTexts.find(t => currentPct >= t.min && currentPct < t.max);
         if (activeTextObj) {
           setCreationText(activeTextObj.text);
         }
 
-        await delay(30); // ~3.0 seconds minimum loading experience
+        await delay(30);
       }
 
-      // 3. Await the database inserts to complete
-      await registrationPromise;
+      // 3. Await BOTH the database inserts and the minimum 2.5s timer to complete
+      await Promise.all([registrationPromise, timerPromise]);
 
-      // 4. Finish animation
+      // 4. Finish animation from 95% to 100%
+      let currentProgress = 95;
       while (currentProgress < 100) {
         currentProgress += 1;
         setCreationProgress(currentProgress);
         setCreationText('Almost ready...');
-        await delay(25);
+        await delay(20); // ~100ms total
       }
 
       setCreationText('Ready!');
-      await delay(600);
+      await delay(400); // 400ms display
 
       setShowAuthModal(false);
       setShowCreationLoader(false);

@@ -512,110 +512,112 @@ function App() {
 
   const effectiveSession = signupInProgress ? null : session;
 
-  if (effectiveSession === undefined || (effectiveSession !== null && needsOnboarding === undefined)) {
-    return <DumbbellLoader fullScreen size={140} />;
-  }
-
   return (
     <Router>
-      {showWelcomeSplash && (
-        <SplashOverlay
-          show={showWelcomeSplash}
-          welcomeName={welcomeName}
-          role={userRole}
-          onComplete={() => setShowWelcomeSplash(false)}
-        />
-      )}
-      <Routes>
-        {/* ── Standalone HR dashboard — no auth required ── */}
-        <Route path="/hr" element={<HRDashboard />} />
+      {effectiveSession === undefined || (effectiveSession !== null && needsOnboarding === undefined) ? (
+        <DumbbellLoader fullScreen size={140} />
+      ) : (
+        <>
+          {showWelcomeSplash && (
+            <SplashOverlay
+              show={showWelcomeSplash}
+              welcomeName={welcomeName}
+              role={userRole}
+              onComplete={() => setShowWelcomeSplash(false)}
+            />
+          )}
+          <Routes>
+            {/* ── Standalone HR dashboard — no auth required ── */}
+            <Route path="/hr" element={<HRDashboard />} />
 
-        {/* Guest Routes (when NOT logged in) */}
-        {!effectiveSession ? (
-          <>
-            <Route path="/" element={<CoachLandingPage />} />
-            <Route path="/login" element={
+            {/* Guest Routes (when NOT logged in) */}
+            {!effectiveSession ? (
               <>
-                <CookieConsent />
-                <OnboardingFlow 
-                  initialStep={1} 
-                  onSessionConfigured={setSession} 
-                />
+                <Route path="/" element={<CoachLandingPage />} />
+                <Route path="/login" element={
+                  <>
+                    <CookieConsent />
+                    <OnboardingFlow 
+                      initialStep={1} 
+                      onSessionConfigured={setSession} 
+                    />
+                  </>
+                } />
+                <Route path="/client-login" element={
+                  <>
+                    <CookieConsent />
+                    <OnboardingFlow 
+                      initialStep={1} 
+                      onSessionConfigured={setSession} 
+                    />
+                  </>
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </>
-            } />
-            <Route path="/client-login" element={
-              <>
-                <CookieConsent />
-                <OnboardingFlow 
-                  initialStep={1} 
-                  onSessionConfigured={setSession} 
-                />
-              </>
-            } />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        ) : (
-          /* Authenticated Routes */
-          <>
-            {isSuspended ? (
-              <Route path="*" element={
-                <div className="flex flex-col items-center justify-center p-6 min-h-[100dvh] bg-background text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" x2="15" y1="9" y2="15"/><line x1="15" x2="9" y1="9" y2="15"/></svg>
-                  </div>
-                  <h1 className="text-xl font-black text-white">Account Suspended</h1>
-                  <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
-                    {suspensionReason || 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.'}
-                  </p>
-                  
-                  {coachProfile && (
-                    <button
-                      onClick={handleRenewSubscription}
-                      className="mt-8 w-full max-w-[280px] py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Renew Subscription</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      setSession(null);
-                      setIsSuspended(false);
-                    }}
-                    className="mt-4 bg-transparent hover:text-white text-gray-400 font-bold px-6 py-2 text-xs transition-all cursor-pointer"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              } />
-            ) : needsOnboarding ? (
-              <Route path="*" element={
-                <>
-                  <CookieConsent />
-                  <OnboardingFlow 
-                    initialStep={2} 
-                    onSessionConfigured={setSession} 
-                    onComplete={() => setNeedsOnboarding(false)} 
-                  />
-                </>
-              } />
             ) : (
-              <Route path="*" element={
-                <>
-                  <CookieConsent />
-                  {showWelcomeSplash ? (
-                    <div className="w-full h-screen bg-[#060713]" />
-                  ) : (
-                    <AppContent />
-                  )}
-                </>
-              } />
+              /* Authenticated Routes */
+              <>
+                {isSuspended ? (
+                  <Route path="*" element={
+                    <div className="flex flex-col items-center justify-center p-6 min-h-[100dvh] bg-background text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" x2="15" y1="9" y2="15"/><line x1="15" x2="9" y1="9" y2="15"/></svg>
+                      </div>
+                      <h1 className="text-xl font-black text-white">Account Suspended</h1>
+                      <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed">
+                        {suspensionReason || 'Your account is suspended because your subscription has expired or was not renewed. Please contact your coach to reactivate your access.'}
+                      </p>
+                      
+                      {coachProfile && (
+                        <button
+                          onClick={handleRenewSubscription}
+                          className="mt-8 w-full max-w-[280px] py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Renew Subscription</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={async () => {
+                          await supabase.auth.signOut();
+                          setSession(null);
+                          setIsSuspended(false);
+                        }}
+                        className="mt-4 bg-transparent hover:text-white text-gray-400 font-bold px-6 py-2 text-xs transition-all cursor-pointer"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  } />
+                ) : needsOnboarding ? (
+                  <Route path="*" element={
+                    <>
+                      <CookieConsent />
+                      <OnboardingFlow 
+                        initialStep={2} 
+                        onSessionConfigured={setSession} 
+                        onComplete={() => setNeedsOnboarding(false)} 
+                      />
+                    </>
+                  } />
+                ) : (
+                  <Route path="*" element={
+                    <>
+                      <CookieConsent />
+                      {showWelcomeSplash ? (
+                        <div className="w-full h-screen bg-[#060713]" />
+                      ) : (
+                        <AppContent />
+                      )}
+                    </>
+                  } />
+                )}
+              </>
             )}
-          </>
-        )}
-      </Routes>
+          </Routes>
+        </>
+      )}
     </Router>
   );
 }
