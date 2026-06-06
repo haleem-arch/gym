@@ -281,7 +281,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
           style={{ position: 'relative', width: '100%', maxWidth: 580, zIndex: 10 }}
         >
           {/* Main Card */}
-          <div style={{
+          <div id="tutorial-receipt-modal" style={{
             background: 'linear-gradient(160deg, rgba(17,17,34,0.98) 0%, rgba(10,10,20,0.98) 100%)',
             border: '1px solid rgba(59,130,246,0.2)',
             borderRadius: 28,

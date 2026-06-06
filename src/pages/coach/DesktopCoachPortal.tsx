@@ -541,6 +541,19 @@ export default function DesktopCoachPortal() {
           return;
         }
 
+        // If a receipt modal is open, focus on it!
+        const receiptEl = document.getElementById('tutorial-receipt-modal');
+        if (receiptEl) {
+          const rect = receiptEl.getBoundingClientRect();
+          setSpotlightRect({
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+          });
+          return;
+        }
+
         const stepIds = [
           'tutorial-sidebar',
           'tutorial-client-list-container',
@@ -562,11 +575,17 @@ export default function DesktopCoachPortal() {
         const el = document.getElementById(id);
         if (el) {
           const rect = el.getBoundingClientRect();
+          // Constrain top to be below header or screen top
+          const top = Math.max(0, rect.top);
+          // Constrain height so the highlight box never goes off the bottom of the screen
+          const maxHeight = window.innerHeight - top - 24; 
+          const height = Math.min(rect.height, maxHeight);
+          
           setSpotlightRect({
-            top: rect.top,
+            top: top,
             left: rect.left,
             width: rect.width,
-            height: rect.height
+            height: height
           });
         } else {
           setSpotlightRect(null);
@@ -584,7 +603,7 @@ export default function DesktopCoachPortal() {
     } else {
       setSpotlightRect(null);
     }
-  }, [showTutorial, tutorialStep, spotlightIndex, activeTab, clientActiveTab, selectedClientId, deployStep, managementSelectedClientId, unsavedChangesPendingAction]);
+  }, [showTutorial, tutorialStep, spotlightIndex, activeTab, clientActiveTab, selectedClientId, deployStep, managementSelectedClientId, unsavedChangesPendingAction, selectedReceiptDiet, selectedReceiptWorkout]);
 
 
 
@@ -4622,8 +4641,8 @@ export default function DesktopCoachPortal() {
                 left: (() => {
                   const cardWidth = 280;
                   
-                  // Rule 1: If warning dialog modal is visible, place card to its left!
-                  const modalEl = document.getElementById('tutorial-unsaved-modal');
+                  // Rule 1: If warning dialog modal or receipt modal is visible, place card to its left!
+                  const modalEl = document.getElementById('tutorial-unsaved-modal') || document.getElementById('tutorial-receipt-modal');
                   if (modalEl) {
                     return Math.max(20, spotlightRect.left - cardWidth - 20);
                   }
@@ -4650,8 +4669,8 @@ export default function DesktopCoachPortal() {
                 top: (() => {
                   const cardHeight = 250;
                   const cardWidth = 280;
-                  // If warning dialog modal is visible, align card vertically with the modal
-                  const modalEl = document.getElementById('tutorial-unsaved-modal');
+                  // If warning dialog modal or receipt modal is visible, align card vertically with it
+                  const modalEl = document.getElementById('tutorial-unsaved-modal') || document.getElementById('tutorial-receipt-modal');
                   if (modalEl) {
                     return Math.max(40, Math.min(window.innerHeight - cardHeight - 40, spotlightRect.top + 20));
                   }
@@ -4919,19 +4938,27 @@ export default function DesktopCoachPortal() {
     <div className="h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar">
       {/* Warning banner for trials / low remaining duration */}
       {showCoachWarningBanner && (
-        <div className={`w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 ${isTrialActive ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/90 text-white' : 'bg-gradient-to-r from-amber-600/90 to-orange-600/90 text-white'}`}>
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="animate-spin-slow" />
-            <span>
+        <div className="w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 bg-gradient-to-r from-[#0b0c16]/95 via-blue-950/20 to-[#0b0c16]/95 border-b border-blue-500/20 backdrop-blur-md text-gray-200">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            <span className="tracking-wide">
               {isTrialActive 
-                ? `FREE TRIAL ACTIVE: Your free trial period is running. Access will end in: ` 
-                : `SUBSCRIPTION EXPIRING SOON: Your administrative coach subscription is expiring in: `}
-              <span className="font-mono text-sm underline bg-black/20 px-2 py-0.5 rounded ml-1">{coachCountdownText}</span>
+                ? `Free Trial Active — Access expires in ` 
+                : `Subscription Expiring Soon — Renew in `}
+              <span className="font-mono text-xs font-black text-blue-400 bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 rounded-lg ml-1.5 shadow-sm shadow-blue-500/5">
+                {coachCountdownText}
+              </span>
             </span>
           </div>
-          <span className="text-[10px] uppercase bg-white/20 px-2 py-0.5 rounded font-bold tracking-wider">
-            {isTrialActive ? 'Free Trial' : 'Subscription'}
-          </span>
+          <button 
+            onClick={() => handleSidebarTabClick('profile', true)}
+            className="text-[9px] uppercase font-black tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-1.5 rounded-full shadow-md shadow-blue-500/20 hover:shadow-blue-500/35 transition-all active:scale-95 cursor-pointer border border-blue-400/20"
+          >
+            {isTrialActive ? 'Upgrade License' : 'Manage Subscription'}
+          </button>
         </div>
       )}
 
@@ -6862,13 +6889,17 @@ export default function DesktopCoachPortal() {
                           <button
                             type="button"
                             onClick={() => {
+                              if (showTutorial) return;
                               if (idx + 1 > deployStep && (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim())) {
                                 toast.error('Complete basic account fields first.');
                                 return;
                               }
                               setDeployStep(idx + 1);
                             }}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
+                            disabled={showTutorial}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
+                              showTutorial ? 'cursor-default pointer-events-none' : 'active:scale-90 cursor-pointer'
+                            } ${
                               isCompleted 
                                 ? 'bg-emerald-600 border-emerald-400 text-white shadow-md'
                                 : isActive 
