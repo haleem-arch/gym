@@ -25,9 +25,9 @@ interface Template {
 }
 
 const SPLITS = [
-  { key: 'PUSH', label: 'Push', emoji: '🔴', color: '#ef4444', desc: 'Chest · Shoulders · Triceps' },
-  { key: 'PULL', label: 'Pull', emoji: '🔵', color: '#3b82f6', desc: 'Back · Rear Delts · Biceps' },
-  { key: 'LEGS', label: 'Legs', emoji: '🟡', color: '#eab308', desc: 'Quads · Hams · Glutes · Calves' },
+  { key: 'PUSH', label: 'Push', emoji: '🔴', color: '#ef4444', border: 'border-red-500/20', bg: 'bg-red-500/10', glow: 'shadow-red-500/10', desc: 'Chest · Shoulders · Triceps' },
+  { key: 'PULL', label: 'Pull', emoji: '🔵', color: '#3b82f6', border: 'border-blue-500/20', bg: 'bg-blue-500/10', glow: 'shadow-blue-500/10', desc: 'Back · Rear Delts · Biceps' },
+  { key: 'LEGS', label: 'Legs', emoji: '🟡', color: '#eab308', border: 'border-amber-500/20', bg: 'bg-amber-500/10', glow: 'shadow-amber-500/10', desc: 'Quads · Hams · Glutes · Calves' },
 ];
 
 const DEFAULT_EXERCISES: Record<string, string[]> = {
@@ -79,16 +79,20 @@ function muscleColor(group: string) {
   return '#6b7280';
 }
 
+
+
 // ─── Draggable Exercise Row ───────────────────────────────────────────────────
 function ExerciseRow({
   exercise,
   index,
+  splitColor,
   onRemove,
   onUpdateSets,
   onUpdateRest,
 }: {
   exercise: Exercise;
   index: number;
+  splitColor: string;
   onRemove: () => void;
   onUpdateSets: (sets: number) => void;
   onUpdateRest: (rest: number) => void;
@@ -97,113 +101,92 @@ function ExerciseRow({
     <Reorder.Item
       value={exercise}
       id={exercise.id}
-      className="touch-none"
-      whileDrag={{ scale: 1.03, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
+      className="touch-none list-none mb-3"
+      whileDrag={{ scale: 1.02, zIndex: 50, boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}
     >
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 14,
-          padding: '12px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 8,
-          cursor: 'grab',
-          flexWrap: 'wrap',
-        }}
-      >
-        {/* Left: Drag / Index / Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: '150px' }}>
-          {/* Index badge */}
-          <div style={{
-            width: 24, height: 24, borderRadius: '50%',
-            background: 'rgba(59,130,246,0.15)',
-            border: '1px solid rgba(59,130,246,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 800, color: '#60a5fa', flexShrink: 0,
-          }}>
+      <div className="bg-slate-900/35 backdrop-blur-md border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-4 flex items-center gap-4 flex-wrap cursor-grab active:cursor-grabbing transition-colors duration-150">
+        {/* Left: Drag Handle, Index, Title Info */}
+        <div className="flex items-center gap-3.5 flex-1 min-w-[180px]">
+          {/* Index Badge */}
+          <div 
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border flex-shrink-0"
+            style={{
+              background: splitColor + '18',
+              borderColor: splitColor + '40',
+              color: splitColor
+            }}
+          >
             {index + 1}
           </div>
 
-          {/* Grip icon */}
-          <GripVertical size={16} color="rgba(255,255,255,0.2)" style={{ flexShrink: 0 }} />
+          {/* Grip Icon */}
+          <GripVertical size={16} className="text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0" />
 
-          {/* Name + muscle */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: '#f1f5f9',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
+          {/* Title and Muscle Group */}
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-black text-slate-100 truncate">
               {exercise.name}
             </div>
             {exercise.muscle_group && (
-              <div style={{
-                fontSize: 10, fontWeight: 600, marginTop: 2,
-                color: muscleColor(exercise.muscle_group),
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-              }}>
+              <div 
+                className="text-[9px] font-bold mt-1 text-left uppercase tracking-wider block"
+                style={{ color: muscleColor(exercise.muscle_group) }}
+              >
                 {exercise.muscle_group}
               </div>
             )}
           </div>
         </div>
 
-        {/* Right: Steppers & Tier & Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {/* Sets stepper */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Sets</span>
+        {/* Right: Controls for Sets, Rest, and Actions */}
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          {/* Sets Control */}
+          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-900 px-3 py-1.5 rounded-xl">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Sets</span>
             <button
               onClick={(e) => { e.stopPropagation(); onUpdateSets(Math.max(1, (exercise.sets || 3) - 1)); }}
-              style={{ width: 18, height: 18, border: 'none', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}
+              className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               -
             </button>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#60a5fa', minWidth: 12, textAlign: 'center' }}>
+            <span className="text-xs font-black text-blue-400 min-w-[14px] text-center font-mono">
               {exercise.sets || 3}
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); onUpdateSets(Math.min(10, (exercise.sets || 3) + 1)); }}
-              style={{ width: 18, height: 18, border: 'none', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}
+              className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               +
             </button>
           </div>
 
-          {/* Rest stepper */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Rest</span>
+          {/* Rest Control */}
+          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-900 px-3 py-1.5 rounded-xl">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Rest</span>
             <button
               onClick={(e) => { e.stopPropagation(); onUpdateRest(Math.max(30, (exercise.rest || 120) - 30)); }}
-              style={{ width: 18, height: 18, border: 'none', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}
+              className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               -
             </button>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#34d399', minWidth: 32, textAlign: 'center' }}>
+            <span className="text-xs font-black text-emerald-400 min-w-[34px] text-center font-mono">
               {exercise.rest || 120}s
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); onUpdateRest(Math.min(600, (exercise.rest || 120) + 30)); }}
-              style={{ width: 18, height: 18, border: 'none', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}
+              className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               +
             </button>
           </div>
 
-          {/* Remove */}
+          {/* Trash/Remove Button */}
           <button
             onClick={onRemove}
-            style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', flexShrink: 0,
-            }}
+            className="w-8 h-8 rounded-xl bg-red-950/20 border border-red-500/10 hover:border-red-500/30 flex items-center justify-center transition-colors cursor-pointer flex-shrink-0"
+            title="Remove exercise"
           >
-            <Trash2 size={13} color="#f87171" />
+            <Trash2 size={13} className="text-red-400" />
           </button>
         </div>
       </div>
@@ -246,12 +229,7 @@ function ExercisePicker({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'flex-end',
-      }}
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-end"
       onClick={onClose}
     >
       <motion.div
@@ -260,93 +238,72 @@ function ExercisePicker({
         exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 340, damping: 32 }}
         onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxHeight: '80vh',
-          background: 'linear-gradient(180deg, #0f1122 0%, #080910 100%)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: '24px 24px 0 0',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-        }}
+        className="w-full max-h-[85vh] bg-gradient-to-b from-[#090b14] to-[#04050a] border-t border-slate-850 rounded-t-[28px] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div style={{ padding: '20px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div className="p-6 pb-4 border-b border-slate-900 bg-slate-950/20">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>Add Exercise</div>
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Search or pick from library</div>
+              <h3 className="text-base font-black text-slate-100 uppercase tracking-tight">Add Exercise</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Search or pick from library</p>
             </div>
             <button
               onClick={onClose}
-              style={{
-                width: 32, height: 32, borderRadius: 10,
-                background: 'rgba(255,255,255,0.06)', border: 'none',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
-              }}
+              className="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 flex items-center justify-center transition-colors cursor-pointer"
             >
-              <X size={16} color="#94a3b8" />
+              <X size={14} className="text-slate-400" />
             </button>
           </div>
-          {/* Search */}
-          <div style={{ position: 'relative' }}>
-            <Search size={14} color="#475569" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+          {/* Search Box */}
+          <div className="relative">
+            <Search size={14} className="text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               autoFocus
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search exercises or muscle group…"
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                paddingLeft: 34, paddingRight: 14, paddingTop: 10, paddingBottom: 10,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 12, outline: 'none',
-                color: '#f1f5f9', fontSize: 13,
-              }}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-850 hover:border-slate-700 focus:border-blue-500 rounded-xl outline-none text-slate-200 text-xs font-bold placeholder-slate-600 transition-colors"
             />
           </div>
         </div>
 
-        {/* List */}
-        <div style={{ overflowY: 'auto', padding: '8px 16px 24px', flex: 1 }}>
+        {/* List Content */}
+        <div className="overflow-y-auto px-6 py-4 pb-8 flex-1 space-y-2.5">
           {loading ? (
-            <div style={{ textAlign: 'center', color: '#475569', padding: 32, fontSize: 13 }}>Loading exercises…</div>
+            <div className="text-center text-slate-500 py-12 text-xs font-bold uppercase tracking-wider">Loading exercise database…</div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#475569', padding: 32, fontSize: 13 }}>
+            <div className="text-center text-slate-500 py-12 text-xs font-bold uppercase tracking-wider">
               No exercises found{query ? ` for "${query}"` : ''}
             </div>
           ) : (
-            filtered.map(ex => (
-              <button
-                key={ex.id}
-                onClick={() => { onAdd(ex); }}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center',
-                  gap: 12, padding: '11px 12px', marginBottom: 6,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 12, cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                  background: muscleColor(ex.muscle_group),
-                  boxShadow: `0 0 6px ${muscleColor(ex.muscle_group)}66`,
-                }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {ex.name}
+            filtered.map(ex => {
+              const col = muscleColor(ex.muscle_group);
+              return (
+                <button
+                  key={ex.id}
+                  onClick={() => { onAdd(ex); }}
+                  className="w-full flex items-center gap-3.5 p-3.5 bg-slate-950/30 hover:bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-xl cursor-pointer text-left transition-all group"
+                >
+                  <div 
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{
+                      background: col,
+                      boxShadow: `0 0 8px ${col}`
+                    }} 
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white transition-colors">
+                      {ex.name}
+                    </div>
+                    <div className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider block">
+                      {ex.muscle_group}
+                      {ex.tier ? ` · Tier ${ex.tier}` : ''}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 10, color: '#475569', marginTop: 1, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    {ex.muscle_group}
-                    {ex.tier ? ` · Tier ${ex.tier}` : ''}
-                  </div>
-                </div>
-                <Plus size={15} color="#3b82f6" style={{ flexShrink: 0 }} />
-              </button>
-            ))
+                  <Plus size={14} className="text-blue-500 group-hover:text-blue-400 group-hover:scale-110 transition-all flex-shrink-0" />
+                </button>
+              );
+            })
           )}
         </div>
       </motion.div>
@@ -354,7 +311,7 @@ function ExercisePicker({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page Component ──────────────────────────────────────────────────────
 const WorkoutBuilder = () => {
   const navigate = useNavigate();
   const [activeSplit, setActiveSplit] = useState('PUSH');
@@ -744,6 +701,9 @@ const WorkoutBuilder = () => {
       label: key,
       emoji: '🏋️‍♂️',
       color: '#818cf8',
+      border: 'border-indigo-500/20',
+      bg: 'bg-indigo-500/10',
+      glow: 'shadow-indigo-500/10',
       desc: 'Custom Workout Program'
     };
   };
@@ -751,376 +711,265 @@ const WorkoutBuilder = () => {
   const splitInfo = getSplitInfo(activeSplit);
 
   return (
-    <div style={{
-      minHeight: '100%',
-      background: 'transparent',
-      paddingBottom: 120,
-    }}>
-
+    <div className="min-h-full pb-32 max-w-lg mx-auto w-full px-5 pt-5 flex flex-col gap-6">
       {/* ── Header ── */}
-      <div style={{
-        padding: '20px 20px 0',
-        position: 'sticky', top: 0, zIndex: 20,
-        background: 'linear-gradient(180deg, #060610 85%, transparent 100%)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-          <button
-            onClick={() => navigate('/workout')}
-            style={{
-              width: 38, height: 38, borderRadius: 12,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ArrowLeft size={18} color="#94a3b8" />
-          </button>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: '#f1f5f9', lineHeight: 1 }}>
-              Workout Builder
-            </h1>
-            <div style={{ fontSize: 11, color: '#475569', marginTop: 3, letterSpacing: '0.05em' }}>
-              Customize &amp; save your training templates
-            </div>
-          </div>
-        </div>
-
-        {/* ── Split tabs ── */}
-        <div style={{
-          display: 'flex', gap: 8,
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 16, padding: 4,
-          border: '1px solid rgba(255,255,255,0.06)',
-          marginBottom: 4,
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-        }}>
-          {Object.keys(templates).map(key => {
-            const split = templates[key];
-            const isActive = activeSplit === key;
-            const hasDirty = split?.isDirty;
-            const info = getSplitInfo(key);
-            
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveSplit(key)}
-                style={{
-                  padding: '9px 14px', borderRadius: 12,
-                  background: isActive
-                    ? `linear-gradient(135deg, ${info.color}22, ${info.color}11)`
-                    : 'transparent',
-                  border: isActive
-                    ? `1px solid ${info.color}44`
-                    : '1px solid transparent',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  position: 'relative',
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{
-                  fontSize: 11, fontWeight: 800,
-                  color: isActive ? '#f1f5f9' : '#64748b',
-                  letterSpacing: '0.04em',
-                  display: 'flex', alignItems: 'center', gap: 4
-                }}>
-                  <span>{info.emoji}</span>
-                  <span>{info.label}</span>
-                </div>
-                {hasDirty && (
-                  <div style={{
-                    position: 'absolute', top: 4, right: 4,
-                    width: 5, height: 5, borderRadius: '50%',
-                    background: '#f59e0b',
-                    boxShadow: '0 0 6px #f59e0b',
-                  }} />
-                )}
-              </button>
-            );
-          })}
-          
-          {/* Add custom template button */}
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              padding: '9px 14px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px dashed rgba(255,255,255,0.15)',
-              color: '#34d399', fontSize: 11, fontWeight: 800,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-              flexShrink: 0,
-            }}
-          >
-            <Plus size={12} />
-            New Split
-          </button>
+      <div className="flex items-center gap-3.5">
+        <button
+          onClick={() => navigate('/workout')}
+          className="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white transition-all flex items-center justify-center active:scale-90 cursor-pointer"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h1 className="text-xl font-black text-slate-100 uppercase tracking-tight leading-tight">
+            Workout Builder
+          </h1>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 block">
+            Customize &amp; save your training templates
+          </p>
         </div>
       </div>
 
-      {/* ── Split info bar ── */}
-      <div style={{ padding: '10px 20px 0' }}>
-        {currentTemplate && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 14px',
-            background: `linear-gradient(135deg, ${splitInfo.color}10, transparent)`,
-            border: `1px solid ${splitInfo.color}22`,
-            borderRadius: 14, marginBottom: 14,
-          }}>
-            <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 900, color: splitInfo.color }}>
-                  {splitInfo.label}
-                </span>
-                
-                {/* Rename Button */}
-                <button
-                  onClick={() => {
-                    setRenameTarget(activeSplit);
-                    setRenameValue(activeSplit);
-                    setShowRenameModal(true);
-                  }}
-                  style={{
-                    border: 'none', background: 'transparent', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center',
-                    padding: '2px 4px', borderRadius: 4, gap: 2
-                  }}
-                  title="Rename Template"
-                >
-                  <Edit2 size={9} />
-                  <span style={{ fontSize: 9, fontWeight: 700 }}>Rename</span>
-                </button>
-              </div>
-              <div style={{ fontSize: 10, color: '#475569', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {splitInfo.desc}
-              </div>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Dumbbell size={13} color={splitInfo.color} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>
-                  {currentTemplate.exercises.length} ex
-                </span>
-              </div>
-
-              {/* Delete Button */}
-              <button
-                onClick={() => handleDeleteTemplate(activeSplit)}
-                style={{
-                  width: 26, height: 26, borderRadius: 6,
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-                title="Delete Template"
-              >
-                <Trash2 size={12} color="#ef4444" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Loading skeleton ── */}
-        {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[...Array(6)].map((_, i) => (
-              <div key={i} style={{
-                height: 58, borderRadius: 14,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                animation: 'pulse 1.5s ease-in-out infinite',
-                opacity: 1 - i * 0.12,
-              }} />
-            ))}
-          </div>
-        )}
-
-        {/* ── Reorderable exercise list ── */}
-        {!loading && currentTemplate && (
-          <>
-            {currentTemplate.exercises.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{
-                  textAlign: 'center', padding: '48px 20px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.08)',
-                  borderRadius: 20,
-                  marginBottom: 16,
-                }}
-              >
-                <BookOpen size={32} color="#334155" style={{ margin: '0 auto 12px' }} />
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                  No exercises yet
-                </div>
-                <div style={{ fontSize: 12, color: '#334155' }}>
-                  Tap "+ Add Exercise" to start building your template
-                </div>
-              </motion.div>
-            ) : (
-              <Reorder.Group
-                axis="y"
-                values={currentTemplate.exercises}
-                onReorder={handleReorder}
-                style={{ listStyle: 'none', padding: 0, margin: 0 }}
-              >
-                {currentTemplate.exercises.map((ex, i) => (
-                  <ExerciseRow
-                    key={ex.id}
-                    exercise={ex}
-                    index={i}
-                    onRemove={() => handleRemove(ex.id)}
-                    onUpdateSets={(sets) => handleUpdateSets(ex.id, sets)}
-                    onUpdateRest={(rest) => handleUpdateRest(ex.id, rest)}
-                  />
-                ))}
-              </Reorder.Group>
-            )}
-
-            {/* ── Drag hint ── */}
-            {currentTemplate.exercises.length > 1 && (
-              <div style={{
-                textAlign: 'center', fontSize: 10, color: '#334155',
-                margin: '8px 0 16px', letterSpacing: '0.08em',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}>
-                <GripVertical size={11} />
-                DRAG TO REORDER
-              </div>
-            )}
-
-            {/* ── Add exercise button ── */}
+      {/* ── Split Tabs Scroll ── */}
+      <div className="flex gap-2 p-1 bg-slate-950/45 border border-slate-900 rounded-2xl overflow-x-auto no-scrollbar">
+        {Object.keys(templates).map(key => {
+          const split = templates[key];
+          const isActive = activeSplit === key;
+          const hasDirty = split?.isDirty;
+          const info = getSplitInfo(key);
+          
+          return (
             <button
-              onClick={() => setShowPicker(true)}
+              key={key}
+              onClick={() => setActiveSplit(key)}
+              className="px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer relative shrink-0 border"
               style={{
-                width: '100%', padding: '14px',
-                background: 'rgba(59,130,246,0.07)',
-                border: '1px dashed rgba(59,130,246,0.3)',
-                borderRadius: 14, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 8, color: '#60a5fa', fontSize: 13, fontWeight: 700,
-                marginBottom: 16,
+                background: isActive ? info.color + '15' : 'transparent',
+                borderColor: isActive ? info.color + '40' : 'transparent',
               }}
             >
-              <Plus size={16} />
-              Add Exercise
+              <div 
+                className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                style={{ color: isActive ? '#f8fafc' : '#475569' }}
+              >
+                <span>{info.emoji}</span>
+                <span>{info.label}</span>
+              </div>
+              {hasDirty && (
+                <div 
+                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+                  style={{ 
+                    background: '#f59e0b',
+                    boxShadow: '0 0 8px #f59e0b'
+                  }} 
+                />
+              )}
             </button>
+          );
+        })}
+        
+        {/* Add custom template button */}
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2.5 rounded-xl bg-slate-950/20 border border-dashed border-slate-850 hover:border-emerald-500/40 text-emerald-400 hover:text-emerald-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer shrink-0 transition-all"
+        >
+          <Plus size={12} />
+          New Split
+        </button>
+      </div>
 
-            {/* ── Action buttons ── */}
-            <div style={{ display: 'flex', gap: 10 }}>
-              {/* Save template */}
+      {/* ── Split Info Bar Card ── */}
+      {currentTemplate && (
+        <div 
+          className="flex items-center justify-between p-4 bg-gradient-to-br rounded-2xl border"
+          style={{ 
+            backgroundImage: `linear-gradient(135deg, ${splitInfo.color}15, rgba(0,0,0,0.3))`,
+            borderColor: splitInfo.color + '25'
+          }}
+        >
+          <div className="flex-1 min-w-0 mr-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black uppercase tracking-wider" style={{ color: splitInfo.color }}>
+                {splitInfo.label}
+              </span>
+              
+              {/* Rename Button */}
               <button
-                onClick={handleSave}
-                disabled={saving || !currentTemplate.isDirty}
-                style={{
-                  flex: 1, padding: '14px',
-                  borderRadius: 14,
-                  background: currentTemplate.isDirty
-                    ? 'linear-gradient(135deg, #1d4ed8, #3b82f6)'
-                    : 'rgba(255,255,255,0.04)',
-                  border: currentTemplate.isDirty
-                    ? 'none'
-                    : '1px solid rgba(255,255,255,0.07)',
-                  color: currentTemplate.isDirty ? '#fff' : '#475569',
-                  fontSize: 13, fontWeight: 800,
-                  cursor: currentTemplate.isDirty ? 'pointer' : 'default',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  transition: 'all 0.2s',
-                  boxShadow: currentTemplate.isDirty ? '0 4px 20px rgba(59,130,246,0.35)' : 'none',
-                  opacity: saving ? 0.7 : 1,
+                onClick={() => {
+                  setRenameTarget(activeSplit);
+                  setRenameValue(activeSplit);
+                  setShowRenameModal(true);
                 }}
+                className="bg-slate-900/60 border border-slate-850 hover:bg-slate-800 text-slate-500 hover:text-slate-200 px-2 py-1 rounded-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
               >
-                {saved ? <Check size={15} /> : <Save size={15} />}
-                {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Template'}
-              </button>
-
-              {/* Start workout now */}
-              <button
-                onClick={handleStartNow}
-                disabled={currentTemplate.exercises.length === 0}
-                style={{
-                  flex: 1, padding: '14px',
-                  borderRadius: 14,
-                  background: currentTemplate.exercises.length > 0
-                    ? `linear-gradient(135deg, ${splitInfo.color}cc, ${splitInfo.color})`
-                    : 'rgba(255,255,255,0.04)',
-                  border: 'none',
-                  color: currentTemplate.exercises.length > 0 ? '#fff' : '#475569',
-                  fontSize: 13, fontWeight: 800,
-                  cursor: currentTemplate.exercises.length > 0 ? 'pointer' : 'default',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  boxShadow: currentTemplate.exercises.length > 0
-                    ? `0 4px 20px ${splitInfo.color}44`
-                    : 'none',
-                  opacity: currentTemplate.exercises.length === 0 ? 0.4 : 1,
-                }}
-              >
-                <Play size={15} />
-                Start Now
+                <Edit2 size={10} />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Rename</span>
               </button>
             </div>
-          </>
-        )}
-      </div>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1.5 truncate">
+              {splitInfo.desc}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-slate-950/40 border border-slate-900 px-2.5 py-1.5 rounded-xl">
+              <Dumbbell size={13} style={{ color: splitInfo.color }} />
+              <span className="text-[10px] font-black text-slate-300 font-mono">
+                {currentTemplate.exercises.length} EX
+              </span>
+            </div>
+
+            {/* Delete Button */}
+            <button
+              onClick={() => handleDeleteTemplate(activeSplit)}
+              className="w-8 h-8 rounded-xl bg-red-950/20 border border-red-500/10 hover:border-red-500/30 flex items-center justify-center transition-colors cursor-pointer"
+              title="Delete Template"
+            >
+              <Trash2 size={13} className="text-red-400" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Loading Skeleton ── */}
+      {loading && (
+        <div className="flex flex-col gap-3">
+          {[...Array(5)].map((_, i) => (
+            <div 
+              key={i} 
+              className="h-16 rounded-2xl bg-slate-950/40 border border-slate-900 animate-pulse" 
+              style={{ opacity: 1 - i * 0.15 }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Reorderable exercise list ── */}
+      {!loading && currentTemplate && (
+        <div className="flex-1 flex flex-col gap-4">
+          {currentTemplate.exercises.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-14 px-6 bg-slate-950/20 border border-dashed border-slate-850 rounded-3xl flex flex-col items-center justify-center"
+            >
+              <BookOpen size={36} className="text-slate-700 mb-3" />
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">No exercises added yet</h4>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider max-w-[200px]">Tap "+ Add Exercise" below to start building your template</p>
+            </motion.div>
+          ) : (
+            <Reorder.Group
+              axis="y"
+              values={currentTemplate.exercises}
+              onReorder={handleReorder}
+              className="list-none p-0 m-0"
+            >
+              {currentTemplate.exercises.map((ex, i) => (
+                <ExerciseRow
+                  key={ex.id}
+                  exercise={ex}
+                  index={i}
+                  splitColor={splitInfo.color}
+                  onRemove={() => handleRemove(ex.id)}
+                  onUpdateSets={(sets) => handleUpdateSets(ex.id, sets)}
+                  onUpdateRest={(rest) => handleUpdateRest(ex.id, rest)}
+                />
+              ))}
+            </Reorder.Group>
+          )}
+
+          {/* Drag Reorder Hint */}
+          {currentTemplate.exercises.length > 1 && (
+            <div className="text-center text-[9px] font-black text-slate-600 tracking-widest flex items-center justify-center gap-1.5 uppercase my-1">
+              <GripVertical size={11} />
+              Drag items to reorder exercises
+            </div>
+          )}
+
+          {/* Add Exercise Button */}
+          <button
+            onClick={() => setShowPicker(true)}
+            className="w-full py-4 bg-blue-500/5 hover:bg-blue-500/10 border border-dashed border-blue-500/25 hover:border-blue-500/40 rounded-2xl flex items-center justify-center gap-2 text-blue-400 text-xs font-black uppercase tracking-wider transition-all cursor-pointer mt-1"
+          >
+            <Plus size={14} />
+            Add Exercise
+          </button>
+
+          {/* Footer Save & Play Actions */}
+          <div className="grid grid-cols-2 gap-3.5 mt-2">
+            <button
+              onClick={handleSave}
+              disabled={saving || !currentTemplate.isDirty}
+              className="py-4 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all cursor-pointer border"
+              style={{
+                background: currentTemplate.isDirty 
+                  ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' 
+                  : 'rgba(255,255,255,0.02)',
+                borderColor: currentTemplate.isDirty 
+                  ? '#1d4ed8' 
+                  : 'rgba(255,255,255,0.05)',
+                color: currentTemplate.isDirty ? '#ffffff' : '#475569',
+                boxShadow: currentTemplate.isDirty ? '0 4px 20px rgba(37,99,235,0.2)' : 'none'
+              }}
+            >
+              {saved ? <Check size={14} /> : <Save size={14} />}
+              {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Split'}
+            </button>
+
+            <button
+              onClick={handleStartNow}
+              disabled={currentTemplate.exercises.length === 0}
+              className="py-4 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all cursor-pointer text-white border"
+              style={{
+                background: currentTemplate.exercises.length > 0 
+                  ? `linear-gradient(135deg, ${splitInfo.color}ee, ${splitInfo.color})` 
+                  : 'rgba(255,255,255,0.02)',
+                borderColor: currentTemplate.exercises.length > 0 
+                  ? splitInfo.color 
+                  : 'rgba(255,255,255,0.05)',
+                color: currentTemplate.exercises.length > 0 ? '#ffffff' : '#475569',
+                boxShadow: currentTemplate.exercises.length > 0 ? `0 4px 20px ${splitInfo.color}30` : 'none',
+                opacity: currentTemplate.exercises.length === 0 ? 0.35 : 1
+              }}
+            >
+              <Play size={14} className="fill-current" />
+              Start Now
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Create Template Modal ── */}
       {showCreateModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 99999,
-          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
-        }}>
+        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            style={{
-              background: 'linear-gradient(180deg, #101224 0%, #07080f 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 24, padding: 24, width: '100%', maxWidth: 340,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
-            }}
+            className="bg-gradient-to-b from-[#0e1020] to-[#05060b] border border-slate-850 rounded-[28px] p-6 w-full max-w-sm shadow-2xl"
           >
-            <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 6 }}>Create New Template</h3>
-            <p style={{ fontSize: 11, color: '#475569', marginBottom: 16 }}>Give your custom program a descriptive name.</p>
+            <h3 className="text-base font-black text-slate-100 uppercase tracking-tight">Create Custom Split</h3>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 mb-5">Give your custom training program a name</p>
             
             <input
               autoFocus
               type="text"
               value={newTemplateName}
               onChange={e => setNewTemplateName(e.target.value)}
-              placeholder="e.g. Upper Body, Legs A, Core..."
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                padding: '12px 14px', borderRadius: 12,
-                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
-                color: '#fff', fontSize: 13, outline: 'none', marginBottom: 18
-              }}
+              placeholder="e.g. Upper Body, Legs A, Arms..."
+              className="w-full px-4 py-3 bg-slate-950/60 border border-slate-850 rounded-xl text-slate-200 text-xs font-bold outline-none placeholder-slate-650 mb-6"
               onKeyDown={e => { if (e.key === 'Enter') handleCreateTemplate(); }}
             />
 
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setShowCreateModal(false)}
-                style={{
-                  flex: 1, padding: 12, borderRadius: 12, border: 'none',
-                  background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer'
-                }}
+                className="py-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateTemplate}
-                style={{
-                  flex: 1, padding: 12, borderRadius: 12, border: 'none',
-                  background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff',
-                  fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
-                }}
+                className="py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-lg shadow-emerald-500/15 cursor-pointer border border-emerald-600"
               >
                 Create
               </button>
@@ -1131,58 +980,35 @@ const WorkoutBuilder = () => {
 
       {/* ── Rename Template Modal ── */}
       {showRenameModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 99999,
-          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
-        }}>
+        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            style={{
-              background: 'linear-gradient(180deg, #101224 0%, #07080f 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 24, padding: 24, width: '100%', maxWidth: 340,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
-            }}
+            className="bg-gradient-to-b from-[#0e1020] to-[#05060b] border border-slate-850 rounded-[28px] p-6 w-full max-w-sm shadow-2xl"
           >
-            <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 6 }}>Rename Template</h3>
-            <p style={{ fontSize: 11, color: '#475569', marginBottom: 16 }}>Change the template name for your split.</p>
+            <h3 className="text-base font-black text-slate-100 uppercase tracking-tight">Rename Template</h3>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 mb-5">Enter a new name for this template</p>
             
             <input
               autoFocus
               type="text"
               value={renameValue}
               onChange={e => setRenameValue(e.target.value)}
-              placeholder="Template name..."
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                padding: '12px 14px', borderRadius: 12,
-                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
-                color: '#fff', fontSize: 13, outline: 'none', marginBottom: 18
-              }}
+              placeholder="e.g. Push Split..."
+              className="w-full px-4 py-3 bg-slate-950/60 border border-slate-850 rounded-xl text-slate-200 text-xs font-bold outline-none placeholder-slate-650 mb-6"
               onKeyDown={e => { if (e.key === 'Enter') handleRenameTemplate(); }}
             />
 
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setShowRenameModal(false)}
-                style={{
-                  flex: 1, padding: 12, borderRadius: 12, border: 'none',
-                  background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer'
-                }}
+                className="py-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRenameTemplate}
-                style={{
-                  flex: 1, padding: 12, borderRadius: 12, border: 'none',
-                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff',
-                  fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(59,130,246,0.3)'
-                }}
+                className="py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[10px] font-black uppercase tracking-wider shadow-lg shadow-blue-500/15 cursor-pointer border border-blue-600"
               >
                 Save
               </button>
@@ -1191,7 +1017,7 @@ const WorkoutBuilder = () => {
         </div>
       )}
 
-      {/* ── Exercise Picker sheet ── */}
+      {/* ── Exercise Picker Sheet ── */}
       <AnimatePresence>
         {showPicker && (
           <ExercisePicker
@@ -1207,18 +1033,10 @@ const WorkoutBuilder = () => {
       <AnimatePresence>
         {toastMsg && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            style={{
-              position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-              padding: '10px 20px', borderRadius: 12,
-              background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
-              boxShadow: '0 4px 24px rgba(59,130,246,0.4)',
-              color: '#fff', fontSize: 13, fontWeight: 700,
-              display: 'flex', alignItems: 'center', gap: 8,
-              zIndex: 99999, whiteSpace: 'nowrap',
-            }}
+            initial={{ opacity: 0, y: 20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 20, x: '-50%' }}
+            className="fixed bottom-28 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 border border-blue-400 shadow-xl shadow-blue-600/20 text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 z-[99999]"
           >
             <Check size={14} />
             {toastMsg}
