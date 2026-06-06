@@ -219,6 +219,60 @@ export default function DesktopCoachPortal() {
   // Athlete Directory Filter
   const [directoryFilterMineOnly, setDirectoryFilterMineOnly] = useState(false);
 
+  // Guided Tutorial States
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(1); // 1: Welcome, 2: Spotlight, 3: First Action Prompt
+  const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [spotlightRect, setSpotlightRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (!loading && coachUserId) {
+      const completed = localStorage.getItem(`lifegym_tutorial_completed_${coachUserId}`);
+      if (!completed) {
+        setShowTutorial(true);
+        setTutorialStep(1);
+        setSpotlightIndex(0);
+      }
+    }
+  }, [loading, coachUserId]);
+
+  useEffect(() => {
+    if (showTutorial && tutorialStep === 2) {
+      const updateRect = () => {
+        const stepIds = [
+          'tutorial-sidebar',
+          'tutorial-tab-clients',
+          'tutorial-tab-deploy',
+          'tutorial-tab-management',
+          'tutorial-tab-management'
+        ];
+        const id = stepIds[spotlightIndex];
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          setSpotlightRect({
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+          });
+        } else {
+          setSpotlightRect(null);
+        }
+      };
+
+      const timer = setTimeout(updateRect, 100);
+      window.addEventListener('resize', updateRect);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', updateRect);
+      };
+    } else {
+      setSpotlightRect(null);
+    }
+  }, [showTutorial, tutorialStep, spotlightIndex]);
+
+
   // Selected Client (Clients Tab)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedClientProfile, setSelectedClientProfile] = useState<any | null>(null);
@@ -4131,6 +4185,215 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  const renderGuidedTutorial = () => {
+    // Step 1: Welcome Screen
+    if (tutorialStep === 1) {
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#060713]/95 backdrop-blur-md">
+          <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-[#111326] border border-white/[0.06] rounded-[32px] p-8 text-center shadow-2xl relative overflow-hidden"
+          >
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center border border-blue-500/20 mx-auto mb-6 shadow-lg shadow-blue-500/5">
+              <img src="/icon.svg" alt="Life Gym Logo" className="w-10 h-10 object-contain" />
+            </div>
+
+            <h3 className="text-xl font-black text-white tracking-tight uppercase">
+              Welcome, {myCoachProfile?.display_name || 'Coach'}!
+            </h3>
+            
+            <p className="text-xs text-gray-400 mt-3 max-w-[280px] mx-auto leading-relaxed">
+              We are excited to have you. Let's get you set up and show you around in under 2 minutes.
+            </p>
+
+            <button
+              onClick={() => setTutorialStep(2)}
+              className="w-full py-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer mt-8 flex items-center justify-center gap-2"
+            >
+              <span>Get Started</span>
+              <ArrowRight size={14} />
+            </button>
+          </motion.div>
+        </div>
+      );
+    }
+
+    // Step 2: Interactive Spotlight Tour
+    if (tutorialStep === 2) {
+      const tourSteps = [
+        {
+          title: "Your Command Center",
+          desc: "This sidebar allows you to quickly toggle between your client roster, onboarding tools, subscriptions, and profile configurations."
+        },
+        {
+          title: "Athlete Directory",
+          desc: "Track client progress, view biometrics trends, set customized nutrition splits, build workouts, and parse InBody scan data sheets."
+        },
+        {
+          title: "Deploy New Athlete",
+          desc: "Instantly register client accounts. Life Gym auto-generates their credentials and prepares their personal tracking portal."
+        },
+        {
+          title: "Athlete Control",
+          desc: "Manage client administrative settings: reset passwords, suspend/reactivate access, or update specific target variables."
+        },
+        {
+          title: "Weekly Schedule Planner",
+          desc: "Inside any athlete's directory page, use the schedule planner to dynamically assign split routines (Push, Pull, Legs) day-by-day."
+        }
+      ];
+
+      const currentTour = tourSteps[spotlightIndex];
+
+      return (
+        <div className="fixed inset-0 z-[100] pointer-events-none">
+          {spotlightRect && (
+            <div 
+              className="fixed inset-0 bg-[#060713]/85 pointer-events-auto"
+              style={{
+                clipPath: `polygon(
+                  0% 0%, 
+                  0% 100%, 
+                  ${spotlightRect.left}px 100%, 
+                  ${spotlightRect.left}px ${spotlightRect.top}px, 
+                  ${spotlightRect.left + spotlightRect.width}px ${spotlightRect.top}px, 
+                  ${spotlightRect.left + spotlightRect.width}px ${spotlightRect.top + spotlightRect.height}px, 
+                  ${spotlightRect.left}px ${spotlightRect.top + spotlightRect.height}px, 
+                  ${spotlightRect.left}px 100%, 
+                  100% 100%, 
+                  100% 0%
+                )`
+              }}
+            />
+          )}
+
+          {spotlightRect && (
+            <motion.div 
+              layoutId="spotlight-ring"
+              className="fixed border-2 border-blue-500 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.5)] z-[101]"
+              style={{
+                top: spotlightRect.top - 4,
+                left: spotlightRect.left - 4,
+                width: spotlightRect.width + 8,
+                height: spotlightRect.height + 8,
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            />
+          )}
+
+          {spotlightRect && (
+            <motion.div
+              layoutId="spotlight-card"
+              className="fixed bg-[#111326]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-2xl w-[280px] pointer-events-auto z-[101] flex flex-col"
+              style={{
+                left: spotlightRect.left + spotlightRect.width + 20,
+                top: Math.max(20, Math.min(window.innerHeight - 280, spotlightRect.top - 10))
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            >
+              <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                {currentTour.title}
+              </h4>
+              <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+                {currentTour.desc}
+              </p>
+
+              <div className="flex items-center gap-1.5 mt-4">
+                {tourSteps.map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`h-1.5 rounded-full transition-all ${i === spotlightIndex ? 'w-4 bg-blue-500' : 'w-1.5 bg-white/10'}`} 
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-3 border-t border-white/[0.04]">
+                <button
+                  onClick={() => spotlightIndex > 0 && setSpotlightIndex(prev => prev - 1)}
+                  className={`text-[9px] font-black uppercase tracking-wider cursor-pointer bg-transparent border-none py-1 transition-colors ${spotlightIndex > 0 ? 'text-gray-400 hover:text-white' : 'text-gray-600 pointer-events-none'}`}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    if (spotlightIndex < tourSteps.length - 1) {
+                      setSpotlightIndex(prev => prev + 1);
+                    } else {
+                      setTutorialStep(3);
+                    }
+                  }}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[9px] uppercase tracking-wider rounded-lg shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  {spotlightIndex === tourSteps.length - 1 ? 'Finish Tour' : 'Next'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      );
+    }
+
+    // Step 3: First Action Prompt
+    if (tutorialStep === 3) {
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#060713]/95 backdrop-blur-md">
+          <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-emerald-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-[#111326] border border-white/[0.06] rounded-[32px] p-8 text-center shadow-2xl relative overflow-hidden"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6 text-emerald-400 shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+
+            <h3 className="text-lg font-black text-white tracking-tight uppercase">
+              Ready to add your first athlete?
+            </h3>
+            
+            <p className="text-xs text-gray-400 mt-3 max-w-[280px] mx-auto leading-relaxed">
+              Construct workout programs, adjust daily nutrition, and manage metrics instantly.
+            </p>
+
+            <div className="space-y-2.5 mt-8">
+              <button
+                onClick={() => {
+                  if (coachUserId) {
+                    localStorage.setItem(`lifegym_tutorial_completed_${coachUserId}`, 'true');
+                  }
+                  setActiveTab('deploy');
+                  setShowTutorial(false);
+                }}
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <UserPlus size={13} />
+                <span>Deploy First Athlete</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (coachUserId) {
+                    localStorage.setItem(`lifegym_tutorial_completed_${coachUserId}`, 'true');
+                  }
+                  setShowTutorial(false);
+                }}
+                className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-gray-300 font-extrabold text-xs uppercase tracking-wider rounded-2xl border border-white/10 transition-all cursor-pointer"
+              >
+                Skip for now
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar">
       {/* Warning banner for trials / low remaining duration */}
@@ -4239,10 +4502,11 @@ export default function DesktopCoachPortal() {
       <div className="flex-1 flex items-stretch">
         
         {/* Sidebar Nav */}
-        <aside className="w-[240px] border-r border-gray-850 bg-[#070710]/40 flex flex-col p-4 space-y-1.5">
+        <aside id="tutorial-sidebar" className="w-[240px] border-r border-gray-850 bg-[#070710]/40 flex flex-col p-4 space-y-1.5">
           <p className="text-[8px] font-black uppercase tracking-widest text-gray-500 px-3.5 mb-2">Main Navigation</p>
           
           <button 
+            id="tutorial-tab-overview"
             onClick={() => handleSidebarTabClick('overview')}
             className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'overview' 
@@ -4262,6 +4526,7 @@ export default function DesktopCoachPortal() {
           </button>
 
           <button 
+            id="tutorial-tab-clients"
             onClick={() => handleSidebarTabClick('clients')}
             className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'clients' 
@@ -4281,6 +4546,7 @@ export default function DesktopCoachPortal() {
           </button>
 
           <button 
+            id="tutorial-tab-deploy"
             onClick={() => handleSidebarTabClick('deploy')}
             className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'deploy' 
@@ -4300,6 +4566,7 @@ export default function DesktopCoachPortal() {
           </button>
 
           <button 
+            id="tutorial-tab-management"
             onClick={() => handleSidebarTabClick('management')}
             className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
               activeTab === 'management' 
@@ -6981,7 +7248,7 @@ export default function DesktopCoachPortal() {
                   <p className="text-[10px] text-blue-400 mt-1.5 font-bold uppercase tracking-wider">
                     Need help? View our{' '}
                     <a 
-                      href="/#faq" 
+                      href="/#faq-billing" 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="underline hover:text-blue-300 transition-colors"
@@ -10092,7 +10359,7 @@ export default function DesktopCoachPortal() {
           );
         })()}
       </div>
-
+      {showTutorial && renderGuidedTutorial()}
     </div>
   );
 }

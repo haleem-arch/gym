@@ -172,6 +172,22 @@ export default function CoachLandingPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#faq-billing') {
+        setActiveFaq("1-0");
+        setTimeout(() => {
+          const el = document.getElementById('faq-billing');
+          el?.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+    };
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+
   const openAuth = (mode: 'login' | 'register', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
     setAuthMode(mode);
     if (plan) setSelectedPlan(plan);
@@ -577,8 +593,11 @@ export default function CoachLandingPage() {
             <button
               type="button"
               onClick={() => {
-                const el = document.getElementById('faq');
-                el?.scrollIntoView({ behavior: 'smooth' });
+                setActiveFaq("1-0");
+                setTimeout(() => {
+                  const el = document.getElementById('faq-billing');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
               }}
               className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline"
             >
@@ -748,7 +767,11 @@ export default function CoachLandingPage() {
 
         <div className="space-y-12">
           {FAQ_CATEGORIES.map((category, catIdx) => (
-            <div key={catIdx} className="space-y-4 text-left">
+            <div 
+              key={catIdx} 
+              id={category.title === 'Subscriptions & Billing' ? 'faq-billing' : undefined}
+              className="space-y-4 text-left"
+            >
               <h4 className="text-sm font-black text-blue-400 uppercase tracking-widest pl-1">
                 {category.title}
               </h4>
