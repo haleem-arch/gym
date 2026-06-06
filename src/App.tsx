@@ -597,7 +597,11 @@ function App() {
               <Route path="*" element={
                 <>
                   <CookieConsent />
-                  <AppContent userRole={userRole} userId={session?.user?.id || null} />
+                  {showWelcomeSplash ? (
+                    <div className="w-full h-screen bg-[#060713]" />
+                  ) : (
+                    <AppContent userRole={userRole} userId={session?.user?.id || null} />
+                  )}
                 </>
               } />
             )}

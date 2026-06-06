@@ -7369,6 +7369,8 @@ export default function DesktopCoachPortal() {
                             } else if (isPending) {
                               statusLabel = 'PENDING';
                               statusColor = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                            } else if (tg.is_free_trial === true) {
+                              statusLabel = 'ACTIVE (FREE TRIAL)';
                             }
 
                             // Compute days remaining
@@ -7383,12 +7385,12 @@ export default function DesktopCoachPortal() {
                               if (diffDays < 0) {
                                 daysRemainingLabel = `Expired (${Math.abs(diffDays)}d ago)`;
                               } else if (diffDays === 0) {
-                                daysRemainingLabel = 'Expires today';
+                                daysRemainingLabel = tg.is_free_trial === true ? 'Free Trial - Expires today' : 'Expires today';
                               } else {
-                                daysRemainingLabel = `${diffDays} days remaining`;
+                                daysRemainingLabel = tg.is_free_trial === true ? `Free Trial - ${diffDays} days remaining` : `${diffDays} days remaining`;
                               }
                             } else {
-                              daysRemainingLabel = 'No Active Plan';
+                              daysRemainingLabel = tg.is_free_trial === true ? 'Free Trial - No Active Plan' : 'No Active Plan';
                             }
 
                             // Format dates
@@ -9586,7 +9588,7 @@ export default function DesktopCoachPortal() {
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
                       <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Contact Email</p>
-                      <p className="text-white font-mono">{tg.contact_email || 'Not added'}</p>
+                      <p className="text-white font-mono">{tg.contact_email || currentCoach.email || 'Not added'}</p>
                     </div>
                     <div>
                       <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Phone Number / ID</p>

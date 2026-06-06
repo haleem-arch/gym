@@ -15,8 +15,7 @@ import {
   CheckCircle2,
   Sparkles,
   Phone,
-  Calendar,
-  User
+  Calendar
 } from 'lucide-react';
 
 export default function CoachLandingPage() {
@@ -717,15 +716,35 @@ export default function CoachLandingPage() {
 
                           <div className="space-y-1.5 text-left">
                             <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Gender</label>
-                            <div className="relative group">
-                              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4 pointer-events-none" />
-                              <select 
-                                value={gender} onChange={e => setGender(e.target.value as 'male' | 'female')}
-                                className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all focus:shadow-[0_0_12px_rgba(16,185,129,0.08)] cursor-pointer"
+                            <div className="grid grid-cols-2 p-1 bg-[#060712]/60 border border-white/[0.06] rounded-2xl relative">
+                              <button
+                                type="button"
+                                onClick={() => setGender('male')}
+                                className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'male' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
                               >
-                                <option value="male" className="bg-[#0c0d1b] text-white">Male</option>
-                                <option value="female" className="bg-[#0c0d1b] text-white">Female</option>
-                              </select>
+                                <span className="text-xs">👨</span> Male
+                                {gender === 'male' && (
+                                  <motion.div
+                                    layoutId="gender-pill"
+                                    className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-xl z-[-1]"
+                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                  />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setGender('female')}
+                                className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'female' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
+                              >
+                                <span className="text-xs">👩</span> Female
+                                {gender === 'female' && (
+                                  <motion.div
+                                    layoutId="gender-pill"
+                                    className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 rounded-xl z-[-1]"
+                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                  />
+                                )}
+                              </button>
                             </div>
                           </div>
                         </div>
