@@ -6327,7 +6327,11 @@ export default function DesktopCoachPortal() {
                         { key: 'disable_workout_templates', label: 'Hide Workout Templates', desc: 'Removes templates & programs button for clients.' },
                         { key: 'disable_nutrition_targets', label: 'Hide Nutrition Targets', desc: 'Removes daily targets setup menu for clients.' },
                       ] as const).map(({ key, label, desc }) => {
-                        const isHidden = !!managementClientProfile.user?.targets?.[key];
+                        const ownerProfile = profiles.find(p => p.id === OWNER_ID);
+                        const ownerTargets = ownerProfile?.targets || {};
+                        const isHidden = managementClientProfile.user?.targets?.[key] !== undefined
+                          ? !!managementClientProfile.user?.targets?.[key]
+                          : !!ownerTargets[key];
                         return (
                           <div key={key} className="flex items-center justify-between bg-gray-900/40 p-4 border border-gray-850 rounded-2xl gap-4">
                             <div className="flex-1 min-w-0">
