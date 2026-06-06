@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, ChevronRight, Plus, Trash2, User, Dumbbell, Apple, Scale, 
-  Check, Lock, Search, X, Activity, Ruler, ShieldCheck 
+  Check, Lock, Search, X, Activity, Ruler, ShieldCheck, Copy 
 } from 'lucide-react';
 
 interface ExerciseItem {
@@ -30,6 +30,15 @@ export default function AddClientPage() {
   
   // Navigation states
   const [step, setStep] = useState(1);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopyField = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    toast.success(`${fieldName} copied!`);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isDeployed, setIsDeployed] = useState(false);
@@ -649,31 +658,86 @@ export default function AddClientPage() {
           </div>
 
           <div className="space-y-3 bg-[#131b2e] border border-gray-800 rounded-2xl p-4 text-left">
-            <div>
-              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Client Code</span>
-              <p className="font-mono text-sm text-emerald-400 font-black">#{deployedData.clientCode}</p>
+            <div className="flex items-center justify-between group">
+              <div>
+                <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Client Code</span>
+                <p className="font-mono text-sm text-emerald-400 font-black">#{deployedData.clientCode}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyField(`#${deployedData.clientCode}`, 'Client Code')}
+                className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+                title="Copy Client Code"
+              >
+                {copiedField === 'Client Code' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
             </div>
             <div className="border-t border-gray-800/60 my-2" />
-            <div>
-              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Display Name</span>
-              <p className="text-sm text-white font-bold">{deployedData.displayName}</p>
+            <div className="flex items-center justify-between group">
+              <div>
+                <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Display Name</span>
+                <p className="text-sm text-white font-bold">{deployedData.displayName}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyField(deployedData.displayName, 'Display Name')}
+                className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+                title="Copy Display Name"
+              >
+                {copiedField === 'Display Name' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
             </div>
             <div className="border-t border-gray-800/60 my-2" />
-            <div>
-              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Username</span>
-              <p className="font-mono text-sm text-white">{deployedData.username}</p>
+            <div className="flex items-center justify-between group">
+              <div>
+                <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Username</span>
+                <p className="font-mono text-sm text-white">{deployedData.username}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyField(deployedData.username, 'Username')}
+                className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+                title="Copy Username"
+              >
+                {copiedField === 'Username' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
             </div>
             <div className="border-t border-gray-800/60 my-2" />
-            <div>
-              <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Password</span>
-              <p className="font-mono text-sm text-blue-400 font-bold">{deployedData.password}</p>
+            <div className="flex items-center justify-between group">
+              <div>
+                <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Login Email</span>
+                <p className="font-mono text-sm text-white">{deployedData.username}@stride.fit</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyField(`${deployedData.username}@stride.fit`, 'Login Email')}
+                className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+                title="Copy Login Email"
+              >
+                {copiedField === 'Login Email' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
+            </div>
+            <div className="border-t border-gray-800/60 my-2" />
+            <div className="flex items-center justify-between group">
+              <div>
+                <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Password</span>
+                <p className="font-mono text-sm text-blue-400 font-bold">{deployedData.password}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyField(deployedData.password, 'Password')}
+                className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+                title="Copy Password"
+              >
+                {copiedField === 'Password' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
             </div>
           </div>
 
           <div className="flex gap-2 pt-2">
             <button
               onClick={() => {
-                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nPassword: ${deployedData.password}`;
+                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nLogin Email: ${deployedData.username}@stride.fit\nPassword: ${deployedData.password}`;
                 navigator.clipboard.writeText(text);
                 toast.success('Credentials copied to clipboard!');
               }}

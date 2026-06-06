@@ -370,6 +370,14 @@ export default function DesktopCoachPortal() {
   const [newCoachContactEmail, setNewCoachContactEmail] = useState('');
   const [isCreatingNewCoach, setIsCreatingNewCoach] = useState(false);
   const [createdNewCoachCredentials, setCreatedNewCoachCredentials] = useState<any | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopyField = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    toast.success(`${fieldName} copied!`);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   // Deploy Athlete Multi-step Wizard
   const [deployStep, setDeployStep] = useState(1);
@@ -5439,12 +5447,78 @@ export default function DesktopCoachPortal() {
                     <CheckCircle size={16} /> Athlete Deployed Successfully!
                   </h3>
                   <p className="text-xs text-gray-400">Share these login details with the athlete to access their custom PWA space:</p>
-                  <div className="bg-gray-950/60 p-5 rounded-2xl space-y-2 text-xs font-mono text-gray-300 border border-gray-800/80">
-                    <p><span className="text-gray-500">Name:</span> {deploySuccessData.displayName}</p>
-                    <p><span className="text-gray-500">Client Code:</span> #{deploySuccessData.clientCode}</p>
-                    <p><span className="text-gray-500">Username:</span> {deploySuccessData.username}</p>
-                    <p><span className="text-gray-500">Passcode:</span> {deploySuccessData.password}</p>
+                  <div className="bg-gray-950/60 p-5 rounded-2xl space-y-3.5 text-xs font-mono text-gray-300 border border-gray-800/80">
+                    <div className="flex items-center justify-between group">
+                      <p><span className="text-gray-500">Name:</span> {deploySuccessData.displayName}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(deploySuccessData.displayName, 'Name')}
+                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Name"
+                      >
+                        {copiedField === 'Name' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-800/40" />
+                    <div className="flex items-center justify-between group">
+                      <p><span className="text-gray-500">Client Code:</span> #{deploySuccessData.clientCode}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(`#${deploySuccessData.clientCode}`, 'Client Code')}
+                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Client Code"
+                      >
+                        {copiedField === 'Client Code' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-800/40" />
+                    <div className="flex items-center justify-between group">
+                      <p><span className="text-gray-500">Username:</span> {deploySuccessData.username}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(deploySuccessData.username, 'Username')}
+                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Username"
+                      >
+                        {copiedField === 'Username' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-800/40" />
+                    <div className="flex items-center justify-between group">
+                      <p><span className="text-gray-500">Login Email:</span> {deploySuccessData.username}@stride.fit</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(`${deploySuccessData.username}@stride.fit`, 'Login Email')}
+                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Login Email"
+                      >
+                        {copiedField === 'Login Email' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-800/40" />
+                    <div className="flex items-center justify-between group">
+                      <p><span className="text-gray-500">Passcode:</span> {deploySuccessData.password}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(deploySuccessData.password, 'Passcode')}
+                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Passcode"
+                      >
+                        {copiedField === 'Passcode' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nLogin Email: ${deploySuccessData.username}@stride.fit\nPasscode: ${deploySuccessData.password}`;
+                      navigator.clipboard.writeText(text);
+                      toast.success('All credentials copied!');
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Copy size={12} /> Copy All Info
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -8773,21 +8847,67 @@ export default function DesktopCoachPortal() {
                   <span className="text-xs font-black uppercase tracking-wider">Coach Registered Successfully!</span>
                 </div>
                 <p className="text-xs text-gray-400">Please provide the new coach with their login details:</p>
-                <div className="bg-gray-900/60 p-4 rounded-2xl space-y-2 text-xs font-mono border border-gray-800">
-                  <p className="text-gray-400 font-bold">Name: <span className="text-white font-black">{createdNewCoachCredentials.name}</span></p>
-                  <p className="text-gray-400 font-bold">Username/Email: <span className="text-white font-black">{createdNewCoachCredentials.email}</span></p>
-                  <p className="text-gray-400 font-bold">Password: <span className="text-white font-black">{createdNewCoachCredentials.password}</span></p>
+                <div className="bg-gray-900/60 p-4 rounded-2xl space-y-3 text-xs font-mono border border-gray-800">
+                  <div className="flex items-center justify-between group">
+                    <p className="text-gray-400 font-bold">Name: <span className="text-white font-black">{createdNewCoachCredentials.name}</span></p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField(createdNewCoachCredentials.name, 'Name')}
+                      className="p-1 rounded bg-gray-950 border border-gray-850 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                      title="Copy Name"
+                    >
+                      {copiedField === 'Name' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                    </button>
+                  </div>
+                  <div className="border-t border-gray-800/40" />
+                  <div className="flex items-center justify-between group">
+                    <p className="text-gray-400 font-bold">Username/Email: <span className="text-white font-black">{createdNewCoachCredentials.email}</span></p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField(createdNewCoachCredentials.email, 'Email')}
+                      className="p-1 rounded bg-gray-950 border border-gray-850 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                      title="Copy Email"
+                    >
+                      {copiedField === 'Email' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                    </button>
+                  </div>
+                  <div className="border-t border-gray-800/40" />
+                  <div className="flex items-center justify-between group">
+                    <p className="text-gray-400 font-bold">Password: <span className="text-white font-black">{createdNewCoachCredentials.password}</span></p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField(createdNewCoachCredentials.password, 'Password')}
+                      className="p-1 rounded bg-gray-950 border border-gray-850 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                      title="Copy Password"
+                    >
+                      {copiedField === 'Password' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCreatedNewCoachCredentials(null);
-                    setIsRegisteringNewCoach(false);
-                  }}
-                  className="w-full bg-[#121624] hover:bg-gray-850 text-white font-black text-xs uppercase py-3 rounded-2xl transition-all cursor-pointer"
-                >
-                  Done
-                </button>
+                
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = `Coach Registered:\nName: ${createdNewCoachCredentials.name}\nUsername/Email: ${createdNewCoachCredentials.email}\nPassword: ${createdNewCoachCredentials.password}`;
+                      navigator.clipboard.writeText(text);
+                      toast.success('All coach credentials copied!');
+                    }}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Copy size={12} /> Copy Info
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatedNewCoachCredentials(null);
+                      setIsRegisteringNewCoach(false);
+                    }}
+                    className="flex-1 bg-gray-900 border border-gray-850 hover:bg-gray-800 text-gray-300 font-black text-xs uppercase py-2.5 rounded-xl transition-all cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleCreateNewCoach} className="space-y-5">

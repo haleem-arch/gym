@@ -5,7 +5,8 @@ import { toast } from 'react-hot-toast';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
 import {
   Lock, ArrowLeft, RefreshCw, ShieldAlert, UserCheck, UserX,
-  Search, Shield, Key, Plus, Activity, CheckCircle, Database
+  Search, Shield, Key, Plus, Activity, CheckCircle, Database,
+  Copy, Check
 } from 'lucide-react';
 
 function formatDayTypeLabel(dayType: string, totalVolume: number) {
@@ -47,6 +48,14 @@ export default function SystemConsolePage() {
   const [coachPassword, setCoachPassword] = useState('');
   const [isCreatingCoach, setIsCreatingCoach] = useState(false);
   const [createdCoachCredentials, setCreatedCoachCredentials] = useState<any | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopyField = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    toast.success(`${fieldName} copied!`);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   // Change Password Form
   const [newPasswordForSelected, setNewPasswordForSelected] = useState('');
@@ -664,16 +673,72 @@ export default function SystemConsolePage() {
         </form>
 
         {createdCoachCredentials && (
-          <div className="bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl mt-4 space-y-2">
+          <div className="bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-2xl mt-4 space-y-3">
             <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1">
               <CheckCircle size={14} /> Account Created Successfully!
             </h4>
             <p className="text-[10px] text-gray-400">Share these login credentials with the Coach:</p>
-            <div className="bg-gray-950/50 p-3 rounded-xl space-y-1.5 text-[11px] font-mono text-gray-300">
-              <p><span className="text-gray-500">Name:</span> {createdCoachCredentials.name}</p>
-              <p><span className="text-gray-500">Email:</span> {createdCoachCredentials.email}</p>
-              <p><span className="text-gray-500">Password:</span> {createdCoachCredentials.password}</p>
-              <p><span className="text-gray-500">Role:</span> coach</p>
+            <div className="bg-gray-950/50 p-3 rounded-xl space-y-2.5 text-[11px] font-mono text-gray-300">
+              <div className="flex items-center justify-between group">
+                <p><span className="text-gray-500">Name:</span> {createdCoachCredentials.name}</p>
+                <button
+                  type="button"
+                  onClick={() => handleCopyField(createdCoachCredentials.name, 'Name')}
+                  className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  title="Copy Name"
+                >
+                  {copiedField === 'Name' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                </button>
+              </div>
+              <div className="border-t border-gray-800/40" />
+              <div className="flex items-center justify-between group">
+                <p><span className="text-gray-500">Email:</span> {createdCoachCredentials.email}</p>
+                <button
+                  type="button"
+                  onClick={() => handleCopyField(createdCoachCredentials.email, 'Email')}
+                  className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  title="Copy Email"
+                >
+                  {copiedField === 'Email' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                </button>
+              </div>
+              <div className="border-t border-gray-800/40" />
+              <div className="flex items-center justify-between group">
+                <p><span className="text-gray-500">Password:</span> {createdCoachCredentials.password}</p>
+                <button
+                  type="button"
+                  onClick={() => handleCopyField(createdCoachCredentials.password, 'Password')}
+                  className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  title="Copy Password"
+                >
+                  {copiedField === 'Password' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                </button>
+              </div>
+              <div className="border-t border-gray-800/40" />
+              <div>
+                <p><span className="text-gray-500">Role:</span> coach</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = `Coach Account Created:\nName: ${createdCoachCredentials.name}\nEmail: ${createdCoachCredentials.email}\nPassword: ${createdCoachCredentials.password}\nRole: coach`;
+                  navigator.clipboard.writeText(text);
+                  toast.success('All credentials copied!');
+                }}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
+              >
+                <Copy size={11} /> Copy Info
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreatedCoachCredentials(null)}
+                className="flex-1 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-800 py-2 rounded-lg text-xs uppercase transition-all cursor-pointer"
+              >
+                Clear
+              </button>
             </div>
           </div>
         )}
