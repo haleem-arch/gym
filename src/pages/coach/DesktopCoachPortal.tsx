@@ -4265,60 +4265,137 @@ export default function DesktopCoachPortal() {
           
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
-            <div className="space-y-8 max-w-6xl">
-              
-              {/* Demographics Widgets Grid */}
-              <div className={`grid grid-cols-1 ${coachUserId === OWNER_ID ? 'md:grid-cols-4' : 'md:grid-cols-2'} gap-4`}>
+            <div className="space-y-8 max-w-6xl animate-fade-in">
+              {/* Premium Hero Stats Panel */}
+              <div className={`grid grid-cols-1 ${coachUserId === OWNER_ID ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2'} gap-6`}>
                 {coachUserId === OWNER_ID && (
                   <>
-                    <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                      <div className="absolute top-[-20%] right-[-10%] w-24 h-24 bg-blue-500/10 rounded-full blur-2xl" />
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total System Accounts</p>
-                      <p className="text-3xl font-black text-white mt-2">{profiles.length}</p>
-                    </Card>
-                    <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Coaches Active</p>
-                      <p className="text-3xl font-black text-blue-400 mt-2">{profiles.filter(p => p.role === 'coach').length}</p>
-                    </Card>
+                    {/* Card 1: Total System Accounts */}
+                    <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-500/5 hover:-translate-y-0.5">
+                      <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Accounts</p>
+                          <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+                            {profiles.length}
+                          </h3>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
+                          <Users size={16} />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        Live cloud sync active
+                      </div>
+                    </div>
+
+                    {/* Card 2: Active Coaches */}
+                    <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-indigo-500/30 hover:shadow-indigo-500/5 hover:-translate-y-0.5">
+                      <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Active Staff</p>
+                          <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                            {profiles.filter(p => p.role === 'coach').length}
+                          </h3>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-inner">
+                          <Shield size={16} />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                        Verified coach nodes
+                      </div>
+                    </div>
                   </>
                 )}
-                <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                    {feedFilterMineOnly ? 'My Managed Athletes' : 'Managed Athletes'}
-                  </p>
-                  <p className="text-3xl font-black text-indigo-400 mt-2">
-                    {feedFilterMineOnly 
-                      ? clientsList.filter(c => c.coach_id === OWNER_ID).length 
-                      : clientsList.length}
-                  </p>
-                </Card>
-                <Card className="p-6 flex flex-col gap-1 relative overflow-hidden bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">System Status</p>
-                  <p className="text-3xl font-black text-emerald-400 mt-2 flex items-center gap-1.5">
-                    <CheckCircle className="text-emerald-500" size={24} /> SECURE
-                  </p>
-                </Card>
+
+                {/* Card 3: Managed Athletes */}
+                <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-purple-500/5 hover:-translate-y-0.5">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        {feedFilterMineOnly ? 'My Athletes' : 'Total Athletes'}
+                      </p>
+                      <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                        {feedFilterMineOnly 
+                          ? clientsList.filter(c => c.coach_id === OWNER_ID).length 
+                          : clientsList.length}
+                      </h3>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shadow-inner">
+                      <Activity size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                    Interactive client slots
+                  </div>
+                </div>
+
+                {/* Card 4: System Status */}
+                <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-emerald-500/30 hover:shadow-emerald-500/5 hover:-translate-y-0.5">
+                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Core</p>
+                      <div className="flex items-center gap-2 mt-2.5">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span className="text-xs font-black uppercase tracking-widest text-emerald-400 font-sans">
+                          SECURE
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-inner">
+                      <ShieldCheck size={16} />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                    100% API Uptime Verified
+                  </div>
+                </div>
               </div>
 
               {/* Feed Activity Filter Toggle - Owner / Admin Only */}
               {coachUserId === OWNER_ID && (
-                <div className="flex justify-between bg-gradient-to-r from-blue-500/[0.03] to-indigo-500/[0.03] border border-gray-850 p-4 rounded-2xl gap-4 items-center">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-black text-white uppercase tracking-wider">Feed Activity Filter</p>
-                    <p className="text-[9px] text-gray-500 mt-0.5 leading-normal font-bold">
-                      Toggle between monitoring all athlete activity across the platform or narrowing it down to your assigned clients.
+                <div className="relative overflow-hidden rounded-3xl border border-[#1e294b]/40 bg-gradient-to-r from-[#0c1020]/40 to-[#080b16]/40 p-4 shadow-md backdrop-blur-md flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="absolute -left-16 -bottom-16 w-32 h-32 bg-blue-500/[0.03] rounded-full blur-2xl" />
+                  <div className="flex-1 min-w-0 z-10">
+                    <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <Search size={12} className="text-blue-400" /> Feed Scope Selection
+                    </p>
+                    <p className="text-[9px] text-slate-550 mt-0.5 leading-normal font-bold uppercase">
+                      Narrow live event feed down to your assigned clients or view all system-wide updates
                     </p>
                   </div>
-                  <button
-                    onClick={() => setFeedFilterMineOnly(!feedFilterMineOnly)}
-                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
-                      feedFilterMineOnly
-                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/25'
-                        : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 font-bold'
-                    }`}
-                  >
-                    {feedFilterMineOnly ? 'My Athletes Only' : 'All System Activity'}
-                  </button>
+                  <div className="flex bg-[#070912] border border-slate-900 rounded-2xl p-1 shrink-0 z-10">
+                    <button
+                      onClick={() => setFeedFilterMineOnly(false)}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        !feedFilterMineOnly
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      All Activity
+                    </button>
+                    <button
+                      onClick={() => setFeedFilterMineOnly(true)}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        feedFilterMineOnly
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      My Clients Only
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -4326,82 +4403,144 @@ export default function DesktopCoachPortal() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {/* Workouts Feed */}
-                <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div className="bg-[#0c1020]/30 border border-[#1e294b]/30 rounded-[32px] p-6 shadow-xl backdrop-blur-xl space-y-5">
+                  <div className="flex items-center justify-between border-b border-[#1e294b]/20 pb-4">
                     <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2">
-                      <Dumbbell size={15} /> Workouts Completed Feed
+                      <Dumbbell size={15} className="animate-pulse" /> Workout Activity Feed
                     </h3>
-                    {refreshingFeed && <span className="text-[10px] text-gray-500">updating...</span>}
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                      </span>
+                      <span className="text-[9px] text-slate-550 font-black uppercase tracking-widest">
+                        {refreshingFeed ? 'Syncing...' : 'Live'}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
+                  <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
                     {recentWorkouts.length === 0 ? (
-                      <p className="text-xs text-gray-500 italic text-center py-12">No recent completions recorded.</p>
+                      <div className="flex flex-col items-center justify-center py-16 text-slate-650">
+                        <Dumbbell size={24} className="mb-2.5 opacity-40" />
+                        <p className="text-[10px] font-black uppercase tracking-wider">No recent completions recorded</p>
+                      </div>
                     ) : (
-                      recentWorkouts.map((w, idx) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => setSelectedReceiptWorkout(w)}
-                          className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-gray-700 transition-colors cursor-pointer hover:bg-gray-900/20"
-                        >
-                          <div className="space-y-1">
-                            <p className="font-extrabold text-white flex items-center gap-1.5">
-                              {w.profiles?.display_name}
-                              {w.profiles?.client_code && (
-                                <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
-                                  #{w.profiles.client_code}
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-gray-500">Completed a <span className="text-blue-400 font-bold">{w.day_type}</span> day</p>
+                      recentWorkouts.map((w, idx) => {
+                        const name = w.profiles?.display_name || 'Anonymous';
+                        const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                        
+                        // Pick tag colors based on day_type
+                        const dayType = w.day_type || 'Rest';
+                        let tagClass = 'bg-blue-500/10 border-blue-500/20 text-blue-400';
+                        if (dayType.toUpperCase() === 'PULL') tagClass = 'bg-purple-500/10 border-purple-500/20 text-purple-400';
+                        if (dayType.toUpperCase() === 'LEGS') tagClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
+                        if (dayType.toUpperCase() === 'RUN') tagClass = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+
+                        return (
+                          <div 
+                            key={idx} 
+                            onClick={() => setSelectedReceiptWorkout(w)}
+                            className="group relative bg-[#070912]/50 border border-slate-900 hover:border-blue-500/30 p-4 rounded-2xl flex justify-between items-center text-xs transition-all duration-300 cursor-pointer hover:bg-[#0c1020]/45 shadow-sm hover:shadow-md"
+                          >
+                            <div className="flex items-center gap-3.5">
+                              {/* Avatar Icon */}
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 border border-blue-500/20 flex items-center justify-center text-[10px] text-blue-400 font-black shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                                {initials}
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-extrabold text-white text-xs tracking-tight">{name}</p>
+                                  {w.profiles?.client_code && (
+                                    <span className="text-[8px] bg-slate-900 border border-slate-800 text-slate-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                      #{w.profiles.client_code}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[8px] border px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${tagClass}`}>
+                                    {dayType}
+                                  </span>
+                                  <span className="text-[9px] text-slate-550 font-bold uppercase">Completed training session</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="font-black text-slate-200 text-xs font-mono tracking-tight">{formatDayTypeLabel(w.day_type, w.total_volume)}</p>
+                              <p className="text-slate-500 font-mono text-[9px] mt-0.5">{w.date}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-black text-gray-200">{formatDayTypeLabel(w.day_type, w.total_volume)}</p>
-                            <p className="text-gray-500 font-mono text-[10px] mt-0.5">{w.date}</p>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
 
                 {/* Diets Feed */}
-                <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
+                <div className="bg-[#0c1020]/30 border border-[#1e294b]/30 rounded-[32px] p-6 shadow-xl backdrop-blur-xl space-y-5">
+                  <div className="flex items-center justify-between border-b border-[#1e294b]/20 pb-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-emerald-450 flex items-center gap-2">
                       <Apple size={15} /> Nutritional Intake Feed
                     </h3>
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span className="text-[9px] text-slate-550 font-black uppercase tracking-widest">Live</span>
+                    </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
+                  <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
                     {recentDiets.length === 0 ? (
-                      <p className="text-xs text-gray-500 italic text-center py-12">No recent diet logs recorded.</p>
+                      <div className="flex flex-col items-center justify-center py-16 text-slate-650">
+                        <Apple size={24} className="mb-2.5 opacity-40" />
+                        <p className="text-[10px] font-black uppercase tracking-wider">No recent logs recorded</p>
+                      </div>
                     ) : (
-                      recentDiets.map((d, idx) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => handleOpenDietReceipt(d)}
-                          className="bg-gray-900/40 border border-gray-850/80 p-4 rounded-2xl flex justify-between items-center text-xs hover:border-emerald-500/50 hover:bg-gray-900/20 transition-colors cursor-pointer"
-                        >
-                          <div className="space-y-1">
-                            <p className="font-extrabold text-white flex items-center gap-1.5">
-                              {d.profiles?.display_name}
-                              {d.profiles?.client_code && (
-                                <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
-                                  #{d.profiles.client_code}
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-gray-500">Tracked daily totals</p>
+                      recentDiets.map((d, idx) => {
+                        const name = d.profiles?.display_name || 'Anonymous';
+                        const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                        const kcal = Math.round(d.daily_totals?.kcal || 0);
+                        const protein = Math.round(d.daily_totals?.protein || 0);
+                        
+                        return (
+                          <div 
+                            key={idx} 
+                            onClick={() => handleOpenDietReceipt(d)}
+                            className="group relative bg-[#070912]/50 border border-slate-900 hover:border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center text-xs transition-all duration-300 cursor-pointer hover:bg-[#0c1020]/45 shadow-sm hover:shadow-md"
+                          >
+                            <div className="flex items-center gap-3.5">
+                              {/* Avatar Icon */}
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-[10px] text-emerald-400 font-black shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                                {initials}
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-extrabold text-white text-xs tracking-tight">{name}</p>
+                                  {d.profiles?.client_code && (
+                                    <span className="text-[8px] bg-slate-900 border border-slate-800 text-slate-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                      #{d.profiles.client_code}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[8px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded font-black uppercase tracking-wider text-emerald-400">
+                                    Nutrition
+                                  </span>
+                                  <span className="text-[9px] text-slate-550 font-bold uppercase">Logged macro &amp; calorie values</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="font-black text-emerald-400 text-xs font-mono tracking-tight">
+                                {kcal} kcal <span className="text-slate-500 font-sans font-bold">/</span> {protein}g P
+                              </p>
+                              <p className="text-slate-550 font-mono text-[9px] mt-0.5">{d.date}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-black text-emerald-400">
-                              {Math.round(d.daily_totals?.kcal || 0)} kcal / {Math.round(d.daily_totals?.protein || 0)}g P
-                            </p>
-                            <p className="text-gray-500 font-mono text-[10px] mt-0.5">{d.date}</p>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
