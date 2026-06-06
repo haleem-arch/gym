@@ -78,7 +78,7 @@ export default function AddClientPage() {
     goals: '',
     injuries_notes: ''
   });
-  const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [gender, setGender] = useState<'male' | 'female' | null>(null);
 
   // Real-time checks for client username availability
   useEffect(() => {
@@ -436,8 +436,12 @@ export default function AddClientPage() {
   const handleNext = () => {
     if (step === 1) {
       setAttemptedStep1Submit(true);
-      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.clientCode.trim() || !formData.age.trim() || !formData.height.trim()) {
+      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim()) {
         toast.error('Please fill in all empty text boxes.');
+        return;
+      }
+      if (gender === null) {
+        toast.error('Please select a sex (Male or Female).');
         return;
       }
       if (isUsernameTaken) {
@@ -465,10 +469,16 @@ export default function AddClientPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.clientCode.trim() || !formData.age.trim() || !formData.height.trim()) {
+    if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim()) {
       setAttemptedStep1Submit(true);
       setStep(1);
       toast.error('Please fill in all empty text boxes.');
+      return;
+    }
+    if (gender === null) {
+      setAttemptedStep1Submit(true);
+      setStep(1);
+      toast.error('Please select a sex (Male or Female).');
       return;
     }
     if (isUsernameTaken) {
@@ -884,8 +894,12 @@ export default function AddClientPage() {
                   onClick={() => {
                     if (step === 1 && idx + 1 > 1) {
                       setAttemptedStep1Submit(true);
-                      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.clientCode.trim() || !formData.age.trim() || !formData.height.trim()) {
+                      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim()) {
                         toast.error('Please fill in all empty text boxes.');
+                        return;
+                      }
+                      if (gender === null) {
+                        toast.error('Please select a sex (Male or Female).');
                         return;
                       }
                       if (isUsernameTaken) {
@@ -997,14 +1011,14 @@ export default function AddClientPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Client Number (Optional ID)</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Client Number (Optional)</label>
                     <div className="relative">
                       <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                       <input 
                         type="number" name="clientCode" value={formData.clientCode} onChange={handleInputChange}
                         placeholder="e.g. 112"
                         className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
-                          (attemptedStep1Submit && !formData.clientCode.trim()) || isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                          isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                         }`} 
                       />
                     </div>
@@ -1022,7 +1036,9 @@ export default function AddClientPage() {
                       className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
                         gender === 'male'
                           ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.25)]'
-                          : 'bg-[#121620]/60 border-gray-800 text-gray-500 hover:border-gray-700'
+                          : attemptedStep1Submit && gender === null
+                            ? 'bg-[#121620]/60 border-red-500 ring-1 ring-red-500 text-gray-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
+                            : 'bg-[#121620]/60 border-gray-800 text-gray-500 hover:border-gray-700'
                       }`}
                     >
                       <span className="text-xl">👨</span>
@@ -1034,7 +1050,9 @@ export default function AddClientPage() {
                       className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
                         gender === 'female'
                           ? 'bg-purple-600/20 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.25)]'
-                          : 'bg-[#121620]/60 border-gray-800 text-gray-500 hover:border-gray-700'
+                          : attemptedStep1Submit && gender === null
+                            ? 'bg-[#121620]/60 border-red-500 ring-1 ring-red-500 text-gray-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
+                            : 'bg-[#121620]/60 border-gray-800 text-gray-500 hover:border-gray-700'
                       }`}
                     >
                       <span className="text-xl">👩</span>

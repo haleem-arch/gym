@@ -446,7 +446,7 @@ export default function DesktopCoachPortal() {
     subscriptionStartDelay: '0',
     customSubscriptionEnd: getLocalDateTimeString()
   });
-  const [deployGender, setDeployGender] = useState<'male' | 'female'>('male');
+  const [deployGender, setDeployGender] = useState<'male' | 'female' | null>(null);
 
   const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
   const [isUsernameChecking, setIsUsernameChecking] = useState(false);
@@ -523,15 +523,14 @@ export default function DesktopCoachPortal() {
       formData.displayName.trim() !== '' &&
       formData.username.trim() !== '' &&
       formData.password.trim() !== '' &&
-      formData.clientCode.trim() !== '' &&
       formData.phoneNumber.trim() !== '' &&
       formData.age.trim() !== '' &&
       formData.height.trim() !== '' &&
       formData.subscriptionStartDelay.trim() !== '' &&
       (formData.subscriptionPeriod !== 'custom' || formData.customSubscriptionEnd.trim() !== '') &&
-      formData.injuries_notes.trim() !== '' &&
       !isUsernameTaken &&
-      !isClientCodeTaken
+      !isClientCodeTaken &&
+      deployGender !== null
     );
   };
   
@@ -3274,6 +3273,8 @@ export default function DesktopCoachPortal() {
         toast.error('Username is already taken. Please change it.');
       } else if (isClientCodeTaken) {
         toast.error('Client Code is already taken. Please change it.');
+      } else if (deployGender === null) {
+        toast.error('Please select a sex (Male or Female).');
       } else {
         toast.error('Please fill in all empty text boxes.');
       }
@@ -5891,7 +5892,16 @@ export default function DesktopCoachPortal() {
                     <p className="text-xs max-w-[280px] leading-relaxed">Select an athlete from the side directory to view their complete nutrition goals, training split templates, biometrics, and scan records.</p>
                   </div>
                 ) : (
-                  <div id="tutorial-client-tabs-container" className="space-y-6">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedClientProfile.user?.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -15 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      id="tutorial-client-tabs-container"
+                      className="space-y-6"
+                    >
                     
                     {/* Detail Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.05] pb-4">
@@ -6822,7 +6832,8 @@ export default function DesktopCoachPortal() {
                       </div>
                     )}
 
-                  </div>
+                    </motion.div>
+                  </AnimatePresence>
                 )}
               </div>
             </div>
@@ -6957,6 +6968,8 @@ export default function DesktopCoachPortal() {
                                     toast.error('Username is already taken. Please change it.');
                                   } else if (isClientCodeTaken) {
                                     toast.error('Client Code is already taken. Please change it.');
+                                  } else if (deployGender === null) {
+                                    toast.error('Please select a sex (Male or Female).');
                                   } else {
                                     toast.error('Please fill in all empty text boxes.');
                                   }
@@ -7027,12 +7040,12 @@ export default function DesktopCoachPortal() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-gray-500">Client Code (Required)</label>
+                            <label className="text-[9px] font-black uppercase text-gray-500">Client Code (Optional)</label>
                             <input 
-                              type="text" required value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value.trim() })}
+                              type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value.trim() })}
                               placeholder="e.g. 101"
                               className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                                (attemptedStep1Submit && !formData.clientCode.trim()) || isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                                isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
                             {isClientCodeChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
@@ -7053,13 +7066,25 @@ export default function DesktopCoachPortal() {
                             <div className="flex gap-2">
                               <button
                                 type="button" onClick={() => setDeployGender('male')}
-                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${deployGender === 'male' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                                  deployGender === 'male' 
+                                    ? 'bg-blue-600 border-blue-500 text-white' 
+                                    : attemptedStep1Submit && deployGender === null
+                                      ? 'bg-gray-900 border-red-500 ring-1 ring-red-500 text-gray-400'
+                                      : 'bg-gray-900 border-gray-800 text-gray-400'
+                                }`}
                               >
                                 Male
                               </button>
                               <button
                                 type="button" onClick={() => setDeployGender('female')}
-                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${deployGender === 'female' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                                  deployGender === 'female' 
+                                    ? 'bg-blue-600 border-blue-500 text-white' 
+                                    : attemptedStep1Submit && deployGender === null
+                                      ? 'bg-gray-900 border-red-500 ring-1 ring-red-500 text-gray-400'
+                                      : 'bg-gray-900 border-gray-800 text-gray-400'
+                                }`}
                               >
                                 Female
                               </button>
@@ -7141,13 +7166,11 @@ export default function DesktopCoachPortal() {
                             </div>
                           )}
                           <div className="space-y-1 col-span-2">
-                            <label className="text-[9px] font-black uppercase text-gray-500">Injuries &amp; Medical Notes</label>
+                            <label className="text-[9px] font-black uppercase text-gray-500">Injuries &amp; Medical Notes (Optional)</label>
                             <textarea 
-                              required value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} 
+                              value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} 
                               placeholder="Enter details about any injuries, operations, or medical conditions..." 
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all h-20 ${
-                                attemptedStep1Submit && !formData.injuries_notes.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
-                              }`} 
+                              className="w-full bg-[#121624] border border-gray-800 focus:border-blue-500 rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all h-20"
                             />
                           </div>
                         </div>
@@ -7439,6 +7462,8 @@ export default function DesktopCoachPortal() {
                                 toast.error('Username is already taken. Please change it.');
                               } else if (isClientCodeTaken) {
                                 toast.error('Client Code is already taken. Please change it.');
+                              } else if (deployGender === null) {
+                                toast.error('Please select a sex (Male or Female).');
                               } else {
                                 toast.error('Please fill in all empty text boxes.');
                               }
