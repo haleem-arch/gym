@@ -936,8 +936,11 @@ export default function DesktopCoachPortal() {
     
     const rows = athletes.map(c => {
       const age = analyticsAges[c.id] || 'Not Set';
-      const duration = c.targets?.subscription_duration || 'custom';
+      let duration = c.targets?.subscription_duration || 'custom';
       const expDate = c.targets?.subscription_end_date || 'No Expiry';
+      if (expDate === 'No Expiry' && duration.toLowerCase() === 'none') {
+        duration = 'unlimited';
+      }
       
       const now = new Date();
       const isDeactivated = c.targets?.is_deactivated === true;
@@ -4826,8 +4829,11 @@ export default function DesktopCoachPortal() {
                                   <tbody className="divide-y divide-[#1e294b]/10 text-slate-350 font-bold">
                                     {athletes.map((c, i) => {
                                       const age = analyticsAges[c.id] || 'Not Set';
-                                      const duration = c.targets?.subscription_duration || 'custom';
+                                      let duration = c.targets?.subscription_duration || 'custom';
                                       const expDate = c.targets?.subscription_end_date || 'No Expiry';
+                                      if (expDate === 'No Expiry' && duration.toLowerCase() === 'none') {
+                                        duration = 'unlimited';
+                                      }
                                       
                                       const now = new Date();
                                       const isDeactivated = c.targets?.is_deactivated === true;
@@ -6679,9 +6685,18 @@ export default function DesktopCoachPortal() {
                       >
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Plan Duration</p>
                         <p className="text-xs font-black text-white mt-1">
-                          {managementClientProfile.user?.targets?.subscription_duration 
-                            ? managementClientProfile.user.targets.subscription_duration.toUpperCase()
-                            : 'NO EXPIRY (UNLIMITED)'}
+                          {(() => {
+                            const targets = managementClientProfile.user?.targets;
+                            const duration = targets?.subscription_duration;
+                            const hasNoExpiry = !targets?.subscription_end_date;
+                            if (duration) {
+                              if (hasNoExpiry && duration.toLowerCase() === 'none') {
+                                return 'UNLIMITED';
+                              }
+                              return duration.toUpperCase();
+                            }
+                            return 'NO EXPIRY (UNLIMITED)';
+                          })()}
                         </p>
                         
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-3">Time Remaining</p>
@@ -7040,7 +7055,9 @@ export default function DesktopCoachPortal() {
                                 </div>
                               </td>
                               <td className="py-4 font-bold text-gray-400">
-                                {targets.subscription_duration || 'No Expiry'}
+                                {(!targets.subscription_end_date && (targets.subscription_duration || 'none').toLowerCase() === 'none') 
+                                  ? 'unlimited' 
+                                  : (targets.subscription_duration || 'No Expiry')}
                               </td>
                               <td className="py-4 text-gray-500">
                                 {targets.subscription_start_date ? new Date(targets.subscription_start_date).toLocaleDateString() : 'N/A'}
