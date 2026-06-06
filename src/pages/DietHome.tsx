@@ -18,23 +18,33 @@ const DietHome = () => {
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const fetchToggles = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       const uid = session?.user?.id || null;
       setUserId(uid);
-      if (uid) {
-        supabase.from('profiles').select('targets').eq('id', uid).maybeSingle().then(({ data }) => {
-          if (data?.targets?.disable_diet) {
-            setIsLocked(true);
-          }
-        });
-      }
-    });
 
-    supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle().then(({ data }) => {
-      if (data?.targets) {
-        setDisableNutritionTargets(!!data.targets.disable_nutrition_targets);
+      let myTargets: any = null;
+      if (uid) {
+        const { data: myProfile } = await supabase.from('profiles').select('targets').eq('id', uid).maybeSingle();
+        if (myProfile?.targets?.disable_diet) {
+          setIsLocked(true);
+        }
+        myTargets = myProfile?.targets;
       }
-    });
+
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const ownerTargets = ownerProfile?.targets;
+
+      let shouldDisable = false;
+      if (myTargets && myTargets.disable_nutrition_targets !== undefined) {
+        shouldDisable = !!myTargets.disable_nutrition_targets;
+      } else if (ownerTargets && ownerTargets.disable_nutrition_targets !== undefined) {
+        shouldDisable = !!ownerTargets.disable_nutrition_targets;
+      }
+      setDisableNutritionTargets(shouldDisable);
+    };
+
+    fetchToggles();
   }, []);
 
   const waterTotalMl = waterLogs?.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0) || 0;
