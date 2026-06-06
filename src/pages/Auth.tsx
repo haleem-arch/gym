@@ -394,10 +394,10 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
           </motion.div>
 
           <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-            STRIDE RITE
+            LIFE GYM
           </h1>
-          <p className="text-sm text-gray-500 mt-1 font-semibold flex items-center gap-1">
-            <Sparkles size={12} className="text-primary" /> Peak Athletic Performance
+          <p className="text-sm text-gray-550 mt-1 font-semibold flex items-center gap-1">
+            <Sparkles size={12} className="text-primary" /> Peak Fitness & Nutrition
           </p>
         </motion.div>
 

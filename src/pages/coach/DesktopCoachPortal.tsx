@@ -721,12 +721,34 @@ export default function DesktopCoachPortal() {
 
       const { data: myProfile } = await supabase
         .from('profiles')
-        .select('role, targets, email, username, display_name')
+        .select('role, targets, email, username, display_name, created_at')
         .eq('id', session.user.id)
         .maybeSingle();
 
       if (myProfile) {
         myProfile.email = myProfile.email || session.user.email;
+        myProfile.targets = myProfile.targets || {};
+        
+        // Auto-initialize 2-week free trial if not set for coach accounts
+        if (myProfile.role === 'coach' && !myProfile.targets.subscription_end_date) {
+          const start = myProfile.created_at ? new Date(myProfile.created_at) : new Date();
+          const end = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+          myProfile.targets.subscription_start_date = start.toISOString();
+          myProfile.targets.subscription_end_date = end.toISOString();
+          myProfile.targets.trial_end_date = end.toISOString();
+          myProfile.targets.is_free_trial = true;
+          myProfile.targets.subscription_status = 'trial';
+          myProfile.targets.subscription_plan = '2_weeks';
+          
+          try {
+            await supabase
+              .from('profiles')
+              .update({ targets: myProfile.targets })
+              .eq('id', session.user.id);
+          } catch (updateErr) {
+            console.error('Failed to auto-persist 2-week free trial targets:', updateErr);
+          }
+        }
       }
       setMyCoachProfile(myProfile);
 
@@ -9378,7 +9400,7 @@ export default function DesktopCoachPortal() {
                       type="email"
                       value={newCoachEmail}
                       onChange={e => setNewCoachEmail(e.target.value)}
-                      placeholder="e.g. coach@striderite.com"
+                      placeholder="e.g. coach@lifegym.com"
                       className="w-full bg-[#121624] border border-gray-800 rounded-2xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors font-bold font-mono"
                       required
                     />

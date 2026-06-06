@@ -14,9 +14,9 @@ import {
   X,
   CheckCircle2,
   Sparkles,
-  CreditCard,
-  Rocket,
-  Search
+  Phone,
+  Calendar,
+  User
 } from 'lucide-react';
 
 export default function CoachLandingPage() {
@@ -215,8 +215,8 @@ export default function CoachLandingPage() {
             <Dumbbell size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-base font-black tracking-wider text-white">STRIDE-RITE</h1>
-            <p className="text-[9px] text-blue-400 font-black tracking-widest uppercase">COACH PORTAL</p>
+            <h1 className="text-base font-black tracking-wider text-white">LIFE GYM</h1>
+            <p className="text-[9px] text-emerald-400 font-black tracking-widest uppercase">COACH PORTAL</p>
           </div>
         </div>
 
@@ -377,203 +377,17 @@ export default function CoachLandingPage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
               </div>
               <div className="w-48 h-4 bg-white/5 rounded-md flex items-center justify-center text-[8px] font-bold text-gray-400">
-                app.striderite.com/coach-portal
+                app.lifegym.com/coach-portal
               </div>
               <div className="w-6 h-4" />
             </div>            {/* High Fidelity Mock Content Layout */}
-            <div className="flex-1 flex flex-col overflow-hidden text-left bg-[#070814]">
-              {/* Mock Top Navigation Bar */}
-              <div className="h-12 border-b border-white/[0.04] bg-[#070814] px-4 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2">
-                  <Dumbbell size={16} className="text-blue-500" />
-                  <div>
-                    <h5 className="text-[10px] font-black text-white leading-none">LIFE GYM</h5>
-                    <span className="text-[6.5px] text-gray-500 font-bold mt-0.5 block">Desktop Coach Portal / Version 3.0</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="px-2 py-1 border border-[#10b981]/35 rounded text-[7px] font-black text-[#10b981] bg-[#10b981]/5 tracking-wide hover:bg-[#10b981]/10 transition-all cursor-default">Sync Data</button>
-                  <button className="px-2 py-1 border border-[#3b82f6]/35 rounded text-[7px] font-black text-[#3b82f6] bg-[#3b82f6]/5 tracking-wide hover:bg-[#3b82f6]/10 transition-all cursor-default">Force Update (Hard Reload)</button>
-                  <button className="px-2 py-1 border border-red-500/35 rounded text-[7px] font-black text-red-500 bg-red-500/5 tracking-wide hover:bg-red-500/10 transition-all cursor-default">Log Out</button>
-                </div>
-              </div>
-
-              {/* Sidebar and Workspace Body */}
-              <div className="flex-1 flex overflow-hidden">
-                {/* Mock Sidebar */}
-                <div className="w-1/5 bg-[#0a0b16] border-r border-white/[0.03] p-3 flex flex-col justify-between shrink-0">
-                  <div className="space-y-4">
-                    <span className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest block px-2">Main Navigation</span>
-                    <nav className="space-y-1">
-                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
-                        <Activity size={10} />
-                        <span>Operational Overview</span>
-                      </div>
-                      <div className="px-2.5 py-1.5 bg-blue-600 text-[8px] font-black text-white rounded-lg flex items-center gap-2 shadow-md">
-                        <Users size={10} />
-                        <span>Athlete Directory</span>
-                      </div>
-                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
-                        <Rocket size={10} />
-                        <span>Deploy New Athlete</span>
-                      </div>
-                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
-                        <Dumbbell size={10} />
-                        <span>Athlete Control</span>
-                      </div>
-                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
-                        <CreditCard size={10} />
-                        <span>Subscriptions</span>
-                      </div>
-                      <div className="px-2.5 py-1.5 text-[8px] font-bold text-gray-500 rounded-lg flex items-center gap-2 hover:text-gray-300">
-                        <Users size={10} />
-                        <span>Profile Settings</span>
-                      </div>
-                    </nav>
-                  </div>
-                </div>
-
-                {/* Workspace Body */}
-                <div className="flex-1 flex overflow-hidden">
-                  {/* Athlete List Middle Panel (1/3 width) */}
-                  <div className="w-1/3 border-r border-white/[0.03] p-3 flex flex-col bg-[#070814] shrink-0">
-                    {/* Search Bar */}
-                    <div className="relative mb-3 flex items-center">
-                      <Search size={9} className="absolute left-2.5 text-gray-500" />
-                      <input 
-                        type="text" disabled placeholder="Search athletes..." 
-                        className="w-full bg-[#111326]/40 border border-white/[0.05] rounded-full pl-7 pr-3 py-1.5 text-[7.5px] text-gray-300 outline-none placeholder:text-gray-650"
-                      />
-                    </div>
-                    {/* Athlete Cards list */}
-                    <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
-                      {[
-                        { name: "ahmed", code: "#101", handle: "@zhmodd", initial: "A", active: true },
-                        { name: "essam", code: "#104", handle: "@essam", initial: "E", active: false },
-                        { name: "malak", code: "#106", handle: "@malak", initial: "M", active: false },
-                        { name: "mohamed", code: "#105", handle: "@mohamed", initial: "M", active: false },
-                        { name: "mostafa ahmed", code: "#107", handle: "@mostafa", initial: "M", active: false },
-                        { name: "nada", code: "#103", handle: "@nada", initial: "N", active: false },
-                        { name: "reem", code: "#102", handle: "@reem", initial: "R", active: false }
-                      ].map((ath, idx) => (
-                        <div key={idx} className={`p-2 rounded-xl border flex items-center justify-between cursor-default transition-all ${ath.active ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-[#111326]/10 border-white/[0.02] hover:border-white/[0.05]'}`}>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-[9px] font-black text-blue-400 shrink-0">
-                              {ath.initial}
-                            </div>
-                            <div className="min-w-0 animate-pulse-slow">
-                              <div className="flex items-center gap-1">
-                                <span className="text-[8px] font-black text-white truncate">{ath.name}</span>
-                                <span className="text-[6px] font-bold text-blue-400 bg-blue-500/10 px-1 rounded-sm">{ath.code}</span>
-                              </div>
-                              <span className="text-[6.5px] text-gray-500 font-medium truncate block">{ath.handle}</span>
-                            </div>
-                          </div>
-                          <ArrowRight size={8} className="text-gray-550 shrink-0" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right Details Panel (2/3 width) */}
-                  <div className="flex-1 p-3 overflow-y-auto no-scrollbar bg-[#060713] space-y-4">
-                    {/* Navigation tabs header */}
-                    <div className="border-b border-white/[0.03] pb-2 flex gap-4 text-[7.5px] font-black text-gray-500 tracking-wider">
-                      <span>OVERVIEW</span>
-                      <span>DIET LOGS</span>
-                      <span>WATER LOGS</span>
-                      <span className="text-blue-400 border-b border-blue-400 pb-2 -mb-[9px] z-10">TRAINING PLANS</span>
-                      <span>INBODY SCANS</span>
-                      <span>HISTORY</span>
-                    </div>
-
-                    {/* Completed Sessions Block */}
-                    <div className="bg-[#111326]/20 border border-white/[0.03] rounded-xl p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[7.5px] font-black text-white uppercase tracking-wider">Completed Sessions</span>
-                        <div className="text-[6.5px] font-mono text-gray-550 border border-white/[0.05] bg-white/5 px-1.5 py-0.5 rounded">
-                          &lt; 2026-06-06 &gt;
-                        </div>
-                      </div>
-                      <div className="py-4 text-center text-[7.5px] font-medium text-gray-500 italic">
-                        No completed workouts logged on this date.
-                      </div>
-                    </div>
-
-                    {/* Weekly Schedule Planner Block */}
-                    <div className="bg-[#111326]/20 border border-white/[0.03] rounded-xl p-3">
-                      <span className="text-[7.5px] font-black text-white uppercase tracking-wider flex items-center gap-1 mb-2">
-                        🗓️ Weekly Schedule Planner
-                      </span>
-                      <div className="grid grid-cols-7 gap-1">
-                        {[
-                          { day: 'Mon', date: 'Jun 1', active: false },
-                          { day: 'Tue', date: 'Jun 2', active: false },
-                          { day: 'Wed', date: 'Jun 3', active: false },
-                          { day: 'Thu', date: 'Jun 4', active: false },
-                          { day: 'Fri', date: 'Jun 5', active: false },
-                          { day: 'Sat', date: 'Jun 6', active: true },
-                          { day: 'Sun', date: 'Jun 7', active: false }
-                        ].map((d, dIdx) => (
-                          <div 
-                            key={dIdx} 
-                            className={`border rounded-lg p-1 text-center flex flex-col justify-between aspect-[3/4.5] ${
-                              d.active 
-                                ? 'bg-blue-600/10 border-blue-500/30' 
-                                : 'bg-[#111326]/40 border-white/[0.03]'
-                            }`}
-                          >
-                            <div>
-                              <span className={`text-[6.5px] font-black block leading-none ${d.active ? 'text-blue-400' : 'text-gray-400'}`}>{d.day}</span>
-                              <span className="text-[5px] text-gray-500 font-bold block mt-0.5 leading-none">{d.date}</span>
-                            </div>
-                            <div className="flex items-center justify-between bg-black/30 border border-white/[0.05] rounded px-1 py-0.5 mt-1 text-[5.5px] text-gray-300 w-full">
-                              <span>REST</span>
-                              <span className="text-[4px] text-gray-550">▼</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Gym Program Templates Splits (3) Block */}
-                    <div className="bg-[#111326]/20 border border-white/[0.03] rounded-xl p-3">
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[7.5px] font-black text-white uppercase tracking-wider">Gym Program Templates Splits (3)</span>
-                        <div className="flex gap-1 items-center shrink-0">
-                          <input 
-                            type="text" disabled placeholder="E.G. PUSH, LEGS" 
-                            className="bg-[#070814] border border-white/[0.04] rounded px-2 py-1 text-[6.5px] text-gray-400 outline-none w-24"
-                          />
-                          <button className="bg-blue-600 text-white font-black text-[6.5px] px-2 py-1 rounded shadow cursor-default">+ ADD SPLIT</button>
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        {[
-                          { title: "PUSH", exercises: "6 exercises", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-                          { title: "PULL", exercises: "6 exercises", color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
-                          { title: "LEGS", exercises: "6 exercises", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" }
-                        ].map((split, sIdx) => (
-                          <div key={sIdx} className="p-2 rounded-lg border border-white/[0.02] bg-[#111326]/30 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-1.5 py-0.5 rounded text-[6.5px] font-black uppercase border ${split.color}`}>{split.title}</span>
-                              <span className="text-[7px] text-gray-550 font-bold">({split.exercises})</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-gray-550 text-[8px] cursor-default">
-                              <span>✏️</span>
-                              <span>🗑️</span>
-                              <span>▼</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-
-              </div>
+            <div className="flex-1 overflow-hidden bg-[#070814]">
+              <img 
+                src="/coach_portal_preview.png" 
+                alt="Life Gym Coach Portal Preview" 
+                className="w-full h-full object-cover object-top select-none" 
+              />
+            </div>
           </div>
         </div>
       </motion.section>
@@ -739,7 +553,7 @@ export default function CoachLandingPage() {
 
       {/* FOOTER */}
       <footer className="relative z-10 max-w-7xl mx-auto px-6 py-12 border-t border-white/[0.04] text-center md:flex md:justify-between md:items-center">
-        <p className="text-[10px] text-gray-600">&copy; {new Date().getFullYear()} Stride-Rite Coaching Platform. All rights reserved.</p>
+        <p className="text-[10px] text-gray-600">&copy; {new Date().getFullYear()} Life Gym Coaching Platform. All rights reserved.</p>
         <div className="flex justify-center gap-6 text-[10px] text-gray-500 font-bold mt-4 md:mt-0">
           <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
           <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
@@ -783,7 +597,7 @@ export default function CoachLandingPage() {
                   <Dumbbell size={16} className="text-white" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black tracking-wider text-white">STRIDE-RITE COACH HUB</h4>
+                  <h4 className="text-xs font-black tracking-wider text-white">LIFE GYM COACH HUB</h4>
                   <p className="text-[8px] text-gray-400 font-black uppercase tracking-wider">{authMode === 'login' ? 'Authentication' : `Start Free Trial: Step ${onboardingStep} of 2`}</p>
                 </div>
               </div>
@@ -831,6 +645,11 @@ export default function CoachLandingPage() {
                     {/* STEP 1: ACCOUNT CREDENTIALS */}
                     {onboardingStep === 1 && (
                       <div className="space-y-4">
+                        {/* Stepper Progress Bar */}
+                        <div className="flex items-center gap-2 mb-6">
+                          <div className="h-1.5 flex-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
+                          <div className="h-1.5 flex-1 rounded-full bg-white/5" />
+                        </div>
                         <div className="space-y-1.5">
                           <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Full Name</label>
                           <input 
@@ -841,7 +660,7 @@ export default function CoachLandingPage() {
                         <div className="space-y-1.5">
                           <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Email Address</label>
                           <input 
-                            type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="coach@striderite.com"
+                            type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="coach@lifegym.com"
                             className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
                           />
                         </div>
@@ -867,48 +686,66 @@ export default function CoachLandingPage() {
                     {/* STEP 2: PROFILE DETAILS */}
                     {onboardingStep === 2 && (
                       <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Phone Number (WhatsApp)</label>
-                          <input 
-                            type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
-                            className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
-                          />
+                        {/* Stepper Progress Bar */}
+                        <div className="flex items-center gap-2 mb-6">
+                          <div className="h-1.5 flex-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
+                          <div className="h-1.5 flex-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)] animate-pulse" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Age</label>
+
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Phone Number (WhatsApp)</label>
+                          <div className="relative group">
+                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4" />
                             <input 
-                              type="number" required value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 28"
-                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
+                              type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
+                              className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)]" 
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Gender</label>
-                            <select 
-                              value={gender} onChange={e => setGender(e.target.value as 'male' | 'female')}
-                              className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none"
-                            >
-                              <option value="male" className="bg-[#111326] text-white">Male</option>
-                              <option value="female" className="bg-[#111326] text-white">Female</option>
-                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5 text-left">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Age</label>
+                            <div className="relative group">
+                              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4" />
+                              <input 
+                                type="number" required value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 28"
+                                className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)]" 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 text-left">
+                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Gender</label>
+                            <div className="relative group">
+                              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4 pointer-events-none" />
+                              <select 
+                                value={gender} onChange={e => setGender(e.target.value as 'male' | 'female')}
+                                className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all focus:shadow-[0_0_12px_rgba(16,185,129,0.08)] cursor-pointer"
+                              >
+                                <option value="male" className="bg-[#0c0d1b] text-white">Male</option>
+                                <option value="female" className="bg-[#0c0d1b] text-white">Female</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
+
                         <div className="flex flex-col items-center gap-2 mt-4">
                           <div className="flex gap-3 w-full">
                             <button
                               type="button" onClick={() => setOnboardingStep(1)}
-                              className="px-4 py-3.5 bg-[#0a0b16] border border-white/[0.05] text-gray-400 font-bold text-xs rounded-xl hover:text-white transition-colors"
+                              className="px-6 py-4 bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.06] text-gray-400 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer hover:shadow-lg active:scale-95"
                             >
                               Back
                             </button>
                             <button
                               type="button" disabled={loading || !phone || !age} onClick={handleRegister}
-                              className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-gray-800 disabled:to-gray-800 disabled:opacity-50 text-white font-extrabold text-xs uppercase py-4 rounded-2xl transition-all shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.35)] active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
-                              {loading ? 'Starting Trial...' : <><CheckCircle2 size={12} /> Start My Free Trial</>}
+                              {loading ? 'Starting Trial...' : <><CheckCircle2 size={13} /> Start My Free Trial</>}
                             </button>
                           </div>
-                          <span className="text-[10px] text-gray-500 font-bold tracking-wide mt-1">No card needed</span>
+                          <span className="text-[10px] text-gray-550 font-bold tracking-wide mt-1">No card needed</span>
                         </div>
                       </div>
                     )}

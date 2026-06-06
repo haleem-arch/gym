@@ -650,7 +650,7 @@ export default function SystemConsolePage() {
             <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Email / Username</label>
             <input
               type="email" required value={coachEmail} onChange={e => setCoachEmail(e.target.value)}
-              placeholder="e.g. coach@stride.fit"
+              placeholder="e.g. coach@lifegym.com"
               className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
             />
           </div>
