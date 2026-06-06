@@ -1,3 +1,4 @@
+// Revert: Rolled back email implementation to restore registration functionality
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
