@@ -182,6 +182,11 @@ export default function DesktopCoachPortal() {
   const [clientsList, setClientsList] = useState<any[]>([]);
   const [dbHealthy, setDbHealthy] = useState<boolean>(true);
 
+  // Athletes Analytics Report Modal State
+  const [showAthletesAnalytics, setShowAthletesAnalytics] = useState(false);
+  const [analyticsAges, setAnalyticsAges] = useState<Record<string, number>>({});
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
   // Live Feed
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
   const [recentDiets, setRecentDiets] = useState<any[]>([]);
@@ -848,28 +853,34 @@ export default function DesktopCoachPortal() {
       if (feedUserIds.length > 0) {
         const { data: feedProfiles } = await supabase
           .from('profiles')
-          .select('id, display_name, targets')
+          .select('id, display_name, targets, role')
           .in('id', feedUserIds);
         
         if (feedProfiles) {
           feedProfiles.forEach(p => {
-            feedProfilesMap[p.id] = {
-              display_name: p.display_name || 'Athlete',
-              client_code: p.targets?.client_code
-            };
+            if (p.role === 'client') {
+              feedProfilesMap[p.id] = {
+                display_name: p.display_name || 'Athlete',
+                client_code: p.targets?.client_code
+              };
+            }
           });
         }
       }
 
-      const stitchedWorkouts = (workoutsData || []).map(w => ({
-        ...w,
-        profiles: feedProfilesMap[w.user_id] || { display_name: 'Athlete' }
-      }));
+      const stitchedWorkouts = (workoutsData || [])
+        .map(w => ({
+          ...w,
+          profiles: feedProfilesMap[w.user_id]
+        }))
+        .filter(w => w.profiles !== undefined);
 
-      const stitchedDiets = filteredDiets.map(d => ({
-        ...d,
-        profiles: feedProfilesMap[d.user_id] || { display_name: 'Athlete' }
-      }));
+      const stitchedDiets = filteredDiets
+        .map(d => ({
+          ...d,
+          profiles: feedProfilesMap[d.user_id]
+        }))
+        .filter(d => d.profiles !== undefined);
 
       setRecentWorkouts(stitchedWorkouts);
       setRecentDiets(stitchedDiets);
@@ -878,6 +889,88 @@ export default function DesktopCoachPortal() {
     } finally {
       setRefreshingFeed(false);
     }
+  };
+
+  const handleOpenAnalytics = async () => {
+    setShowAthletesAnalytics(true);
+    setLoadingAnalytics(true);
+    try {
+      const clientIds = clientsList.map(c => c.id);
+      if (clientIds.length > 0) {
+        const { data: cpData } = await supabase
+          .from('client_profiles')
+          .select('user_id, age')
+          .in('user_id', clientIds);
+        
+        if (cpData) {
+          const agesMap: Record<string, number> = {};
+          cpData.forEach(item => {
+            if (item.age) agesMap[item.user_id] = item.age;
+          });
+          setAnalyticsAges(agesMap);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading analytics ages:', err);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  const handleExportAnalyticsCsv = () => {
+    const athletes = feedFilterMineOnly
+      ? clientsList.filter(c => c.coach_id === coachUserId)
+      : clientsList;
+
+    const headers = [
+      'Client Code',
+      'Display Name',
+      'Username',
+      'Email',
+      'Gender',
+      'Age',
+      'Subscription Plan',
+      'Subscription End Date',
+      'Status'
+    ];
+    
+    const rows = athletes.map(c => {
+      const age = analyticsAges[c.id] || 'Not Set';
+      const duration = c.targets?.subscription_duration || 'custom';
+      const expDate = c.targets?.subscription_end_date || 'No Expiry';
+      
+      const now = new Date();
+      const isDeactivated = c.targets?.is_deactivated === true;
+      const isExpired = c.targets?.subscription_end_date && now >= new Date(c.targets.subscription_end_date);
+      const status = isDeactivated ? 'Suspended' : isExpired ? 'Expired' : 'Active';
+      
+      return [
+        c.targets?.client_code ? `#${c.targets.client_code}` : 'N/A',
+        `"${(c.display_name || 'Athlete').replace(/"/g, '""')}"`,
+        `"${(c.username || '').replace(/"/g, '""')}"`,
+        `"${(c.email || '').replace(/"/g, '""')}"`,
+        c.gender || 'Not Set',
+        age,
+        `"${duration.replace(/"/g, '""')}"`,
+        expDate,
+        status
+      ];
+    });
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `athletes_analytics_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // ─── UNSAVED CHANGES NAVIGATION GUARD ───────────────────────
@@ -4313,7 +4406,10 @@ export default function DesktopCoachPortal() {
                 )}
 
                 {/* Card 3: Managed Athletes */}
-                <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-purple-500/5 hover:-translate-y-0.5">
+                <div 
+                  onClick={handleOpenAnalytics}
+                  className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-purple-500/5 hover:-translate-y-0.5 cursor-pointer active:scale-[0.99]"
+                >
                   <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="flex justify-between items-start">
                     <div>
@@ -4331,8 +4427,8 @@ export default function DesktopCoachPortal() {
                     </div>
                   </div>
                   <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                    Interactive client slots
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                    View Athlete Analytics Report
                   </div>
                 </div>
 
@@ -4445,7 +4541,7 @@ export default function DesktopCoachPortal() {
                           >
                             <div className="flex items-center gap-3.5">
                               {/* Avatar Icon */}
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 border border-blue-500/20 flex items-center justify-center text-[10px] text-blue-400 font-black shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 border border-blue-500/20 flex items-center justify-center text-[10px] text-blue-400 font-black shadow-inner shrink-0">
                                 {initials}
                               </div>
                               <div className="space-y-1">
@@ -4512,7 +4608,7 @@ export default function DesktopCoachPortal() {
                           >
                             <div className="flex items-center gap-3.5">
                               {/* Avatar Icon */}
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-[10px] text-emerald-400 font-black shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-[10px] text-emerald-400 font-black shadow-inner shrink-0">
                                 {initials}
                               </div>
                               <div className="space-y-1">
@@ -4546,6 +4642,226 @@ export default function DesktopCoachPortal() {
                 </div>
 
               </div>
+
+              {/* Athletes Analytics Report Modal */}
+              {showAthletesAnalytics && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+                  <div className="bg-[#0c0d18] border border-[#1e294b]/60 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                    {/* Header */}
+                    <div className="p-6 border-b border-[#1e294b]/30 flex items-center justify-between bg-[#080912]/80">
+                      <div>
+                        <h3 className="text-sm font-black uppercase tracking-wider text-blue-400">
+                          Athlete Analytics &amp; Subscriptions
+                        </h3>
+                        <p className="text-[10px] text-slate-500 font-black uppercase mt-0.5">
+                          Detailed profile insights, age &amp; gender demographics, plan distribution
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleExportAnalyticsCsv}
+                          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 border border-emerald-500/30 text-[9px] text-white font-black uppercase tracking-widest cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 shadow-md shadow-emerald-500/5"
+                        >
+                          Export CSV
+                        </button>
+                        <button
+                          onClick={() => setShowAthletesAnalytics(false)}
+                          className="w-8 h-8 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 overflow-y-auto space-y-6 no-scrollbar">
+                      {loadingAnalytics ? (
+                        <div className="flex flex-col items-center justify-center py-24 gap-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          <p className="text-xs text-slate-550 font-bold uppercase tracking-wider">Aggregating athlete metrics...</p>
+                        </div>
+                      ) : (() => {
+                        const athletes = feedFilterMineOnly
+                          ? clientsList.filter(c => c.coach_id === coachUserId)
+                          : clientsList;
+                        const totalCount = athletes.length;
+                        
+                        // Ages calculations
+                        const ages = athletes.map(a => analyticsAges[a.id]).filter(age => typeof age === 'number' && age > 0);
+                        const avgAge = ages.length > 0 ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(1) : 'N/A';
+                        
+                        const maleAges = athletes
+                          .filter(a => a.gender === 'male')
+                          .map(a => analyticsAges[a.id])
+                          .filter(age => typeof age === 'number' && age > 0);
+                        const avgMaleAge = maleAges.length > 0 ? (maleAges.reduce((sum, age) => sum + age, 0) / maleAges.length).toFixed(1) : 'N/A';
+                        
+                        const femaleAges = athletes
+                          .filter(a => a.gender === 'female')
+                          .map(a => analyticsAges[a.id])
+                          .filter(age => typeof age === 'number' && age > 0);
+                        const avgFemaleAge = femaleAges.length > 0 ? (femaleAges.reduce((sum, age) => sum + age, 0) / femaleAges.length).toFixed(1) : 'N/A';
+                        
+                        // Genders
+                        const totalMales = athletes.filter(a => a.gender === 'male').length;
+                        const totalFemales = athletes.filter(a => a.gender === 'female').length;
+                        
+                        // Plan counts
+                        const plans = ['2 weeks', '1 month', '3 months', '6 months', '12 months', '24 months'];
+                        const planCounts: Record<string, number> = {};
+                        plans.forEach(p => {
+                          planCounts[p] = athletes.filter(a => (a.targets?.subscription_duration || '').toLowerCase().trim() === p).length;
+                        });
+                        const customCount = athletes.filter(a => {
+                          const d = (a.targets?.subscription_duration || '').toLowerCase().trim();
+                          return d && !plans.includes(d);
+                        }).length;
+                        const noPlanCount = athletes.filter(a => !a.targets?.subscription_duration).length;
+                        
+                        // Avg subscription duration
+                        const durationMonths = athletes.map(a => {
+                          const d = (a.targets?.subscription_duration || '').toLowerCase().trim();
+                          if (d === '2 weeks') return 0.5;
+                          if (d === '1 month') return 1.0;
+                          if (d === '3 months') return 3.0;
+                          if (d === '6 months') return 6.0;
+                          if (d === '12 months') return 12.0;
+                          if (d === '24 months') return 24.0;
+                          return null;
+                        }).filter(v => v !== null) as number[];
+                        const avgSubDuration = durationMonths.length > 0 ? (durationMonths.reduce((sum, v) => sum + v, 0) / durationMonths.length).toFixed(1) : 'N/A';
+
+                        return (
+                          <div className="space-y-6">
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                              <div className="p-4 bg-black/40 border border-[#1e294b]/30 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase text-slate-550 tracking-wider">Total Active Athletes</p>
+                                <p className="text-2xl font-black text-white mt-1.5 font-mono">{totalCount}</p>
+                              </div>
+                              <div className="p-4 bg-black/40 border border-[#1e294b]/30 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase text-slate-550 tracking-wider">Average Age (Overall)</p>
+                                <p className="text-2xl font-black text-blue-400 mt-1.5 font-mono">{avgAge} <span className="text-xs text-slate-550 font-bold">yrs</span></p>
+                              </div>
+                              <div className="p-4 bg-black/40 border border-[#1e294b]/30 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase text-slate-550 tracking-wider">Average Male Age</p>
+                                <p className="text-2xl font-black text-indigo-400 mt-1.5 font-mono">{avgMaleAge} <span className="text-xs text-slate-550 font-bold">yrs</span></p>
+                              </div>
+                              <div className="p-4 bg-black/40 border border-[#1e294b]/30 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase text-slate-550 tracking-wider">Average Female Age</p>
+                                <p className="text-2xl font-black text-pink-400 mt-1.5 font-mono">{avgFemaleAge} <span className="text-xs text-slate-550 font-bold">yrs</span></p>
+                              </div>
+                            </div>
+
+                            {/* Gender and Subscriptions Row */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Gender Breakdown */}
+                              <div className="p-5 bg-black/20 border border-[#1e294b]/30 rounded-2xl space-y-4">
+                                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-[#1e294b]/20 pb-2">Gender Demographics</h4>
+                                <div className="flex gap-4">
+                                  <div className="flex-1 p-3 bg-blue-950/20 border border-blue-900/20 rounded-xl text-center">
+                                    <span className="text-[9px] font-black uppercase text-blue-400">Males</span>
+                                    <p className="text-xl font-black text-white mt-1 font-mono">{totalMales}</p>
+                                  </div>
+                                  <div className="flex-1 p-3 bg-pink-950/20 border border-pink-900/20 rounded-xl text-center">
+                                    <span className="text-[9px] font-black uppercase text-pink-400">Females</span>
+                                    <p className="text-xl font-black text-white mt-1 font-mono">{totalFemales}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Average Subscription Duration */}
+                              <div className="p-5 bg-black/20 border border-[#1e294b]/30 rounded-2xl space-y-4">
+                                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-[#1e294b]/20 pb-2">Subscription Lifespan</h4>
+                                <div className="flex items-center justify-between p-3.5 bg-black border border-[#1e294b]/30 rounded-xl">
+                                  <div>
+                                    <span className="text-[9px] font-black uppercase text-slate-550">Average Sub Duration</span>
+                                    <p className="text-xl font-black text-white mt-0.5 font-mono">{avgSubDuration} <span className="text-xs text-slate-500 font-bold">months</span></p>
+                                  </div>
+                                  <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 font-mono text-xs font-black">
+                                    Active Base
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Subscription Plan Distribution */}
+                            <div className="p-5 bg-black/20 border border-[#1e294b]/30 rounded-2xl space-y-4">
+                              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-[#1e294b]/20 pb-2">Plan Distributions</h4>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                                {[
+                                  { label: '2 Weeks', val: planCounts['2 weeks'] },
+                                  { label: '1 Month', val: planCounts['1 month'] },
+                                  { label: '3 Months', val: planCounts['3 months'] },
+                                  { label: '6 Months', val: planCounts['6 months'] },
+                                  { label: '12 Months', val: planCounts['12 months'] },
+                                  { label: '24 Months', val: planCounts['24 months'] },
+                                  { label: 'Custom', val: customCount },
+                                  { label: 'No Plan', val: noPlanCount }
+                                ].map((plan, idx) => (
+                                  <div key={idx} className="p-3 bg-black border border-[#1e294b]/30 rounded-xl text-center">
+                                    <span className="text-[8px] font-black uppercase text-slate-550 block truncate">{plan.label}</span>
+                                    <p className="text-lg font-black text-white mt-1 font-mono">{plan.val}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Athlete Directory Table */}
+                            <div className="p-5 bg-black/20 border border-[#1e294b]/30 rounded-2xl space-y-4">
+                              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-[#1e294b]/20 pb-2">Athlete Roster Breakdown</h4>
+                              <div className="overflow-x-auto max-h-[300px] no-scrollbar">
+                                <table className="w-full text-left border-collapse text-xs">
+                                  <thead>
+                                    <tr className="border-b border-[#1e294b]/20 text-[9px] font-black uppercase text-slate-550">
+                                      <th className="py-2.5 px-3">Code</th>
+                                      <th className="py-2.5 px-3">Name</th>
+                                      <th className="py-2.5 px-3">Gender</th>
+                                      <th className="py-2.5 px-3">Age</th>
+                                      <th className="py-2.5 px-3">Subscription</th>
+                                      <th className="py-2.5 px-3">Expiration Date</th>
+                                      <th className="py-2.5 px-3">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-[#1e294b]/10 text-slate-350 font-bold">
+                                    {athletes.map((c, i) => {
+                                      const age = analyticsAges[c.id] || 'Not Set';
+                                      const duration = c.targets?.subscription_duration || 'custom';
+                                      const expDate = c.targets?.subscription_end_date || 'No Expiry';
+                                      
+                                      const now = new Date();
+                                      const isDeactivated = c.targets?.is_deactivated === true;
+                                      const isExpired = c.targets?.subscription_end_date && now >= new Date(c.targets.subscription_end_date);
+                                      const statusColor = isDeactivated ? 'bg-red-500/10 border-red-500/20 text-red-400' : isExpired ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
+                                      const statusLabel = isDeactivated ? 'Suspended' : isExpired ? 'Expired' : 'Active';
+
+                                      return (
+                                        <tr key={i} className="hover:bg-blue-500/[0.01] transition-colors">
+                                          <td className="py-2 px-3 font-mono text-[9px]">#{c.targets?.client_code || 'N/A'}</td>
+                                          <td className="py-2 px-3 font-black text-white">{c.display_name}</td>
+                                          <td className="py-2 px-3 uppercase text-[10px]">{c.gender || 'Not Set'}</td>
+                                          <td className="py-2 px-3 font-mono">{age}</td>
+                                          <td className="py-2 px-3 uppercase text-[10px]">{duration}</td>
+                                          <td className="py-2 px-3 font-mono text-[10px] text-slate-550">{expDate}</td>
+                                          <td className="py-2 px-3">
+                                            <span className={`px-2 py-0.5 border rounded-[6px] text-[8px] font-black uppercase tracking-wider ${statusColor}`}>
+                                              {statusLabel}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -5624,6 +5940,18 @@ export default function DesktopCoachPortal() {
                     </div>
                     <div className="border-t border-gray-800/40" />
                     <div className="flex items-center justify-between group">
+                      <p><span className="text-gray-500">Email:</span> {deploySuccessData.username}@stride.fit</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(`${deploySuccessData.username}@stride.fit`, 'Email')}
+                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Email"
+                      >
+                        {copiedField === 'Email' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-800/40" />
+                    <div className="flex items-center justify-between group">
                       <p><span className="text-gray-500">Passcode:</span> {deploySuccessData.password}</p>
                       <button
                         type="button"
@@ -5638,7 +5966,7 @@ export default function DesktopCoachPortal() {
                   <button
                     type="button"
                     onClick={() => {
-                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nPasscode: ${deploySuccessData.password}`;
+                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nEmail: ${deploySuccessData.username}@stride.fit\nPasscode: ${deploySuccessData.password}`;
                       navigator.clipboard.writeText(text);
                       toast.success('All credentials copied!');
                     }}
