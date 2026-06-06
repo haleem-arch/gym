@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /hr
+Disallow: /coach/
+Disallow: /coach-portal
+Disallow: /workout/
+Disallow: /diet/
+Disallow: /inbody
+Disallow: /profile
+Disallow: /login
+Disallow: /client-login
