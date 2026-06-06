@@ -18,6 +18,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms' | 'cookies' | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState<number>(0);
 
@@ -130,6 +131,11 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAttemptedSubmit(true);
+    if (!email.trim() || !password.trim() || (isSignUp && !displayName.trim())) {
+      toast.error('Please fill in all empty fields.');
+      return;
+    }
     if (!legalAccepted) {
       toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
       triggerPrivacyArrow();
@@ -444,7 +450,9 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Enter your name"
-                      className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:border-blue-500 focus:outline-none text-sm transition-all"
+                      className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
+                        attemptedSubmit && !displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                      }`}
                       required={isSignUp}
                     />
                   </div>
@@ -461,7 +469,9 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="name@example.com"
-                  className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:border-blue-500 focus:outline-none text-sm transition-all"
+                  className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
+                    attemptedSubmit && !email.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                  }`}
                   required
                 />
               </div>
@@ -476,7 +486,9 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="••••••••"
-                  className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:border-blue-500 focus:outline-none text-sm transition-all"
+                  className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
+                    attemptedSubmit && !password.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                  }`}
                   required
                 />
               </div>

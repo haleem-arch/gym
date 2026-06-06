@@ -50,6 +50,39 @@ export default function SystemConsolePage() {
   const [createdCoachCredentials, setCreatedCoachCredentials] = useState<any | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  const [attemptedCoachSubmit, setAttemptedCoachSubmit] = useState(false);
+  const [isEmailChecking, setIsEmailChecking] = useState(false);
+  const [isEmailTaken, setIsEmailTaken] = useState(false);
+
+  // Real-time checks for coach email availability
+  useEffect(() => {
+    const emailVal = coachEmail.trim().toLowerCase();
+    if (!emailVal) {
+      setIsEmailTaken(false);
+      return;
+    }
+
+    setIsEmailChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', emailVal)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsEmailTaken(!!data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsEmailChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [coachEmail]);
+
   const handleCopyField = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
@@ -220,8 +253,13 @@ export default function SystemConsolePage() {
   // Create Coach Account via secure Vercel Endpoint
   const handleCreateCoach = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!coachName || !coachEmail || !coachPassword) {
+    setAttemptedCoachSubmit(true);
+    if (!coachName.trim() || !coachEmail.trim() || !coachPassword.trim()) {
       toast.error('Please fill in all coach details');
+      return;
+    }
+    if (isEmailTaken) {
+      toast.error('Email is already taken. Please change it.');
       return;
     }
 
@@ -643,23 +681,31 @@ export default function SystemConsolePage() {
             <input
               type="text" required value={coachName} onChange={e => setCoachName(e.target.value)}
               placeholder="e.g. Captain Alberto"
-              className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
+              className={`w-full bg-[#11162a] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1 ${
+                attemptedCoachSubmit && !coachName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+              }`}
             />
           </div>
           <div>
             <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Email / Username</label>
             <input
-              type="email" required value={coachEmail} onChange={e => setCoachEmail(e.target.value)}
+              type="email" required value={coachEmail} onChange={e => setCoachEmail(e.target.value.replace(/\s/g, ''))}
               placeholder="e.g. coach@lifegym.com"
-              className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
+              className={`w-full bg-[#11162a] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1 ${
+                (attemptedCoachSubmit && !coachEmail.trim()) || isEmailTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+              }`}
             />
+            {isEmailChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
+            {isEmailTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">Email / Username is already taken.</p>}
           </div>
           <div>
             <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
             <input
               type="password" required value={coachPassword} onChange={e => setCoachPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500 mt-1"
+              className={`w-full bg-[#11162a] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1 ${
+                attemptedCoachSubmit && !coachPassword.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+              }`}
             />
           </div>
 

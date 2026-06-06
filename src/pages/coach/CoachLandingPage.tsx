@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import LegalModal from '../../components/LegalModals';
+import { toast } from 'react-hot-toast';
 import { 
   Activity, 
   Apple, 
@@ -172,6 +173,40 @@ export default function CoachLandingPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
 
+  const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
+  const [attemptedStep2Submit, setAttemptedStep2Submit] = useState(false);
+  const [isEmailChecking, setIsEmailChecking] = useState(false);
+  const [isEmailTaken, setIsEmailTaken] = useState(false);
+
+  // Real-time checks for coach email availability in signup
+  useEffect(() => {
+    const emailVal = email.trim().toLowerCase();
+    if (!emailVal) {
+      setIsEmailTaken(false);
+      return;
+    }
+
+    setIsEmailChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', emailVal)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsEmailTaken(!!data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsEmailChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [email]);
+
   useEffect(() => {
     const handleHashChange = () => {
       if (window.location.hash === '#faq-billing') {
@@ -236,6 +271,16 @@ export default function CoachLandingPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAttemptedStep2Submit(true);
+    if (!phone.trim() || !age.trim() || !acceptedTerms) {
+      setErrorMessage('Please fill in all profile details and accept the terms.');
+      return;
+    }
+    if (isEmailTaken) {
+      setErrorMessage('This email is already registered.');
+      return;
+    }
+
     setLoading(true);
     setErrorMessage(null);
 
@@ -959,28 +1004,50 @@ export default function CoachLandingPage() {
                           <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Full Name</label>
                           <input 
                             type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g. Captain Coach"
-                            className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
+                            className={`w-full bg-[#0a0b16]/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              attemptedStep1Submit && !displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.05] focus:border-blue-500/50'
+                            }`} 
                           />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Email Address</label>
                           <input 
-                            type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="coach@lifegym.com"
-                            className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
+                            type="email" required value={email} onChange={e => setEmail(e.target.value.replace(/\s/g, ''))} placeholder="coach@lifegym.com"
+                            className={`w-full bg-[#0a0b16]/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              (attemptedStep1Submit && !email.trim()) || isEmailTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.05] focus:border-blue-500/50'
+                            }`} 
                           />
+                          {isEmailChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
+                          {isEmailTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">This email is already registered.</p>}
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Secure Password</label>
                           <input 
                             type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters"
-                            className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
+                            className={`w-full bg-[#0a0b16]/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              attemptedStep1Submit && password.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.05] focus:border-blue-500/50'
+                            }`} 
                           />
                         </div>
                         <button
                           type="button"
-                          disabled={!displayName || !email || password.length < 6}
-                          onClick={() => setOnboardingStep(2)}
-                          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
+                          onClick={() => {
+                            setAttemptedStep1Submit(true);
+                            if (!displayName.trim() || !email.trim() || password.length < 6) {
+                              if (password.length > 0 && password.length < 6) {
+                                toast.error('Password must be at least 6 characters.');
+                              } else {
+                                toast.error('Please fill in all empty fields.');
+                              }
+                              return;
+                            }
+                            if (isEmailTaken) {
+                              toast.error('Email is already registered. Please use another email.');
+                              return;
+                            }
+                            setOnboardingStep(2);
+                          }}
+                          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
                         >
                           <span>Continue to Profile Setup</span>
                           <ArrowRight size={12} />
@@ -1003,7 +1070,9 @@ export default function CoachLandingPage() {
                             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4" />
                             <input 
                               type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
-                              className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)]" 
+                              className={`w-full bg-[#060712]/60 border rounded-2xl p-3.5 pl-11 text-xs text-white outline-none focus:outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)] ${
+                                attemptedStep2Submit && !phone.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50'
+                              }`} 
                             />
                           </div>
                         </div>
@@ -1021,7 +1090,9 @@ export default function CoachLandingPage() {
                                 value={age} 
                                 onChange={e => setAge(e.target.value.replace(/\D/g, ''))} 
                                 placeholder="e.g. 28"
-                                className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)]" 
+                                className={`w-full bg-[#060712]/60 border rounded-2xl p-3.5 pl-11 text-xs text-white outline-none focus:outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)] ${
+                                  attemptedStep2Submit && !age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50'
+                                }`} 
                               />
                             </div>
                           </div>
@@ -1075,9 +1146,10 @@ export default function CoachLandingPage() {
                             <motion.div 
                               animate={{
                                 backgroundColor: acceptedTerms ? "rgba(16, 185, 129, 0.2)" : "rgba(255, 255, 255, 0.02)",
-                                borderColor: acceptedTerms ? "#10b981" : "rgba(255, 255, 255, 0.12)"
+                                borderColor: acceptedTerms ? "#10b981" : (attemptedStep2Submit ? "#ef4444" : "rgba(255, 255, 255, 0.12)")
                               }}
                               className="w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-200"
+                              style={{ borderWidth: attemptedStep2Submit && !acceptedTerms ? '2px' : '1px' }}
                             >
                               {acceptedTerms && (
                                 <motion.svg 
@@ -1094,7 +1166,7 @@ export default function CoachLandingPage() {
                               )}
                             </motion.div>
                           </div>
-                          <span className="text-[10px] text-gray-400 font-medium leading-normal select-none">
+                          <span className={`text-[10px] font-medium leading-normal select-none ${attemptedStep2Submit && !acceptedTerms ? 'text-red-400 font-bold' : 'text-gray-400'}`}>
                             I agree to the{' '}
                             <button 
                               type="button"
@@ -1123,7 +1195,7 @@ export default function CoachLandingPage() {
                               Back
                             </button>
                             <button
-                              type="button" disabled={loading || !phone || !age || !acceptedTerms} onClick={handleRegister}
+                              type="button" disabled={loading} onClick={handleRegister}
                               className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-gray-800 disabled:to-gray-800 disabled:opacity-50 text-white font-extrabold text-xs uppercase py-4 rounded-2xl transition-all shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.35)] active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               {loading ? 'Starting Trial...' : <><CheckCircle2 size={13} /> Start My Free Trial</>}

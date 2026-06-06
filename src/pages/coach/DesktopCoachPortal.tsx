@@ -447,6 +447,93 @@ export default function DesktopCoachPortal() {
     customSubscriptionEnd: getLocalDateTimeString()
   });
   const [deployGender, setDeployGender] = useState<'male' | 'female'>('male');
+
+  const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
+  const [isUsernameChecking, setIsUsernameChecking] = useState(false);
+  const [isUsernameTaken, setIsUsernameTaken] = useState(false);
+  const [isClientCodeChecking, setIsClientCodeChecking] = useState(false);
+  const [isClientCodeTaken, setIsClientCodeTaken] = useState(false);
+
+  // Helper to clean usernames by removing spaces and dots
+  const cleanUsername = (val: string) => {
+    return val.replace(/[\s.]/g, '').toLowerCase();
+  };
+
+  // Real-time checks for client username availability
+  useEffect(() => {
+    const usernameVal = formData.username.trim().toLowerCase();
+    if (!usernameVal) {
+      setIsUsernameTaken(false);
+      return;
+    }
+
+    setIsUsernameChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', usernameVal)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsUsernameTaken(!!data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsUsernameChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [formData.username]);
+
+  // Real-time checks for client code availability
+  useEffect(() => {
+    const codeVal = formData.clientCode.trim();
+    if (!codeVal) {
+      setIsClientCodeTaken(false);
+      return;
+    }
+
+    setIsClientCodeChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'client')
+          .eq('targets->>client_code', codeVal)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsClientCodeTaken(!!data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsClientCodeChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [formData.clientCode]);
+
+  const isStep1Valid = () => {
+    return (
+      formData.displayName.trim() !== '' &&
+      formData.username.trim() !== '' &&
+      formData.password.trim() !== '' &&
+      formData.clientCode.trim() !== '' &&
+      formData.phoneNumber.trim() !== '' &&
+      formData.age.trim() !== '' &&
+      formData.height.trim() !== '' &&
+      formData.subscriptionStartDelay.trim() !== '' &&
+      (formData.subscriptionPeriod !== 'custom' || formData.customSubscriptionEnd.trim() !== '') &&
+      formData.injuries_notes.trim() !== '' &&
+      !isUsernameTaken &&
+      !isClientCodeTaken
+    );
+  };
   
   // Deploy Wizard Split template state
   const [deploySplits, setDeploySplits] = useState<any[]>([
@@ -3181,8 +3268,15 @@ export default function DesktopCoachPortal() {
 
   // ─── DEPLOY ATHLETE 4-STEP ACTION ──────────────────────────
   const handleDeployAthlete = async () => {
-    if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim()) {
-      toast.error('Name, Username, and Password are required.');
+    setAttemptedStep1Submit(true);
+    if (!isStep1Valid()) {
+      if (isUsernameTaken) {
+        toast.error('Username is already taken. Please change it.');
+      } else if (isClientCodeTaken) {
+        toast.error('Client Code is already taken. Please change it.');
+      } else {
+        toast.error('Please fill in all empty text boxes.');
+      }
       return;
     }
     setDeployLoading(true);
@@ -6856,9 +6950,18 @@ export default function DesktopCoachPortal() {
                             type="button"
                             onClick={() => {
                               if (showTutorial) return;
-                              if (idx + 1 > deployStep && (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim())) {
-                                toast.error('Complete basic account fields first.');
-                                return;
+                              if (idx + 1 > 1) {
+                                setAttemptedStep1Submit(true);
+                                if (!isStep1Valid()) {
+                                  if (isUsernameTaken) {
+                                    toast.error('Username is already taken. Please change it.');
+                                  } else if (isClientCodeTaken) {
+                                    toast.error('Client Code is already taken. Please change it.');
+                                  } else {
+                                    toast.error('Please fill in all empty text boxes.');
+                                  }
+                                  return;
+                                }
                               }
                               setDeployStep(idx + 1);
                             }}
@@ -6896,39 +6999,53 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })}
                               placeholder="e.g. Captain Ahmed"
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && !formData.displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`}
                             />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Username / Handle</label>
                             <input 
-                              type="text" required value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })}
+                              type="text" required value={formData.username} onChange={e => setFormData({ ...formData, username: cleanUsername(e.target.value) })}
                               placeholder="e.g. ahmedfit"
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                (attemptedStep1Submit && !formData.username.trim()) || isUsernameTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`}
                             />
+                            {isUsernameChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
+                            {isUsernameTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">Username is already taken.</p>}
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Access Passcode (min 6 chars)</label>
                             <input 
                               type="text" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })}
                               placeholder="e.g. 123456"
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && !formData.password.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`}
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-gray-500">Client Code (Auto-increment or custom)</label>
+                            <label className="text-[9px] font-black uppercase text-gray-500">Client Code (Required)</label>
                             <input 
-                              type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value })}
-                              placeholder="Leave blank to auto-increment"
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500"
+                              type="text" required value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value.trim() })}
+                              placeholder="e.g. 101"
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                (attemptedStep1Submit && !formData.clientCode.trim()) || isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`}
                             />
+                            {isClientCodeChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
+                            {isClientCodeTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">Client Code is already taken.</p>}
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Phone Number</label>
                             <input 
-                              type="text" value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                              type="text" required value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
                               placeholder="e.g. +20 123 456789"
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none"
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && !formData.phoneNumber.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`}
                             />
                           </div>
                           <div className="space-y-1">
@@ -6950,11 +7067,23 @@ export default function DesktopCoachPortal() {
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Age</label>
-                            <input type="number" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} placeholder="Years" className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none" />
+                            <input 
+                              type="number" required value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} 
+                              placeholder="Years" 
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && !formData.age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`} 
+                            />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Height (cm)</label>
-                            <input type="number" value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} placeholder="Centimeters" className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none" />
+                            <input 
+                              type="number" required value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} 
+                              placeholder="Centimeters" 
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && !formData.height.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`} 
+                            />
                           </div>
                           <div className="space-y-1 col-span-2">
                             <label className="text-[9px] font-black uppercase text-gray-500">Onboarding Experience Level</label>
@@ -6986,10 +7115,13 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="number" 
                               min="0"
+                              required
                               value={formData.subscriptionStartDelay} 
                               onChange={e => setFormData({ ...formData, subscriptionStartDelay: e.target.value })} 
                               placeholder="e.g. 3 days" 
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none font-sans" 
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && !formData.subscriptionStartDelay.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`} 
                             />
                           </div>
 
@@ -6999,15 +7131,24 @@ export default function DesktopCoachPortal() {
                               <input 
                                 type="datetime-local" 
                                 step="1"
+                                required
                                 value={formData.customSubscriptionEnd} 
                                 onChange={e => setFormData({ ...formData, customSubscriptionEnd: e.target.value })} 
-                                className="w-full bg-[#121624] border border-indigo-500/30 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-colors" 
+                                className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                  attemptedStep1Submit && !formData.customSubscriptionEnd.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-indigo-500/30 focus:border-indigo-500'
+                                }`} 
                               />
                             </div>
                           )}
                           <div className="space-y-1 col-span-2">
                             <label className="text-[9px] font-black uppercase text-gray-500">Injuries &amp; Medical Notes</label>
-                            <textarea value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} placeholder="Enter details about any injuries, operations, or medical conditions..." className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none h-20" />
+                            <textarea 
+                              required value={formData.injuries_notes} onChange={e => setFormData({ ...formData, injuries_notes: e.target.value })} 
+                              placeholder="Enter details about any injuries, operations, or medical conditions..." 
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all h-20 ${
+                                attemptedStep1Submit && !formData.injuries_notes.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`} 
+                            />
                           </div>
                         </div>
                       </div>
@@ -7291,9 +7432,18 @@ export default function DesktopCoachPortal() {
                     {deployStep < 4 ? (
                       <button 
                         onClick={() => {
-                          if (deployStep === 1 && (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim())) {
-                            toast.error('Complete basic account credentials fields.');
-                            return;
+                          if (deployStep === 1) {
+                            setAttemptedStep1Submit(true);
+                            if (!isStep1Valid()) {
+                              if (isUsernameTaken) {
+                                toast.error('Username is already taken. Please change it.');
+                              } else if (isClientCodeTaken) {
+                                toast.error('Client Code is already taken. Please change it.');
+                              } else {
+                                toast.error('Please fill in all empty text boxes.');
+                              }
+                              return;
+                            }
                           }
                           setDeployError(null);
                           setDeployStep(prev => prev + 1);

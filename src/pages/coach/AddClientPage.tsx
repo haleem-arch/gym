@@ -49,6 +49,12 @@ export default function AddClientPage() {
     clientCode: 0
   });
 
+  const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
+  const [isUsernameChecking, setIsUsernameChecking] = useState(false);
+  const [isUsernameTaken, setIsUsernameTaken] = useState(false);
+  const [isClientCodeChecking, setIsClientCodeChecking] = useState(false);
+  const [isClientCodeTaken, setIsClientCodeTaken] = useState(false);
+
   // Exercise catalog search
   const [exerciseDb, setExerciseDb] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +79,65 @@ export default function AddClientPage() {
     injuries_notes: ''
   });
   const [gender, setGender] = useState<'male' | 'female'>('male');
+
+  // Real-time checks for client username availability
+  useEffect(() => {
+    const usernameVal = formData.username.trim().toLowerCase();
+    if (!usernameVal) {
+      setIsUsernameTaken(false);
+      return;
+    }
+
+    setIsUsernameChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', usernameVal)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsUsernameTaken(!!data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsUsernameChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [formData.username]);
+
+  // Real-time checks for client code availability
+  useEffect(() => {
+    const codeVal = formData.clientCode.trim();
+    if (!codeVal) {
+      setIsClientCodeTaken(false);
+      return;
+    }
+
+    setIsClientCodeChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'client')
+          .eq('targets->>client_code', codeVal)
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsClientCodeTaken(!!data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsClientCodeChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [formData.clientCode]);
 
   // Step 2: Training Program Splits
   const [splits, setSplits] = useState<SplitItem[]>([
@@ -285,9 +350,13 @@ export default function AddClientPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    let val = e.target.value;
+    if (e.target.name === 'username') {
+      val = val.replace(/[\s.]/g, '').toLowerCase();
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: val
     });
   };
 
@@ -366,16 +435,17 @@ export default function AddClientPage() {
 
   const handleNext = () => {
     if (step === 1) {
-      if (!formData.displayName.trim()) {
-        toast.error('Full Name is required.');
+      setAttemptedStep1Submit(true);
+      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.clientCode.trim() || !formData.age.trim() || !formData.height.trim()) {
+        toast.error('Please fill in all empty text boxes.');
         return;
       }
-      if (!formData.username.trim()) {
-        toast.error('Username is required.');
+      if (isUsernameTaken) {
+        toast.error('Username is already taken. Please change it.');
         return;
       }
-      if (!formData.password.trim()) {
-        toast.error('Password is required.');
+      if (isClientCodeTaken) {
+        toast.error('Client Number is already taken. Please change it.');
         return;
       }
     }
@@ -395,6 +465,24 @@ export default function AddClientPage() {
   };
 
   const handleSubmit = async () => {
+    if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.clientCode.trim() || !formData.age.trim() || !formData.height.trim()) {
+      setAttemptedStep1Submit(true);
+      setStep(1);
+      toast.error('Please fill in all empty text boxes.');
+      return;
+    }
+    if (isUsernameTaken) {
+      setAttemptedStep1Submit(true);
+      setStep(1);
+      toast.error('Username is already taken. Please change it.');
+      return;
+    }
+    if (isClientCodeTaken) {
+      setAttemptedStep1Submit(true);
+      setStep(1);
+      toast.error('Client Number is already taken. Please change it.');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -794,6 +882,21 @@ export default function AddClientPage() {
                 <button
                   type="button"
                   onClick={() => {
+                    if (step === 1 && idx + 1 > 1) {
+                      setAttemptedStep1Submit(true);
+                      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.clientCode.trim() || !formData.age.trim() || !formData.height.trim()) {
+                        toast.error('Please fill in all empty text boxes.');
+                        return;
+                      }
+                      if (isUsernameTaken) {
+                        toast.error('Username is already taken. Please change it.');
+                        return;
+                      }
+                      if (isClientCodeTaken) {
+                        toast.error('Client Number is already taken. Please change it.');
+                        return;
+                      }
+                    }
                     setDirection(idx + 1 > step ? 1 : -1);
                     setStep(idx + 1);
                   }}
@@ -840,7 +943,9 @@ export default function AddClientPage() {
                     <input 
                       type="text" required name="displayName" value={formData.displayName} onChange={handleInputChange}
                       placeholder="e.g. Ahmed Salem"
-                      className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                      className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                        attemptedStep1Submit && !formData.displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                      }`} 
                     />
                   </div>
                 </div>
@@ -853,9 +958,13 @@ export default function AddClientPage() {
                       <input 
                         type="text" required name="username" value={formData.username} onChange={handleInputChange}
                         placeholder="ahmed"
-                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                        className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                          (attemptedStep1Submit && !formData.username.trim()) || isUsernameTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                        }`} 
                       />
                     </div>
+                    {isUsernameChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
+                    {isUsernameTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">Username is already taken.</p>}
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Password</label>
@@ -864,7 +973,9 @@ export default function AddClientPage() {
                       <input 
                         type="text" required name="password" value={formData.password} onChange={handleInputChange}
                         placeholder="••••••••"
-                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                        className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                          attemptedStep1Submit && !formData.password.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                        }`} 
                       />
                     </div>
                   </div>
@@ -878,7 +989,9 @@ export default function AddClientPage() {
                       <input 
                         type="text" required name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange}
                         placeholder="e.g. +20123456789"
-                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                        className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                          attemptedStep1Submit && !formData.phoneNumber.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                        }`} 
                       />
                     </div>
                   </div>
@@ -890,9 +1003,13 @@ export default function AddClientPage() {
                       <input 
                         type="number" name="clientCode" value={formData.clientCode} onChange={handleInputChange}
                         placeholder="e.g. 112"
-                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                        className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                          (attemptedStep1Submit && !formData.clientCode.trim()) || isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                        }`} 
                       />
                     </div>
+                    {isClientCodeChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
+                    {isClientCodeTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">Client Code is already taken.</p>}
                   </div>
                 </div>
 
@@ -934,7 +1051,9 @@ export default function AddClientPage() {
                       <input 
                         type="number" name="age" value={formData.age} onChange={handleInputChange}
                         placeholder="Years"
-                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                        className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                          attemptedStep1Submit && !formData.age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                        }`} 
                       />
                     </div>
                   </div>
@@ -945,7 +1064,9 @@ export default function AddClientPage() {
                       <input 
                         type="number" name="height" value={formData.height} onChange={handleInputChange}
                         placeholder="cm"
-                        className="w-full bg-[#121620]/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none focus:border-blue-500 transition-colors" 
+                        className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                          attemptedStep1Submit && !formData.height.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                        }`} 
                       />
                     </div>
                   </div>
