@@ -202,3 +202,19 @@ button, a, select, label, [role="button"] {
   filter: blur(3.5px);
   transition: filter 0.15s ease-out;
 }
+
+/* Interactive Guided Tutorial Mode Untouchable Layer */
+.tutorial-mode-active button,
+.tutorial-mode-active input,
+.tutorial-mode-active select,
+.tutorial-mode-active textarea,
+.tutorial-mode-active [role="button"],
+.tutorial-mode-active a,
+.tutorial-mode-active .cursor-pointer {
+  pointer-events: none !important;
+}
+
+.tutorial-card,
+.tutorial-card * {
+  pointer-events: auto !important;
+}

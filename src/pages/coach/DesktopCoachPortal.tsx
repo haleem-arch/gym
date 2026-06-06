@@ -4696,7 +4696,7 @@ export default function DesktopCoachPortal() {
           {spotlightRect && (
             <motion.div
               layoutId="spotlight-card"
-              className="fixed bg-[#111326]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-2xl w-[280px] pointer-events-auto z-[101] flex flex-col"
+              className="fixed bg-[#111326]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-2xl w-[280px] pointer-events-auto z-[101] flex flex-col tutorial-card"
               style={{
                 left: (() => {
                   const cardWidth = 280;
@@ -4899,7 +4899,7 @@ export default function DesktopCoachPortal() {
   };
 
   return (
-    <div className={`h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar ${showTutorial && tutorialStep === 2 ? 'pointer-events-none select-none' : ''}`}>
+    <div className={`h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar ${showTutorial && tutorialStep === 2 ? 'tutorial-mode-active' : ''}`}>
       {/* Warning banner for trials / low remaining duration */}
       {showCoachWarningBanner && (
         <div className="w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 bg-gradient-to-r from-[#0b0c16]/95 via-blue-950/20 to-[#0b0c16]/95 border-b border-blue-500/20 backdrop-blur-md text-gray-200">
