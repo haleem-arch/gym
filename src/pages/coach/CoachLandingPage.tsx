@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
+import LegalModal from '../../components/LegalModals';
 import { 
   Dumbbell, 
   Activity, 
@@ -24,6 +25,21 @@ export default function CoachLandingPage() {
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'cookies'>('privacy');
+
+  const openLegalModal = (type: 'privacy' | 'terms') => {
+    setLegalModalType(type);
+    setLegalModalOpen(true);
+  };
+
+  useEffect(() => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.replace('/client-login');
+    }
+  }, []);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -555,8 +571,20 @@ export default function CoachLandingPage() {
       <footer className="relative z-10 max-w-7xl mx-auto px-6 py-12 border-t border-white/[0.04] text-center md:flex md:justify-between md:items-center">
         <p className="text-[10px] text-gray-600">&copy; {new Date().getFullYear()} Life Gym Coaching Platform. All rights reserved.</p>
         <div className="flex justify-center gap-6 text-[10px] text-gray-500 font-bold mt-4 md:mt-0">
-          <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
+          <button 
+            type="button"
+            onClick={() => openLegalModal('privacy')} 
+            className="hover:text-white transition-colors bg-transparent border-none p-0 cursor-pointer font-bold"
+          >
+            Privacy Policy
+          </button>
+          <button 
+            type="button"
+            onClick={() => openLegalModal('terms')} 
+            className="hover:text-white transition-colors bg-transparent border-none p-0 cursor-pointer font-bold"
+          >
+            Terms of Use
+          </button>
           <a href="#" className="hover:text-white transition-colors">Contact Support</a>
         </div>
       </footer>
@@ -786,6 +814,16 @@ export default function CoachLandingPage() {
             </motion.div>
 
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {legalModalOpen && (
+          <LegalModal 
+            isOpen={legalModalOpen} 
+            onClose={() => setLegalModalOpen(false)} 
+            type={legalModalType} 
+          />
         )}
       </AnimatePresence>
 
