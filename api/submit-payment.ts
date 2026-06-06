@@ -2,9 +2,9 @@ import { createClient } from '@supabase/supabase-js'
 
 const globalProcess = (globalThis as any).process || { env: {} };
 
-const supabaseUrl = globalProcess.env.SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
-const supabaseAnonKey = globalProcess.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjAwMjYsImV4cCI6MjA5NDE5NjAyNn0.BO_dTDWp2-vV_JUUYsxVl2TaLFUdX2LsuA_8o8DYOkg';
-const supabaseServiceKey = globalProcess.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = globalProcess.env.SUPABASE_URL || globalProcess.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
+const supabaseAnonKey = globalProcess.env.SUPABASE_ANON_KEY || globalProcess.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjAwMjYsImV4cCI6MjA5NDE5NjAyNn0.BO_dTDWp2-vV_JUUYsxVl2TaLFUdX2LsuA_8o8DYOkg';
+const supabaseServiceKey = globalProcess.env.SUPABASE_SERVICE_ROLE_KEY || globalProcess.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 const TELEGRAM_BOT_TOKEN = globalProcess.env.TELEGRAM_BOT_TOKEN;
 const OWNER_ID = globalProcess.env.OWNER_ID || 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';

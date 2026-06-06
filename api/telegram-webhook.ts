@@ -2,9 +2,9 @@ import { createClient } from '@supabase/supabase-js'
 
 const globalProcess = (globalThis as any).process || { env: {} };
 
-const supabaseUrl = globalProcess.env.SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
-const supabaseServiceKey = globalProcess.env.SUPABASE_SERVICE_ROLE_KEY;
-const TELEGRAM_BOT_TOKEN = globalProcess.env.TELEGRAM_BOT_TOKEN;
+const supabaseUrl = globalProcess.env.SUPABASE_URL || globalProcess.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
+const supabaseServiceKey = globalProcess.env.SUPABASE_SERVICE_ROLE_KEY || globalProcess.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const TELEGRAM_BOT_TOKEN = globalProcess.env.TELEGRAM_BOT_TOKEN || globalProcess.env.VITE_TELEGRAM_BOT_TOKEN;
 
 const REJECTION_REASONS: Record<string, string> = {
   'invalid_screenshot': 'Invalid Screenshot / Proof of Transaction',
