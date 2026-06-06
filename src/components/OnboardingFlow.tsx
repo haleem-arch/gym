@@ -4,8 +4,7 @@ import { supabase } from '../lib/supabase';
 import { 
   User, Lock, Dumbbell, Apple, Check, 
   ChevronLeft, ChevronRight, Plus, Trash2, 
-  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X,
-  Users, UserPlus, Settings, CreditCard, ShieldCheck, AlertTriangle, Key, Save, Phone, RefreshCw, Activity, Database
+  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SplashOverlay } from './SplashOverlay';
@@ -130,13 +129,6 @@ export default function OnboardingFlow({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [loginRole, setLoginRole] = useState<'athlete' | 'coach'>(() => {
-    if (window.innerWidth >= 768) return 'coach';
-    return window.location.pathname.startsWith('/coach-portal') ? 'coach' : 'athlete';
-  });
-  const [showCoachGuide, setShowCoachGuide] = useState(false);
-  const [showTrialModal, setShowTrialModal] = useState(false);
-  const [guideStep, setGuideStep] = useState(0);
 
   // Flying Arrow States & Refs
   const [showArrow, setShowArrow] = useState(false);
@@ -479,33 +471,22 @@ export default function OnboardingFlow({
       const { data, error } = await supabase.auth.signInWithPassword({ email: finalEmail, password });
       if (error) throw error;
       if (data.session) {
-        const { data: profile, error: profileErr } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
+        if (window.location.pathname.startsWith('/coach-portal')) {
+          const { data: profile, error: profileErr } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
 
-        const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-
-        if (loginRole === 'coach') {
+          const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
           if (profileErr || (profile?.role !== 'coach' && data.session.user.id !== OWNER_ID)) {
             await supabase.auth.signOut();
             throw new Error('Access Denied. Only coaches can log in on this page.');
           }
-          localStorage.removeItem('is_new_signup');
-          toast.success('Welcome back, Coach!');
-          onSessionConfigured?.(data.session);
-          if (!window.location.pathname.startsWith('/coach-portal')) {
-            window.location.href = '/coach-portal';
-          }
-        } else {
-          localStorage.removeItem('is_new_signup');
-          toast.success('Welcome back!');
-          onSessionConfigured?.(data.session);
-          if (window.location.pathname.startsWith('/coach-portal')) {
-            window.location.href = '/';
-          }
         }
+        localStorage.removeItem('is_new_signup'); // ensure no onboarding triggered
+        toast.success('Welcome back!');
+        onSessionConfigured?.(data.session);
       }
     } catch (err: any) {
       console.error(err);
@@ -757,147 +738,15 @@ export default function OnboardingFlow({
   }).slice(0, 5); // display top 5 matches
 
   return (
-    <div className={`w-full ${step === 1 ? 'md:max-w-none md:flex md:flex-row md:h-screen md:overflow-hidden bg-[#05060b]' : 'sm:max-w-[390px]'} mx-auto min-h-[100dvh] bg-[#05060b] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0`}>
+    <div className="w-full sm:max-w-[390px] mx-auto min-h-[100dvh] bg-[#060610] relative overflow-y-auto overflow-x-hidden shadow-2xl sm:border-x sm:border-gray-800 flex flex-col justify-between text-gray-100 font-sans pb-8 sm:pb-0">
       
-      {/* LEFT SIDE PANEL (Desktop Only, only when step === 1) */}
-      {step === 1 && (
-        <div className="hidden md:flex md:flex-col md:flex-1 p-12 justify-between bg-[#05060b] relative overflow-hidden border-r border-gray-850/60 h-full select-none">
-          {/* Dynamic tech-grid background overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0" />
-          
-          {/* Background glowing orbs */}
-          <motion.div 
-            animate={{ scale: [1, 1.15, 1], x: [0, 20, 0], y: [0, -20, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/[0.08] rounded-full blur-[110px] pointer-events-none z-0" 
-          />
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], x: [0, -20, 0], y: [0, 20, 0] }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/[0.06] rounded-full blur-[110px] pointer-events-none z-0" 
-          />
-
-          {/* Top: Brand Header */}
-          <div className="flex items-center gap-2.5 relative z-10">
-            <BrandLogo className="w-9 h-9" />
-            <span className="font-black text-base tracking-widest uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              LIFE GYM
-            </span>
-          </div>
-
-          {/* Center Content */}
-          <div className="max-w-xl relative z-10 my-auto py-12 flex flex-col gap-8">
-            <div className="space-y-3">
-              <span className="text-[10px] font-black text-blue-500/80 uppercase tracking-widest block">
-                PREMIUM COACHING PLATFORM
-              </span>
-              <h1 className="text-4xl lg:text-5xl font-black text-white leading-tight uppercase tracking-tight">
-                Start Your <br />
-                <span className="bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
-                  Coaching Journey.
-                </span>
-              </h1>
-              <p className="text-xs text-gray-500 font-bold leading-relaxed max-w-md">
-                The all-in-one command center for elite fitness coaches. Manage athletes, deploy workouts, parse InBody scans — all from a single dark dashboard.
-              </p>
-            </div>
-
-            {/* Feature Cards Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#0c0e17]/40 backdrop-blur border border-gray-850/60 rounded-2xl p-4 flex items-center gap-3.5 hover:border-blue-500/30 transition-all hover:translate-x-1 cursor-pointer">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                  <Dumbbell size={16} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">Workout Builder</h3>
-                  <p className="text-[9px] text-gray-500 font-bold mt-0.5">AI-generated plans</p>
-                </div>
-              </div>
-
-              <div className="bg-[#0c0e17]/40 backdrop-blur border border-gray-850/60 rounded-2xl p-4 flex items-center gap-3.5 hover:border-blue-500/30 transition-all hover:translate-x-1 cursor-pointer">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                  <Scale size={16} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">InBody Parser</h3>
-                  <p className="text-[9px] text-gray-500 font-bold mt-0.5">Instant scan analysis</p>
-                </div>
-              </div>
-
-              <div className="bg-[#0c0e17]/40 backdrop-blur border border-gray-850/60 rounded-2xl p-4 flex items-center gap-3.5 hover:border-blue-500/30 transition-all hover:translate-x-1 cursor-pointer">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                  <User size={16} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">50+ Athletes</h3>
-                  <p className="text-[9px] text-gray-500 font-bold mt-0.5">One live dashboard</p>
-                </div>
-              </div>
-
-              <div className="bg-[#0c0e17]/40 backdrop-blur border border-gray-850/60 rounded-2xl p-4 flex items-center gap-3.5 hover:border-blue-500/30 transition-all hover:translate-x-1 cursor-pointer">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                  <Apple size={16} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">Diet Architect</h3>
-                  <p className="text-[9px] text-gray-500 font-bold mt-0.5">Macro tracking</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Stats */}
-          <div className="grid grid-cols-3 gap-6 border-t border-gray-850/60 pt-8 relative z-10">
-            <div>
-              <span className="text-2xl font-black text-white">50+</span>
-              <p className="text-[9px] text-gray-550 font-black uppercase tracking-widest mt-1">Athletes per coach</p>
-            </div>
-            <div>
-              <span className="text-2xl font-black text-white">15h</span>
-              <p className="text-[9px] text-gray-550 font-black uppercase tracking-widest mt-1">Saved per week</p>
-            </div>
-            <div>
-              <span className="text-2xl font-black text-white">1s</span>
-              <p className="text-[9px] text-gray-550 font-black uppercase tracking-widest mt-1">Real-time sync</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Dynamic tech-grid background overlay */}
-      <div className={`absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none ${step === 1 ? 'md:hidden' : ''}`} />
-
       {/* Dynamic brand blue ribbon glow background */}
-      <motion.div 
-        animate={{
-          scale: [1, 1.15, 1],
-          x: [0, 20, 0],
-          y: [0, -20, 0]
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className={`absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/[0.08] rounded-full blur-[110px] pointer-events-none ${step === 1 ? 'md:hidden' : ''}`}
-      />
-      <motion.div 
-        animate={{
-          scale: [1, 1.2, 1],
-          x: [0, -20, 0],
-          y: [0, 20, 0]
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className={`absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/[0.06] rounded-full blur-[110px] pointer-events-none ${step === 1 ? 'md:hidden' : ''}`}
-      />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header Bar */}
       <div 
-        className={`px-5 pb-5 flex items-center justify-between border-b border-gray-850 bg-[#05060b]/80 backdrop-blur-md z-30 sticky top-0 ${step === 1 ? 'md:hidden' : ''}`}
+        className="px-5 pb-5 flex items-center justify-between border-b border-gray-800 bg-[#060610]/80 backdrop-blur-md z-30 sticky top-0"
         style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))' }}
       >
         <div className="flex items-center gap-2">
@@ -962,7 +811,7 @@ export default function OnboardingFlow({
       )}
 
       {/* Animated Step Content */}
-      <div className={step === 1 ? "flex-1 md:flex-none md:w-[480px] lg:w-[520px] md:h-full bg-transparent md:bg-[#07080e] md:border-l md:border-gray-850/30 relative flex flex-col justify-between p-5 md:p-10 overflow-y-auto overflow-x-hidden z-20 shadow-2xl" : "flex-1 relative min-h-[380px] flex flex-col justify-start px-5 py-4 overflow-visible z-20"}>
+      <div className="flex-1 relative min-h-[380px] flex flex-col justify-start px-5 py-4 overflow-visible z-20">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -975,181 +824,124 @@ export default function OnboardingFlow({
             className="w-full flex flex-col gap-5"
           >
             
+            {/* ── STEP 1: SIGN IN ── */}
             {step === 1 && (
-              <div ref={cardRef} className="space-y-5 relative flex flex-col justify-between h-full min-h-0">
-                <div className="space-y-5">
-                  <div className="text-center">
-                    <LoginLogo className="mx-auto mb-3" errorMsg={errorMsg} />
-                    <h2 className="text-3xl font-extrabold text-white tracking-tight">
-                      Welcome Back
-                    </h2>
-                    <p className="text-xs text-gray-500 mt-1 font-semibold">
-                      {loginRole === 'coach' ? 'Authorized coaches & administrators only' : 'Sign in to continue your training journey'}
-                    </p>
-                  </div>
+              <div ref={cardRef} className="space-y-5 relative">
+                <div className="text-center">
+                  <LoginLogo className="mx-auto mb-3" errorMsg={errorMsg} />
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                    Welcome Back
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sign in to continue your training journey
+                  </p>
+                </div>
 
-                  {!currentUser && (
-                    <div className="bg-[#05050b]/60 border border-gray-850 p-1 rounded-2xl flex gap-1.5 w-full select-none relative z-10 md:hidden">
-                      <button
-                        type="button"
-                        onClick={() => setLoginRole('athlete')}
-                        className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-wider uppercase flex items-center justify-center gap-1.5 cursor-pointer relative z-10 transition-colors ${
-                          loginRole === 'athlete' ? 'text-white' : 'text-gray-500 hover:text-gray-300'
-                        }`}
-                      >
-                        <Dumbbell size={12} className="w-3.5 h-3.5" />
-                        Athlete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLoginRole('coach')}
-                        className={`flex-1 py-3 rounded-xl font-black text-[10px] tracking-wider uppercase flex items-center justify-center gap-1.5 cursor-pointer relative z-10 transition-colors ${
-                          loginRole === 'coach' ? 'text-white' : 'text-gray-500 hover:text-gray-300'
-                        }`}
-                      >
-                        <User size={12} className="w-3.5 h-3.5" />
-                        Coach
-                      </button>
-                      {/* Sliding background pill */}
-                      <div className="absolute inset-y-1 left-1 right-1 pointer-events-none">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-600/10"
-                          animate={{
-                            x: loginRole === 'athlete' ? '0%' : '100%',
-                            width: '50%',
-                          }}
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          style={{ width: 'calc(50% - 2px)' }}
-                        />
-                      </div>
+                {currentUser ? (
+                  <div className="bg-[#121620]/80 border border-gray-800 rounded-2xl p-5 text-center space-y-4 shadow-xl">
+                    <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                      <Check size={24} />
                     </div>
-                  )}
-
-                  {currentUser ? (
-                    <div className="bg-[#0d111a]/85 backdrop-blur-2xl border border-gray-850 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
-                      <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                        <Check size={24} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-white">Signed In Successfully</p>
-                        <p className="text-xs text-gray-400 mt-1">{currentUser.email}</p>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button 
-                          onClick={handleLogOut} 
-                          className="flex-1 py-2.5 rounded-xl border border-gray-850 text-gray-400 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                        >
-                          <LogOut size={13} /> Sign Out
-                        </button>
-                        <button 
-                          onClick={handleNext} 
-                          className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-blue-500/10"
-                        >
-                          Proceed <ArrowRight size={13} />
-                        </button>
-                      </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">Signed In Successfully</p>
+                      <p className="text-xs text-gray-400 mt-1">{currentUser.email}</p>
                     </div>
-                  ) : (
-                    /* ── SIGN IN FORM ── */
-                    <form onSubmit={handleSignInAuth} className="space-y-4 bg-[#0d111a]/85 backdrop-blur-2xl border border-gray-850 p-6 rounded-3xl shadow-2xl">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-1.5">Username</label>
-                        <div className="relative">
-                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                          <input 
-                            type="text" required value={email} onChange={e => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }} 
-                            placeholder={loginRole === 'coach' ? "e.g. coach_ahmed" : "e.g. ahmed"}
-                            className="w-full bg-[#05050b]/80 border border-gray-850 rounded-2xl py-3.5 pl-10 pr-4 text-white text-xs outline-none focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.08)] transition-all placeholder-gray-700 font-medium" 
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-1.5">Password</label>
-                        <div className="relative">
-                          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                          <input 
-                            type={showPassword ? "text" : "password"} required value={password} onChange={e => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} 
-                            placeholder="••••••••" 
-                            className="w-full bg-[#05050b]/80 border border-gray-850 rounded-2xl py-3.5 pl-10 pr-10 text-white text-xs outline-none focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.08)] transition-all placeholder-gray-700 font-medium" 
-                          />
-                          <button 
-                            type="button" onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
-                          >
-                            {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                        </div>
-                      </div>
-                      {/* Legal Checkbox */}
-                      <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1 pb-1 select-none relative">
-                        <input 
-                          type="checkbox" 
-                          id="legal-accept-onboarding"
-                          checked={legalAccepted} 
-                          onChange={e => {
-                            setLegalAccepted(e.target.checked);
-                            if (e.target.checked) {
-                              setShowArrow(false);
-                            }
-                          }} 
-                          className="mt-0.5 h-4 w-4 rounded border-gray-850 bg-[#05050b] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#0d111a] focus:ring-2 cursor-pointer transition-colors"
-                        />
-                        <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
-                          I agree to the{' '}
-                          <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
-                            Terms of Service
-                          </button>{' '}
-                          and{' '}
-                          <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
-                            Privacy Policy
-                          </button>
-                        </label>
-                      </div>
-
+                    <div className="flex gap-2 pt-2">
                       <button 
-                        ref={loginButtonRef}
-                        type="submit" disabled={loading}
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 active:scale-98 cursor-pointer mt-1"
+                        onClick={handleLogOut} 
+                        className="flex-1 py-2.5 rounded-xl border border-gray-800 text-gray-400 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
                       >
-                        {loading ? 'Signing In...' : 'Sign In'}
+                        <LogOut size={13} /> Sign Out
                       </button>
-                      {/* Hard reset cache button */}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if ('caches' in window) {
-                            const keys = await caches.keys();
-                            await Promise.all(keys.map(k => caches.delete(k)));
-                          }
-                          window.location.reload();
-                        }}
-                        className="w-full mt-2 py-2 text-[10px] text-gray-650 hover:text-gray-450 transition-colors flex items-center justify-center gap-1 cursor-pointer font-bold uppercase tracking-wider"
+                      <button 
+                        onClick={handleNext} 
+                        className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-blue-500/10"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                        Clear cache &amp; hard refresh
-                      </button>
-                    </form>
-                  )}
-
-                  {/* Start Now button for coaches (Only on desktop) */}
-                  {!currentUser && (
-                    <div className="hidden md:block pt-4 border-t border-gray-850/50 text-center mt-4 z-10 relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowCoachGuide(true)}
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-blue-600/10 hover:shadow-blue-500/20 active:scale-98 cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <span>START NOW</span>
-                        <ArrowRight size={13} />
+                        Proceed <ArrowRight size={13} />
                       </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  /* ── SIGN IN FORM ── */
+                  <form onSubmit={handleSignInAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Username</label>
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <input 
+                          type="text" required value={email} onChange={e => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }} 
+                          placeholder="e.g. ahmed" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <input 
+                          type={showPassword ? "text" : "password"} required value={password} onChange={e => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} 
+                          placeholder="••••••••" 
+                          className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
+                        />
+                        <button 
+                          type="button" onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
+                        >
+                          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                    {/* Legal Checkbox */}
+                    <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1.5 pb-1 select-none relative">
+                      <input 
+                        type="checkbox" 
+                        id="legal-accept-onboarding"
+                        checked={legalAccepted} 
+                        onChange={e => {
+                          setLegalAccepted(e.target.checked);
+                          if (e.target.checked) {
+                            setShowArrow(false);
+                          }
+                        }} 
+                        className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
+                      />
+                      <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
+                        I agree to the{' '}
+                        <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                          Terms of Service
+                        </button>{' '}
+                        and{' '}
+                        <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                          Privacy Policy
+                        </button>
+                      </label>
+                    </div>
 
-                {/* Brand Footer (Desktop only) */}
-                <div className="hidden md:block text-center pt-6 text-[9px] font-black uppercase tracking-widest text-gray-700 select-none mt-auto">
-                  LIFE GYM &copy; {new Date().getFullYear()}
-                </div>
+                    <button 
+                      ref={loginButtonRef}
+                      type="submit" disabled={loading}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer mt-1"
+                    >
+                      {loading ? 'Signing In...' : 'Sign In'}
+                    </button>
+                    {/* Hard reset cache button */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if ('caches' in window) {
+                          const keys = await caches.keys();
+                          await Promise.all(keys.map(k => caches.delete(k)));
+                        }
+                        window.location.reload();
+                      }}
+                      className="w-full mt-1 py-2 text-[10px] text-gray-600 hover:text-gray-400 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                      Clear cache &amp; hard refresh
+                    </button>
+                  </form>
+                )}
 
                 {/* Flying Arrow Overlay */}
                 <AnimatePresence>
@@ -1605,7 +1397,7 @@ export default function OnboardingFlow({
         hideText={true} 
       />
 
-{/* Render Legal Documents inside Modals */}
+      {/* Render Legal Documents inside Modals */}
       <AnimatePresence>
         {modalType && (
           <LegalModal
@@ -1613,760 +1405,6 @@ export default function OnboardingFlow({
             onClose={() => setModalType(null)}
             type={modalType}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Interactive Coach Guide Overlay - Step-by-Step Slider with HTML Website Previews */}
-      <AnimatePresence>
-        {showCoachGuide && (() => {
-          // Inner reusable mockup component for high-fidelity rendering
-          const BrowserPortalMockup = ({ activeTab, children }: { activeTab: string; children: React.ReactNode }) => {
-            return (
-              <div className="w-full bg-[#05060b] text-white flex flex-col h-full overflow-hidden border border-gray-850 rounded-2xl font-sans select-none shadow-2xl">
-                {/* Top Header Bar */}
-                <div className="bg-[#070710]/90 border-b border-gray-850 px-5 py-3 flex items-center justify-between shrink-0 select-none">
-                  <div className="flex items-center gap-2.5">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      viewBox="0 0 512 512" 
-                      className="w-7 h-7 object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.3)] select-none"
-                    >
-                      <g transform="translate(256 256) rotate(-45)">
-                        {/* Rod */}
-                        <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
-                        {/* Left weights */}
-                        <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
-                        <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-                        <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
-                        {/* Right weights */}
-                        <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
-                        <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-                        <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
-                      </g>
-                    </svg>
-                    <div className="flex flex-col text-left">
-                      <span className="font-black tracking-widest text-[11px] uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent leading-none">LIFE GYM</span>
-                      <span className="text-[7.5px] text-gray-500 font-mono leading-none mt-1">Desktop Coach Portal / Version 3.0</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex items-center gap-1.5 bg-gray-900/60 border border-gray-800 rounded-xl px-2.5 py-1 text-[9px] font-bold">
-                      <Database size={11} className="text-emerald-400" />
-                      <span className="text-gray-400">Database:</span>
-                      <span className="text-emerald-400 font-black">ONLINE</span>
-                    </div>
-                    <button className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg border border-emerald-900/40 bg-emerald-950/20 text-[9px] font-bold text-emerald-400 hover:text-white transition-all cursor-pointer">
-                      <RefreshCw size={10} className="text-emerald-400 animate-pulse" /> Sync Data
-                    </button>
-                    <button className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg border border-blue-900/40 bg-blue-955/20 text-[9px] font-bold text-blue-400 hover:text-white transition-all cursor-pointer">
-                      <RefreshCw size={10} /> Force Update
-                    </button>
-                    <button className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg border border-red-900/40 bg-red-955/20 text-[9px] font-bold text-red-400 hover:text-white transition-all cursor-pointer">
-                      <LogOut size={10} /> Log Out
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex-1 flex overflow-hidden">
-                  {/* Left Sidebar */}
-                  <div className="w-[190px] bg-[#070710]/40 border-r border-gray-850 p-3 flex flex-col justify-between shrink-0 select-none text-left">
-                    <div className="space-y-3">
-                      <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block px-3.5 mb-1.5">Main Navigation</span>
-                      <div className="space-y-0.5">
-                        {[
-                          { id: 'overview', label: 'Operational Overview', icon: <Activity size={13} /> },
-                          { id: 'directory', label: 'Athlete Directory', icon: <Users size={13} /> },
-                          { id: 'deploy', label: 'Deploy New Athlete', icon: <UserPlus size={13} /> },
-                          { id: 'control', label: 'Athlete Control', icon: <Settings size={13} /> },
-                          { id: 'subscriptions', label: 'Subscriptions', icon: <CreditCard size={13} /> },
-                          { id: 'profile', label: 'Profile Settings', icon: <User size={13} /> }
-                        ].map(item => {
-                          const isActive = activeTab === item.id;
-                          return (
-                            <div
-                              key={item.id}
-                              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all text-xs font-bold ${
-                                isActive 
-                                  ? 'bg-blue-600 border-transparent text-white font-black shadow-lg shadow-blue-500/10' 
-                                  : 'text-gray-400 hover:text-white hover:bg-gray-900/40'
-                              }`}
-                            >
-                              {item.icon}
-                              <span>{item.label}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2 border-t border-gray-900/20 text-center">
-                      <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">LIFE GYM</span>
-                    </div>
-                  </div>
-
-                  {/* Workspace Content Pane */}
-                  <div className="flex-1 bg-[#05060b] p-6 overflow-y-auto no-scrollbar">
-                    {children}
-                  </div>
-                </div>
-              </div>
-            );
-          };
-
-          const stepsData = [
-            {
-              badge: "Step 01",
-              title: "Deploy New Athlete",
-              desc: "Deploy a new athlete in a single structured flow. Input their credentials (name, username, password, phone), configure their initial workout splits and customized baseline exercises, set their daily calorie/macro targets and water volume, select their subscription package, and deploy their profile instantly.",
-              content: (
-                <BrowserPortalMockup activeTab="deploy">
-                  <div className="space-y-6 text-left max-w-3xl">
-                    <div className="flex justify-between items-center pb-3 border-b border-gray-850">
-                      <div>
-                        <h2 className="text-sm font-black uppercase tracking-wider text-white">Deploy Athlete Setup Wizard</h2>
-                        <p className="text-[10px] text-gray-500 mt-0.5 font-bold">Register a client account, initialize dynamic work/rest calorie targets, and deploy split templates.</p>
-                      </div>
-                      <span className="bg-blue-600/10 border border-blue-500/20 text-blue-400 text-[10px] px-2.5 py-0.5 rounded font-black uppercase tracking-wider">Step 1 of 4</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Identity Section */}
-                      <div className="bg-[#0b0c16] border border-gray-800 p-4 rounded-2xl space-y-3">
-                        <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-850 pb-1.5 flex items-center gap-1.5">
-                          <User size={12} /> 1. Identity &amp; Auth Credentials
-                        </h3>
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-550 block mb-0.5">Full Name</label>
-                              <input type="text" readOnly value="Sarah Ahmed" className="w-full bg-[#121624] border border-gray-850 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Username</label>
-                              <input type="text" readOnly value="sarah_fit" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Access Passcode</label>
-                              <input type="text" readOnly value="sarah@998" className="w-full bg-[#121624] border border-gray-850 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Client Code</label>
-                              <input type="text" readOnly value="#102" className="w-full bg-[#121624] border border-gray-850 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Phone Number</label>
-                              <input type="text" readOnly value="01128828954" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Sex</label>
-                              <div className="flex gap-1.5 mt-0.5">
-                                <span className="flex-1 text-center py-1 rounded bg-[#121624] border border-gray-850 text-[10px] text-gray-555 font-bold">Male</span>
-                                <span className="flex-1 text-center py-1 rounded bg-blue-600 text-white text-[10px] font-black">Female</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Targets Section */}
-                      <div className="bg-[#0b0c16] border border-gray-800 p-4 rounded-2xl space-y-3">
-                        <h3 className="text-xs font-black uppercase text-blue-400 border-b border-gray-850 pb-1.5 flex items-center gap-1.5">
-                          <Activity size={12} /> 2. Daily Diet &amp; Targets
-                        </h3>
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Target Calories</label>
-                              <input type="text" readOnly value="2,400 kcal" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                            <div>
-                              <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Water Volume</label>
-                              <input type="text" readOnly value="3.5 Liters" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none font-bold" />
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Macro Splits Targets</label>
-                            <div className="grid grid-cols-3 gap-2 mt-0.5">
-                              <div className="bg-[#121624] border border-gray-855 p-1.5 rounded-lg text-center">
-                                <span className="text-[8px] text-gray-500 font-bold block leading-none">PROTEIN</span>
-                                <span className="text-xs font-black text-emerald-450 mt-0.5 block">160g</span>
-                              </div>
-                              <div className="bg-[#121624] border border-gray-855 p-1.5 rounded-lg text-center">
-                                <span className="text-[8px] text-gray-500 font-bold block leading-none">CARBS</span>
-                                <span className="text-xs font-black text-amber-400 mt-0.5 block">240g</span>
-                              </div>
-                              <div className="bg-[#121624] border border-gray-855 p-1.5 rounded-lg text-center">
-                                <span className="text-[8px] text-gray-500 font-bold block leading-none">FAT</span>
-                                <span className="text-xs font-black text-purple-400 mt-0.5 block">70g</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-[8px] font-black uppercase text-gray-555 block mb-0.5">Initial Training Splits</label>
-                            <div className="flex gap-1.5 mt-1">
-                              {['Push', 'Pull', 'Legs'].map(sp => (
-                                <span key={sp} className="text-[10px] bg-blue-955/40 border border-blue-900/30 text-blue-450 px-2.5 py-0.5 rounded font-black">{sp}</span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#0b0c16] border border-gray-800 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-white">3. Membership Subscription Package</h4>
-                        <p className="text-[9px] text-gray-500 font-bold">Select how long this coach client account will remain active.</p>
-                      </div>
-                      <div className="flex gap-2">
-                        {['1 Month', '3 Months', '6 Months'].map((pkg, i) => (
-                          <div key={pkg} className={`px-3 py-1.5 rounded-xl border text-xs font-black cursor-pointer transition-colors ${i === 1 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10' : 'bg-[#121624] border-gray-855 text-gray-450 font-bold'}`}>
-                            {pkg}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-xs py-3 rounded-2xl uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/15 cursor-pointer transition-colors">
-                      <UserPlus size={14} /> Deploy Client &amp; Program
-                    </button>
-                  </div>
-                </BrowserPortalMockup>
-              )
-            },
-            {
-              badge: "Step 02",
-              title: "Operational Overview",
-              desc: "Monitor platform metrics and live status feeds in real time. Total system accounts, active coaches, and managed athletes are summarized instantly, while live feeds capture daily workout completions and calorie logging from your active athlete base.",
-              content: (
-                <BrowserPortalMockup activeTab="overview">
-                  <div className="space-y-6 text-left max-w-4xl">
-                    {/* Demographics Widgets Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="bg-[#0c1020] border border-gray-855 p-4 rounded-2xl flex flex-col justify-between h-[76px]">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 leading-none">Total System Accounts</span>
-                        <span className="text-2xl font-black text-white leading-none">12</span>
-                      </div>
-                      <div className="bg-[#0c1020] border border-gray-855 p-4 rounded-2xl flex flex-col justify-between h-[76px]">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 leading-none">Coaches Active</span>
-                        <span className="text-2xl font-black text-blue-400 leading-none">3</span>
-                      </div>
-                      <div className="bg-[#0c1020] border border-gray-855 p-4 rounded-2xl flex flex-col justify-between h-[76px]">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 leading-none">Managed Athletes</span>
-                        <span className="text-2xl font-black text-indigo-400 leading-none">6</span>
-                      </div>
-                      <div className="bg-[#0c1020] border border-gray-855 p-4 rounded-2xl flex flex-col justify-between h-[76px]">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 leading-none">System Status</span>
-                        <span className="text-lg font-black text-emerald-400 flex items-center gap-1.5 leading-none">
-                          <ShieldCheck size={16} /> SECURE
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Feed Activity Filter */}
-                    <div className="flex flex-col sm:flex-row justify-between bg-gradient-to-r from-blue-500/[0.03] to-indigo-500/[0.03] border border-gray-855 p-4 rounded-2xl items-start sm:items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black text-white uppercase tracking-wider">Feed Activity Filter</p>
-                        <p className="text-[9px] text-gray-500 mt-0.5 leading-normal font-bold">
-                          Toggle between monitoring all athlete activity across the platform or narrowing it down to your assigned clients.
-                        </p>
-                      </div>
-                      <button className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider border bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10 whitespace-nowrap cursor-pointer">
-                        All System Activity
-                      </button>
-                    </div>
-
-                    {/* Feeds Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* Workouts completed */}
-                      <div className="bg-[#0b0c16] border border-gray-800 rounded-2xl p-4 space-y-3">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5 border-b border-gray-850 pb-2">
-                          <Dumbbell size={12} /> Workouts Completed Feed
-                        </h3>
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 no-scrollbar text-xs">
-                          {[
-                            { name: "Lila Wael", code: "101", desc: "Completed a PUSH day", detail: "180 kg", date: "2026-06-05" },
-                            { name: "Sarah Ahmed", code: "102", desc: "Completed a LEGS day", detail: "150 kg", date: "2026-06-05" },
-                            { name: "Mohamed Yousry", code: "103", desc: "Completed a PULL day", detail: "170 kg", date: "2026-06-04" },
-                            { name: "Youssef Halim", code: "104", desc: "Completed a RUN day", detail: "Run", date: "2026-06-04" },
-                          ].map((w, idx) => (
-                            <div key={idx} className="bg-gray-900/40 border border-gray-855 p-2.5 rounded-xl flex justify-between items-center text-xs">
-                              <div>
-                                <p className="font-extrabold text-white flex items-center gap-1">
-                                  {w.name} <span className="text-[8px] bg-blue-955/60 border border-blue-800/40 text-blue-450 px-1.5 py-0.2 rounded font-black">#{w.code}</span>
-                                </p>
-                                <p className="text-[9px] text-gray-500 mt-0.5 font-bold">{w.desc}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-black text-gray-200 text-[10px]">{w.detail}</p>
-                                <span className="text-[8px] text-gray-500 font-mono block mt-0.5">{w.date}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Nutrition Intake */}
-                      <div className="bg-[#0b0c16] border border-gray-800 rounded-2xl p-4 space-y-3">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5 border-b border-gray-850 pb-2">
-                          <Apple size={12} /> Nutritional Intake Feed
-                        </h3>
-                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 no-scrollbar text-xs">
-                          {[
-                            { name: "Lila Wael", code: "101", desc: "Tracked daily totals", detail: "450 kcal / 23g P", date: "2026-06-05" },
-                            { name: "Sarah Ahmed", code: "102", desc: "Tracked daily totals", detail: "380 kcal / 22g P", date: "2026-06-05" },
-                            { name: "Mohamed Yousry", code: "103", desc: "Tracked daily totals", detail: "520 kcal / 35g P", date: "2026-06-04" },
-                            { name: "Youssef Halim", code: "104", desc: "Tracked daily totals", detail: "610 kcal / 40g P", date: "2026-06-04" },
-                          ].map((n, idx) => (
-                            <div key={idx} className="bg-gray-900/40 border border-gray-855 p-2.5 rounded-xl flex justify-between items-center text-xs">
-                              <div>
-                                <p className="font-extrabold text-white flex items-center gap-1">
-                                  {n.name} <span className="text-[8px] bg-blue-955/60 border border-blue-800/40 text-blue-450 px-1.5 py-0.2 rounded font-black">#{n.code}</span>
-                                </p>
-                                <p className="text-[9px] text-gray-500 mt-0.5 font-bold">{n.desc}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-black text-emerald-400 text-[10px]">{n.detail}</p>
-                                <span className="text-[8px] text-gray-500 font-mono block mt-0.5">{n.date}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </BrowserPortalMockup>
-              )
-            },
-            {
-              badge: "Step 03",
-              title: "Athlete Directory",
-              desc: "Access your client roster inside the Athlete Directory. Filter by your assigned athletes, lookup unique client codes (e.g. #101), review login passcodes, and monitor contact information. Direct toggle filters streamline directory searching.",
-              content: (
-                <BrowserPortalMockup activeTab="directory">
-                  <div className="space-y-5 text-left max-w-4xl">
-                    <div className="flex justify-between items-center gap-4 pb-2 border-b border-gray-850">
-                      <div>
-                        <h2 className="text-sm font-black uppercase tracking-wider text-white">Athlete Directory</h2>
-                        <p className="text-[10px] text-gray-500 mt-0.5 font-bold">Manage and filter all system coach clients in one location.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-[#0b0c16]/50 border border-gray-855 p-3.5 rounded-2xl">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                        <input type="text" readOnly value="Search athletes by name or code..." className="w-full bg-[#121624] border border-gray-855 rounded-xl py-2 pl-10 pr-4 text-xs text-gray-400 outline-none font-bold font-sans" />
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <input type="checkbox" id="mock-mine-dir-new" defaultChecked className="w-3.5 h-3.5 rounded border-gray-800 text-blue-600 focus:ring-0 cursor-pointer" />
-                        <label htmlFor="mock-mine-dir-new" className="text-[10px] text-gray-400 font-black uppercase select-none cursor-pointer">Filter Mine Only</label>
-                      </div>
-                      <button className="bg-blue-600 hover:bg-blue-500 text-white font-black text-xs px-4 py-2 rounded-xl uppercase tracking-wider shrink-0 cursor-pointer shadow-lg shadow-blue-500/10 transition-colors">+ Add Client</button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
-                      {[
-                        { name: "Lila Wael", code: "101", user: "@lila_wael", phone: "01062635950", passcode: "lila@554", status: "Active" },
-                        { name: "Sarah Ahmed", code: "102", user: "@sarah_fit", phone: "01128828954", passcode: "sarah@998", status: "Active" },
-                        { name: "Mohamed Yousry", code: "103", user: "@yousry_fit", phone: "01062635950", passcode: "yousry@776", status: "Suspended" },
-                        { name: "Youssef Halim", code: "104", user: "@youssef_halim", phone: "01283838290", passcode: "youssef@112", status: "Active" },
-                        { name: "Nour El-Din", code: "105", user: "@nour_fit", phone: "01552839201", passcode: "nour@345", status: "Active" },
-                        { name: "Aly Mahmoud", code: "106", user: "@aly_mahmoud", phone: "01002938475", passcode: "aly@789", status: "Active" }
-                      ].map((ath, idx) => (
-                        <div key={idx} className="bg-[#0b0c16] border border-gray-855 rounded-2xl p-3.5 flex justify-between items-center hover:border-gray-700 transition-colors cursor-pointer">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-blue-500/10 text-blue-300 rounded-full flex items-center justify-center font-black text-xs shrink-0">
-                              {ath.name.charAt(0)}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-black text-white text-xs truncate">{ath.name}</span>
-                                <span className="bg-blue-955 border border-blue-900/30 text-blue-450 px-1.5 py-0.2 rounded text-[9px] font-black shrink-0">#{ath.code}</span>
-                                {ath.status === "Suspended" && (
-                                  <span className="bg-amber-950/40 border border-amber-900/30 text-amber-400 px-1.5 py-0.2 rounded text-[8px] font-black uppercase shrink-0">Suspended</span>
-                                )}
-                              </div>
-                              <span className="text-gray-500 text-[10px] block truncate mt-0.5">{ath.user} · {ath.phone}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="text-right shrink-0">
-                            <span className="text-[8px] text-gray-500 block uppercase font-black">Passcode</span>
-                            <span className="font-mono font-black text-blue-400 text-xs">{ath.passcode}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </BrowserPortalMockup>
-              )
-            },
-            {
-              badge: "Step 04",
-              title: "Athlete Control Panel",
-              desc: "Unlock absolute control over individual athlete configurations. Manage subscription packages, temporarily suspend login profiles, clear or assign account passwords, and delete client records. Adjust daily splits, customize workout exercises, and tune macro ranges directly.",
-              content: (
-                <BrowserPortalMockup activeTab="control">
-                  <div className="space-y-5 text-left max-w-4xl">
-                    <div className="bg-[#0b0c16] border border-gray-855 rounded-2xl p-4 flex justify-between items-center">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-blue-500/10 text-blue-300 rounded-full flex items-center justify-center font-black text-sm shrink-0">S</div>
-                        <div className="min-w-0">
-                          <span className="font-black text-white text-sm block truncate">Sarah Ahmed</span>
-                          <span className="text-gray-550 text-[10px] block truncate mt-0.5 font-bold">Configure access, split plans, and macro targets</span>
-                        </div>
-                      </div>
-                      <span className="bg-emerald-950/30 border border-emerald-900/30 text-emerald-400 px-2.5 py-1 rounded text-[10px] font-black uppercase shrink-0">Active</span>
-                    </div>
-
-                    <div className="bg-[#070710]/60 border border-gray-855 p-1 rounded-xl flex gap-1">
-                      {['Overview', 'Diet targets', 'Training splits'].map((tb, idx) => (
-                        <span key={tb} className={`flex-1 text-center py-1.5 text-[9px] font-black uppercase rounded-lg transition-colors cursor-pointer ${idx === 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/10' : 'text-gray-400 hover:text-white'}`}>
-                          {tb}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Left: Exercise routine */}
-                      <div className="bg-[#0b0c16] border border-gray-800 p-4 rounded-2xl space-y-3">
-                        <span className="text-[10px] font-black text-gray-550 uppercase tracking-wider block">Training Split (Push split)</span>
-                        <div className="space-y-2 text-xs">
-                          <div className="bg-gray-900/60 p-3 rounded-xl flex justify-between items-center text-gray-300 border border-gray-850/30">
-                            <span className="font-bold truncate">1. Incline DB Bench Press</span>
-                            <span className="text-blue-400 font-mono font-black shrink-0 ml-1">3 sets</span>
-                          </div>
-                          <div className="bg-gray-900/60 p-3 rounded-xl flex justify-between items-center text-gray-300 border border-gray-850/30">
-                            <span className="font-bold truncate">2. DB Shoulder Press</span>
-                            <span className="text-blue-400 font-mono font-black shrink-0 ml-1">3 sets</span>
-                          </div>
-                          <div className="bg-gray-900/60 p-3 rounded-xl flex justify-between items-center text-gray-300 border border-gray-850/30">
-                            <span className="font-bold truncate">3. Lateral Raises</span>
-                            <span className="text-blue-400 font-mono font-black shrink-0 ml-1">3 sets</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: Actions */}
-                      <div className="bg-[#0b0c16] border border-gray-800 p-4 rounded-2xl flex flex-col justify-between gap-3 min-h-[180px]">
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button className="bg-amber-600 hover:bg-amber-500 text-white font-black text-[10px] py-2 rounded-xl uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-lg shadow-amber-500/10">
-                            <AlertTriangle size={11} /> Suspend
-                          </button>
-                          <button className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] py-2 rounded-xl uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-lg shadow-blue-500/10">
-                            <CreditCard size={11} /> Upgrade
-                          </button>
-                        </div>
-                        <button className="w-full bg-[#121624] border border-gray-855 hover:border-gray-700 text-white font-black text-[10px] py-2.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-all">
-                          <Key size={11} /> Set Password
-                        </button>
-                        <button className="w-full bg-red-950/20 border border-red-900/30 hover:bg-red-900/20 text-red-400 font-black text-[10px] py-2.5 rounded-xl uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-all">
-                          <Trash2 size={11} /> Delete Client
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </BrowserPortalMockup>
-              )
-            },
-            {
-              badge: "Step 05",
-              title: "Subscriptions Manager",
-              desc: "Supervise billing and subscription cycles in one centralized location. The Subscriptions panel lists package details, subscription start/end timestamps, and computes a live countdown of days remaining. Active, Expired, and Suspended tags are color-coded for quick visual action.",
-              content: (
-                <BrowserPortalMockup activeTab="subscriptions">
-                  <div className="space-y-5 text-left max-w-4xl">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-855">
-                      <div>
-                        <h2 className="text-sm font-black uppercase tracking-wider text-white">Subscriptions Manager</h2>
-                        <p className="text-[10px] text-gray-500 mt-0.5 font-bold">Supervise client package billing cycles and countdowns.</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#0b0c16] border border-gray-800 p-4 rounded-2xl space-y-2">
-                      <div className="grid grid-cols-4 text-[9px] font-black text-gray-500 uppercase tracking-widest px-2.5 pb-2 border-b border-gray-900/50">
-                        <span>Athlete</span>
-                        <span>Package</span>
-                        <span>Billing Status</span>
-                        <span className="text-right">Actions</span>
-                      </div>
-
-                      <div className="space-y-1 max-h-[180px] overflow-y-auto no-scrollbar text-xs">
-                        {[
-                          { name: "Lila Wael", code: "101", period: "1 Month", left: "12 Days Left", status: "Active" },
-                          { name: "Sarah Ahmed", code: "102", period: "3 Months", left: "64 Days Left", status: "Active" },
-                          { name: "Mohamed Yousry", code: "103", period: "2 Weeks", left: "EXPIRED (SUSPENDED)", status: "Expired" },
-                          { name: "Youssef Halim", code: "104", period: "1 Month", left: "28 Days Left", status: "Active" },
-                          { name: "Nour El-Din", code: "105", period: "1 Month", left: "15 Days Left", status: "Active" },
-                          { name: "Aly Mahmoud", code: "106", period: "6 Months", left: "154 Days Left", status: "Active" }
-                        ].map((sub, idx) => (
-                          <div key={idx} className="grid grid-cols-4 items-center bg-[#121624]/30 border border-gray-855/60 p-3 rounded-xl px-2.5 font-bold hover:border-gray-700 transition-colors">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-white truncate">{sub.name}</span>
-                              <span className="text-[9px] bg-blue-955/60 border border-blue-800/40 text-blue-455 px-1.5 py-0.2 rounded font-black shrink-0">#{sub.code}</span>
-                            </div>
-                            <span className="text-gray-450">{sub.period}</span>
-                            <span className={sub.status === "Expired" ? "text-red-400 font-black font-mono text-[10px]" : "text-emerald-450 font-black font-mono text-[10px]"}>
-                              {sub.left}
-                            </span>
-                            <div className="flex justify-end">
-                              <button className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3.5 py-1.5 rounded-lg font-black cursor-pointer shadow-lg shadow-blue-500/10 leading-none transition-colors">Extend</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </BrowserPortalMockup>
-              )
-            },
-            {
-              badge: "Step 06",
-              title: "Profile Settings",
-              desc: "Manage your own credentials and support routing settings. Set your coaching display name, modify your login email address, manage portal authorization passcodes (with standard mask toggling), and set your WhatsApp phone number to enable instant notifications.",
-              content: (
-                <BrowserPortalMockup activeTab="profile">
-                  <div className="space-y-5 text-left max-w-4xl">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-855">
-                      <div>
-                        <h2 className="text-sm font-black uppercase tracking-wider text-white">Profile Settings</h2>
-                        <p className="text-[10px] text-gray-500 mt-0.5 font-bold">Manage your own coach display information and credentials.</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#0b0c16] border border-gray-800 rounded-2xl p-5 space-y-4 max-w-lg mx-auto">
-                      <div className="flex items-center gap-3.5 pb-3 border-b border-gray-855/60">
-                        <div className="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-black text-sm shrink-0">C</div>
-                        <div>
-                          <span className="font-black text-white text-sm block">Coach Ahmed</span>
-                          <span className="text-gray-500 text-[10px] block mt-0.5">Coach Portal Account Settings</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-500 block uppercase tracking-wider">Coach Name</label>
-                          <input type="text" readOnly value="Coach Ahmed" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-3 py-2 text-xs text-white outline-none font-bold" />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-550 block uppercase tracking-wider">Email Address</label>
-                          <input type="text" readOnly value="ahmed@stride.fit" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-3 py-2 text-xs text-white outline-none font-bold" />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-550 block uppercase tracking-wider">Passcode</label>
-                          <div className="relative">
-                            <input type="password" readOnly value="ahmed@portal" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-3 py-2 pr-10 text-xs text-white outline-none font-mono" />
-                            <Eye className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-550 w-4 h-4 cursor-pointer" />
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-550 block uppercase tracking-wider">WhatsApp Contact</label>
-                          <div className="relative">
-                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                            <input type="text" readOnly value="+201128828954" className="w-full bg-[#121624] border border-gray-855 rounded-xl px-3 py-2 pl-10 text-xs text-white outline-none font-bold" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-xs py-3 rounded-2xl uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/10 mt-2 cursor-pointer transition-colors">
-                        <Save size={13} /> Save Profile Settings
-                      </button>
-                    </div>
-                  </div>
-                </BrowserPortalMockup>
-              )
-            }
-          ];
-
-          return (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-[#05060b]/98 backdrop-blur-xl z-50 overflow-hidden flex flex-col p-6 md:p-10 font-sans text-gray-250"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-gray-850 pb-5 shrink-0 w-full max-w-5xl mx-auto">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                    <Dumbbell size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-black text-white uppercase tracking-widest">Life Gym Coach Guide</h2>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Interactive Setup &amp; Onboarding Tour</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => { setShowCoachGuide(false); setGuideStep(0); }}
-                  className="p-2.5 hover:bg-gray-800 rounded-xl transition-colors cursor-pointer text-gray-400 hover:text-white active:scale-95"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Slider Content Panel - Widescreen column layout */}
-              <div className="flex-1 flex flex-col justify-start items-center mt-4 overflow-y-auto no-scrollbar relative w-full px-4">
-                <div className="w-full max-w-5xl flex flex-col gap-6 items-center relative h-full">
-                  
-                  {/* Top: Zoomed-out Browser View Mockup (Way bigger, Same sizes, Same fonts, Same website look) */}
-                  <div className="w-full flex items-center justify-center shrink-0">
-                    <div className="w-full transition-all duration-300 hover:scale-[1.005] relative">
-                      {/* Browser Shell Mockup */}
-                      <div className="w-full bg-[#07080e] border border-gray-855 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[500px] md:h-[560px] select-none text-left">
-                        {/* Browser Header */}
-                        <div className="bg-[#0b0c16] border-b border-gray-850 px-4 py-3 flex items-center justify-between shrink-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
-                            <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
-                            <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
-                          </div>
-                          <div className="bg-[#05060b] border border-gray-855/60 px-4 py-1.5 rounded-xl text-[10px] text-gray-500 font-mono w-64 text-center truncate font-bold">
-                            https://stride.fit/coach-portal
-                          </div>
-                          <div className="w-10" />
-                        </div>
-                        {/* Browser Body */}
-                        <div className="flex-1 bg-[#05060b] overflow-hidden relative text-gray-250 no-scrollbar">
-                          <AnimatePresence mode="wait">
-                            <motion.div
-                              key={guideStep}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                              className="w-full h-full"
-                            >
-                              {stepsData[guideStep].content}
-                            </motion.div>
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom: Description Text (Under the photo/mockup) */}
-                  <div className="w-full max-w-3xl space-y-2.5 text-center pb-6 shrink-0">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3.5 py-1 rounded-full leading-none">
-                        {stepsData[guideStep].badge}
-                      </span>
-                      <h3 className="text-xl font-black text-white uppercase tracking-tight leading-none">
-                        {stepsData[guideStep].title}
-                      </h3>
-                    </div>
-                    <p className="text-xs md:text-sm text-gray-400 leading-relaxed font-semibold max-w-2xl mx-auto">
-                      {stepsData[guideStep].desc}
-                    </p>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Navigation controls at the bottom */}
-              <div className="border-t border-gray-850 pt-5 mt-6 flex justify-between items-center shrink-0 w-full max-w-5xl mx-auto">
-                <div className="flex gap-1.5">
-                  {stepsData.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setGuideStep(idx)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all ${
-                        guideStep === idx ? 'bg-blue-500 w-5' : 'bg-gray-800 hover:bg-gray-700'
-                      }`}
-                    />
-                  ))}
-                </div>
-                
-                <div className="flex gap-2.5">
-                  {guideStep > 0 && (
-                    <button
-                      onClick={() => setGuideStep(prev => prev - 1)}
-                      className="bg-gray-900 border border-gray-800 hover:border-gray-750 text-gray-300 hover:text-white px-5 py-3 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-95 cursor-pointer font-bold"
-                    >
-                      Previous Step
-                    </button>
-                  )}
-
-                  {guideStep < stepsData.length - 1 ? (
-                    <button
-                      onClick={() => setGuideStep(prev => prev + 1)}
-                      className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1 font-bold"
-                    >
-                      <span>Next Step</span>
-                      <ArrowRight size={13} />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setShowTrialModal(true)}
-                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-wider uppercase transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 font-bold"
-                    >
-                      <span>START FREE TRIAL</span>
-                      <Check size={14} strokeWidth={2.5} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })()}
-      </AnimatePresence>
-
-      {/* Trial Activation Success Modal */}
-      <AnimatePresence>
-        {showTrialModal && (
-          <div className="fixed inset-0 bg-[#020204]/90 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#0b0c16] border border-gray-850 w-full max-w-md rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl text-center"
-            >
-              <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                <Check size={28} strokeWidth={3} />
-              </div>
-              <div className="space-y-2">
-                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block bg-emerald-950/30 border border-emerald-900/30 px-3 py-1 rounded-full w-max mx-auto">
-                  Trial Initiated
-                </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                  TRIAL ACTIVATED!
-                </h3>
-                <p className="text-xs text-gray-400 leading-relaxed font-bold">
-                  Your 14-day free trial has been successfully registered. Please contact the administrator via WhatsApp to receive your official coach portal login credentials.
-                </p>
-              </div>
-              <div className="space-y-2.5 pt-2">
-                <a
-                  href="https://wa.me/201128828954?text=Hello%20Haleem,%20I%20just%20started%20my%20Life%20Gym%20Coach%20free%20trial.%20Could%20I%20get%20my%20login%20credentials?"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-4 rounded-2xl font-black text-xs tracking-wider uppercase transition-all shadow-lg shadow-emerald-500/10 active:scale-98 cursor-pointer flex items-center justify-center gap-2 font-bold"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.003 5.324 5.328 0 11.832 0c3.15.001 6.111 1.229 8.339 3.458 2.228 2.229 3.454 5.192 3.453 8.342-.003 6.507-5.327 11.832-11.83 11.832-2.002-.001-3.97-.512-5.713-1.488L0 24zm6.758-2.917c1.673.993 3.321 1.482 5.068 1.483 5.4 0 9.792-4.393 9.795-9.797.001-2.617-1.018-5.079-2.87-6.932C16.896 3.985 14.432 2.965 11.83 2.964c-5.4 0-9.791 4.394-9.794 9.798 0 1.859.5 3.674 1.448 5.252L2.5 21.5l3.39-1.096c1.6.868 3.1 1.353 4.92 1.353v.001zm11.96-7.387c-.266-.134-1.57-.775-1.814-.864-.243-.089-.42-.134-.596.134-.177.266-.685.864-.84 1.041-.154.177-.31.199-.576.066-.266-.134-1.12-.413-2.133-1.317-.788-.703-1.32-1.572-1.474-1.838-.155-.266-.017-.41.117-.543.12-.12.266-.31.399-.465.133-.155.177-.266.266-.443.089-.177.044-.332-.022-.465-.067-.134-.596-1.439-.817-1.97-.215-.518-.453-.448-.596-.456-.134-.008-.288-.01-.443-.01-.155 0-.409.058-.62.288-.21.23-.807.788-.807 1.921s.823 2.23 1.054 2.54c.23.31 1.62 2.474 3.924 3.468.548.236 1.066.388 1.431.504.606.192 1.157.165 1.593.1.486-.072 1.57-.642 1.792-1.261.222-.619.222-1.151.155-1.261-.067-.11-.243-.199-.51-.332z"/></svg>
-                  <span>WhatsApp Admin</span>
-                </a>
-                <button
-                  onClick={() => {
-                    setShowTrialModal(false);
-                    setShowCoachGuide(false);
-                    setGuideStep(0);
-                  }}
-                  className="w-full bg-gray-900 border border-gray-850 hover:border-gray-750 text-gray-400 hover:text-white py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase transition-colors cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </div>
         )}
       </AnimatePresence>
     </div>
