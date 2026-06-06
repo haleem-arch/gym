@@ -266,6 +266,7 @@ export default function CoachLandingPage() {
       }
 
       setShowAuthModal(false);
+      navigate(window.innerWidth < 1024 ? '/coach/dashboard' : '/coach-portal');
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to sign in.');
     } finally {
@@ -295,6 +296,7 @@ export default function CoachLandingPage() {
 
     // Set signup in progress flag to bypass App.tsx signout race condition
     localStorage.setItem('signup_in_progress', 'true');
+    window.dispatchEvent(new Event('signup_status_changed'));
 
     try {
       // 1. Start background database registration
@@ -360,6 +362,7 @@ export default function CoachLandingPage() {
         // Clean signup flag so App knows they are fully ready
         localStorage.setItem('is_new_signup', 'false');
         localStorage.removeItem('signup_in_progress');
+        window.dispatchEvent(new Event('signup_status_changed'));
       })();
 
       // 2. Animate progress bar smoothly in parallel
@@ -403,10 +406,11 @@ export default function CoachLandingPage() {
       setShowCreationLoader(false);
 
       // Redirect to log them in automatically
-      navigate('/coach-portal');
+      navigate(window.innerWidth < 1024 ? '/coach/dashboard' : '/coach-portal');
     } catch (err: any) {
       setShowCreationLoader(false);
       localStorage.removeItem('signup_in_progress');
+      window.dispatchEvent(new Event('signup_status_changed'));
       setErrorMessage(err.message || 'Failed to register account.');
     } finally {
       setLoading(false);

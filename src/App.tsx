@@ -247,6 +247,7 @@ const AppContent = () => {
 
 function App() {
   const [session, setSession] = useState<any>(undefined);
+  const [signupInProgress, setSignupInProgress] = useState(() => localStorage.getItem('signup_in_progress') === 'true');
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | undefined>(undefined);
   const [isSuspended, setIsSuspended] = useState<boolean>(false);
   const [suspensionReason, setSuspensionReason] = useState<string | null>(null);
@@ -277,6 +278,16 @@ function App() {
 
     return () => {
       subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleSignupStatusChange = () => {
+      setSignupInProgress(localStorage.getItem('signup_in_progress') === 'true');
+    };
+    window.addEventListener('signup_status_changed', handleSignupStatusChange);
+    return () => {
+      window.removeEventListener('signup_status_changed', handleSignupStatusChange);
     };
   }, []);
 
@@ -414,7 +425,7 @@ function App() {
     };
 
     checkOnboarding();
-  }, [session]);
+  }, [session, signupInProgress]);
 
   // Listen to real-time updates to the profile (specifically for deactivation toggling)
   useEffect(() => {
@@ -499,7 +510,9 @@ function App() {
     window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
   };
 
-  if (session === undefined || (session !== null && needsOnboarding === undefined)) {
+  const effectiveSession = signupInProgress ? null : session;
+
+  if (effectiveSession === undefined || (effectiveSession !== null && needsOnboarding === undefined)) {
     return <DumbbellLoader fullScreen size={140} />;
   }
 
@@ -518,7 +531,7 @@ function App() {
         <Route path="/hr" element={<HRDashboard />} />
 
         {/* Guest Routes (when NOT logged in) */}
-        {!session ? (
+        {!effectiveSession ? (
           <>
             <Route path="/" element={<CoachLandingPage />} />
             <Route path="/login" element={

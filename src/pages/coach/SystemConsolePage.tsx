@@ -895,15 +895,17 @@ export default function SystemConsolePage() {
                 {/* Suspend / Reactivate */}
                 {selectedUser.targets?.is_deactivated === true ? (
                   <button
+                    disabled={isDeletingUser}
                     onClick={() => handleUpdateUserStatus(selectedUser.id, { is_deactivated: false })}
-                    className="flex items-center justify-center gap-1 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                    className="flex items-center justify-center gap-1 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <UserCheck size={12} /> Activate User
                   </button>
                 ) : (
                   <button
+                    disabled={isDeletingUser}
                     onClick={() => handleUpdateUserStatus(selectedUser.id, { is_deactivated: true })}
-                    className="flex items-center justify-center gap-1 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                    className="flex items-center justify-center gap-1 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <UserX size={12} /> Suspend User
                   </button>
@@ -912,15 +914,17 @@ export default function SystemConsolePage() {
                 {/* Change Role */}
                 {selectedUser.role === 'coach' ? (
                   <button
+                    disabled={isDeletingUser}
                     onClick={() => handleUpdateUserStatus(selectedUser.id, { role: 'client' })}
-                    className="flex items-center justify-center gap-1 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 text-violet-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                    className="flex items-center justify-center gap-1 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 text-violet-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Shield size={12} /> Make Client
                   </button>
                 ) : (
                   <button
+                    disabled={isDeletingUser}
                     onClick={() => handleUpdateUserStatus(selectedUser.id, { role: 'coach' })}
-                    className="flex items-center justify-center gap-1 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer"
+                    className="flex items-center justify-center gap-1 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 font-bold py-3.5 rounded-xl text-[10px] tracking-wide uppercase transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Shield size={12} /> Make Coach
                   </button>

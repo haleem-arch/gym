@@ -410,6 +410,7 @@ export default function DesktopCoachPortal() {
   const [coachSearchQuery, setCoachSearchQuery] = useState('');
   const [reassignCoachTargetId, setReassignCoachTargetId] = useState<Record<string, string>>({});
   const [updatingCoachStatus, setUpdatingCoachStatus] = useState(false);
+  const [isDeletingCoach, setIsDeletingCoach] = useState(false);
   const [isRegisteringNewCoach, setIsRegisteringNewCoach] = useState(false);
   const [newCoachName, setNewCoachName] = useState('');
   const [newCoachEmail, setNewCoachEmail] = useState('');
@@ -3822,6 +3823,14 @@ export default function DesktopCoachPortal() {
     );
   }
 
+  if (isDeletingCoach) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200">
+        <DumbbellLoader label="Deleting coach and all assigned clients. Please wait..." size={120} />
+      </div>
+    );
+  }
+
   if (isNotCoach) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#05050b] text-gray-200 text-center p-6 font-bold">
@@ -4944,7 +4953,12 @@ export default function DesktopCoachPortal() {
 
               <button
                 type="button"
-                onClick={handleExitTutorial}
+                onClick={() => {
+                  if (coachUserId) {
+                    localStorage.setItem(`lifegym_tutorial_completed_${coachUserId}`, 'true');
+                  }
+                  handleExitTutorial();
+                }}
                 className="text-right text-[8px] text-gray-500 hover:text-red-400 mt-2 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer self-end"
               >
                 Skip Tutorial
@@ -5100,10 +5114,10 @@ export default function DesktopCoachPortal() {
               setSelectedClientProfile(null);
               toast.success("Tutorial mode activated! Roster pre-filled with mock athletes.");
             }}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-purple-900/40 hover:border-purple-600 bg-purple-950/20 text-[10px] font-bold text-purple-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl border border-violet-500/30 hover:border-violet-400/60 bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-fuchsia-600/10 hover:from-violet-600/20 hover:to-fuchsia-600/20 text-[10px] font-black uppercase tracking-wider text-violet-400 hover:text-white transition-all shadow-[0_0_12px_rgba(139,92,246,0.1)] hover:shadow-[0_0_18px_rgba(139,92,246,0.25)] active:scale-95 cursor-pointer group"
             title="Launch interactive simulated onboarding tutorial"
           >
-            <Dumbbell size={11} className="text-purple-400" /> Tutorial
+            <Sparkles size={11} className="text-violet-400 group-hover:rotate-12 transition-transform duration-300" /> Guided Tour
           </button>
 
           <button 
@@ -10755,7 +10769,7 @@ export default function DesktopCoachPortal() {
                           }
                         }
                       }}
-                      disabled={updatingCoachStatus}
+                      disabled={updatingCoachStatus || isDeletingCoach}
                       className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
                         tg.is_deactivated === true 
                           ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white' 
@@ -10776,6 +10790,7 @@ export default function DesktopCoachPortal() {
                     </p>
                     <button
                       type="button"
+                      disabled={isDeletingCoach}
                       onClick={async () => {
                         const name = currentCoach.display_name || 'this coach';
                         const conf = window.prompt(`Type "${name}" to confirm complete coach account deletion (all of this coach's clients will be deleted too):`);
@@ -10784,6 +10799,7 @@ export default function DesktopCoachPortal() {
                           return;
                         }
 
+                        setIsDeletingCoach(true);
                         const toastId = toast.loading('Deleting coach and all clients...');
                         try {
                           // 1. Fetch all client IDs belonging to this coach
@@ -10872,11 +10888,13 @@ export default function DesktopCoachPortal() {
                         } catch (err: any) {
                           console.error(err);
                           toast.error('Deletion failed: ' + err.message, { id: toastId });
+                        } finally {
+                          setIsDeletingCoach(false);
                         }
                       }}
-                      className="w-full bg-red-650 hover:bg-red-600 text-white font-black py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-lg shadow-red-500/5"
+                      className="w-full bg-red-650 hover:bg-red-600 text-white font-black py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-lg shadow-red-500/5 disabled:opacity-50"
                     >
-                      <Trash2 size={13} /> Delete Coach Account
+                      <Trash2 size={13} /> {isDeletingCoach ? 'Deleting...' : 'Delete Coach Account'}
                     </button>
                   </div>
                 )}
