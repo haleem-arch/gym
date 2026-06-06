@@ -7353,53 +7353,50 @@ export default function DesktopCoachPortal() {
 
             // Filtering
             const filteredLogs = allLogs.filter(log => {
-              // 1. Search Query
-              const matchesSearch = 
+              const matchQuery = !financialsSearchQuery ||
                 log.coachName.toLowerCase().includes(financialsSearchQuery.toLowerCase()) ||
                 log.coachEmail.toLowerCase().includes(financialsSearchQuery.toLowerCase()) ||
-                log.details.toLowerCase().includes(financialsSearchQuery.toLowerCase());
+                log.amount.toLowerCase().includes(financialsSearchQuery.toLowerCase()) ||
+                log.duration.toLowerCase().includes(financialsSearchQuery.toLowerCase()) ||
+                (log.details && log.details.toLowerCase().includes(financialsSearchQuery.toLowerCase()));
                 
-              // 2. Status Filter
-              const matchesStatus = 
-                financialsStatusFilter === 'all' || 
-                log.status === financialsStatusFilter;
-                
-              return matchesSearch && matchesStatus;
+              const matchStatus = financialsStatusFilter === 'all' || log.status === financialsStatusFilter;
+              return matchQuery && matchStatus;
             });
-
-            // Pending review list specifically for the top card
+            
             const pendingReviewList = allLogs.filter(l => l.status === 'pending');
 
             return (
-              <div className="space-y-8 animate-fade-in text-zinc-300 font-sans text-xs">
+              <div className="space-y-8 animate-fade-in text-gray-300 font-sans text-xs">
                 
-                {/* 1. Minimalist Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-900 pb-6">
+                {/* 1. Sleek Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-900/60 pb-6">
                   <div>
-                    <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                    <h2 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <CreditCard className="text-blue-400" size={16} />
                       Financial Logs &amp; Subscriptions
                     </h2>
-                    <p className="text-[11px] text-zinc-500 mt-1">Audit trail, transaction verification, and rate settings</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Audit trail, transaction verification, and rate settings</p>
                   </div>
-                  <div className="bg-zinc-950 px-3 py-1.5 border border-zinc-900 rounded-lg text-[9px] text-zinc-400 font-medium uppercase tracking-wider">
-                    Audit Mode
+                  <div className="bg-[#0c1020]/80 px-3 py-1.5 border border-slate-850 rounded-xl text-[9px] text-blue-400 font-black uppercase tracking-widest">
+                    Portal Audit Mode
                   </div>
                 </div>
 
                 {/* 2. Sleek Stats Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   {[
-                    { label: 'Total Revenue', value: `${totalRevenue.toLocaleString()} EGP`, icon: <DollarSign size={14} className="text-zinc-400" /> },
-                    { label: 'Approved Renewals', value: approvedCount, icon: <TrendingUp size={14} className="text-zinc-400" /> },
-                    { label: 'Awaiting Review', value: pendingCount, icon: <Clock size={14} className="text-zinc-400" />, highlight: pendingCount > 0 },
-                    { label: 'Plan Rejections', value: rejectedCount, icon: <AlertTriangle size={14} className="text-zinc-400" /> }
+                    { label: 'Total Revenue', value: `${totalRevenue.toLocaleString()} EGP`, icon: <DollarSign size={14} className="text-blue-400" />, border: 'border-blue-900/20', bg: 'bg-[#0b0c16]/90' },
+                    { label: 'Approved Renewals', value: approvedCount, icon: <TrendingUp size={14} className="text-emerald-450" />, border: 'border-slate-850', bg: 'bg-[#0c1020]/50' },
+                    { label: 'Awaiting Review', value: pendingCount, icon: <Clock size={14} className="text-amber-450 animate-pulse" />, border: 'border-slate-850', bg: 'bg-[#0c1020]/50', highlight: pendingCount > 0 },
+                    { label: 'Plan Rejections', value: rejectedCount, icon: <AlertTriangle size={14} className="text-red-450" />, border: 'border-slate-850', bg: 'bg-[#0c1020]/50' }
                   ].map((stat, idx) => (
-                    <div key={idx} className="p-6 bg-zinc-950/40 border border-zinc-900 rounded-2xl flex flex-col gap-1 shadow-sm">
-                      <div className="flex justify-between items-center text-zinc-500">
-                        <span className="text-[10px] font-medium uppercase tracking-wider">{stat.label}</span>
+                    <div key={idx} className={`p-6 ${stat.bg} border ${stat.border} rounded-2xl flex flex-col gap-1 shadow-md relative overflow-hidden`}>
+                      <div className="flex justify-between items-center text-slate-500">
+                        <span className="text-[9px] font-black uppercase tracking-widest">{stat.label}</span>
                         {stat.icon}
                       </div>
-                      <span className={`text-2xl font-bold mt-2 font-mono tracking-tight ${stat.highlight ? 'text-amber-500' : 'text-white'}`}>
+                      <span className={`text-2xl font-black mt-2 font-mono tracking-tight ${stat.highlight ? 'text-amber-450' : 'text-white'}`}>
                         {stat.value}
                       </span>
                     </div>
@@ -7413,14 +7410,14 @@ export default function DesktopCoachPortal() {
                     
                     {/* Pending Web Registrations Card */}
                     {pendingReviewList.length > 0 && (
-                      <div className="rounded-2xl border border-zinc-900 bg-zinc-950/20 p-6 shadow-sm">
-                        <div className="flex items-center gap-3 border-b border-zinc-900 pb-4 mb-4">
-                          <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300">
-                            <Clock size={14} />
+                      <div className="rounded-[22px] border border-amber-500/20 bg-gradient-to-br from-[#100c08] via-[#090705] to-black p-6 shadow-xl backdrop-blur-md">
+                        <div className="flex items-center gap-3.5 border-b border-zinc-900/80 pb-4 mb-4">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner flex-shrink-0 animate-pulse">
+                            <Clock size={15} />
                           </div>
                           <div>
-                            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Pending Web Registrations</h3>
-                            <p className="text-[10px] text-zinc-500 mt-0.5">Please verify deposit transactions and approve or reject access.</p>
+                            <h3 className="text-xs font-black uppercase text-amber-450 tracking-widest">Pending Web Registrations</h3>
+                            <p className="text-[10px] text-zinc-550 font-bold uppercase mt-0.5">Please verify deposit transactions and approve or reject access.</p>
                           </div>
                         </div>
 
@@ -7431,17 +7428,17 @@ export default function DesktopCoachPortal() {
                             const isProcessing = processingPaymentId === item.coachId;
 
                             return (
-                              <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-950/60 border border-zinc-900">
-                                <div className="flex items-start gap-3">
+                              <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-black border border-zinc-900">
+                                <div className="flex items-start gap-3.5">
                                   <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-850 flex items-center justify-center text-zinc-400 font-bold text-xs uppercase shrink-0">
                                     {item.coachName.charAt(0)}
                                   </div>
                                   <div>
-                                    <p className="font-bold text-white text-xs">{item.coachName}</p>
-                                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
+                                    <p className="font-black text-white text-xs tracking-tight">{item.coachName}</p>
+                                    <p className="text-[9px] text-zinc-500 font-bold font-mono mt-0.5">@{coach?.username || 'no-username'} | {item.coachEmail}</p>
                                     
-                                    <div className="mt-2 flex items-center gap-2 flex-wrap text-[9px] font-bold">
-                                      <span className="bg-zinc-900 text-zinc-300 border border-zinc-800 px-2 py-0.5 rounded uppercase tracking-wider">
+                                    <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[9px] font-bold">
+                                      <span className="bg-[#0b0c16] text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded uppercase tracking-wider">
                                         {pendingPay.duration} Plan ({pendingPay.amount})
                                       </span>
                                       <span className="text-zinc-650 font-mono">
@@ -7460,7 +7457,7 @@ export default function DesktopCoachPortal() {
                                               win.document.write(`<iframe src="${pendingPay.receipt}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
                                             }
                                           }}
-                                          className="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-[9px] text-zinc-300 cursor-pointer transition-colors uppercase font-bold tracking-wider"
+                                          className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-805 text-[9px] text-zinc-350 cursor-pointer transition-colors uppercase font-bold tracking-wider"
                                         >
                                           View Receipt
                                         </button>
@@ -7477,7 +7474,7 @@ export default function DesktopCoachPortal() {
                                       const reason = window.prompt("Enter rejection reason (e.g. Invalid Screenshot, Wrong Amount, Not Received):", "Invalid Screenshot");
                                       if (reason) handleRejectPaymentDirect(item.coachId, reason);
                                     }}
-                                    className="px-3.5 py-1.5 border border-zinc-800 hover:border-red-900 bg-red-950/20 hover:bg-red-900/20 disabled:opacity-50 text-red-400 hover:text-red-300 rounded-lg uppercase tracking-wider text-[9px] font-bold cursor-pointer transition-all"
+                                    className="px-3.5 py-1.5 border border-zinc-800 hover:border-red-900 bg-red-950/20 hover:bg-red-900/20 disabled:opacity-50 text-red-400 hover:text-red-300 rounded-lg uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
                                   >
                                     {isProcessing ? 'Processing...' : 'Reject'}
                                   </button>
@@ -7489,7 +7486,7 @@ export default function DesktopCoachPortal() {
                                         handleApprovePaymentDirect(item.coachId);
                                       }
                                     }}
-                                    className="px-3.5 py-1.5 border border-zinc-800 hover:border-emerald-900 bg-emerald-950/20 hover:bg-emerald-900/20 disabled:opacity-50 text-emerald-400 hover:text-emerald-300 rounded-lg uppercase tracking-wider text-[9px] font-bold cursor-pointer transition-all"
+                                    className="px-3.5 py-1.5 border border-zinc-800 hover:border-emerald-900 bg-emerald-950/20 hover:bg-emerald-900/20 disabled:opacity-50 text-emerald-400 hover:text-emerald-305 rounded-lg uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
                                   >
                                     {isProcessing ? 'Processing...' : 'Approve'}
                                   </button>
@@ -7506,22 +7503,22 @@ export default function DesktopCoachPortal() {
                       {/* Search and Filters */}
                       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                         <div className="relative w-full sm:w-[320px]">
-                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
+                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
                           <input 
                             type="text"
                             value={financialsSearchQuery}
                             onChange={e => setFinancialsSearchQuery(e.target.value)}
                             placeholder="Search logs…"
-                            className="w-full bg-[#050508] border border-zinc-900 hover:border-zinc-850 focus:border-zinc-700 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white outline-none transition-colors placeholder-zinc-700 font-bold"
+                            className="w-full bg-[#0c1020]/60 border border-slate-850 hover:border-slate-800 focus:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white outline-none transition-colors placeholder-slate-700 font-bold"
                           />
                         </div>
 
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest self-stretch sm:self-center justify-end">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest self-stretch sm:self-center justify-end">
                           <span>Filter:</span>
                           <select
                             value={financialsStatusFilter}
                             onChange={e => setFinancialsStatusFilter(e.target.value as any)}
-                            className="bg-black border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-zinc-700 font-bold cursor-pointer"
+                            className="bg-[#0c1020]/60 border border-slate-850 rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-slate-750 font-bold cursor-pointer"
                           >
                             <option value="all">All Logs</option>
                             <option value="approved">Approved</option>
@@ -7532,11 +7529,11 @@ export default function DesktopCoachPortal() {
                       </div>
 
                       {/* Dynamic Audit Ledger Table Card */}
-                      <div className="bg-black border border-zinc-900 rounded-xl overflow-hidden">
+                      <div className="bg-[#0b0c16]/50 border border-slate-900 rounded-2xl overflow-hidden p-1">
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse">
                             <thead>
-                              <tr className="border-b border-zinc-900 text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                              <tr className="border-b border-slate-900 text-[8px] font-black uppercase tracking-widest text-slate-500">
                                 <th className="py-4 px-5">Date</th>
                                 <th className="py-4 px-5">Coach</th>
                                 <th className="py-4 px-5">Plan</th>
@@ -7545,24 +7542,24 @@ export default function DesktopCoachPortal() {
                                 <th className="py-4 px-5">Details</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-950">
+                            <tbody className="divide-y divide-[#090b14]">
                               {filteredLogs.map(log => (
-                                <tr key={log.id} className="hover:bg-zinc-950/60 transition-colors text-xs font-medium">
-                                  <td className="py-4 px-5 text-zinc-500 font-mono text-[9px]">
+                                <tr key={log.id} className="hover:bg-[#0c1020]/30 transition-colors text-xs font-semibold">
+                                  <td className="py-4 px-5 text-slate-500 font-mono text-[9px]">
                                     {new Date(log.timestamp).toLocaleDateString()}
                                   </td>
                                   <td className="py-4 px-5">
-                                    <p className="font-bold text-white">{log.coachName}</p>
-                                    <p className="text-[10px] text-zinc-500 font-mono">{log.coachEmail}</p>
+                                    <p className="font-extrabold text-white">{log.coachName}</p>
+                                    <p className="text-[9px] text-slate-500 font-mono mt-0.5">{log.coachEmail}</p>
                                   </td>
-                                  <td className="py-4 px-5 font-mono text-[10px] text-zinc-400">
+                                  <td className="py-4 px-5 font-mono text-[10px] text-slate-400">
                                     {log.duration}
                                   </td>
-                                  <td className="py-4 px-5 font-mono text-xs text-white font-bold">
+                                  <td className="py-4 px-5 font-mono text-xs text-blue-400 font-black">
                                     {log.amount}
                                   </td>
                                   <td className="py-4 px-5">
-                                    <span className={`px-2 py-0.5 border rounded text-[7px] uppercase tracking-wider font-mono font-bold ${
+                                    <span className={`px-2 py-0.5 border rounded text-[7px] uppercase tracking-wider font-mono font-black ${
                                       log.status === 'approved'
                                         ? 'bg-[#0a0f0d] border-emerald-500/20 text-emerald-400'
                                         : log.status === 'pending'
@@ -7572,7 +7569,7 @@ export default function DesktopCoachPortal() {
                                       {log.status}
                                     </span>
                                   </td>
-                                  <td className="py-4 px-5 text-zinc-500 font-mono text-[10px] max-w-[200px] truncate animate-fade-in" title={log.details}>
+                                  <td className="py-4 px-5 text-slate-500 font-mono text-[9px] max-w-[200px] truncate animate-fade-in" title={log.details}>
                                     {log.details}
                                   </td>
                                 </tr>
@@ -7580,9 +7577,9 @@ export default function DesktopCoachPortal() {
 
                               {filteredLogs.length === 0 && (
                                 <tr>
-                                  <td colSpan={6} className="py-16 text-center text-zinc-650">
-                                    <PieChart className="w-8 h-8 text-zinc-800 mx-auto mb-2" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">No audit logs found</span>
+                                  <td colSpan={6} className="py-16 text-center text-slate-650">
+                                    <PieChart className="w-8 h-8 text-slate-800 mx-auto mb-2" />
+                                    <span className="text-[9px] font-black uppercase tracking-wider">No audit logs found</span>
                                   </td>
                                 </tr>
                               )}
@@ -7595,18 +7592,18 @@ export default function DesktopCoachPortal() {
 
                   {/* Right column - 1/3 width Settings Card */}
                   <div className="space-y-6">
-                    <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 shadow-sm">
-                      <div className="flex items-center gap-3 border-b border-zinc-900 pb-4 mb-5">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                    <div className="rounded-2xl border border-slate-900 bg-[#0b0c16]/50 p-6 shadow-sm">
+                      <div className="flex items-center gap-3.5 border-b border-slate-900 pb-4 mb-5">
+                        <div className="w-8 h-8 rounded-lg bg-[#0c1020] border border-slate-850 flex items-center justify-center text-slate-400 shadow-inner shrink-0">
                           <Settings size={14} />
                         </div>
                         <div>
-                          <h3 className="text-xs font-bold uppercase text-white tracking-wider">Plan Prices</h3>
-                          <p className="text-[10px] text-zinc-500 mt-0.5">Change subscription rates</p>
+                          <h3 className="text-xs font-black uppercase text-white tracking-widest">Plan Prices</h3>
+                          <p className="text-[9px] text-slate-550 font-bold uppercase mt-0.5">Change subscription rates</p>
                         </div>
                       </div>
 
-                      <div className="space-y-4 font-bold text-xs text-zinc-200">
+                      <div className="space-y-4 font-bold text-xs text-slate-200">
                         {[
                           { label: '2 Weeks Price', val: editPrices2Weeks, setVal: setEditPrices2Weeks },
                           { label: '1 Month Price', val: editPrices1Month, setVal: setEditPrices1Month },
@@ -7614,8 +7611,8 @@ export default function DesktopCoachPortal() {
                           { label: '6 Months Price', val: editPrices6Months, setVal: setEditPrices6Months }
                         ].map((priceInput, idx) => (
                           <div key={idx} className="space-y-1.5">
-                            <label className="text-[9px] uppercase tracking-widest text-zinc-500 block">{priceInput.label}</label>
-                            <div className="flex items-center bg-black border border-zinc-900 rounded-xl px-4 py-3 focus-within:border-zinc-700 transition-colors">
+                            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">{priceInput.label}</label>
+                            <div className="flex items-center bg-black border border-slate-900 rounded-xl px-4 py-3 focus-within:border-slate-800 transition-colors">
                               <input
                                 type="text"
                                 value={priceInput.val}
@@ -7623,7 +7620,7 @@ export default function DesktopCoachPortal() {
                                 placeholder="e.g. 2,000"
                                 className="w-full bg-transparent text-xs text-white outline-none font-mono font-bold p-0"
                               />
-                              <span className="text-[9px] text-zinc-500 font-bold ml-2 font-mono">EGP</span>
+                              <span className="text-[9px] text-slate-500 font-black ml-2 font-mono">EGP</span>
                             </div>
                           </div>
                         ))}
@@ -7632,7 +7629,7 @@ export default function DesktopCoachPortal() {
                           type="button"
                           disabled={updatingPlanPrices}
                           onClick={handleSavePlanPricesDirect}
-                          className="w-full mt-3 bg-white hover:bg-zinc-150 disabled:opacity-50 text-black font-black py-3.5 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 border border-white"
+                          className="w-full mt-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black py-3.5 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-blue-500/10 active:scale-95 border border-blue-500/30"
                         >
                           {updatingPlanPrices ? 'Saving...' : 'Update Plan Prices'}
                         </button>
