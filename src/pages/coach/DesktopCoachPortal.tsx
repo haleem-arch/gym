@@ -94,6 +94,25 @@ const formatTimeLeft = (diffMs: number, showDetailed: boolean) => {
   }
 };
 
+const formatDateTime = (dateString: string | Date) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return String(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
+  } catch (e) {
+    return String(dateString);
+  }
+};
+
+
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
@@ -937,7 +956,9 @@ export default function DesktopCoachPortal() {
     const rows = athletes.map(c => {
       const age = analyticsAges[c.id] || 'Not Set';
       let duration = c.targets?.subscription_duration || 'custom';
-      const expDate = c.targets?.subscription_end_date || 'No Expiry';
+      const expDate = c.targets?.subscription_end_date 
+        ? formatDateTime(c.targets.subscription_end_date) 
+        : 'No Expiry';
       if (expDate === 'No Expiry' && duration.toLowerCase() === 'none') {
         duration = 'unlimited';
       }
@@ -4830,7 +4851,9 @@ export default function DesktopCoachPortal() {
                                     {athletes.map((c, i) => {
                                       const age = analyticsAges[c.id] || 'Not Set';
                                       let duration = c.targets?.subscription_duration || 'custom';
-                                      const expDate = c.targets?.subscription_end_date || 'No Expiry';
+                                      const expDate = c.targets?.subscription_end_date 
+                                        ? formatDateTime(c.targets.subscription_end_date) 
+                                        : 'No Expiry';
                                       if (expDate === 'No Expiry' && duration.toLowerCase() === 'none') {
                                         duration = 'unlimited';
                                       }
