@@ -48,7 +48,7 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
 
     if (welcomeName) {
       if (role === 'coach') {
-        setRandomPhrase(`HELLO COACH! 👋`);
+        setRandomPhrase(`COACH HUB ACTIVATED: WELCOME ${welcomeName.toUpperCase()}! ⚡`);
       } else {
         setRandomPhrase(`WELCOME, ${welcomeName.toUpperCase()}! 👋`);
       }
@@ -66,7 +66,7 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
 
     const completeTimer = setTimeout(() => {
       onComplete?.();
-    }, 4100);
+    }, 3800);
 
     return () => {
       clearTimeout(shiftTimer);
@@ -86,7 +86,7 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
       justifyContent: 'center',
       overflow: 'hidden',
       backgroundColor: '#0a0a0a',
-      animation: 'splashFadeOut 0.5s ease-in 3.6s forwards',
+      animation: 'splashFadeOut 0.4s ease-in 3.4s forwards',
     }}>
       <style>{`
         @keyframes swoopThrough {
@@ -258,10 +258,10 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
               transform: `translateY(${showText ? '0px' : '15px'})`,
               transition: 'opacity 0.55s ease-out, transform 0.55s cubic-bezier(0.25, 1, 0.5, 1)',
               color: '#ffffff',
-              fontWeight: 950,
-              fontSize: role === 'coach' ? '28px' : '15px',
+              fontWeight: 900,
+              fontSize: '15px',
               textTransform: 'uppercase',
-              letterSpacing: role === 'coach' ? '0.12em' : '0.22em',
+              letterSpacing: '0.22em',
               textAlign: 'center',
               whiteSpace: 'nowrap',
             }}>

@@ -4206,11 +4206,7 @@ export default function DesktopCoachPortal() {
               <img src="/icon.svg" alt="Life Gym Logo" className="w-10 h-10 object-contain" />
             </div>
 
-            <h2 className="text-4xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-wider mb-2 animate-pulse">
-              Hello Coach!
-            </h2>
-            
-            <h3 className="text-sm font-extrabold text-white tracking-tight uppercase mt-2">
+            <h3 className="text-xl font-black text-white tracking-tight uppercase">
               Welcome, {myCoachProfile?.display_name || 'Coach'}!
             </h3>
             
