@@ -4899,26 +4899,26 @@ export default function DesktopCoachPortal() {
             <div className="flex gap-6 h-[calc(100vh-140px)] items-stretch">
               
               {/* Left Column: Search & List */}
-              <div className="w-[300px] flex flex-col gap-4 bg-[#0b0c16] border border-gray-800 rounded-3xl p-4 shrink-0">
-                <div className="flex flex-col gap-2">
+              <div className="w-[300px] flex flex-col gap-4 bg-[#111326]/50 border border-white/[0.04] rounded-[22px] p-4 shrink-0 shadow-lg backdrop-blur-md">
+                <div className="flex flex-col gap-2.5">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
-                    <input 
+                    <input
                       type="text"
                       value={clientSearchQuery}
                       onChange={e => setClientSearchQuery(e.target.value)}
                       placeholder="Search athletes..."
-                      className="w-full bg-[#121624] border border-gray-800 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-blue-500 transition-colors"
+                      className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl py-2.5 pl-9.5 pr-4 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all"
                     />
                   </div>
 
                   {coachUserId === OWNER_ID && (
                     <button
                       onClick={() => setDirectoryFilterMineOnly(!directoryFilterMineOnly)}
-                      className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 ${
+                      className={`w-full py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 ${
                         directoryFilterMineOnly
                           ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/10'
-                          : 'bg-[#121624]/60 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 font-bold'
+                          : 'bg-[#0a0b16]/60 border-white/[0.04] text-gray-400 hover:text-white hover:border-white/[0.15] font-bold'
                       }`}
                     >
                       <Filter size={11} />
@@ -4932,13 +4932,13 @@ export default function DesktopCoachPortal() {
                     <button
                       key={client.id}
                       onClick={() => handleClientSelectClick(client.id)}
-                      className={`w-full p-3 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
-                        selectedClientId === client.id 
-                          ? 'bg-blue-600/10 border-blue-500/50' 
-                          : 'bg-[#121624]/40 border-gray-850/80 hover:border-gray-700'
+                      className={`w-full p-3.5 rounded-[18px] border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                        selectedClientId === client.id
+                          ? 'bg-blue-600/10 border-blue-500/30 shadow-md shadow-blue-500/5'
+                          : 'bg-[#0a0b16]/40 border-white/[0.03] hover:border-white/[0.08]'
                       }`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-blue-900/40 text-blue-300 font-black flex items-center justify-center text-xs uppercase">
+                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-black flex items-center justify-center text-xs uppercase shrink-0">
                         {client.display_name?.charAt(0) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -4962,10 +4962,10 @@ export default function DesktopCoachPortal() {
               </div>
 
               {/* Right Column: Detail Sheets */}
-              <div className="flex-1 bg-[#0b0c16] border border-gray-800 rounded-3xl p-6 overflow-y-auto no-scrollbar relative">
+              <div className="flex-1 bg-[#111326]/30 border border-white/[0.04] rounded-[22px] p-6 overflow-y-auto no-scrollbar relative shadow-lg backdrop-blur-md">
                 
                 {loadingClientDetails ? (
-                  <div className="absolute inset-0 bg-[#0b0c16]/80 flex flex-col items-center justify-center z-20 rounded-3xl">
+                  <div className="absolute inset-0 bg-[#0b0c16]/80 flex flex-col items-center justify-center z-20 rounded-[22px]">
                     <DumbbellLoader label="Retrieving client dossier..." size={100} />
                   </div>
                 ) : null}
@@ -4980,9 +4980,9 @@ export default function DesktopCoachPortal() {
                   <div className="space-y-6">
                     
                     {/* Detail Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.05] pb-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase">
+                        <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center font-black text-base uppercase shrink-0">
                           {selectedClientProfile.user?.display_name?.charAt(0) || '?'}
                         </div>
                         <div>
@@ -5010,7 +5010,7 @@ export default function DesktopCoachPortal() {
                     </div>
 
                     {/* Client Detail Sub-Tabs Navigation */}
-                    <div className="flex border-b border-gray-800 gap-4 mt-4 font-sans">
+                    <div className="flex border-b border-white/[0.05] gap-4 mt-4 font-sans no-scrollbar overflow-x-auto pb-[2px]">
                       {([
                         { id: 'overview', label: 'Overview', icon: <Activity size={13} /> },
                         { id: 'diet', label: 'Diet Logs', icon: <Apple size={13} /> },
@@ -5022,7 +5022,7 @@ export default function DesktopCoachPortal() {
                         <button
                           key={tab.id}
                           onClick={() => handleClientSubTabClick(tab.id)}
-                          className={`relative pb-2 text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                          className={`relative pb-2 text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                             clientActiveTab === tab.id
                               ? 'text-blue-400 font-extrabold'
                               : 'text-gray-500 hover:text-gray-300'
@@ -5045,66 +5045,66 @@ export default function DesktopCoachPortal() {
                     {clientActiveTab === 'overview' && (
                       <div className="space-y-6">
                         {/* Biometrics row */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Scale size={10} /> Weight</p>
-                            <p className="text-base font-black text-white mt-1.5">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Scale size={11} className="text-gray-500" /> Weight</p>
+                            <p className="text-sm font-black text-white mt-1.5">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
                           </div>
-                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Ruler size={10} /> Height</p>
-                            <p className="text-base font-black text-white mt-1.5">{selectedClientProfile.height ? `${selectedClientProfile.height} cm` : 'N/A'}</p>
+                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Ruler size={11} className="text-gray-500" /> Height</p>
+                            <p className="text-sm font-black text-white mt-1.5">{selectedClientProfile.height ? `${selectedClientProfile.height} cm` : 'N/A'}</p>
                           </div>
-                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Calendar size={10} /> Age</p>
-                            <p className="text-base font-black text-white mt-1.5">{selectedClientProfile.age ? `${selectedClientProfile.age} yrs` : 'N/A'}</p>
+                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Calendar size={11} className="text-gray-500" /> Age</p>
+                            <p className="text-sm font-black text-white mt-1.5">{selectedClientProfile.age ? `${selectedClientProfile.age} yrs` : 'N/A'}</p>
                           </div>
-                          <div className="bg-[#121624] border border-gray-850 p-4 rounded-2xl text-center">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1">Passcode</p>
-                            <p className="text-base font-black text-yellow-500 font-mono mt-1.5">{selectedClientProfile.generated_passcode || 'N/A'}</p>
+                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Lock size={11} className="text-yellow-500/70" /> Passcode</p>
+                            <p className="text-sm font-black text-yellow-500 font-mono mt-1.5">{selectedClientProfile.generated_passcode || 'N/A'}</p>
                           </div>
                         </div>
 
                         {/* Nutrition targets editor */}
                         <div className="flex flex-col gap-6">
-                          <Card className="p-5 space-y-4">
-                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-gray-800 pb-2 flex items-center gap-2">
-                              <Apple size={14} /> Macro &amp; Hydration Targets
+                          <div className="p-6 bg-[#111326]/50 border border-white/[0.04] rounded-[22px] space-y-5 shadow-lg">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-white/[0.05] pb-3 flex items-center gap-2">
+                              <Activity size={14} /> Nutrition Target Benchmarks
                             </h3>
                             
-                            <div className="grid grid-cols-2 gap-3.5">
-                              <div className="space-y-1">
-                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Calories (kcal)</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              <div className="space-y-1.5">
+                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Daily Calories (kcal)</label>
                                 <input 
                                   type="number" value={targetKcal} onChange={e => setTargetKcal(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
                                 />
                               </div>
-                              <div className="space-y-1">
-                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Protein (g)</label>
+                              <div className="space-y-1.5">
+                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Protein (g)</label>
                                 <input 
                                   type="number" value={targetProtein} onChange={e => setTargetProtein(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
                                 />
                               </div>
-                              <div className="space-y-1">
-                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Carbs (g)</label>
+                              <div className="space-y-1.5">
+                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Carbs (g)</label>
                                 <input 
                                   type="number" value={targetCarbs} onChange={e => setTargetCarbs(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
                                 />
                               </div>
-                              <div className="space-y-1">
-                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Fat (g)</label>
+                              <div className="space-y-1.5">
+                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Fat (g)</label>
                                 <input 
                                   type="number" value={targetFat} onChange={e => setTargetFat(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
                                 />
                               </div>
-                              <div className="space-y-1 col-span-2">
-                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Water Goal (Liters)</label>
+                              <div className="space-y-1.5 col-span-2">
+                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Water Goal (Liters)</label>
                                 <input 
                                   type="number" step="0.1" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
                                 />
                               </div>
                             </div>
@@ -5112,35 +5112,37 @@ export default function DesktopCoachPortal() {
                             <button
                               onClick={handleSaveTargets}
                               disabled={savingTargets}
-                              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
                             >
                               {savingTargets ? 'Saving Targets...' : <><Save size={13} /> Save Nutrition Targets</>}
                             </button>
-                          </Card>
+                          </div>
 
                           {/* Nutrition by day type */}
-                          <div className="bg-[#121624] border border-gray-800 rounded-2xl p-6 space-y-5">
-                            <h3 className="text-sm font-black uppercase tracking-wide text-blue-400 border-b border-gray-800 pb-3 flex items-center gap-1.5">📋 Day-Type Custom Targets</h3>
+                          <div className="bg-[#111326]/50 border border-white/[0.04] rounded-[22px] p-6 space-y-5 shadow-lg">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-white/[0.05] pb-3 flex items-center gap-2">
+                              <Activity size={14} /> Day-Type Custom Targets
+                            </h3>
                             <div className="space-y-3.5 max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
                               {athleteDayTypes.map(dt => {
                                 const dn = dayNutrition[dt];
                                 const isEditing = editingDayType === dt;
                                 return (
-                                  <div key={dt} className="bg-gray-900/60 border border-gray-850 rounded-xl overflow-hidden shadow-sm">
+                                  <div key={dt} className="bg-[#0a0b16]/40 border border-white/[0.04] rounded-2xl overflow-hidden shadow-sm hover:border-white/[0.08] transition-all">
                                     <button
                                       onClick={() => isEditing ? setEditingDayType(null) : handleOpenDayEdit(dt)}
-                                      className="w-full flex items-center justify-between py-4 px-5 hover:bg-gray-800/20 transition-colors"
+                                      className="w-full flex items-center justify-between py-4 px-5 hover:bg-white/[0.01] transition-colors"
                                     >
-                                      <span className={`text-[10px] font-black px-2.5 py-1 rounded border uppercase ${dayColor(dt)}`}>{dt}</span>
+                                      <span className={`text-[10px] font-black px-2.5 py-1 rounded border uppercase tracking-wider ${dayColor(dt)}`}>{dt}</span>
                                       {dn ? (
-                                        <span className="text-xs md:text-sm text-gray-300 font-bold">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
+                                        <span className="text-xs md:text-sm text-gray-300 font-bold font-mono">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
                                       ) : (
                                         <span className="text-xs text-gray-500 italic font-medium">Default Work Macros</span>
                                       )}
                                     </button>
 
                                     {isEditing && (
-                                      <div className="border-t border-gray-800 p-6 space-y-5 bg-[#0a0f1a]">
+                                      <div className="border-t border-white/[0.05] p-6 space-y-5 bg-[#0a0b16]/60">
                                         <div className="grid grid-cols-4 gap-4">
                                           {[
                                             { label: 'Kcal', val: editDayKcal, set: setEditDayKcal },
@@ -5152,7 +5154,7 @@ export default function DesktopCoachPortal() {
                                               <label className="text-[10px] text-gray-400 block mb-1.5 font-bold uppercase tracking-wider">{label}</label>
                                               <input
                                                 type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
-                                                className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-3 text-sm text-white text-center font-extrabold shadow-inner focus:border-blue-500 outline-none"
+                                                className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white text-center font-extrabold shadow-inner focus:border-blue-500/50 outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all"
                                               />
                                             </div>
                                           ))}
@@ -5649,7 +5651,7 @@ export default function DesktopCoachPortal() {
                     {clientActiveTab === 'inbody' && (
                       <div className="space-y-6">
                         {/* CSV Import Zone */}
-                        <div className="bg-[#121624] border border-gray-850 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between relative overflow-hidden gap-4 shadow-xl">
+                        <div className="bg-[#111326]/50 border border-white/[0.04] p-6 rounded-[22px] flex flex-col sm:flex-row items-center justify-between relative overflow-hidden gap-4 shadow-lg backdrop-blur-md">
                           <div className="absolute right-0 top-0 w-32 h-32 bg-blue-600/10 rounded-full blur-[40px] pointer-events-none" />
                           <div className="flex-1 text-center sm:text-left z-10">
                             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
@@ -5657,8 +5659,8 @@ export default function DesktopCoachPortal() {
                             </h3>
                             <p className="text-[10px] text-gray-400 mt-1">Upload the athlete's exported CSV to sync body composition trends immediately.</p>
                           </div>
-                          <label className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 shrink-0 z-10 text-center w-full sm:w-auto">
-                            <input
+                          <label className="bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider px-5 py-3 rounded-2xl transition-all cursor-pointer shadow-md active:scale-95 shrink-0 z-10 text-center w-full sm:w-auto">
+                            <input 
                               type="file" ref={fileInputRef} accept=".csv" className="hidden"
                               onChange={handleCSVUpload} disabled={isImporting}
                             />
@@ -5667,49 +5669,49 @@ export default function DesktopCoachPortal() {
                         </div>
 
                         {/* Log manual InBody scan */}
-                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl overflow-hidden">
-                          <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/10">
-                            <h3 className="text-xs font-black uppercase text-blue-400">Log Manual Scan</h3>
-                            <button onClick={() => setShowAddScanForm(!showAddScanForm)} className="text-xs font-black text-blue-400 hover:text-white cursor-pointer flex items-center gap-1">
+                        <div className="bg-[#111326]/50 border border-white/[0.04] rounded-[22px] overflow-hidden shadow-lg">
+                          <div className="flex items-center justify-between p-5 border-b border-white/[0.05] bg-white/[0.01]">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400">Log Manual Scan</h3>
+                            <button onClick={() => setShowAddScanForm(!showAddScanForm)} className="text-xs font-black text-blue-400 hover:text-white cursor-pointer flex items-center gap-1 transition-colors">
                               <Plus size={13} /> {showAddScanForm ? 'Cancel' : 'New Scan'}
                             </button>
                           </div>
 
                           {showAddScanForm && (
-                            <form onSubmit={handleAddInBodyScan} className="p-4 space-y-3 bg-[#0a0f1a]">
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <form onSubmit={handleAddInBodyScan} className="p-6 space-y-4 bg-[#0a0b16]/40">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
-                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Scan Date</label>
-                                  <input type="date" value={newScanDate} onChange={e => setNewScanDate(e.target.value)} required className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                  <label className="text-[8px] text-gray-500 block mb-1.5 font-bold uppercase tracking-wider">Scan Date</label>
+                                  <input type="date" value={newScanDate} onChange={e => setNewScanDate(e.target.value)} required className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500/50 font-bold focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">InBody Score</label>
-                                  <input type="number" value={newScanScore} onChange={e => setNewScanScore(parseInt(e.target.value) || 0)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white text-center font-bold" />
+                                  <label className="text-[8px] text-gray-500 block mb-1.5 font-bold uppercase tracking-wider">InBody Score</label>
+                                  <input type="number" value={newScanScore} onChange={e => setNewScanScore(parseInt(e.target.value) || 0)} className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white text-center font-bold outline-none focus:border-blue-500/50 focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Weight (kg)</label>
-                                  <input type="number" step="any" required placeholder="e.g. 78.5" value={newScanWeight} onChange={e => setNewScanWeight(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                  <label className="text-[8px] text-gray-500 block mb-1.5 font-bold uppercase tracking-wider">Weight (kg)</label>
+                                  <input type="number" step="any" required placeholder="e.g. 78.5" value={newScanWeight} onChange={e => setNewScanWeight(e.target.value)} className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500/50 focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all font-bold" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Body Fat %</label>
-                                  <input type="number" step="any" placeholder="e.g. 14.8" value={newScanBfPercent} onChange={e => setNewScanBfPercent(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                  <label className="text-[8px] text-gray-500 block mb-1.5 font-bold uppercase tracking-wider">Body Fat %</label>
+                                  <input type="number" step="any" placeholder="e.g. 14.8" value={newScanBfPercent} onChange={e => setNewScanBfPercent(e.target.value)} className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500/50 focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all font-bold" />
                                 </div>
                                 <div className="col-span-2 md:col-span-4">
-                                  <label className="text-[8px] text-gray-500 block mb-1 font-bold uppercase">Muscle Mass SMM (kg)</label>
-                                  <input type="number" step="any" placeholder="e.g. 36.5" value={newScanSmm} onChange={e => setNewScanSmm(e.target.value)} className="w-full bg-[#131b2e] border border-gray-700 rounded-xl p-2.5 text-xs text-white" />
+                                  <label className="text-[8px] text-gray-500 block mb-1.5 font-bold uppercase tracking-wider">Muscle Mass SMM (kg)</label>
+                                  <input type="number" step="any" placeholder="e.g. 36.5" value={newScanSmm} onChange={e => setNewScanSmm(e.target.value)} className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white outline-none focus:border-blue-500/50 focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all font-bold" />
                                 </div>
                               </div>
-                              <button type="submit" className="w-full bg-blue-600 text-white font-bold text-xs uppercase py-3.5 rounded-xl">Save composition record</button>
+                              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl transition-all shadow-md shadow-blue-600/10 active:scale-95">Save composition record</button>
                             </form>
                           )}
                         </div>
 
                         {/* Scans list */}
-                        <div className="bg-[#121624]/30 border border-gray-800 rounded-2xl overflow-hidden p-5">
-                          <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Historical Scans timeline ({clientScans.length})</h3>
-                          <div className="divide-y divide-gray-850 mt-3 max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
+                        <div className="bg-[#111326]/30 border border-white/[0.04] rounded-[22px] p-6 shadow-lg">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3">Historical Scans timeline ({clientScans.length})</h3>
+                          <div className="divide-y divide-white/[0.04] mt-3 max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
                             {clientScans.length === 0 ? (
-                              <p className="text-xs text-gray-500 italic py-8 text-center">No InBody scans recorded.</p>
+                              <p className="text-xs text-gray-500 italic py-10 text-center">No InBody scans recorded.</p>
                             ) : (
                               clientScans.map((scan, idx) => {
                                 const isExpanded = expandedScanId === scan.id;
@@ -5717,65 +5719,64 @@ export default function DesktopCoachPortal() {
                                 const seg = scan.segmental || {};
 
                                 return (
-                                  <div key={scan.id} className="py-4">
+                                  <div key={scan.id} className="py-4 border-b border-white/[0.04] last:border-0">
                                     <div className="flex justify-between items-center">
                                       <div className="flex-1 cursor-pointer" onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}>
                                         <p className="text-sm font-black text-white flex items-center gap-1.5">
                                           {new Date(scan.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                           {isExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
                                         </p>
-                                        <p className="text-[10px] text-gray-500 mt-0.5">
+                                        <p className="text-[10px] text-gray-500 mt-1">
                                           Score: <span className="text-emerald-400 font-black">{scan.score || 75}</span>
-                                          {idx === 0 && <span className="ml-2 bg-blue-900/40 text-blue-400 text-[8px] font-black px-1.5 py-0.5 rounded">LATEST</span>}
+                                          {idx === 0 && <span className="ml-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] font-black px-1.5 py-0.5 rounded-lg tracking-wider">LATEST</span>}
                                         </p>
                                       </div>
-                                      <button onClick={() => handleDeleteScan(scan.id)} className="p-2 text-gray-500 hover:text-red-400"><Trash2 size={14} /></button>
+                                      <button onClick={() => handleDeleteScan(scan.id)} className="p-2 text-gray-500 hover:text-red-400 transition-colors active:scale-95"><Trash2 size={14} /></button>
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-2 mt-2 cursor-pointer" onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}>
-                                      <div className="bg-[#121624] border border-gray-850 rounded-xl p-3 text-center">
-                                        <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Weight</p>
+                                    <div className="grid grid-cols-3 gap-3 mt-3.5 cursor-pointer" onClick={() => setExpandedScanId(isExpanded ? null : scan.id)}>
+                                      <div className="bg-[#0a0b16]/60 border border-white/[0.04] rounded-2xl p-3.5 text-center shadow-sm hover:border-white/[0.08] transition-all">
+                                        <p className="text-[8px] text-gray-500 uppercase font-black tracking-wider mb-1">Weight</p>
                                         <p className="text-xs font-black text-white">{scan.weight} kg{prev && calculateInBodyDelta(scan.weight, prev.weight, true)}</p>
                                       </div>
-                                      <div className="bg-[#121624] border border-gray-850 rounded-xl p-3 text-center">
-                                        <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Muscle SMM</p>
+                                      <div className="bg-[#0a0b16]/60 border border-white/[0.04] rounded-2xl p-3.5 text-center shadow-sm hover:border-white/[0.08] transition-all">
+                                        <p className="text-[8px] text-gray-500 uppercase font-black tracking-wider mb-1">Muscle SMM</p>
                                         <p className="text-xs font-black text-blue-400">{scan.smm} kg{prev && calculateInBodyDelta(scan.smm, prev.smm)}</p>
                                       </div>
-                                      <div className="bg-[#121624] border border-gray-850 rounded-xl p-3 text-center">
-                                        <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Body Fat</p>
+                                      <div className="bg-[#0a0b16]/60 border border-white/[0.04] rounded-2xl p-3.5 text-center shadow-sm hover:border-white/[0.08] transition-all">
+                                        <p className="text-[8px] text-gray-500 uppercase font-black tracking-wider mb-1">Body Fat</p>
                                         <p className="text-xs font-black text-red-400">{scan.bf_percent}%{prev && calculateInBodyDelta(scan.bf_percent, prev.bf_percent, true)}</p>
                                       </div>
                                     </div>
 
                                     {isExpanded && (
-                                      <div className="border-t border-gray-850 mt-3 pt-3 space-y-4">
-                                        <div className="space-y-4 bg-gray-950/20 border border-gray-850 p-4 rounded-2xl">
+                                      <div className="border-t border-white/[0.05] mt-4 pt-4 space-y-4">
+                                        <div className="space-y-4 bg-[#0a0b16]/40 border border-white/[0.04] p-5 rounded-2xl shadow-inner">
                                           <div>
-                                            <h4 className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Activity size={10} /> Muscle-Fat balance</h4>
-                                            <div className="grid grid-cols-2 gap-2.5">
-                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">Skeletal Muscle Mass:</span> <span className="text-white font-black">{scan.smm} kg</span></div>
-                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">Body Fat Mass:</span> <span className="text-white font-black">{scan.bfm} kg</span></div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div>
-                                            <h4 className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Droplet size={10} /> Body Composition</h4>
-                                            <div className="grid grid-cols-3 gap-2">
-                                              <div className="bg-[#121624] p-2 rounded-xl text-center text-xs"><p className="text-gray-500">Water</p><p className="text-white font-black">{seg.tbw || 0}L</p></div>
-                                              <div className="bg-[#121624] p-2 rounded-xl text-center text-xs"><p className="text-gray-500">Protein</p><p className="text-white font-black">{seg.protein || 0}kg</p></div>
-                                              <div className="bg-[#121624] p-2 rounded-xl text-center text-xs"><p className="text-gray-500">Minerals</p><p className="text-white font-black">{seg.minerals || 0}kg</p></div>
+                                            <h4 className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Activity size={10} /> Muscle-Fat balance</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-xs flex justify-between items-center"><span className="text-gray-500">Skeletal Muscle Mass:</span> <span className="text-white font-black">{scan.smm} kg</span></div>
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-xs flex justify-between items-center"><span className="text-gray-500">Body Fat Mass:</span> <span className="text-white font-black">{scan.bfm} kg</span></div>
                                             </div>
                                           </div>
 
                                           <div>
-                                            <h4 className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Flame size={10} /> Obesity Evaluator</h4>
-                                            <div className="grid grid-cols-2 gap-2.5">
-                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">Visceral Fat Level:</span> <span className="text-white font-black">{seg.visceralFat || 0}</span></div>
-                                              <div className="bg-[#121624] p-2 rounded-xl text-xs"><span className="text-gray-500">BMR calories:</span> <span className="text-white font-black">{scan.bmr} kcal</span></div>
+                                            <h4 className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Droplet size={10} /> Body Composition</h4>
+                                            <div className="grid grid-cols-3 gap-3">
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-center text-xs"><p className="text-gray-500 mb-0.5">Water</p><p className="text-white font-black">{seg.tbw || 0}L</p></div>
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-center text-xs"><p className="text-gray-500 mb-0.5">Protein</p><p className="text-white font-black">{seg.protein || 0}kg</p></div>
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-center text-xs"><p className="text-gray-500 mb-0.5">Minerals</p><p className="text-white font-black">{seg.minerals || 0}kg</p></div>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <h4 className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Flame size={10} /> Obesity Evaluator</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-xs flex justify-between items-center"><span className="text-gray-500">Visceral Fat Level:</span> <span className="text-white font-black">{seg.visceralFat || 0}</span></div>
+                                              <div className="bg-[#111326]/60 border border-white/[0.04] p-2.5 rounded-xl text-xs flex justify-between items-center"><span className="text-gray-500">BMR calories:</span> <span className="text-white font-black">{scan.bmr} kcal</span></div>
                                             </div>
                                           </div>
 
-                                          <div className="border-t border-gray-800 pt-3">
+                                          <div className="border-t border-white/[0.05] pt-4">
                                             <SegmentalBodyMap scan={scan} allScans={clientScans} />
                                           </div>
                                         </div>
@@ -5795,21 +5796,21 @@ export default function DesktopCoachPortal() {
                     {clientActiveTab === 'history' && (
                       <div className="space-y-6">
                         {/* Header & Export Button */}
-                        <div className="flex justify-between items-center bg-[#121624]/30 border border-gray-800 rounded-2xl p-4">
+                        <div className="flex justify-between items-center bg-[#111326]/50 border border-white/[0.04] rounded-[22px] p-6 shadow-lg backdrop-blur-md">
                           <div>
-                            <h3 className="text-xs font-black uppercase text-blue-400">Unified Logs History</h3>
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400">Unified Logs History</h3>
                             <p className="text-[10px] text-gray-400 mt-1">Timeline of all workouts, running cards, daily diet macros, and water entries.</p>
                           </div>
                           <button
                             onClick={handleExportHistoryToCSV}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-1.5 font-sans"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider px-5 py-3 rounded-2xl transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-1.5 font-sans shadow-emerald-600/10"
                           >
                             <FileText size={14} /> Export to Excel
                           </button>
                         </div>
 
                         {/* History Table Card */}
-                        <div className="bg-[#121624]/30 border border-gray-800 rounded-3xl p-5 overflow-hidden">
+                        <div className="bg-[#111326]/30 border border-white/[0.04] rounded-[22px] p-6 overflow-hidden shadow-lg">
                           {loadingHistory ? (
                             <div className="text-center py-12 text-xs text-gray-500 font-bold flex items-center justify-center gap-2">
                               <RefreshCw className="animate-spin text-blue-500" size={16} /> Loading athlete history logs...
@@ -5820,23 +5821,23 @@ export default function DesktopCoachPortal() {
                             <div className="overflow-x-auto no-scrollbar">
                               <table className="w-full text-left border-collapse">
                                 <thead>
-                                  <tr className="border-b border-gray-850 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                    <th className="py-3 px-4">Date</th>
-                                    <th className="py-3 px-4">Workouts / Runs</th>
-                                    <th className="py-3 px-4">Diet &amp; Macros</th>
-                                    <th className="py-3 px-4 text-center">Water Logs</th>
+                                  <tr className="border-b border-white/[0.05] text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                    <th className="py-3 px-4 pb-4">Date</th>
+                                    <th className="py-3 px-4 pb-4">Workouts / Runs</th>
+                                    <th className="py-3 px-4 pb-4">Diet &amp; Macros</th>
+                                    <th className="py-3 px-4 pb-4 text-center">Water Logs</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-850/50 text-xs">
+                                <tbody className="divide-y divide-white/[0.04] text-xs">
                                   {getUnifiedHistory().map(row => (
-                                    <tr key={row.date} className="hover:bg-gray-900/10 transition-colors">
+                                    <tr key={row.date} className="hover:bg-white/[0.01] transition-colors">
                                       {/* Date column */}
-                                      <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
+                                      <td className="py-4.5 px-4 font-black text-white whitespace-nowrap">
                                         {new Date(row.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                                       </td>
-                                      
+
                                       {/* Workouts column */}
-                                      <td className="py-3.5 px-4">
+                                      <td className="py-4.5 px-4">
                                         {row.workouts.length === 0 ? (
                                           <span className="text-gray-600 font-semibold">-</span>
                                         ) : (
@@ -5845,29 +5846,28 @@ export default function DesktopCoachPortal() {
                                               <button
                                                 key={w.id}
                                                 onClick={() => w.status === 'completed' && setSelectedReceiptWorkout(w)}
-                                                className={`text-left inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border max-w-fit text-[10px] font-black transition-all ${
+                                                className={`text-left inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border max-w-fit text-[10px] font-black transition-all ${
                                                   w.status === 'completed'
-                                                    ? 'bg-blue-900/20 text-blue-400 border-blue-800/30 hover:border-blue-500 cursor-pointer'
+                                                    ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20 cursor-pointer'
                                                     : 'bg-gray-850 text-gray-500 border-gray-800'
                                                 }`}
                                               >
-                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${dayColor(w.day_type || '')}`}>
+                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${dayColor(w.day_type || '')}`}>
                                                   {w.day_type || 'GYM'}
                                                 </span>
                                                 <span>{w.name || 'Workout Session'}</span>
-                                                {w.status === 'completed' && <span className="text-green-500">✓</span>}
                                               </button>
                                             ))}
                                           </div>
                                         )}
                                       </td>
-                                      
+
                                       {/* Diet column */}
-                                      <td className="py-3.5 px-4 font-sans">
+                                      <td className="py-4.5 px-4 font-sans">
                                         {row.diet ? (
                                           <button
                                             onClick={() => handleOpenDietReceipt(row.diet)}
-                                            className="text-left bg-purple-900/15 border border-purple-800/30 text-purple-400 hover:border-purple-500 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex flex-col gap-0.5"
+                                            className="text-left bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 px-3.5 py-2 rounded-xl font-bold transition-all cursor-pointer flex flex-col gap-0.5"
                                           >
                                             <span className="text-[10px] font-black">{Math.round(row.diet.daily_totals?.kcal || 0)} kcal</span>
                                             <span className="text-[8px] text-gray-500 font-mono">
@@ -5878,11 +5878,11 @@ export default function DesktopCoachPortal() {
                                           <span className="text-gray-600 font-semibold">-</span>
                                         )}
                                       </td>
-                                      
+
                                       {/* Water column */}
-                                      <td className="py-3.5 px-4 text-center">
+                                      <td className="py-4.5 px-4 text-center">
                                         {row.waterMl > 0 ? (
-                                          <div className="inline-flex items-center gap-1 bg-blue-950/20 border border-blue-900/30 text-blue-400 px-2.5 py-1 rounded-xl text-[10px] font-black font-sans">
+                                          <div className="inline-flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-xl text-[10px] font-black font-sans">
                                             <Droplet size={10} className="text-blue-500" />
                                             <span>{(row.waterMl / 1000).toFixed(1)} L</span>
                                           </div>
