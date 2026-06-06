@@ -357,7 +357,7 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-white/[0.03] text-center"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03] text-center"
       >
         <div className="text-center space-y-3 mb-12">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">A Look Inside the Portal</h3>
@@ -366,7 +366,7 @@ export default function CoachLandingPage() {
 
         <div className="bg-[#111326]/50 border border-white/[0.06] rounded-[32px] p-4 shadow-2xl relative overflow-hidden backdrop-blur-md">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 via-transparent to-transparent pointer-events-none" />
-          <div className="rounded-[22px] border border-white/[0.05] overflow-hidden bg-[#070814]/90 aspect-[16/10] flex flex-col">
+          <div className="rounded-[22px] border border-white/[0.05] overflow-hidden bg-[#070814]/90 aspect-[1918/1118] flex flex-col">
             
             {/* Mock Header */}
             <div className="h-10 bg-[#0a0b16] border-b border-white/[0.03] px-4 flex items-center justify-between">
@@ -379,12 +379,13 @@ export default function CoachLandingPage() {
                 app.lifegym.com/coach-portal
               </div>
               <div className="w-6 h-4" />
-            </div>            {/* High Fidelity Mock Content Layout */}
+            </div>
+            {/* High Fidelity Mock Content Layout */}
             <div className="flex-1 overflow-hidden bg-[#070814]">
               <img 
                 src="/coach_portal_preview.png" 
                 alt="Life Gym Coach Portal Preview" 
-                className="w-full h-full object-cover object-top select-none" 
+                className="w-full h-full object-contain select-none" 
               />
             </div>
           </div>
@@ -708,7 +709,13 @@ export default function CoachLandingPage() {
                             <div className="relative group">
                               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4" />
                               <input 
-                                type="number" required value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 28"
+                                type="text" 
+                                inputMode="numeric" 
+                                pattern="[0-9]*" 
+                                required 
+                                value={age} 
+                                onChange={e => setAge(e.target.value.replace(/\D/g, ''))} 
+                                placeholder="e.g. 28"
                                 className="w-full bg-[#060712]/60 border border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 rounded-2xl p-3.5 pl-11 text-xs text-white outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)]" 
                               />
                             </div>
@@ -722,7 +729,7 @@ export default function CoachLandingPage() {
                                 onClick={() => setGender('male')}
                                 className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'male' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
                               >
-                                <span className="text-xs">👨</span> Male
+                                Male
                                 {gender === 'male' && (
                                   <motion.div
                                     layoutId="gender-pill"
@@ -736,7 +743,7 @@ export default function CoachLandingPage() {
                                 onClick={() => setGender('female')}
                                 className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'female' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
                               >
-                                <span className="text-xs">👩</span> Female
+                                Female
                                 {gender === 'female' && (
                                   <motion.div
                                     layoutId="gender-pill"
