@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
@@ -528,6 +528,19 @@ export default function DesktopCoachPortal() {
   useEffect(() => {
     if (showTutorial && tutorialStep === 2) {
       const updateRect = () => {
+        // If the warning dialog is open, focus on it!
+        const modalEl = document.getElementById('tutorial-unsaved-modal');
+        if (modalEl) {
+          const rect = modalEl.getBoundingClientRect();
+          setSpotlightRect({
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+          });
+          return;
+        }
+
         const stepIds = [
           'tutorial-sidebar',
           'tutorial-client-list-container',
@@ -571,7 +584,7 @@ export default function DesktopCoachPortal() {
     } else {
       setSpotlightRect(null);
     }
-  }, [showTutorial, tutorialStep, spotlightIndex, activeTab, clientActiveTab, selectedClientId, deployStep, managementSelectedClientId]);
+  }, [showTutorial, tutorialStep, spotlightIndex, activeTab, clientActiveTab, selectedClientId, deployStep, managementSelectedClientId, unsavedChangesPendingAction]);
 
 
 
@@ -1129,7 +1142,8 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials') => {
+  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials', force = false) => {
+    if (showTutorial && !force) return;
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'sidebar', payload: newTab });
     } else {
@@ -1137,7 +1151,8 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleClientSubTabClick = (newSubTab: 'overview' | 'diet' | 'water' | 'workouts' | 'inbody' | 'history') => {
+  const handleClientSubTabClick = (newSubTab: 'overview' | 'diet' | 'water' | 'workouts' | 'inbody' | 'history', force = false) => {
+    if (showTutorial && !force) return;
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'subtab', payload: newSubTab });
     } else {
@@ -1550,6 +1565,20 @@ export default function DesktopCoachPortal() {
   const handleAddWater = async (amountOverride?: number) => {
     if (!selectedClientId) return;
     const amount = amountOverride !== undefined ? amountOverride : newWaterAmount;
+    if (selectedClientId.startsWith('fake_')) {
+      const now = new Date();
+      const newEntry = {
+        id: 'fake_water_' + Math.random().toString(36).substr(2, 9),
+        user_id: selectedClientId,
+        date: clientActiveDateStr,
+        time: now.toISOString(),
+        amount_ml: amount
+      };
+      setClientWaterLogs(prev => [...(prev || []), newEntry]);
+      setClientHistoryWater(prev => [...(prev || []), newEntry]);
+      toast.success(`${amount}ml logged!`);
+      return;
+    }
     try {
       const now = new Date();
       const { error } = await supabase.from('water_logs').insert({
@@ -1568,6 +1597,12 @@ export default function DesktopCoachPortal() {
   };
 
   const handleDeleteWater = async (id: string) => {
+    if (selectedClientId && selectedClientId.startsWith('fake_')) {
+      setClientWaterLogs(prev => prev.filter(w => w.id !== id));
+      setClientHistoryWater(prev => prev.filter(w => w.id !== id));
+      toast.success('Entry removed');
+      return;
+    }
     const { error } = await supabase.from('water_logs').delete().eq('id', id);
     if (error) {
       toast.error('Unable to remove water log.');
@@ -1579,6 +1614,12 @@ export default function DesktopCoachPortal() {
 
   const handleClearWater = async () => {
     if (!selectedClientId) return;
+    if (selectedClientId.startsWith('fake_')) {
+      setClientWaterLogs([]);
+      setClientHistoryWater(prev => prev.filter(w => w.user_id !== selectedClientId || w.date !== clientActiveDateStr));
+      toast.success('Water logs cleared');
+      return;
+    }
     try {
       const { error } = await supabase.from('water_logs').delete().eq('user_id', selectedClientId).eq('date', clientActiveDateStr);
       if (error) throw error;
@@ -4580,27 +4621,47 @@ export default function DesktopCoachPortal() {
               style={{
                 left: (() => {
                   const cardWidth = 280;
-                  const spaceLeft = spotlightRect.left;
-                  const spaceRight = window.innerWidth - (spotlightRect.left + spotlightRect.width);
                   
-                  // Rule: If spotlight is the sidebar, place card on the right
+                  // Rule 1: If warning dialog modal is visible, place card to its left!
+                  const modalEl = document.getElementById('tutorial-unsaved-modal');
+                  if (modalEl) {
+                    return Math.max(20, spotlightRect.left - cardWidth - 20);
+                  }
+
+                  // Rule 2: If spotlight is the sidebar itself, place card to the right of the sidebar
                   if (spotlightIndex === 0) {
                     return spotlightRect.left + spotlightRect.width + 20;
                   }
-                  // Rule: Prefer placing card to the left if space permits, so it is "out of the box"
-                  if (spaceLeft > cardWidth + 40) {
+
+                  const spaceLeftOfSpotlight = spotlightRect.left - 260; // Space between sidebar (240px + 20px buffer) and spotlight
+                  const spaceRight = window.innerWidth - (spotlightRect.left + spotlightRect.width);
+
+                  // Rule 3: Prefer placing card to the left of the spotlight (but keeping it to the right of the sidebar)
+                  if (spaceLeftOfSpotlight > cardWidth + 20) {
                     return spotlightRect.left - cardWidth - 20;
                   }
-                  // Otherwise place it on the right of the spotlight
-                  if (spaceRight > cardWidth + 40) {
+                  // Rule 4: Otherwise place it to the right of the spotlight
+                  if (spaceRight > cardWidth + 20) {
                     return spotlightRect.left + spotlightRect.width + 20;
                   }
-                  // Fallback: place on the left margin (e.g. over the sidebar)
+                  // Fallback: place it in the bottom-left sidebar area (leaves top sidebar menu active item visible)
                   return 20;
                 })(),
                 top: (() => {
                   const cardHeight = 250;
-                  // Keep card aligned with spotlight top, but bounded within the viewport safely
+                  const cardWidth = 280;
+                  // If warning dialog modal is visible, align card vertically with the modal
+                  const modalEl = document.getElementById('tutorial-unsaved-modal');
+                  if (modalEl) {
+                    return Math.max(40, Math.min(window.innerHeight - cardHeight - 40, spotlightRect.top + 20));
+                  }
+                  // If fallback to sidebar area, place card at the bottom-left of the screen
+                  const spaceLeftOfSpotlight = spotlightRect.left - 260;
+                  const spaceRight = window.innerWidth - (spotlightRect.left + spotlightRect.width);
+                  if (spotlightIndex !== 0 && spaceLeftOfSpotlight <= cardWidth + 20 && spaceRight <= cardWidth + 20) {
+                    return window.innerHeight - cardHeight - 40;
+                  }
+                  // Otherwise keep card aligned with spotlight top
                   return Math.max(40, Math.min(window.innerHeight - cardHeight - 40, spotlightRect.top));
                 })()
               }}
@@ -4634,23 +4695,23 @@ export default function DesktopCoachPortal() {
                       setSelectedClientId(null);
                       setSpotlightIndex(1);
                     } else if (spotlightIndex === 3) {
-                      handleClientSubTabClick('overview');
+                      handleClientSubTabClick('overview', true);
                       setSpotlightIndex(2);
                     } else if (spotlightIndex === 4) {
-                      handleClientSubTabClick('diet');
+                      handleClientSubTabClick('diet', true);
                       setSpotlightIndex(3);
                     } else if (spotlightIndex === 5) {
-                      handleClientSubTabClick('water');
+                      handleClientSubTabClick('water', true);
                       setSpotlightIndex(4);
                     } else if (spotlightIndex === 6) {
-                      handleClientSubTabClick('workouts');
+                      handleClientSubTabClick('workouts', true);
                       setSpotlightIndex(5);
                     } else if (spotlightIndex === 7) {
-                      handleClientSubTabClick('inbody');
+                      handleClientSubTabClick('inbody', true);
                       setSpotlightIndex(6);
                     } else if (spotlightIndex === 8) {
                       setActiveTab('clients');
-                      handleClientSubTabClick('history');
+                      handleClientSubTabClick('history', true);
                       setSpotlightIndex(7);
                     } else if (spotlightIndex === 9) {
                       setDeployStep(1);
@@ -4689,22 +4750,22 @@ export default function DesktopCoachPortal() {
                       setSpotlightIndex(1);
                     } else if (spotlightIndex === 1) {
                       handleClientSelectClick('fake_client_1');
-                      handleClientSubTabClick('overview');
+                      handleClientSubTabClick('overview', true);
                       setSpotlightIndex(2);
                     } else if (spotlightIndex === 2) {
-                      handleClientSubTabClick('diet');
+                      handleClientSubTabClick('diet', true);
                       setSpotlightIndex(3);
                     } else if (spotlightIndex === 3) {
-                      handleClientSubTabClick('water');
+                      handleClientSubTabClick('water', true);
                       setSpotlightIndex(4);
                     } else if (spotlightIndex === 4) {
-                      handleClientSubTabClick('workouts');
+                      handleClientSubTabClick('workouts', true);
                       setSpotlightIndex(5);
                     } else if (spotlightIndex === 5) {
-                      handleClientSubTabClick('inbody');
+                      handleClientSubTabClick('inbody', true);
                       setSpotlightIndex(6);
                     } else if (spotlightIndex === 6) {
-                      handleClientSubTabClick('history');
+                      handleClientSubTabClick('history', true);
                       setSpotlightIndex(7);
                     } else if (spotlightIndex === 7) {
                       setActiveTab('deploy');
@@ -6339,33 +6400,41 @@ export default function DesktopCoachPortal() {
                                             <p className="text-[10px] text-gray-500 italic py-2 text-center">No exercises added. Use search below.</p>
                                           ) : (
                                             <div className="space-y-1.5 font-sans">
-                                              {plan.exercises.map((ex: any, idx: number) => (
-                                                <div key={ex.id || idx} className="flex justify-between items-center bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs">
-                                                  <div>
-                                                    <p className="font-bold text-white">{ex.name}</p>
-                                                    <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
-                                                  </div>
-                                                  <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-1">
-                                                      <input 
-                                                        type="number" value={ex.sets || 3} min="1"
-                                                        onChange={e => handleUpdateExerciseStats(dt, ex.id, parseInt(e.target.value) || 3, ex.rest || 120)}
-                                                        className="w-10 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
-                                                      />
-                                                      <span className="text-[9px] text-gray-500 uppercase font-black">Sets</span>
+                                              <AnimatePresence initial={false}>
+                                                {plan.exercises.map((ex: any, idx: number) => (
+                                                  <motion.div 
+                                                    key={ex.id || idx}
+                                                    initial={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0, overflow: 'hidden' }}
+                                                    transition={{ duration: 0.25 }}
+                                                    className="flex justify-between items-center bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs"
+                                                  >
+                                                    <div>
+                                                      <p className="font-bold text-white">{ex.name}</p>
+                                                      <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
                                                     </div>
-                                                    <div className="flex items-center gap-1">
-                                                      <input 
-                                                        type="number" value={ex.rest || 120} min="0" step="5"
-                                                        onChange={e => handleUpdateExerciseStats(dt, ex.id, ex.sets || 3, parseInt(e.target.value) || 0)}
-                                                        className="w-12 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
-                                                      />
-                                                      <span className="text-[9px] text-gray-500 uppercase font-black">Rest</span>
+                                                    <div className="flex items-center gap-3">
+                                                      <div className="flex items-center gap-1">
+                                                        <input 
+                                                          type="number" value={ex.sets || 3} min="1"
+                                                          onChange={e => handleUpdateExerciseStats(dt, ex.id, parseInt(e.target.value) || 3, ex.rest || 120)}
+                                                          className="w-10 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
+                                                        />
+                                                        <span className="text-[9px] text-gray-500 uppercase font-black">Sets</span>
+                                                      </div>
+                                                      <div className="flex items-center gap-1">
+                                                        <input 
+                                                          type="number" value={ex.rest || 120} min="0" step="5"
+                                                          onChange={e => handleUpdateExerciseStats(dt, ex.id, ex.sets || 3, parseInt(e.target.value) || 0)}
+                                                          className="w-12 bg-[#131b2e] text-white border border-gray-700 rounded text-center text-[10px]"
+                                                        />
+                                                        <span className="text-[9px] text-gray-500 uppercase font-black">Rest</span>
+                                                      </div>
+                                                      <button onClick={() => handleRemoveExerciseFromSplit(dt, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
                                                     </div>
-                                                    <button onClick={() => handleRemoveExerciseFromSplit(dt, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
-                                                  </div>
-                                                </div>
-                                              ))}
+                                                  </motion.div>
+                                                ))}
+                                              </AnimatePresence>
                                             </div>
                                           )}
 
@@ -6950,50 +7019,7 @@ export default function DesktopCoachPortal() {
                     {/* STEP 2: WORKOUTS TEMPLATE PROGRAM */}
                     {deployStep === 2 && (
                       <div className="space-y-4 relative">
-                        {showTutorial && spotlightIndex === 9 && (
-                          <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-                            <svg className="w-full h-full" style={{ position: 'absolute', top: 0, left: 0 }}>
-                              <defs>
-                                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
-                                </marker>
-                              </defs>
-                              {/* Arrow 1 to Push Split */}
-                              <motion.path
-                                d="M 580,20 Q 400,20 180,60"
-                                fill="transparent"
-                                stroke="#3b82f6"
-                                strokeWidth="2.5"
-                                markerEnd="url(#arrow)"
-                                initial={{ pathLength: 0 }}
-                                animate={{ pathLength: 1 }}
-                                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                              />
-                              {/* Arrow 2 to Pull Split */}
-                              <motion.path
-                                d="M 580,20 Q 400,80 180,120"
-                                fill="transparent"
-                                stroke="#3b82f6"
-                                strokeWidth="2.5"
-                                markerEnd="url(#arrow)"
-                                initial={{ pathLength: 0 }}
-                                animate={{ pathLength: 1 }}
-                                transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                              />
-                              {/* Arrow 3 to Legs Split */}
-                              <motion.path
-                                d="M 580,20 Q 400,140 180,185"
-                                fill="transparent"
-                                stroke="#3b82f6"
-                                strokeWidth="2.5"
-                                markerEnd="url(#arrow)"
-                                initial={{ pathLength: 0 }}
-                                animate={{ pathLength: 1 }}
-                                transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
-                              />
-                            </svg>
-                          </div>
-                        )}
+
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                           <h3 className="text-xs font-black uppercase text-blue-400">Step 2: Training template splits ({deploySplits.length} splits)</h3>
                           <div className="flex gap-2">
@@ -7029,18 +7055,26 @@ export default function DesktopCoachPortal() {
                                       <p className="text-[10px] text-gray-500 italic py-2 text-center">No exercises. Search catalog below.</p>
                                     ) : (
                                       <div className="space-y-1.5">
-                                        {split.exercises.map((ex: any, idx: number) => (
-                                          <div key={ex.id || idx} className="flex justify-between items-center bg-[#121624] border border-gray-800 p-2.5 rounded-xl text-xs">
-                                            <div>
-                                              <p className="font-bold text-white">{ex.name}</p>
-                                              <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                              <span className="text-[10px] text-purple-400 font-extrabold">{ex.sets} sets x {ex.rest}s rest</span>
-                                              <button onClick={() => handleRemoveExerciseFromDeploySplit(split.key, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
-                                            </div>
-                                          </div>
-                                        ))}
+                                        <AnimatePresence initial={false}>
+                                          {split.exercises.map((ex: any, idx: number) => (
+                                            <motion.div 
+                                              key={ex.id || idx}
+                                              initial={{ opacity: 1, height: 'auto' }}
+                                              exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0, overflow: 'hidden' }}
+                                              transition={{ duration: 0.25 }}
+                                              className="flex justify-between items-center bg-[#121624] border border-gray-800 p-2.5 rounded-xl text-xs"
+                                            >
+                                              <div>
+                                                <p className="font-bold text-white">{ex.name}</p>
+                                                <p className="text-[9px] text-gray-500 font-black uppercase mt-0.5">{ex.muscle_group}</p>
+                                              </div>
+                                              <div className="flex items-center gap-3">
+                                                <span className="text-[10px] text-purple-400 font-extrabold">{ex.sets} sets x {ex.rest}s rest</span>
+                                                <button onClick={() => handleRemoveExerciseFromDeploySplit(split.key, ex.id)} className="p-1 text-gray-500 hover:text-red-400"><X size={14} /></button>
+                                              </div>
+                                            </motion.div>
+                                          ))}
+                                        </AnimatePresence>
                                       </div>
                                     )}
 
@@ -9818,7 +9852,7 @@ export default function DesktopCoachPortal() {
       {/* UNSAVED CHANGES WARNING DIALOG MODAL */}
       {unsavedChangesPendingAction && (
         <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0d1220] border border-gray-800 rounded-3xl p-6 max-w-sm w-full space-y-6 shadow-2xl">
+          <div id="tutorial-unsaved-modal" className="bg-[#0d1220] border border-gray-800 rounded-3xl p-6 max-w-sm w-full space-y-6 shadow-2xl">
             <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5 text-yellow-500">
               ⚠️ Unsaved Nutrition Changes
             </h3>
