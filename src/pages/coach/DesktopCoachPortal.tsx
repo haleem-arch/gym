@@ -16,6 +16,7 @@ import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
 import { GymReceipt } from '../../components/GymReceipt';
+import { FAKE_CLIENTS, getMockClientProfile, getMockClientData } from '../../utils/mockTutorialData';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -225,11 +226,15 @@ export default function DesktopCoachPortal() {
   const [tutorialStep, setTutorialStep] = useState(1); // 1: Welcome, 2: Spotlight, 3: First Action Prompt
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [isTutorialModeActive, setIsTutorialModeActive] = useState(false);
+  const [isSimulatingDeployment, setIsSimulatingDeployment] = useState(false);
+  const [simulatedDeployedClient, setSimulatedDeployedClient] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && coachUserId) {
       const completed = localStorage.getItem(`lifegym_tutorial_completed_${coachUserId}`);
       if (!completed) {
+        setIsTutorialModeActive(true);
         setShowTutorial(true);
         setTutorialStep(1);
         setSpotlightIndex(0);
@@ -242,10 +247,13 @@ export default function DesktopCoachPortal() {
       const updateRect = () => {
         const stepIds = [
           'tutorial-sidebar',
-          'tutorial-tab-clients',
-          'tutorial-tab-deploy',
-          'tutorial-tab-management',
-          'tutorial-tab-management'
+          'tutorial-client-list-container',
+          'tutorial-client-tabs-container',
+          'tutorial-deploy-container',
+          'tutorial-deploy-container',
+          'tutorial-deploy-container',
+          'tutorial-deploy-container',
+          'tutorial-management-container'
         ];
         const id = stepIds[spotlightIndex];
         const el = document.getElementById(id);
@@ -1125,6 +1133,9 @@ export default function DesktopCoachPortal() {
       setUnsavedChangesPendingAction({ type: 'client', payload: newClientId });
     } else {
       fetchClientDetails(newClientId, true);
+      if (showTutorial && spotlightIndex === 1 && newClientId.startsWith('fake_client_')) {
+        setSpotlightIndex(2);
+      }
     }
   };
 
@@ -1133,6 +1144,26 @@ export default function DesktopCoachPortal() {
     try {
       setLoadingClientDetails(true);
       setSelectedClientId(clientId);
+
+      if (clientId && clientId.startsWith('fake_client_')) {
+        const clientProfile = getMockClientProfile(clientId);
+        setSelectedClientProfile(clientProfile);
+        const targets = clientProfile.user?.targets || {};
+        const dbKcal = targets.kcal || 2400;
+        const dbProtein = targets.protein || 160;
+        const dbCarbs = targets.carbs || 240;
+        const dbFat = targets.fat || 70;
+        const dbWater = (targets.water_goal_ml || 3500) / 1000;
+
+        setTargetKcal(dbKcal);
+        setTargetProtein(dbProtein);
+        setTargetCarbs(dbCarbs);
+        setTargetFat(dbFat);
+        setTargetWaterLiters(dbWater);
+        setDayNutrition((targets as any).day_nutrition || {});
+        setLoadingClientDetails(false);
+        return;
+      }
 
       // Fetch client profiles
       const { data: clientProfile, error: cpError } = await supabase
@@ -1190,6 +1221,24 @@ export default function DesktopCoachPortal() {
     if (!silent) setLoadingClientDetails(true);
     setExpandedMealId(null);
     try {
+      if (userId.startsWith('fake_client_')) {
+        const mockData = getMockClientData(userId, dateStr);
+        setClientDietLog(mockData.dietLog);
+        setClientMeals(mockData.meals);
+        setClientWaterLogs(mockData.waterLogs);
+        setClientWorkoutsList(mockData.workoutsList);
+        setClientScans(mockData.scans);
+        if (mockData.scans && mockData.scans.length > 0) {
+          setLatestWeight(mockData.scans[0].weight);
+        } else {
+          setLatestWeight(null);
+        }
+        setClientWorkoutPlans(mockData.workoutPlans);
+        setClientActiveSchedule(mockData.schedule);
+        if (!silent) setLoadingClientDetails(false);
+        return;
+      }
+
       // 1. Diet log & meals
       const { data: dLog } = await supabase.from('diet_logs').select('*').eq('user_id', userId).eq('date', dateStr).maybeSingle();
       setClientDietLog(dLog || null);
@@ -1794,6 +1843,22 @@ export default function DesktopCoachPortal() {
     if (!clientId) return;
     setLoadingHistory(true);
     try {
+      if (clientId.startsWith('fake_client_')) {
+        const mockData = getMockClientData(clientId, clientActiveDateStr);
+        setClientHistoryWorkouts(mockData.workoutsList);
+        setClientHistoryDiets([mockData.dietLog]);
+        setClientHistoryWater(mockData.waterLogs.map(w => ({ ...w, date: clientActiveDateStr })));
+        setLoadingHistory(false);
+        return;
+      }
+      if (clientId === 'fake_deployed_thor') {
+        setClientHistoryWorkouts([]);
+        setClientHistoryDiets([]);
+        setClientHistoryWater([]);
+        setLoadingHistory(false);
+        return;
+      }
+
       const [workoutsRes, dietsRes, waterRes] = await Promise.all([
         supabase.from('workouts').select('*').eq('user_id', clientId).order('date', { ascending: false }),
         supabase.from('diet_logs').select('*').eq('user_id', clientId).order('date', { ascending: false }),
@@ -1816,6 +1881,13 @@ export default function DesktopCoachPortal() {
     setSelectedReceiptDietMeals([]);
     setLoadingReceiptDietMeals(true);
     try {
+      if (dietLog.id && dietLog.id.startsWith('fake_dl_')) {
+        const mockData = getMockClientData(dietLog.user_id, dietLog.date);
+        setSelectedReceiptDietMeals(mockData.meals || []);
+        setLoadingReceiptDietMeals(false);
+        return;
+      }
+
       const { data: meals } = await supabase
         .from('diet_meals')
         .select('*')
@@ -1947,6 +2019,47 @@ export default function DesktopCoachPortal() {
 
   const fetchManagementClientDetails = async (clientId: string) => {
     try {
+      if (clientId && (clientId.startsWith('fake_client_') || clientId === 'fake_deployed_thor')) {
+        const mockProfile: any = clientId === 'fake_deployed_thor' ? {
+          id: 'fake_cp_thor',
+          user_id: 'fake_deployed_thor',
+          coach_id: 'tutorial_coach',
+          age: 1500,
+          height: 198,
+          experience_level: 'advanced',
+          workouts_per_week: 5,
+          goals: 'Maintain lightning channel capacity, cardiorespiratory endurance, and high volume lifting.',
+          injuries_notes: 'Missing right eye, reconstructed with prosthetic. Prone to lightning discharges.',
+          has_active_plan: true,
+          user: {
+            id: 'fake_deployed_thor',
+            display_name: 'Thor Odinson',
+            username: 'thor_god_of_thunder',
+            role: 'client',
+            coach_id: 'tutorial_coach',
+            targets: {
+              client_code: '2011',
+              kcal: 4000,
+              protein: 250,
+              carbs: 450,
+              fat: 90,
+              water_goal_ml: 5000,
+              ai_quota_limit: 50,
+              subscription_duration: '12 months',
+              subscription_delay_days: '0',
+              is_deactivated: false
+            }
+          }
+        } : getMockClientProfile(clientId);
+
+        setManagementClientProfile(mockProfile);
+        setManagementAiQuotaInput(mockProfile.user?.targets?.ai_quota_limit ?? 20);
+        setEditSubscriptionPeriod(mockProfile.user?.targets?.subscription_duration ?? '1 month');
+        setEditSubscriptionDelay(String(mockProfile.user?.targets?.subscription_delay_days ?? '0'));
+        setEditCustomSubscriptionEnd(getLocalDateTimeString());
+        return;
+      }
+
       const { data: clientProfile } = await supabase
         .from('client_profiles')
         .select(`
@@ -1983,6 +2096,16 @@ export default function DesktopCoachPortal() {
     try {
       const currentTargets = managementClientProfile.user?.targets || {};
       const updatedTargets = { ...currentTargets, is_deactivated: !isSuspended };
+
+      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+        toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
+        setManagementClientProfile((prev: any) => ({
+          ...prev,
+          user: { ...prev.user, targets: updatedTargets }
+        }));
+        setManagementUpdatingSuspension(false);
+        return;
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -2070,6 +2193,16 @@ export default function DesktopCoachPortal() {
         is_deactivated: isDeactivated,
         subscription_history: [...history, newEntry]
       };
+
+      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+        toast.success('Subscription updated successfully!');
+        setManagementClientProfile((prev: any) => ({
+          ...prev,
+          user: { ...prev.user, targets: updatedTargets }
+        }));
+        setUpdatingSubscriptionState(false);
+        return;
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -2279,6 +2412,19 @@ export default function DesktopCoachPortal() {
     }
     setManagementUpdatingPassword(true);
     try {
+      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+        setTimeout(() => {
+          toast.success('Passcode updated successfully!');
+          setManagementNewPassword('');
+          setManagementClientProfile((prev: any) => ({
+            ...prev,
+            generated_passcode: managementNewPassword.trim()
+          }));
+          setManagementUpdatingPassword(false);
+        }, 500);
+        return;
+      }
+
       const res = await fetch('/api/update-user-password', {
         method: 'POST',
         headers: {
@@ -2473,6 +2619,16 @@ export default function DesktopCoachPortal() {
       const currentTargets = managementClientProfile.user?.targets || {};
       const updatedTargets = { ...currentTargets, ai_quota_limit: managementAiQuotaInput };
 
+      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+        toast.success('AI Coach quota updated!');
+        setManagementClientProfile((prev: any) => ({
+          ...prev,
+          user: { ...prev.user, targets: updatedTargets }
+        }));
+        setManagementUpdatingQuota(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({ targets: updatedTargets })
@@ -2502,6 +2658,16 @@ export default function DesktopCoachPortal() {
         ...currentTargets,
         [featureKey]: !currentValue
       };
+
+      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+        toast.success('Feature permissions updated.');
+        setManagementClientProfile((prev: any) => ({
+          ...prev,
+          user: { ...prev.user, targets: updatedTargets }
+        }));
+        setManagementUpdatingFeatures(false);
+        return;
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -2766,6 +2932,18 @@ export default function DesktopCoachPortal() {
     }
 
     const toastId = toast.loading('Deleting athlete account...');
+    if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+      setTimeout(() => {
+        toast.success('Athlete wiped successfully.', { id: toastId });
+        if (managementSelectedClientId === 'fake_deployed_thor') {
+          setSimulatedDeployedClient(null);
+        }
+        setManagementSelectedClientId('');
+        setManagementClientProfile(null);
+      }, 800);
+      return;
+    }
+
     try {
       // 1. Cascade delete from workouts & exercises
       try {
@@ -2880,6 +3058,25 @@ export default function DesktopCoachPortal() {
     setDeployLoading(true);
     setDeploySuccessData(null);
     setDeployError(null);
+
+    if (isTutorialModeActive) {
+      setTimeout(() => {
+        setDeploySuccessData({
+          displayName: formData.displayName,
+          clientCode: formData.clientCode || '2011',
+          username: formData.username,
+          password: formData.password
+        });
+        setDeployLoading(false);
+        toast.success('Simulated athlete deployed successfully!');
+        
+        if (showTutorial && spotlightIndex === 3) {
+          setActiveTab('management');
+          setSpotlightIndex(4);
+        }
+      }, 1500);
+      return;
+    }
 
     try {
       const { data: { session: activeSession } } = await supabase.auth.getSession();
@@ -3307,7 +3504,9 @@ export default function DesktopCoachPortal() {
   };
 
   // Filters
-  const filteredClients = clientsList.filter(c => {
+  const activeClientsList = isTutorialModeActive ? (simulatedDeployedClient ? [...FAKE_CLIENTS, simulatedDeployedClient] : FAKE_CLIENTS) : clientsList;
+
+  const filteredClients = activeClientsList.filter(c => {
     const code = c.targets?.client_code ? String(c.targets.client_code) : '';
     const cleanQuery = clientSearchQuery.trim().toLowerCase().replace('#', '');
     const matchesSearch = c.display_name?.toLowerCase().includes(cleanQuery) ||
@@ -4189,6 +4388,34 @@ export default function DesktopCoachPortal() {
     }
   };
 
+  const handleExitTutorial = () => {
+    setIsTutorialModeActive(false);
+    setShowTutorial(false);
+    setTutorialStep(1);
+    setSpotlightIndex(0);
+    setDeploySuccessData(null);
+    setSimulatedDeployedClient(null);
+    setDeployStep(1);
+    setSelectedClientId(null);
+    setSelectedClientProfile(null);
+    setFormData({
+      displayName: '',
+      username: '',
+      password: '',
+      clientCode: '',
+      phoneNumber: '',
+      age: '',
+      height: '',
+      experience_level: 'beginner',
+      subscriptionPeriod: '1 month',
+      subscriptionStartDelay: '0',
+      customSubscriptionEnd: '',
+      injuries_notes: '',
+      goals: ''
+    });
+    fetchBaseData();
+  };
+
   const renderGuidedTutorial = () => {
     // Step 1: Welcome Screen
     if (tutorialStep === 1) {
@@ -4211,14 +4438,14 @@ export default function DesktopCoachPortal() {
             </h3>
             
             <p className="text-xs text-gray-400 mt-3 max-w-[280px] mx-auto leading-relaxed">
-              We are excited to have you. Let's get you set up and show you around in under 2 minutes.
+              Let's walk you through the portal features. We will inject simulated athletes and simulate operations so you can see how it works in real-time.
             </p>
 
             <button
               onClick={() => setTutorialStep(2)}
               className="w-full py-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer mt-8 flex items-center justify-center gap-2"
             >
-              <span>Get Started</span>
+              <span>Start Walkthrough</span>
               <ArrowRight size={14} />
             </button>
           </motion.div>
@@ -4231,23 +4458,35 @@ export default function DesktopCoachPortal() {
       const tourSteps = [
         {
           title: "Your Command Center",
-          desc: "This sidebar allows you to quickly toggle between your client roster, onboarding tools, subscriptions, and profile configurations."
+          desc: "This sidebar allows you to quickly toggle between your client roster, onboarding tools, subscriptions, and profile configurations. Click Next to go to the Athlete Directory."
         },
         {
           title: "Athlete Directory",
-          desc: "Track client progress, view biometrics trends, set customized nutrition splits, build workouts, and parse InBody scan data sheets."
+          desc: "Here is your athlete list. We've loaded two simulated athletes: Steve Rogers and Tony Stark. Choose Steve Rogers or click Next to open his dossier."
         },
         {
-          title: "Deploy New Athlete",
-          desc: "Instantly register client accounts. Life Gym auto-generates their credentials and prepares their personal tracking portal."
+          title: "Athlete Dossier & Profile Tabs",
+          desc: "Great! You are now viewing Steve's file. Explore his targets by clicking the tabs (Overview, Diet, Water, Workouts, InBody, History) in the highlighted window. Click Next to switch to Deploy New Athlete."
         },
         {
-          title: "Athlete Control",
-          desc: "Manage client administrative settings: reset passwords, suspend/reactivate access, or update specific target variables."
+          title: "Deploy New Athlete — Identity",
+          desc: "Step 1 of the Deployment Wizard: Identity & Auth Credentials. We have prefilled Thor's basic information. Click Next to review workouts configuration."
         },
         {
-          title: "Weekly Schedule Planner",
-          desc: "Inside any athlete's directory page, use the schedule planner to dynamically assign split routines (Push, Pull, Legs) day-by-day."
+          title: "Deploy New Athlete — Workouts",
+          desc: "Step 2 of the wizard: Training Split & Weekly Schedule defaults. Click Next to proceed to nutrition targets."
+        },
+        {
+          title: "Deploy New Athlete — Nutrition",
+          desc: "Step 3 of the wizard: Baseline nutrition macros. Set calorie targets and protein, carbohydrate, and fat splits. Click Next to go to biometrics."
+        },
+        {
+          title: "Deploy New Athlete — Biometrics & Setup",
+          desc: "Step 4 of the wizard: Baseline Biometrics. Review all details and click Next to run the simulated deployment setup!"
+        },
+        {
+          title: "Athlete Control Center",
+          desc: "Deployment successful! In the Athlete Control Center, you can manage login passcodes, adjust parameters, or suspend athlete access. Click Finish Tour to complete the onboarding guide!"
         }
       ];
 
@@ -4294,8 +4533,10 @@ export default function DesktopCoachPortal() {
               layoutId="spotlight-card"
               className="fixed bg-[#111326]/95 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 shadow-2xl w-[280px] pointer-events-auto z-[101] flex flex-col"
               style={{
-                left: spotlightRect.left + spotlightRect.width + 20,
-                top: Math.max(20, Math.min(window.innerHeight - 280, spotlightRect.top - 10))
+                left: spotlightRect.left + spotlightRect.width + 20 > window.innerWidth - 300 
+                  ? spotlightRect.left - 300 
+                  : spotlightRect.left + spotlightRect.width + 20,
+                top: Math.max(20, Math.min(window.innerHeight - 300, spotlightRect.top - 10))
               }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
             >
@@ -4317,31 +4558,148 @@ export default function DesktopCoachPortal() {
 
               <div className="flex items-center justify-between mt-6 pt-3 border-t border-white/[0.04]">
                 <button
-                  onClick={() => spotlightIndex > 0 && setSpotlightIndex(prev => prev - 1)}
+                  type="button"
+                  onClick={() => {
+                    if (spotlightIndex === 1) {
+                      setActiveTab('overview');
+                      setSelectedClientId(null);
+                      setSpotlightIndex(0);
+                    } else if (spotlightIndex === 2) {
+                      setSelectedClientId(null);
+                      setSpotlightIndex(1);
+                    } else if (spotlightIndex === 3) {
+                      setActiveTab('clients');
+                      handleClientSelectClick('fake_client_1');
+                      setSpotlightIndex(2);
+                    } else if (spotlightIndex === 4) {
+                      setDeployStep(1);
+                      setSpotlightIndex(3);
+                    } else if (spotlightIndex === 5) {
+                      setDeployStep(2);
+                      setSpotlightIndex(4);
+                    } else if (spotlightIndex === 6) {
+                      setDeployStep(3);
+                      setSpotlightIndex(5);
+                    } else if (spotlightIndex === 7) {
+                      setActiveTab('deploy');
+                      setDeployStep(4);
+                      setDeploySuccessData(null);
+                      setSimulatedDeployedClient(null);
+                      setSpotlightIndex(6);
+                    }
+                  }}
                   className={`text-[9px] font-black uppercase tracking-wider cursor-pointer bg-transparent border-none py-1 transition-colors ${spotlightIndex > 0 ? 'text-gray-400 hover:text-white' : 'text-gray-600 pointer-events-none'}`}
+                  disabled={isSimulatingDeployment}
                 >
                   Back
                 </button>
+                
                 <button
+                  type="button"
                   onClick={() => {
-                    if (spotlightIndex < tourSteps.length - 1) {
-                      setSpotlightIndex(prev => prev + 1);
-                    } else {
+                    if (spotlightIndex === 0) {
+                      setActiveTab('clients');
+                      setSpotlightIndex(1);
+                    } else if (spotlightIndex === 1) {
+                      handleClientSelectClick('fake_client_1');
+                      setSpotlightIndex(2);
+                    } else if (spotlightIndex === 2) {
+                      setActiveTab('deploy');
+                      setDeployStep(1);
+                      setFormData({
+                        displayName: 'Thor Odinson',
+                        username: 'thor_god_of_thunder',
+                        password: 'mjolnir_password',
+                        clientCode: '2011',
+                        phoneNumber: '+1-555-ASGARD',
+                        age: '1500',
+                        height: '198',
+                        experience_level: 'advanced',
+                        subscriptionPeriod: '12 months',
+                        subscriptionStartDelay: '0',
+                        customSubscriptionEnd: '',
+                        injuries_notes: 'Missing right eye, reconstructed with prosthetic. Prone to lightning discharges.',
+                        goals: 'Maintain lightning channel capacity, cardiorespiratory endurance, and high volume lifting.'
+                      });
+                      setSpotlightIndex(3);
+                    } else if (spotlightIndex === 3) {
+                      setDeployStep(2);
+                      setSpotlightIndex(4);
+                    } else if (spotlightIndex === 4) {
+                      setDeployStep(3);
+                      setSpotlightIndex(5);
+                    } else if (spotlightIndex === 5) {
+                      setDeployStep(4);
+                      setSpotlightIndex(6);
+                    } else if (spotlightIndex === 6) {
+                      setIsSimulatingDeployment(true);
+                      setTimeout(() => {
+                        setDeploySuccessData({
+                          displayName: 'Thor Odinson',
+                          clientCode: '2011',
+                          username: 'thor_god_of_thunder',
+                          password: 'mjolnir_password'
+                        });
+                        setSimulatedDeployedClient({
+                          id: 'fake_deployed_thor',
+                          display_name: 'Thor Odinson',
+                          username: 'thor_god_of_thunder',
+                          role: 'client',
+                          coach_id: 'tutorial_coach',
+                          targets: {
+                            client_code: '2011',
+                            kcal: 4000,
+                            protein: 250,
+                            carbs: 450,
+                            fat: 90,
+                            water_goal_ml: 5000,
+                            ai_quota_limit: 50,
+                            subscription_duration: '12 months',
+                            subscription_delay_days: '0',
+                            is_deactivated: false
+                          }
+                        });
+                        setIsSimulatingDeployment(false);
+                        setActiveTab('management');
+                        setManagementSelectedClientId('fake_deployed_thor');
+                        fetchManagementClientDetails('fake_deployed_thor');
+                        setSpotlightIndex(7);
+                      }, 2000);
+                    } else if (spotlightIndex === 7) {
                       setTutorialStep(3);
                     }
                   }}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[9px] uppercase tracking-wider rounded-lg shadow-md transition-all active:scale-95 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[9px] uppercase tracking-wider rounded-lg shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  disabled={isSimulatingDeployment}
                 >
-                  {spotlightIndex === tourSteps.length - 1 ? 'Finish Tour' : 'Next'}
+                  {isSimulatingDeployment ? (
+                    <span className="flex items-center gap-1">
+                      <svg className="animate-spin h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Deploying...
+                    </span>
+                  ) : (
+                    spotlightIndex === tourSteps.length - 1 ? 'Finish Tour' : 'Next'
+                  )}
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={handleExitTutorial}
+                className="text-right text-[8px] text-gray-500 hover:text-red-400 mt-2 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer self-end"
+              >
+                Skip Tutorial
+              </button>
             </motion.div>
           )}
         </div>
       );
     }
 
-    // Step 3: First Action Prompt
+    // Step 3: First Action Prompt / Complete
     if (tutorialStep === 3) {
       return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#060713]/95 backdrop-blur-md">
@@ -4357,37 +4715,25 @@ export default function DesktopCoachPortal() {
             </div>
 
             <h3 className="text-lg font-black text-white tracking-tight uppercase">
-              Ready to add your first athlete?
+              Tutorial Completed!
             </h3>
             
             <p className="text-xs text-gray-400 mt-3 max-w-[280px] mx-auto leading-relaxed">
-              Construct workout programs, adjust daily nutrition, and manage metrics instantly.
+              Your portal dashboard has been restored to your live database roster. You are ready to start coaching!
             </p>
 
             <div className="space-y-2.5 mt-8">
               <button
+                type="button"
                 onClick={() => {
                   if (coachUserId) {
                     localStorage.setItem(`lifegym_tutorial_completed_${coachUserId}`, 'true');
                   }
-                  setActiveTab('deploy');
-                  setShowTutorial(false);
+                  handleExitTutorial();
                 }}
                 className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <UserPlus size={13} />
-                <span>Deploy First Athlete</span>
-              </button>
-              <button
-                onClick={() => {
-                  if (coachUserId) {
-                    localStorage.setItem(`lifegym_tutorial_completed_${coachUserId}`, 'true');
-                  }
-                  setShowTutorial(false);
-                }}
-                className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-gray-300 font-extrabold text-xs uppercase tracking-wider rounded-2xl border border-white/10 transition-all cursor-pointer"
-              >
-                Skip for now
+                <span>Finish & Close</span>
               </button>
             </div>
           </motion.div>
@@ -4462,6 +4808,23 @@ export default function DesktopCoachPortal() {
               </span>
             </div>
           )}
+
+          <button 
+            onClick={() => {
+              setIsTutorialModeActive(true);
+              setShowTutorial(true);
+              setTutorialStep(1);
+              setSpotlightIndex(0);
+              setActiveTab('overview');
+              setSelectedClientId(null);
+              setSelectedClientProfile(null);
+              toast.success("Tutorial mode activated! Roster pre-filled with mock athletes.");
+            }}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-purple-900/40 hover:border-purple-600 bg-purple-950/20 text-[10px] font-bold text-purple-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title="Launch interactive simulated onboarding tutorial"
+          >
+            <Dumbbell size={11} className="text-purple-400" /> Tutorial
+          </button>
 
           <button 
             onClick={async () => {
@@ -4735,8 +5098,8 @@ export default function DesktopCoachPortal() {
                       </p>
                       <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
                         {feedFilterMineOnly 
-                          ? clientsList.filter(c => c.coach_id === OWNER_ID).length 
-                          : clientsList.length}
+                          ? activeClientsList.filter(c => c.coach_id === OWNER_ID).length 
+                          : activeClientsList.length}
                       </h3>
                     </div>
                     <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shadow-inner">
@@ -5192,7 +5555,7 @@ export default function DesktopCoachPortal() {
             <div className="flex gap-6 h-[calc(100vh-140px)] items-stretch">
               
               {/* Left Column: Search & List */}
-              <div className="w-[300px] flex flex-col gap-4 bg-[#111326]/50 border border-white/[0.04] rounded-[22px] p-4 shrink-0 shadow-lg backdrop-blur-md">
+              <div id="tutorial-client-list-container" className="w-[300px] flex flex-col gap-4 bg-[#111326]/50 border border-white/[0.04] rounded-[22px] p-4 shrink-0 shadow-lg backdrop-blur-md">
                 <div className="flex flex-col gap-2.5">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
@@ -5201,7 +5564,7 @@ export default function DesktopCoachPortal() {
                       value={clientSearchQuery}
                       onChange={e => setClientSearchQuery(e.target.value)}
                       placeholder="Search athletes..."
-                      className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl py-2.5 pl-9.5 pr-4 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all"
+                      className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl py-2.5 pl-10 pr-4 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all"
                     />
                   </div>
 
@@ -5303,7 +5666,7 @@ export default function DesktopCoachPortal() {
                     </div>
 
                     {/* Client Detail Sub-Tabs Navigation */}
-                    <div className="flex border-b border-white/[0.05] gap-4 mt-4 font-sans no-scrollbar overflow-x-auto pb-[2px]">
+                    <div id="tutorial-client-tabs-container" className="flex border-b border-white/[0.05] gap-4 mt-4 font-sans no-scrollbar overflow-x-auto pb-[2px]">
                       {([
                         { id: 'overview', label: 'Overview', icon: <Activity size={13} /> },
                         { id: 'diet', label: 'Diet Logs', icon: <Apple size={13} /> },
@@ -6201,7 +6564,7 @@ export default function DesktopCoachPortal() {
 
           {/* TAB 3: DEPLOY NEW ATHLETE (Stepped Wizard Form) */}
           {activeTab === 'deploy' && (
-            <div className="max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6">
+            <div id="tutorial-deploy-container" className="max-w-4xl bg-[#0b0c16] border border-gray-800 rounded-3xl p-8 space-y-6">
               
               <div className="flex justify-between items-start border-b border-gray-800 pb-4">
                 <div>
@@ -6769,7 +7132,7 @@ export default function DesktopCoachPortal() {
 
           {/* TAB: ATHLETE CONTROL */}
           {activeTab === 'management' && (
-            <div className="space-y-8 max-w-5xl">
+            <div id="tutorial-management-container" className="space-y-8 max-w-5xl">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
                 <div>
                   <h2 className="text-xl font-black text-white uppercase tracking-wider">Athlete Control Center</h2>
@@ -6796,7 +7159,7 @@ export default function DesktopCoachPortal() {
                     className="bg-transparent text-xs font-black text-white outline-none cursor-pointer max-w-[200px]"
                   >
                     <option value="" disabled className="bg-[#0b0c16]">Select client...</option>
-                    {clientsList
+                    {activeClientsList
                       .filter(c => {
                         const code = c.targets?.client_code ? String(c.targets.client_code) : '';
                         const q = managementSearchQuery.trim().toLowerCase().replace('#', '');
@@ -7267,11 +7630,11 @@ export default function DesktopCoachPortal() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {(() => {
                   const now = new Date();
-                  const total = clientsList.length;
+                  const total = activeClientsList.length;
                   let active = 0;
                   let suspendedOrExpired = 0;
 
-                  clientsList.forEach((c: any) => {
+                  activeClientsList.forEach((c: any) => {
                     const targets = c.targets || {};
                     const isDeactivated = targets.is_deactivated === true;
                     const isExpired = targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
@@ -7333,14 +7696,14 @@ export default function DesktopCoachPortal() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-850/60 text-xs">
-                      {clientsList.length === 0 ? (
+                      {activeClientsList.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-gray-550">
                             No clients deployed under your account.
                           </td>
                         </tr>
                       ) : (
-                        clientsList.map((c: any) => {
+                        activeClientsList.map((c: any) => {
                           const targets = c.targets || {};
                           const now = new Date();
                           const isDeactivated = targets.is_deactivated === true;
