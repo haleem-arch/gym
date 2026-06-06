@@ -7,7 +7,7 @@ import {
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
-  ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut,
+  ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
   DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
   ArrowRight
@@ -4998,26 +4998,29 @@ export default function DesktopCoachPortal() {
       <div className={`h-screen bg-[#05050b] text-gray-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden no-scrollbar ${showTutorial && tutorialStep === 2 ? 'tutorial-mode-active' : ''}`}>
       {/* Warning banner for trials / low remaining duration */}
       {showCoachWarningBanner && (
-        <div className="w-full py-2 px-8 flex items-center justify-between text-xs font-semibold select-none z-50 bg-gradient-to-r from-[#0b0c16]/95 via-blue-950/20 to-[#0b0c16]/95 border-b border-blue-500/20 backdrop-blur-md text-gray-200">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+        <div className="w-full py-2.5 px-8 flex items-center justify-between text-xs font-medium select-none z-50 bg-[#080914]/90 border-b border-white/[0.05] backdrop-blur-md text-gray-300">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
             </span>
-            <span className="tracking-wide">
+            <span className="tracking-wide text-gray-400 font-sans text-xs">
               {isTrialActive 
                 ? `Free Trial Active — Access expires in ` 
                 : `Subscription Expiring Soon — Renew in `}
-              <span className="font-mono text-xs font-black text-blue-400 bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 rounded-lg ml-1.5 shadow-sm shadow-blue-500/5">
+              <span className="font-mono text-[11px] font-bold text-amber-400 bg-amber-500/5 border border-amber-500/15 px-2.5 py-0.5 rounded-full ml-2 shadow-inner">
                 {coachCountdownText}
               </span>
             </span>
           </div>
           <button 
             onClick={() => handleSidebarTabClick('profile', true)}
-            className="text-[9px] uppercase font-black tracking-widest bg-[#0c0d1e] border border-blue-500/30 hover:border-blue-500 text-blue-400 hover:text-white px-4 py-2 rounded-xl shadow-lg shadow-blue-500/5 hover:shadow-blue-500/15 transition-all duration-300 active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="group relative overflow-hidden text-[10px] font-bold tracking-wider bg-[#0d0e1a] hover:bg-[#121424] border border-amber-500/25 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 px-3.5 py-1.5 rounded-lg transition-all duration-300 active:scale-[0.98] cursor-pointer flex items-center gap-2 shadow-inner"
           >
-            <Sparkles size={10} className="shrink-0" />
+            {/* Elegant light sweep shimmer */}
+            <span className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+            
+            <Crown size={11} className="text-amber-500/80 group-hover:text-amber-400 transition-colors" />
             <span>{isTrialActive ? 'Upgrade License' : 'Manage Subscription'}</span>
           </button>
         </div>
