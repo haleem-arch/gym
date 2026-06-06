@@ -5485,18 +5485,6 @@ export default function DesktopCoachPortal() {
                     </div>
                     <div className="border-t border-gray-800/40" />
                     <div className="flex items-center justify-between group">
-                      <p><span className="text-gray-500">Login Email:</span> {deploySuccessData.username}@stride.fit</p>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyField(`${deploySuccessData.username}@stride.fit`, 'Login Email')}
-                        className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
-                        title="Copy Login Email"
-                      >
-                        {copiedField === 'Login Email' ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-                      </button>
-                    </div>
-                    <div className="border-t border-gray-800/40" />
-                    <div className="flex items-center justify-between group">
                       <p><span className="text-gray-500">Passcode:</span> {deploySuccessData.password}</p>
                       <button
                         type="button"
@@ -5511,7 +5499,7 @@ export default function DesktopCoachPortal() {
                   <button
                     type="button"
                     onClick={() => {
-                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nLogin Email: ${deploySuccessData.username}@stride.fit\nPasscode: ${deploySuccessData.password}`;
+                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nPasscode: ${deploySuccessData.password}`;
                       navigator.clipboard.writeText(text);
                       toast.success('All credentials copied!');
                     }}
