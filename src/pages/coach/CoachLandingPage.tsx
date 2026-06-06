@@ -19,6 +19,125 @@ import {
   Calendar
 } from 'lucide-react';
 
+const FAQ_CATEGORIES = [
+  {
+    title: "For Coaches",
+    items: [
+      {
+        q: "What is Life Gym?",
+        a: "Life Gym is a professional coaching management platform that lets you manage all your athletes in one place — their workouts, nutrition, body composition, hydration, and progress — while giving each athlete their own personal tracking portal."
+      },
+      {
+        q: "How many athletes can I manage?",
+        a: "Up to 50 active athletes per coach account."
+      },
+      {
+        q: "Can my athletes see their programs in real time?",
+        a: "Yes. Any update you make to a client's workout or nutrition syncs to their portal instantly."
+      },
+      {
+        q: "Can I manage athletes from my phone?",
+        a: "Yes. Life Gym works on both mobile and desktop with no difference in functionality."
+      },
+      {
+        q: "Can I have multiple training splits per athlete?",
+        a: "Yes. You can create custom splits (Push, Pull, Legs, Upper, Lower, or any name you choose) and assign exercises, sets, and rest times to each."
+      },
+      {
+        q: "Can I set different nutrition targets for gym days and rest days?",
+        a: "Yes. You can set completely separate macro targets for each day type — gym days, rest days, run days, or any custom day type you create."
+      },
+      {
+        q: "What is the InBody parser?",
+        a: "You paste the text from an InBody scan result and Life Gym automatically reads and stores the data — body fat %, muscle mass, BMR, segmental analysis — directly into the athlete's profile. You can also bulk import a full history via CSV."
+      },
+      {
+        q: "Can I add progress notes for my athletes?",
+        a: "Yes. You can add private coach notes to any athlete's profile to track their progress over time."
+      },
+      {
+        q: "Can I suspend or deactivate an athlete's access?",
+        a: "Yes. You can suspend, reactivate, reset passwords, or fully delete any athlete account at any time from your dashboard."
+      }
+    ]
+  },
+  {
+    title: "Subscriptions & Billing",
+    items: [
+      {
+        q: "How do I pay for my subscription?",
+        a: "You can pay via mobile wallet (Vodafone Cash, etc.) or Telda app. After completing the transfer, you upload a screenshot receipt through the renewal portal and our team verifies it."
+      },
+      {
+        q: "How long does verification take?",
+        a: "Typically within a few hours. You'll see your status update in real time — pending, approved, or rejected — without needing to refresh the page."
+      },
+      {
+        q: "What happens when my subscription expires?",
+        a: "Your dashboard access is automatically suspended. Your data and all athlete records are kept safe. Once you renew, everything is restored instantly."
+      },
+      {
+        q: "Are payments refundable?",
+        a: "No. All payments are strictly non-refundable once a subscription is activated."
+      },
+      {
+        q: "Can I renew before my subscription expires?",
+        a: "Yes. You can upgrade or extend your plan at any time from within your dashboard."
+      },
+      {
+        q: "What subscription plans are available?",
+        a: "We offer plans for 2 Weeks, 1 Month, 3 Months, and 6 Months."
+      }
+    ]
+  },
+  {
+    title: "For Athletes",
+    items: [
+      {
+        q: "How do I access my portal?",
+        a: "Your coach will provide you with a username and password. You log in through the Life Gym athlete portal on any device."
+      },
+      {
+        q: "What can I see in my portal?",
+        a: "You can see your daily workout plan, nutrition targets, water intake goals, InBody scan history, and progress over time — all updated by your coach in real time."
+      },
+      {
+        q: "Can I log my own meals and water?",
+        a: "Yes. You can log your daily meals, track your macros, and record your water intake directly from your portal."
+      },
+      {
+        q: "Can I message my coach through the app?",
+        a: "Not directly through the app. Communication with your coach happens via WhatsApp. The platform is focused on program delivery and tracking."
+      },
+      {
+        q: "What if I forget my password?",
+        a: "Contact your coach. They can reset your password directly from their dashboard."
+      },
+      {
+        q: "Is my data private?",
+        a: "Yes. Only you and your assigned coach can see your data. It is never shared with anyone else."
+      }
+    ]
+  },
+  {
+    title: "Technical",
+    items: [
+      {
+        q: "Does Life Gym work on iPhone and Android?",
+        a: "Yes. Life Gym is a web-based platform that works on any device through your browser — no app download required."
+      },
+      {
+        q: "Is my data safe?",
+        a: "Yes. All data is stored on encrypted servers. Passwords are never stored in plain text. All connections are secured with SSL/TLS encryption."
+      },
+      {
+        q: "What if the platform is down?",
+        a: "We aim for 99% uptime. If you experience issues, contact us via WhatsApp through your coach portal profile page."
+      }
+    ]
+  }
+];
+
 export default function CoachLandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
@@ -49,6 +168,8 @@ export default function CoachLandingPage() {
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [selectedPlan, setSelectedPlan] = useState<'2_weeks' | '1_month' | '3_months' | '6_months'>('1_month');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [activeFaq, setActiveFaq] = useState<string | null>(null);
 
   const openAuth = (mode: 'login' | 'register', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
     setAuthMode(mode);
@@ -392,7 +513,7 @@ export default function CoachLandingPage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
               </div>
               <div className="w-48 h-4 bg-white/5 rounded-md flex items-center justify-center text-[8px] font-bold text-gray-400">
-                app.lifegym.com/coach-portal
+                app.lifegym.com/coach-hub
               </div>
               <div className="w-6 h-4" />
             </div>
@@ -565,6 +686,73 @@ export default function CoachLandingPage() {
             </div>
           </motion.div>
         </motion.div>
+      </motion.section>
+
+      {/* FAQ SECTION */}
+      <motion.section 
+        id="faq" 
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: false, amount: 0.12 }}
+        className="relative z-10 max-w-4xl mx-auto px-6 py-20 border-t border-white/[0.03]"
+      >
+        <div className="text-center space-y-3 mb-16">
+          <h3 className="text-2xl font-black text-white uppercase tracking-wider">Frequently Asked Questions</h3>
+          <p className="text-xs text-gray-400">Got questions? We've got answers. Explore everything about the platform.</p>
+        </div>
+
+        <div className="space-y-12">
+          {FAQ_CATEGORIES.map((category, catIdx) => (
+            <div key={catIdx} className="space-y-4 text-left">
+              <h4 className="text-sm font-black text-blue-400 uppercase tracking-widest pl-1">
+                {category.title}
+              </h4>
+              <div className="space-y-3">
+                {category.items.map((item, itemIdx) => {
+                  const id = `${catIdx}-${itemIdx}`;
+                  const isOpen = activeFaq === id;
+                  return (
+                    <div 
+                      key={itemIdx}
+                      className="bg-[#111326]/20 border border-white/[0.04] rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all duration-300"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveFaq(isOpen ? null : id)}
+                        className="w-full flex items-center justify-between p-5 text-left text-white bg-transparent outline-none cursor-pointer border-none"
+                      >
+                        <span className="text-xs font-bold tracking-wide pr-4">{item.q}</span>
+                        <motion.span
+                          animate={{ rotate: isOpen ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="text-gray-500 shrink-0"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </motion.span>
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-5 pb-5 text-[11px] text-gray-400 leading-relaxed font-medium">
+                              {item.a}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </motion.section>
 
       {/* FOOTER */}
@@ -784,7 +972,35 @@ export default function CoachLandingPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-center gap-2 mt-4">
+                        <div className="flex items-start gap-2.5 my-3 text-left">
+                          <input 
+                            type="checkbox" 
+                            id="terms-checkbox"
+                            checked={acceptedTerms} 
+                            onChange={e => setAcceptedTerms(e.target.checked)}
+                            className="mt-0.5 w-3.5 h-3.5 rounded border-white/10 bg-[#060712]/60 text-blue-600 focus:ring-blue-500/30 accent-blue-600 cursor-pointer"
+                          />
+                          <label htmlFor="terms-checkbox" className="text-[10px] text-gray-400 font-medium leading-relaxed select-none">
+                            I agree to the{' '}
+                            <button 
+                              type="button"
+                              onClick={() => openLegalModal('privacy')}
+                              className="text-blue-400 hover:text-blue-300 underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
+                            >
+                              Privacy Policy
+                            </button>{' '}
+                            and{' '}
+                            <button 
+                              type="button"
+                              onClick={() => openLegalModal('terms')}
+                              className="text-blue-400 hover:text-blue-300 underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
+                            >
+                              Terms of Use
+                            </button>.
+                          </label>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-2 mt-2 w-full">
                           <div className="flex gap-3 w-full">
                             <button
                               type="button" onClick={() => setOnboardingStep(1)}
@@ -793,7 +1009,7 @@ export default function CoachLandingPage() {
                               Back
                             </button>
                             <button
-                              type="button" disabled={loading || !phone || !age} onClick={handleRegister}
+                              type="button" disabled={loading || !phone || !age || !acceptedTerms} onClick={handleRegister}
                               className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-gray-800 disabled:to-gray-800 disabled:opacity-50 text-white font-extrabold text-xs uppercase py-4 rounded-2xl transition-all shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.35)] active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               {loading ? 'Starting Trial...' : <><CheckCircle2 size={13} /> Start My Free Trial</>}
