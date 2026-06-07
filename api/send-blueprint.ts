@@ -1,5 +1,7 @@
 import { validateEmailAddress, sendBulkEmails } from './helpers/email.js';
 import { waitUntil } from '@vercel/functions';
+import fs from 'fs';
+import path from 'path';
 
 export default async function handler(req: any, res: any) {
   // CORS Headers
@@ -33,9 +35,44 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: validation.reason });
     }
 
-    const origin = req.headers.origin || (req.headers.host ? 'https://' + req.headers.host : 'https://lifegym.app');
+    // Try to load the PDF guide from disk dynamically
+    let pdfBase64 = '';
+    const pathsToTry = [
+      path.join(process.cwd(), 'public', 'ultimate-coach-blueprint.pdf'),
+      path.join(__dirname, '..', 'public', 'ultimate-coach-blueprint.pdf'),
+      path.join(__dirname, 'public', 'ultimate-coach-blueprint.pdf')
+    ];
     
-    const downloadUrl = `${origin}/ultimate-coach-blueprint.pdf`;
+    let resolvedPath = '';
+    for (const p of pathsToTry) {
+      try {
+        if (fs.existsSync(p)) {
+          const pdfBuffer = fs.readFileSync(p);
+          pdfBase64 = pdfBuffer.toString('base64');
+          resolvedPath = p;
+          break;
+        }
+      } catch (err) {
+        console.warn(`Could not read PDF from path: ${p}`, err);
+      }
+    }
+
+    if (!pdfBase64) {
+      console.error('Could not locate ultimate-coach-blueprint.pdf on disk in any fallback path!');
+    } else {
+      console.log(`Successfully read PDF attachment from: ${resolvedPath}`);
+    }
+
+    // Prepare attachments array
+    const attachments = pdfBase64 ? [
+      {
+        filename: 'The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint.pdf',
+        content: pdfBase64,
+        contentType: 'application/pdf'
+      }
+    ] : [];
+
+    const uniqueId = Math.floor(100000 + Math.random() * 900000);
 
     // Text Fallback (highly recommended for compatibility)
     const textFallback = `
@@ -43,10 +80,8 @@ LIFE GYM - Free Growth Resource
 Your Coaching Blueprint is Ready! 🚀
 
 Thank you for requesting our guide: "The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint".
-This guide covers the exact step-by-step systems and workflows used by elite coaches to onboard athletes seamlessly and keep client retention rates above 95%.
 
-Download the PDF Blueprint directly here:
-${downloadUrl}
+We have attached your copy of the blueprint directly to this email as a PDF file. You can open, read, or save it directly from your email inbox.
 
 What you will learn:
 • Phase 1: The First 24 Hours - Building instant trust and setting expectations.
@@ -54,12 +89,12 @@ What you will learn:
 • Phase 3: The 4-Week Review - Gathering biometrics feedback & adjusting programs.
 • Phase 4: Long-Term Retention - Fostering community & tracking performance milestones.
 
-Note: Your download link is active for the next 24 hours.
+Ref: #${uniqueId}
 
 © 2026 Life Gym. All rights reserved.
     `.trim();
 
-    // Highly-compatible light HTML theme (prevents white-text-on-white-background issues if email clients strip background colors)
+    // Highly-compatible light HTML theme with attachment notice (no download button to avoid website redirect)
     const htmlBody = `
       <div style="font-family: sans-serif; background-color: #f4f4f5; padding: 20px; color: #18181b;">
         <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; max-width: 520px; margin: 20px auto; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
@@ -75,7 +110,7 @@ Note: Your download link is active for the next 24 hours.
             Thank you for requesting our guide, <strong>"The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint"</strong>.
           </p>
           <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
-            This blueprint covers the exact step-by-step systems and workflows used by elite coaches to onboard athletes seamlessly and keep client retention rates above 95%.
+            We have attached your copy of the blueprint directly to this email as a PDF file. You can open, read, or save it directly from your email inbox.
           </p>
           
           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 12px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
@@ -86,32 +121,31 @@ Note: Your download link is active for the next 24 hours.
             • <strong>Phase 4: Long-Term Retention</strong> - Fostering community & tracking performance milestones.
           </div>
           
-          <div style="text-align: center; margin-bottom: 28px;">
-            <a href="${downloadUrl}" target="_blank" style="background-color: #8b5cf6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
-              Download The PDF Blueprint
-            </a>
+          <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 24px;">
+            <p style="font-size: 12px; color: #15803d; font-weight: bold; margin: 0;">
+              📎 PDF Attached to Email
+            </p>
+            <p style="font-size: 10px; color: #166534; margin: 4px 0 0 0;">
+              Check the attachments section of your email client to open the blueprint.
+            </p>
           </div>
-          
-          <p style="font-size: 11px; color: #6b7280; text-align: center; margin-bottom: 20px;">
-            <strong>Note:</strong> Your download link is active for the next 24 hours. If clicking the button doesn't work, copy and paste this link into your browser: <br/>
-            <a href="${downloadUrl}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${downloadUrl}</a>
-          </p>
           
           <p style="font-size: 10px; color: #9ca3af; margin-top: 36px; border-top: 1px solid #e4e4e7; padding-top: 16px; text-align: center; margin-bottom: 0;">
             © 2026 Life Gym. All rights reserved.
+            <span style="display: none; color: transparent; font-size: 0px;">Ref: #${uniqueId}</span>
           </p>
         </div>
       </div>
     `;
-    const uniqueId = Math.floor(100000 + Math.random() * 900000);
 
     // Asynchronously send the email using waitUntil
     waitUntil(
       sendBulkEmails({
         to: cleanEmail,
         subject: `🎁 Your Free Guide: The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint [Ref: #${uniqueId}]`,
-        text: textFallback + `\n\nRef: #${uniqueId}`,
-        html: htmlBody + `<span style="display: none; color: transparent; font-size: 0px;">Ref: #${uniqueId}</span>`,
+        text: textFallback,
+        html: htmlBody,
+        attachments,
         fromName: 'Life Gym Team'
       }).catch(emailErr => {
         console.error('Failed to send blueprint email:', emailErr);
