@@ -185,12 +185,30 @@ export default function CoachLandingPage() {
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!leadEmail.trim()) return;
+    const targetEmail = leadEmail.trim();
+    if (!targetEmail) return;
+
     setLeadLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLeadLoading(false);
-    setLeadSubmitted(true);
-    toast.success('Blueprint guide sent successfully!');
+    try {
+      const response = await fetch('/api/send-blueprint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || 'Failed to send blueprint email.');
+      }
+
+      setLeadSubmitted(true);
+      toast.success('Blueprint guide sent successfully!');
+    } catch (err: any) {
+      console.error('Lead Capture Error:', err);
+      toast.error(err.message || 'Failed to process request.');
+    } finally {
+      setLeadLoading(false);
+    }
   };
 
   const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
