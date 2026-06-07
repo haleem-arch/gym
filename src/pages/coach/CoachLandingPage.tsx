@@ -493,7 +493,7 @@ export default function CoachLandingPage() {
           </div>
           <div>
             <h1 className="text-base font-black tracking-wider text-white">LIFE GYM</h1>
-            <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">YOUR ULTIMATE FITNESS COACHING APP</p>
+            <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">YOUR ATHLETE MANAGER</p>
           </div>
         </div>
 
@@ -504,7 +504,7 @@ export default function CoachLandingPage() {
           <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <a
             href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
             download
@@ -527,15 +527,6 @@ export default function CoachLandingPage() {
               Log In
             </button>
           </div>
-          <button 
-            onClick={() => {
-              const el = document.getElementById('pricing');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-lg shadow-blue-500/15 active:scale-95 cursor-pointer"
-          >
-            Start Free Trial
-          </button>
         </div>
       </header>
 
@@ -553,7 +544,7 @@ export default function CoachLandingPage() {
 
           <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.12]">
             Professional Coaching Portal.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-400">Everything you need to manage your athletes.</span>
+            <span className="text-blue-500">Everything you need to manage your athletes.</span>
           </h2>
 
           <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed font-medium">
@@ -561,7 +552,7 @@ export default function CoachLandingPage() {
           </p>
 
           <div className="pt-4 flex flex-col items-center justify-center gap-4">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
               <button
                 onClick={() => {
                   const el = document.getElementById('pricing');
@@ -584,13 +575,6 @@ export default function CoachLandingPage() {
                 </svg>
                 <span>Download for Windows</span>
               </a>
-
-              <button
-                onClick={() => openAuth('login')}
-                className="w-full sm:w-auto bg-transparent border border-zinc-850 hover:border-zinc-700 text-zinc-350 hover:text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-              >
-                Coach Login
-              </button>
             </div>
             <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-300 hover:text-white cursor-pointer underline font-extrabold">Log In</span> (Coaches Only)</p>
           </div>
@@ -714,7 +698,7 @@ export default function CoachLandingPage() {
         <div className="text-center space-y-3 mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Simple, Flexible Billing</h3>
           <p className="text-xs text-zinc-400 font-medium">Choose a package tailored to your coaching business goals. Swap tiers anytime.</p>
-          <p className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider mt-1">No payment or credit card required to start your free trial</p>
+          <p className="text-[10px] text-blue-500 font-extrabold uppercase tracking-wider mt-1">No payment or credit card required to start your free trial</p>
           <div className="pt-2">
             <button
               type="button"
