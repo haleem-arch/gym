@@ -870,9 +870,9 @@ export default function CoachLandingPage() {
         viewport={{ once: false, amount: 0.12 }}
         className="relative z-10 max-w-4xl mx-auto px-6 py-20 border-t border-zinc-900"
       >
-        <div className="bg-zinc-900/30 border border-zinc-900 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden text-center md:text-left md:flex md:items-center md:justify-between md:gap-8 backdrop-blur-md">
+        <div className="bg-zinc-900/30 border border-zinc-900 hover:border-blue-900/30 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden text-center md:text-left md:flex md:items-center md:justify-between md:gap-8 backdrop-blur-md transition-colors">
           <div className="space-y-4 max-w-md relative z-10 text-left">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-zinc-800 border border-zinc-750 text-[9px] font-black uppercase tracking-wider text-zinc-300">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-950/30 border border-blue-900/40 text-[9px] font-black uppercase tracking-wider text-blue-400">
               Join Our Newsletter
             </span>
             <h3 className="text-2xl font-black text-white tracking-tight leading-tight uppercase">
@@ -900,7 +900,7 @@ export default function CoachLandingPage() {
                 <button
                   type="button"
                   onClick={() => setLeadSubmitted(false)}
-                  className="text-[9px] text-zinc-300 hover:text-white font-bold underline bg-transparent border-none cursor-pointer"
+                  className="text-[9px] text-zinc-350 hover:text-white font-bold underline bg-transparent border-none cursor-pointer"
                 >
                   Subscribe another email
                 </button>
@@ -908,24 +908,24 @@ export default function CoachLandingPage() {
             ) : (
               <form onSubmit={handleLeadSubmit} className="space-y-3">
                 <div className="space-y-1.5 text-left">
-                  <label className="text-[8px] uppercase tracking-wider text-zinc-500 font-black pl-1">Email Address</label>
+                  <label className="text-[8px] uppercase tracking-wider text-zinc-550 font-black pl-1">Email Address</label>
                   <input 
                     type="email" 
                     required 
                     value={leadEmail} 
                     onChange={e => setLeadEmail(e.target.value.replace(/\s/g, ''))} 
                     placeholder="coach@yourgym.com"
-                    className="w-full bg-zinc-950 border border-zinc-900 focus:border-zinc-750 rounded-xl p-3.5 text-xs text-white outline-none placeholder-zinc-700 transition-all font-medium" 
+                    className="w-full bg-zinc-950 border border-zinc-900 focus:border-blue-500/50 rounded-xl p-3.5 text-xs text-white outline-none placeholder-zinc-700 transition-all font-medium" 
                   />
                 </div>
                 <button 
                   type="submit" 
                   disabled={leadLoading}
-                  className="w-full bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-800 text-black disabled:text-zinc-500 font-extrabold text-[10px] uppercase tracking-wider py-3.5 rounded-xl shadow-md active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 text-white disabled:text-zinc-500 font-extrabold text-[10px] uppercase tracking-wider py-3.5 rounded-xl shadow-lg shadow-blue-500/10 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-blue-500/30"
                 >
                   {leadLoading ? 'Subscribing...' : 'Join Mailing List'}
                 </button>
-                <p className="text-[8px] text-zinc-600 font-bold text-center">No spam. Unsubscribe anytime in 1-click.</p>
+                <p className="text-[8px] text-zinc-650 font-bold text-center">No spam. Unsubscribe anytime in 1-click.</p>
               </form>
             )}
           </div>
