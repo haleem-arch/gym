@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { promises as dns } from 'node:dns';
+import dns from 'dns';
 import { createClient } from '@supabase/supabase-js';
 
 const GMAIL_USER = process.env.GMAIL_USER || 'tsmhaleem@gmail.com';
@@ -67,7 +67,7 @@ export async function validateEmailAddress(email: string): Promise<{ valid: bool
 
   // 3. MX Record Lookup Check (Level 3) with 2.5s Timeout
   try {
-    const mxPromise = dns.resolveMx(domain);
+    const mxPromise = dns.promises.resolveMx(domain);
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('DNS_TIMEOUT')), 2500)
     );
