@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown, ArrowUpCircle,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
   DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
-  ArrowRight, Server, Maximize, Minimize
+  ArrowRight, Server, Maximize, Minimize, WifiOff
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -265,6 +265,21 @@ export default function DesktopCoachPortal() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Instant Offline Reconnect state
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -11668,6 +11683,28 @@ export default function DesktopCoachPortal() {
               )}
             </div>
           )}
+        </div>
+      </div>
+    )}
+    {/* Instant Offline Reconnect Overlay */}
+    {!isOnline && (
+      <div className="fixed inset-0 bg-[#07080e] z-[1000] flex items-center justify-center p-6 select-none font-sans">
+        <div className="bg-[#111322] border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative flex flex-col items-center">
+          {/* Pulsing WiFi Off Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
+            <WifiOff size={32} className="text-red-500" />
+          </div>
+
+          <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">Connection Lost</h2>
+          <p className="text-gray-400 text-xs leading-relaxed max-w-[320px] mb-8">
+            It looks like you are offline. Please check your WiFi or ethernet connection. The portal will automatically reconnect once your internet is restored.
+          </p>
+
+          {/* Reconnect Spinner */}
+          <div className="flex items-center gap-2 justify-center text-xs font-semibold text-gray-500">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            <span>Waiting for connection...</span>
+          </div>
         </div>
       </div>
     )}

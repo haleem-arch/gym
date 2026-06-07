@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, WifiOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -50,6 +50,21 @@ const RippleButton = ({ onClick, className, children }: { onClick: (e: React.Mou
 };
 
 const TodayView = () => {
+  // Instant Offline Reconnect state
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const isRunningInElectron = typeof window !== 'undefined' && (!!(window as any).electronAPI || navigator.userAgent.includes('Electron'));
   const navigate = useNavigate();
   const [userDisplayName, setUserDisplayName] = useState('');
@@ -943,6 +958,29 @@ const TodayView = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Instant Offline Reconnect Overlay */}
+      {!isOnline && (
+        <div className="fixed inset-0 bg-[#07080e] z-[1000] flex items-center justify-center p-6 select-none font-sans text-left">
+          <div className="bg-[#111322] border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative flex flex-col items-center">
+            {/* Pulsing WiFi Off Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6 animate-pulse">
+              <WifiOff size={32} className="text-red-500" />
+            </div>
+
+            <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">Connection Lost</h2>
+            <p className="text-gray-400 text-xs leading-relaxed max-w-[280px] mb-8">
+              It looks like you are offline. Please check your WiFi or mobile connection. The app will automatically reconnect once your internet is restored.
+            </p>
+
+            {/* Reconnect Spinner */}
+            <div className="flex items-center gap-2 justify-center text-xs font-semibold text-gray-500">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span>Waiting for connection...</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
