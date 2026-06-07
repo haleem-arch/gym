@@ -46,7 +46,9 @@ export default function AddClientPage() {
     displayName: '',
     username: '',
     password: '',
-    clientCode: 0
+    clientCode: 0,
+    contactEmail: '',
+    email: ''
   });
 
   const [attemptedStep1Submit, setAttemptedStep1Submit] = useState(false);
@@ -736,7 +738,9 @@ export default function AddClientPage() {
         displayName: formData.displayName,
         username: formData.username.trim().toLowerCase(),
         password: formData.password,
-        clientCode: nextClientCode
+        clientCode: nextClientCode,
+        contactEmail: formData.contactEmail.trim().toLowerCase(),
+        email: ''
       });
       setIsDeployed(true);
       toast.success(`Athlete deployed successfully! Handle: @${formData.username}`);
@@ -843,11 +847,11 @@ export default function AddClientPage() {
             <div className="flex items-center justify-between group">
               <div>
                 <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Email</span>
-                <p className="font-mono text-sm text-white">{deployedData.username}@stride.fit</p>
+                <p className="font-mono text-sm text-white">{deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`}</p>
               </div>
               <button
                 type="button"
-                onClick={() => handleCopyField(`${deployedData.username}@stride.fit`, 'Email')}
+                onClick={() => handleCopyField(deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`, 'Email')}
                 className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
                 title="Copy Email"
               >
@@ -875,7 +879,8 @@ export default function AddClientPage() {
             <button
               onClick={() => {
                 const loginUrl = `${window.location.origin}/login`;
-                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nEmail: ${deployedData.username}@stride.fit\nPassword: ${deployedData.password}\n\nLogin URL: ${loginUrl}`;
+                const actualEmail = deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`;
+                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nEmail: ${actualEmail}\nPassword: ${deployedData.password}\n\nLogin URL: ${loginUrl}`;
                 navigator.clipboard.writeText(text);
                 toast.success('Credentials copied to clipboard!');
               }}

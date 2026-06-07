@@ -3636,7 +3636,8 @@ export default function DesktopCoachPortal() {
         displayName: formData.displayName,
         username: formData.username.trim().toLowerCase(),
         password: formData.password,
-        clientCode: nextClientCode
+        clientCode: nextClientCode,
+        contactEmail: formData.contactEmail.trim().toLowerCase()
       });
 
       toast.success('Athlete registered and splits deployed successfully!');
@@ -7075,10 +7076,10 @@ export default function DesktopCoachPortal() {
                     </div>
                     <div className="border-t border-gray-800/40" />
                     <div className="flex items-center justify-between group">
-                      <p><span className="text-gray-500">Email:</span> {deploySuccessData.username}@stride.fit</p>
+                      <p><span className="text-gray-500">Email:</span> {deploySuccessData.contactEmail || deploySuccessData.email || `${deploySuccessData.username}@stride.fit`}</p>
                       <button
                         type="button"
-                        onClick={() => handleCopyField(`${deploySuccessData.username}@stride.fit`, 'Email')}
+                        onClick={() => handleCopyField(deploySuccessData.contactEmail || deploySuccessData.email || `${deploySuccessData.username}@stride.fit`, 'Email')}
                         className="p-1 rounded bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
                         title="Copy Email"
                       >
@@ -7102,7 +7103,8 @@ export default function DesktopCoachPortal() {
                     type="button"
                     onClick={() => {
                       const loginUrl = `${window.location.origin}/login`;
-                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nEmail: ${deploySuccessData.username}@stride.fit\nPasscode: ${deploySuccessData.password}\n\nLogin URL: ${loginUrl}`;
+                      const actualEmail = deploySuccessData.contactEmail || deploySuccessData.email || `${deploySuccessData.username}@stride.fit`;
+                      const text = `Athlete Deployed:\nName: ${deploySuccessData.displayName}\nClient Code: #${deploySuccessData.clientCode}\nUsername: ${deploySuccessData.username}\nEmail: ${actualEmail}\nPasscode: ${deploySuccessData.password}\n\nLogin URL: ${loginUrl}`;
                       navigator.clipboard.writeText(text);
                       toast.success('All credentials copied!');
                     }}

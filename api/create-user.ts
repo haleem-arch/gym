@@ -147,39 +147,42 @@ export default async function handler(req: any, res: any) {
         `,
         fromName: 'Life Gym Admin'
       });
-    } else if (userRole === 'client' && !cleanEmail.endsWith('@stride.fit')) {
-      // Client/Athlete Onboarding Email
-      await sendBulkEmails({
-        to: cleanEmail,
-        subject: `Welcome to Life Gym! 🏋️ Your Athlete Account is Ready`,
-        html: `
-          <div style="font-family: sans-serif; background-color: #060713; color: #f3f4f6; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.06); max-width: 520px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #3b82f6; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
-              <p style="font-size: 9px; color: #10b981; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Athlete Portal Activated</p>
+    } else if (userRole === 'client') {
+      const contactEmail = targets?.contact_email?.trim()?.toLowerCase() || cleanEmail;
+      if (contactEmail && !contactEmail.endsWith('@stride.fit')) {
+        // Client/Athlete Onboarding Email
+        await sendBulkEmails({
+          to: contactEmail,
+          subject: `Welcome to Life Gym! 🏋️ Your Athlete Account is Ready`,
+          html: `
+            <div style="font-family: sans-serif; background-color: #060713; color: #f3f4f6; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.06); max-width: 520px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #3b82f6; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
+                <p style="font-size: 9px; color: #10b981; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Athlete Portal Activated</p>
+              </div>
+              <h2 style="color: #ffffff; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome, ${display_name?.trim() || 'Athlete'}! 🏋️</h2>
+              <p style="font-size: 13px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px;">
+                Coach <strong>${coachName}</strong> has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and chat directly.
+              </p>
+              <div style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 20px; font-size: 13px; color: #f3f4f6; margin-bottom: 24px; text-align: left; line-height: 1.6;">
+                <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Credentials</span>
+                <strong>Portal Link:</strong> <code style="color: #10b981; font-family: monospace; font-size: 13px;">${origin}/client-login</code><br />
+                <strong>Handle / Email:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail}</code><br />
+                <strong>Password:</strong> <code style="color: #f59e0b; font-family: monospace; font-size: 13px;">${password}</code>
+              </div>
+              <div style="text-align: center; margin-bottom: 28px;">
+                <a href="${origin}/client-login" target="_blank" style="background-color: #3b82f6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                  Access Athlete Portal
+                </a>
+              </div>
+              <p style="font-size: 10px; color: #4b5563; margin-top: 36px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; text-align: center; margin-bottom: 0;">
+                © 2026 Life Gym. All rights reserved.
+              </p>
             </div>
-            <h2 style="color: #ffffff; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome, ${display_name?.trim() || 'Athlete'}! 🏋️</h2>
-            <p style="font-size: 13px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px;">
-              Coach <strong>${coachName}</strong> has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and chat directly.
-            </p>
-            <div style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 20px; font-size: 13px; color: #f3f4f6; margin-bottom: 24px; text-align: left; line-height: 1.6;">
-              <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Credentials</span>
-              <strong>Portal Link:</strong> <code style="color: #10b981; font-family: monospace; font-size: 13px;">${origin}/client-login</code><br />
-              <strong>Handle / Email:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail}</code><br />
-              <strong>Password:</strong> <code style="color: #f59e0b; font-family: monospace; font-size: 13px;">${password}</code>
-            </div>
-            <div style="text-align: center; margin-bottom: 28px;">
-              <a href="${origin}/client-login" target="_blank" style="background-color: #3b82f6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-                Access Athlete Portal
-              </a>
-            </div>
-            <p style="font-size: 10px; color: #4b5563; margin-top: 36px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; text-align: center; margin-bottom: 0;">
-              © 2026 Life Gym. All rights reserved.
-            </p>
-          </div>
-        `,
-        fromName: `${coachName} via Life Gym`
-      });
+          `,
+          fromName: `${coachName} via Life Gym`
+        });
+      }
     }
   })();
 
