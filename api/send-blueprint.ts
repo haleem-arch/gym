@@ -54,26 +54,26 @@ export default async function handler(req: any, res: any) {
     // Text Fallback (highly recommended for compatibility)
     const textFallback = `
 LIFE GYM - Free Growth Resource
-Your Coaching Blueprint is Ready! 🚀
+Your Coaching Guide is Ready! 🚀
 
-Thank you for requesting our guide: "The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint".
-This guide covers the exact step-by-step systems and workflows used by elite coaches to onboard athletes seamlessly and keep client retention rates above 95%.
+Thank you for requesting our guide: "What is Life Gym Coaching? The Platform Overview Guide".
+This guide covers how Life Gym powers modern fitness academies with custom splits, InBody parsing, and automated roster tracking.
 
-Download the PDF Blueprint directly here:
+Download the PDF Guide directly here:
 ${downloadUrl}
 
 What you will learn:
-• Phase 1: The First 24 Hours - Building instant trust and setting expectations.
-• Phase 2: Hyper-Personalization - Custom split delivery and initial compliance tracking.
-• Phase 3: The 4-Week Review - Gathering biometrics feedback & adjusting programs.
-• Phase 4: Long-Term Retention - Fostering community & tracking performance milestones.
+• Interactive Workouts: Day-type target overrides and customized splits.
+• Client Engagement: Gamified run receipts and completed session feedback.
+• Biometrics Parsing: Automated InBody scan parsing and segmental lean charts.
+• Roster Automation: Live client compliance tracking and direct WhatsApp templates.
 
 Note: Your download link is active for the next 24 hours.
 
 © 2026 Life Gym. All rights reserved.
     `.trim();
 
-    // Highly-compatible light HTML theme (prevents white-text-on-white-background issues if email clients strip background colors)
+    // Highly-compatible light HTML theme
     const htmlBody = `
       <div style="font-family: sans-serif; background-color: #f4f4f5; padding: 20px; color: #18181b;">
         <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; max-width: 520px; margin: 20px auto; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
@@ -83,26 +83,26 @@ Note: Your download link is active for the next 24 hours.
             <p style="font-size: 9px; color: #8b5cf6; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Free Growth Resource</p>
           </div>
           
-          <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Your Coaching Blueprint is Ready! 🚀</h2>
+          <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Your Coaching Guide is Ready! 🚀</h2>
           
           <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
-            Thank you for requesting our guide, <strong>"The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint"</strong>.
+            Thank you for requesting our guide, <strong>"What is Life Gym Coaching? The Platform Overview Guide"</strong>.
           </p>
           <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
-            This blueprint covers the exact step-by-step systems and workflows used by elite coaches to onboard athletes seamlessly and keep client retention rates above 95%.
+            This document outlines how Life Gym helps premium coaching studios streamline workflows, track athlete progression, and scale client retention through high-end digital tools.
           </p>
           
           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 12px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
             <span style="color: #8b5cf6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">What you will learn:</span>
-            • <strong>Phase 1: The First 24 Hours</strong> - Building instant trust and setting expectations.<br />
-            • <strong>Phase 2: Hyper-Personalization</strong> - Custom split delivery and initial compliance tracking.<br />
-            • <strong>Phase 3: The 4-Week Review</strong> - Gathering biometrics feedback & adjusting programs.<br />
-            • <strong>Phase 4: Long-Term Retention</strong> - Fostering community & tracking performance milestones.
+            • <strong>Interactive Workouts</strong> - Day-type target overrides and customized splits.<br />
+            • <strong>Client Engagement</strong> - Gamified run receipts and completed session feedback.<br />
+            • <strong>Biometrics Parsing</strong> - Automated InBody scan parsing and segmental lean charts.<br />
+            • <strong>Roster Automation</strong> - Live client compliance tracking and direct WhatsApp templates.
           </div>
           
           <div style="text-align: center; margin-bottom: 28px;">
             <a href="${downloadUrl}" target="_blank" style="background-color: #8b5cf6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
-              Download The PDF Blueprint
+              Download The PDF Guide
             </a>
           </div>
           
@@ -122,7 +122,7 @@ Note: Your download link is active for the next 24 hours.
     waitUntil(
       sendBulkEmails({
         to: cleanEmail,
-        subject: `🎁 Your Free Guide: The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint [Ref: #${uniqueId}]`,
+        subject: `🎁 Your Free Guide: What is Life Gym Coaching? [Ref: #${uniqueId}]`,
         text: textFallback + `\n\nRef: #${uniqueId}`,
         html: htmlBody + `<span style="display: none; color: transparent; font-size: 0px;">Ref: #${uniqueId}</span>`,
         fromName: 'Life Gym Team'
