@@ -1251,7 +1251,7 @@ export default function CoachLandingPage() {
                           <div className="space-y-4">
                             {/* Stepper Progress Bar */}
                             <div className="flex items-center gap-2 mb-6">
-                              <div className="h-1.5 flex-1 rounded-full bg-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+                              <div className="h-1.5 flex-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
                               <div className="h-1.5 flex-1 rounded-full bg-zinc-900" />
                             </div>
                             <div className="space-y-1.5">
@@ -1314,8 +1314,8 @@ export default function CoachLandingPage() {
                           <div className="space-y-4">
                             {/* Stepper Progress Bar */}
                             <div className="flex items-center gap-2 mb-6">
-                              <div className="h-1.5 flex-1 rounded-full bg-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
-                              <div className="h-1.5 flex-1 rounded-full bg-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+                              <div className="h-1.5 flex-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+                              <div className="h-1.5 flex-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
                             </div>
 
                             <div className="space-y-1.5 text-left">
