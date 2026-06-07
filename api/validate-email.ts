@@ -1,4 +1,4 @@
-import { validateEmailAddress } from './helpers/email';
+import { validateEmailAddress } from './helpers/email.js';
 
 export default async function handler(req: any, res: any) {
   // CORS Headers

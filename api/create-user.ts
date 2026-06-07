@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { validateEmailAddress, sendBulkEmails } from './helpers/email'
+import { validateEmailAddress, sendBulkEmails } from './helpers/email.js'
 import { waitUntil } from '@vercel/functions'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co'
