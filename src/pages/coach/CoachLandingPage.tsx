@@ -198,11 +198,11 @@ export default function CoachLandingPage() {
 
       const resData = await response.json();
       if (!response.ok) {
-        throw new Error(resData.error || 'Failed to send guide email.');
+        throw new Error(resData.error || 'Failed to subscribe to mailing list.');
       }
 
       setLeadSubmitted(true);
-      toast.success('Life Gym guide sent successfully!');
+      toast.success('Successfully joined mailing list!');
     } catch (err: any) {
       console.error('Lead Capture Error:', err);
       toast.error(err.message || 'Failed to process request.');
@@ -886,13 +886,13 @@ export default function CoachLandingPage() {
 
           <div className="space-y-4 max-w-md relative z-10 text-left">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[9px] font-black uppercase tracking-wider text-purple-400">
-              Free Growth Resource
+              Join Our Newsletter
             </span>
             <h3 className="text-2xl font-black text-white tracking-tight leading-tight">
-              What is Life Gym Coaching?
+              Join the Life Gym Circle
             </h3>
             <p className="text-xs text-gray-400 leading-relaxed font-medium">
-              Enter your email to receive our free guide: <strong className="text-white">"What is Life Gym Coaching? The Platform Overview Guide"</strong>. Learn how Life Gym powers fitness academies with custom splits, InBody parsing, and automated roster tracking.
+              Subscribe to our mailing list to receive the latest updates, announcements, and strategies for scaling your fitness academy and coach workflows.
             </p>
           </div>
 
@@ -906,16 +906,16 @@ export default function CoachLandingPage() {
                 <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">
                   <Check size={18} />
                 </div>
-                <h4 className="text-xs font-black text-white uppercase tracking-wider">Check Your Inbox!</h4>
+                <h4 className="text-xs font-black text-white uppercase tracking-wider">Welcome on board!</h4>
                 <p className="text-[9px] text-gray-400 leading-relaxed">
-                  We've sent the PDF guide to <strong className="text-white">{leadEmail}</strong>. Download link is active for 24 hours.
+                  We've successfully added <strong className="text-white">{leadEmail}</strong> to our list. Check your inbox for a welcome message!
                 </p>
                 <button
                   type="button"
                   onClick={() => setLeadSubmitted(false)}
                   className="text-[9px] text-emerald-400 hover:text-emerald-300 font-bold underline bg-transparent border-none cursor-pointer"
                 >
-                  Submit another email
+                  Subscribe another email
                 </button>
               </motion.div>
             ) : (
@@ -936,7 +936,7 @@ export default function CoachLandingPage() {
                   disabled={leadLoading}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-800 disabled:to-gray-800 text-white font-extrabold text-[10px] uppercase tracking-wider py-3.5 rounded-xl shadow-lg shadow-purple-600/10 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  {leadLoading ? 'Sending...' : 'Send Me the Guide'}
+                  {leadLoading ? 'Subscribing...' : 'Join Mailing List'}
                 </button>
                 <p className="text-[8px] text-gray-650 font-bold text-center">No spam. Unsubscribe anytime in 1-click.</p>
               </form>

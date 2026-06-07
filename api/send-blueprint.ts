@@ -34,41 +34,21 @@ export default async function handler(req: any, res: any) {
     }
 
     const uniqueId = Math.floor(100000 + Math.random() * 900000);
-    const origin = req.headers.origin || (req.headers.host ? 'https://' + req.headers.host : 'https://lifegym.app');
     
-    const getHash = (emailStr: string) => {
-      let hash = 0;
-      const salt = "lifegym-salt-2026";
-      const str = emailStr.trim().toLowerCase() + salt;
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash = hash & hash;
-      }
-      return Math.abs(hash).toString(16);
-    };
-
-    const token = getHash(cleanEmail);
-    const downloadUrl = `${origin}/download-blueprint?email=${encodeURIComponent(cleanEmail)}&token=${token}`;
-
     // Text Fallback (highly recommended for compatibility)
     const textFallback = `
-LIFE GYM - Free Growth Resource
-Your Coaching Guide is Ready! 🚀
+LIFE GYM - Official Mailing List
+Welcome to the Community! ⚡
 
-Thank you for requesting our guide: "What is Life Gym Coaching? The Platform Overview Guide".
-This guide covers how Life Gym powers modern fitness academies with custom splits, InBody parsing, and automated roster tracking.
+Thank you for subscribing to our mailing list. You are now officially in the loop for the latest in digital coaching, platform updates, and exclusive fitness studio strategies.
 
-Download the PDF Guide directly here:
-${downloadUrl}
+What makes Life Gym unique:
+• Dynamic Splits & Workouts - Day-type targets and customized exercise builders.
+• Reward Loop Receipts - Gamified workout logs and run tracking metrics.
+• Automated InBody Parsing - Split-second CSV composition scan updates.
+• Roster Accountability - Live compliance tracking indicators and direct WhatsApp templates.
 
-What you will learn:
-• Interactive Workouts: Day-type target overrides and customized splits.
-• Client Engagement: Gamified run receipts and completed session feedback.
-• Biometrics Parsing: Automated InBody scan parsing and segmental lean charts.
-• Roster Automation: Live client compliance tracking and direct WhatsApp templates.
-
-Note: Your download link is active for the next 24 hours.
+Stay tuned for exciting announcements, feature drops, and updates.
 
 © 2026 Life Gym. All rights reserved.
     `.trim();
@@ -79,36 +59,28 @@ Note: Your download link is active for the next 24 hours.
         <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; max-width: 520px; margin: 20px auto; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
           
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #10b981; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
-            <p style="font-size: 9px; color: #8b5cf6; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Free Growth Resource</p>
+            <h1 style="color: #8b5cf6; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
+            <p style="font-size: 9px; color: #10b981; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Official Mailing List</p>
           </div>
           
-          <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Your Coaching Guide is Ready! 🚀</h2>
+          <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome to the Community! ⚡</h2>
           
           <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
-            Thank you for requesting our guide, <strong>"What is Life Gym Coaching? The Platform Overview Guide"</strong>.
+            Thank you for subscribing to our official mailing list. You are now first in line for our latest platform feature releases, elite coaching insights, and strategies to scale your fitness studio.
           </p>
           <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
-            This document outlines how Life Gym helps premium coaching studios streamline workflows, track athlete progression, and scale client retention through high-end digital tools.
+            Life Gym helps coaching academies eliminate administrative overhead, keep clients accountable, and scale retention through state-of-the-art tools.
           </p>
           
           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 12px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
-            <span style="color: #8b5cf6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">What you will learn:</span>
-            • <strong>Interactive Workouts</strong> - Day-type target overrides and customized splits.<br />
-            • <strong>Client Engagement</strong> - Gamified run receipts and completed session feedback.<br />
-            • <strong>Biometrics Parsing</strong> - Automated InBody scan parsing and segmental lean charts.<br />
-            • <strong>Roster Automation</strong> - Live client compliance tracking and direct WhatsApp templates.
+            <span style="color: #8b5cf6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">What we bring to your inbox:</span>
+            • <strong>Platform Features</strong> - Sneak peeks at new features like InBody CSV parsers and workout log creators.<br />
+            • <strong>Growth Strategies</strong> - Actionable guides on scaling client retention past 95%.<br />
+            • <strong>Community News</strong> - Announcements, feature rollouts, and updates.
           </div>
           
-          <div style="text-align: center; margin-bottom: 28px;">
-            <a href="${downloadUrl}" target="_blank" style="background-color: #8b5cf6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
-              Download The PDF Guide
-            </a>
-          </div>
-          
-          <p style="font-size: 11px; color: #6b7280; text-align: center; margin-bottom: 20px;">
-            <strong>Note:</strong> Your download link is active for the next 24 hours. If clicking the button doesn't work, copy and paste this link into your browser: <br/>
-            <a href="${downloadUrl}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${downloadUrl}</a>
+          <p style="font-size: 11px; color: #6b7280; text-align: center; margin-bottom: 20px; line-height: 1.5;">
+            No spam. You can manage your preferences or unsubscribe at any time.
           </p>
           
           <p style="font-size: 10px; color: #9ca3af; margin-top: 36px; border-top: 1px solid #e4e4e7; padding-top: 16px; text-align: center; margin-bottom: 0;">
@@ -122,7 +94,7 @@ Note: Your download link is active for the next 24 hours.
     waitUntil(
       sendBulkEmails({
         to: cleanEmail,
-        subject: `🎁 Your Free Guide: What is Life Gym Coaching? [Ref: #${uniqueId}]`,
+        subject: `⚡ Welcome to Life Gym: You're on the list! [Ref: #${uniqueId}]`,
         text: textFallback + `\n\nRef: #${uniqueId}`,
         html: htmlBody + `<span style="display: none; color: transparent; font-size: 0px;">Ref: #${uniqueId}</span>`,
         fromName: 'Life Gym Team'
