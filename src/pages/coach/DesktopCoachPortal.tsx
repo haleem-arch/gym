@@ -7,7 +7,7 @@ import {
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
-  ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown,
+  ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown, ArrowUpCircle,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
   DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
   ArrowRight, Server
@@ -171,6 +171,8 @@ function formatDayTypeLabel(dayType: string, totalVolume: number) {
   return dayType.charAt(0).toUpperCase() + dayType.slice(1).toLowerCase();
 }
 
+const isRunningInElectron = typeof window !== 'undefined' && (!!(window as any).electronAPI || navigator.userAgent.includes('Electron'));
+
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials'>('overview');
@@ -241,6 +243,94 @@ export default function DesktopCoachPortal() {
       }
     }
   }, [loading, coachUserId]);
+
+  // Electron App Update State
+  const [updateStatus, setUpdateStatus] = useState<{
+    available: boolean;
+    checking: boolean;
+    downloading: boolean;
+    progress: number;
+    version?: string;
+    error?: string;
+  }>({
+    available: false,
+    checking: false,
+    downloading: false,
+    progress: 0,
+  });
+
+  useEffect(() => {
+    const checkUpdate = async () => {
+      const electronAPI = (window as any).electronAPI;
+      if (!electronAPI) return;
+
+      try {
+        setUpdateStatus(prev => ({ ...prev, checking: true }));
+        const currentVersion = await electronAPI.getAppVersion();
+        const response = await fetch('/app-version.json');
+        if (!response.ok) throw new Error('Failed to fetch version catalog');
+        const data = await response.json();
+        
+        if (data.version && data.version !== currentVersion) {
+          setUpdateStatus({
+            available: true,
+            checking: false,
+            downloading: false,
+            progress: 0,
+            version: data.version
+          });
+        } else {
+          setUpdateStatus(prev => ({ ...prev, checking: false }));
+        }
+      } catch (err) {
+        console.error('Failed to check for updates:', err);
+        setUpdateStatus(prev => ({ ...prev, checking: false }));
+      }
+    };
+
+    checkUpdate();
+  }, []);
+
+  useEffect(() => {
+    const electronAPI = (window as any).electronAPI;
+    if (!electronAPI) return;
+
+    const unsubscribeProgress = electronAPI.onUpdateProgress((progress: number) => {
+      setUpdateStatus(prev => ({
+        ...prev,
+        progress: progress,
+        downloading: true,
+        error: undefined
+      }));
+    });
+
+    const unsubscribeError = electronAPI.onUpdateError((err: string) => {
+      setUpdateStatus(prev => ({
+        ...prev,
+        error: err,
+        downloading: false
+      }));
+    });
+
+    return () => {
+      if (unsubscribeProgress) unsubscribeProgress();
+      if (unsubscribeError) unsubscribeError();
+    };
+  }, []);
+
+  const handleStartUpdate = async () => {
+    const electronAPI = (window as any).electronAPI;
+    if (!electronAPI) return;
+
+    try {
+      setUpdateStatus(prev => ({ ...prev, downloading: true, progress: 0, error: undefined }));
+      const response = await fetch('/app-version.json');
+      const data = await response.json();
+      electronAPI.downloadAndInstallUpdate(data.url);
+    } catch (err: any) {
+      setUpdateStatus(prev => ({ ...prev, downloading: false, error: err.message }));
+    }
+  };
 
   // Selected Client (Clients Tab)
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -5203,17 +5293,57 @@ export default function DesktopCoachPortal() {
         </div>
       )}
 
-      {/* Visual background glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-indigo-600/5 rounded-full blur-[140px] pointer-events-none" />
-
+      {/* App Update Banner */}
+      {updateStatus.available && (
+        <div className="w-full py-3 px-8 flex items-center justify-between text-xs font-medium select-none z-50 bg-blue-950/30 border-b border-blue-500/20 backdrop-blur-md text-gray-200">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            <div className="flex items-center gap-2">
+              <ArrowUpCircle size={14} className="text-blue-400" />
+              <span>
+                New app update available: <span className="font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full ml-1 font-mono">v{updateStatus.version}</span>
+              </span>
+            </div>
+            {updateStatus.error && (
+              <span className="text-red-400 text-[11px] font-medium ml-4">
+                ({updateStatus.error})
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            {updateStatus.downloading ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-gray-400">Downloading Update...</span>
+                <div className="w-32 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${updateStatus.progress}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[11px] font-bold text-blue-400">{updateStatus.progress}%</span>
+              </div>
+            ) : (
+              <button 
+                onClick={handleStartUpdate}
+                className="group relative overflow-hidden text-[10px] font-bold tracking-wider bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg transition-all duration-300 active:scale-[0.98] cursor-pointer flex items-center gap-2 shadow-lg shadow-blue-500/10"
+              >
+                <span className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                <span>Update Now</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {/* Main Top Header Navbar */}
       <header className="border-b border-gray-800 bg-[#070710]/80 backdrop-blur-xl px-8 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3.5">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
             viewBox="0 0 512 512" 
-            className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.3)] select-none"
+            className="w-10 h-10 object-contain select-none"
           >
             <g transform="translate(256 256) rotate(-45)">
               {/* Rod */}
@@ -5229,7 +5359,7 @@ export default function DesktopCoachPortal() {
             </g>
           </svg>
           <div>
-            <h1 className="text-base font-black uppercase tracking-widest bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+            <h1 className="text-base font-bold uppercase tracking-widest text-white">
               LIFE GYM
             </h1>
             <p className="text-[10px] text-gray-500 font-mono">Desktop Coach Portal / Version 3.0</p>
@@ -5248,15 +5378,27 @@ export default function DesktopCoachPortal() {
             </div>
           )}
 
-          <button 
-            onClick={() => {
-              window.location.href = '/';
-            }}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/60 text-[10px] font-bold text-gray-300 hover:text-white transition-all active:scale-95 cursor-pointer"
-            title="Go back to the athlete view of the app"
-          >
-            <ChevronLeft size={11} className="text-gray-400" /> Back to App
-          </button>
+          {!isRunningInElectron && (
+            <button 
+              onClick={() => {
+                window.location.href = '/';
+              }}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/60 text-[10px] font-bold text-gray-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+              title="Go back to the athlete view of the app"
+            >
+              <ChevronLeft size={11} className="text-gray-400" /> Back to App
+            </button>
+          )}
+
+          {updateStatus.available && (
+            <button 
+              onClick={handleStartUpdate}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-blue-500/30 hover:border-blue-400 bg-blue-950/40 hover:bg-blue-900/40 text-[10px] font-bold text-blue-400 hover:text-white transition-all active:scale-95 cursor-pointer animate-fade-in"
+              title={`Download and install update v${updateStatus.version}`}
+            >
+              <ArrowUpCircle size={11} className="text-blue-400" /> Update Available (v{updateStatus.version})
+            </button>
+          )}
 
           <button 
             onClick={() => {
@@ -5270,10 +5412,10 @@ export default function DesktopCoachPortal() {
               setSelectedClientProfile(null);
               toast.success("Tutorial mode activated! Roster pre-filled with mock athletes.");
             }}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl border border-violet-500/30 hover:border-violet-400/60 bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-fuchsia-600/10 hover:from-violet-600/20 hover:to-fuchsia-600/20 text-[10px] font-black uppercase tracking-wider text-violet-400 hover:text-white transition-all shadow-[0_0_12px_rgba(139,92,246,0.1)] hover:shadow-[0_0_18px_rgba(139,92,246,0.25)] active:scale-95 cursor-pointer group"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/60 hover:bg-gray-800 text-[10px] font-bold text-gray-300 hover:text-white transition-all active:scale-95 cursor-pointer"
             title="Launch interactive simulated onboarding tutorial"
           >
-            <Sparkles size={11} className="text-violet-400 group-hover:rotate-12 transition-transform duration-300" /> Guided Tour
+            <Sparkles size={11} className="text-gray-400" /> Guided Tour
           </button>
 
           <button 
@@ -5289,16 +5431,18 @@ export default function DesktopCoachPortal() {
             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-emerald-900/40 hover:border-emerald-600 bg-emerald-950/20 text-[10px] font-bold text-emerald-400 hover:text-white transition-all active:scale-95 cursor-pointer"
             title="Refresh database data only"
           >
-            <RefreshCw size={11} className="text-emerald-400 animate-pulse" /> Sync Data
+            <RefreshCw size={11} className="text-emerald-400" /> Sync Data
           </button>
 
-          <button 
-            onClick={handleHardReload}
-            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-blue-900/40 hover:border-blue-700 bg-blue-950/20 text-[10px] font-bold text-blue-400 hover:text-white transition-all active:scale-95 cursor-pointer"
-            title="Force browser update and clear cache"
-          >
-            <RefreshCw size={11} /> Force Update (Hard Reload)
-          </button>
+          {!isRunningInElectron && (
+            <button 
+              onClick={handleHardReload}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-blue-900/40 hover:border-blue-700 bg-blue-950/20 text-[10px] font-bold text-blue-400 hover:text-white transition-all active:scale-95 cursor-pointer"
+              title="Force browser update and clear cache"
+            >
+              <RefreshCw size={11} /> Force Update (Hard Reload)
+            </button>
+          )}
 
           <button 
             onClick={async () => {
@@ -5494,42 +5638,34 @@ export default function DesktopCoachPortal() {
                 {coachUserId === OWNER_ID && (
                   <>
                     {/* Card 1: Total System Accounts */}
-                    <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-500/5 hover:-translate-y-0.5">
-                      <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="rounded-2xl border border-slate-800 bg-[#121624] p-5 shadow-lg transition-all duration-200 hover:border-blue-500/40">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Accounts</p>
-                          <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">System Accounts</p>
+                          <h3 className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">
                             {profiles.length}
                           </h3>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
-                          <Users size={16} />
-                        </div>
+                        <Users size={18} className="text-blue-500" />
                       </div>
-                      <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                        Live cloud sync active
+                      <div className="mt-4 text-[9px] text-slate-500 font-medium uppercase tracking-wider">
+                        Synced
                       </div>
                     </div>
 
                     {/* Card 2: Active Coaches */}
-                    <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-indigo-500/30 hover:shadow-indigo-500/5 hover:-translate-y-0.5">
-                      <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="rounded-2xl border border-slate-800 bg-[#121624] p-5 shadow-lg transition-all duration-200 hover:border-blue-500/40">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Active Staff</p>
-                          <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Active Staff</p>
+                          <h3 className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">
                             {profiles.filter(p => p.role === 'coach').length}
                           </h3>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-inner">
-                          <Shield size={16} />
-                        </div>
+                        <Shield size={18} className="text-blue-500" />
                       </div>
-                      <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                        Verified coach nodes
+                      <div className="mt-4 text-[9px] text-slate-500 font-medium uppercase tracking-wider">
+                        Coaches
                       </div>
                     </div>
                   </>
@@ -5538,74 +5674,60 @@ export default function DesktopCoachPortal() {
                 {/* Card 3: Managed Athletes */}
                 <div 
                   onClick={handleOpenAnalytics}
-                  className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-purple-500/5 hover:-translate-y-0.5 cursor-pointer active:scale-[0.99]"
+                  className="rounded-2xl border border-slate-800 bg-[#121624] p-5 shadow-lg transition-all duration-200 hover:border-blue-500/40 cursor-pointer active:scale-[0.99]"
                 >
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
                         {feedFilterMineOnly ? 'My Athletes' : 'Total Athletes'}
                       </p>
-                      <h3 className="text-3xl font-black mt-2 font-mono tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                      <h3 className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">
                         {feedFilterMineOnly 
                           ? activeClientsList.filter(c => c.coach_id === OWNER_ID).length 
                           : activeClientsList.length}
                       </h3>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shadow-inner">
-                      <Activity size={16} />
-                    </div>
+                    <Activity size={18} className="text-blue-500" />
                   </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                    View Athlete Analytics Report
+                  <div className="mt-4 text-[9px] text-slate-500 font-medium uppercase tracking-wider">
+                    Athlete Analytics
                   </div>
                 </div>
 
                 {/* Card 4: System Status */}
-                <div className="group relative rounded-3xl border border-[#1e294b]/40 bg-gradient-to-br from-[#0c1020]/90 to-[#080b16]/95 p-6 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-emerald-500/30 hover:shadow-emerald-500/5 hover:-translate-y-0.5">
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="rounded-2xl border border-slate-800 bg-[#121624] p-5 shadow-lg transition-all duration-200 hover:border-blue-500/40">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Core</p>
-                      <div className="flex items-center gap-2 mt-2.5">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                        </span>
-                        <span className="text-xs font-black uppercase tracking-widest text-emerald-400 font-sans">
-                          SECURE
-                        </span>
-                      </div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">System Core</p>
+                      <h3 className="text-2xl font-bold mt-2 font-sans tracking-tight text-emerald-400">
+                        Active
+                      </h3>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-inner">
-                      <ShieldCheck size={16} />
-                    </div>
+                    <ShieldCheck size={18} className="text-emerald-400" />
                   </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                    100% API Uptime Verified
+                  <div className="mt-4 text-[9px] text-slate-500 font-medium uppercase tracking-wider">
+                    API Uptime: 100%
                   </div>
                 </div>
               </div>
 
-              {/* Feed Activity Filter Toggle - Owner / Admin Only */}
+              {/* Feed Scope Selector */}
               {coachUserId === OWNER_ID && (
-                <div className="relative overflow-hidden rounded-3xl border border-[#1e294b]/40 bg-gradient-to-r from-[#0c1020]/40 to-[#080b16]/40 p-4 shadow-md backdrop-blur-md flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <div className="absolute -left-16 -bottom-16 w-32 h-32 bg-blue-500/[0.03] rounded-full blur-2xl" />
-                  <div className="flex-1 min-w-0 z-10">
-                    <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                      <Search size={12} className="text-blue-400" /> Feed Scope Selection
+                <div className="rounded-2xl border border-slate-800 bg-[#121624] p-5 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <Search size={13} className="text-blue-500" /> Feed Scope Selection
                     </p>
-                    <p className="text-[9px] text-slate-550 mt-0.5 leading-normal font-bold uppercase">
-                      Narrow live event feed down to your assigned clients or view all system-wide updates
+                    <p className="text-[10px] text-slate-400 mt-1 leading-normal font-medium">
+                      Filter feed down to your assigned clients or view all system-wide updates
                     </p>
                   </div>
-                  <div className="flex bg-[#070912] border border-slate-900 rounded-2xl p-1 shrink-0 z-10">
+                  <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
                     <button
                       onClick={() => setFeedFilterMineOnly(false)}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                         !feedFilterMineOnly
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+                          ? 'bg-blue-600 text-white shadow-md'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -5613,9 +5735,9 @@ export default function DesktopCoachPortal() {
                     </button>
                     <button
                       onClick={() => setFeedFilterMineOnly(true)}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                         feedFilterMineOnly
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+                          ? 'bg-blue-600 text-white shadow-md'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -5629,17 +5751,14 @@ export default function DesktopCoachPortal() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {/* Workouts Feed */}
-                <div className="bg-[#0c1020]/30 border border-[#1e294b]/30 rounded-[32px] p-6 shadow-xl backdrop-blur-xl space-y-5">
-                  <div className="flex items-center justify-between border-b border-[#1e294b]/20 pb-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2">
-                      <Dumbbell size={15} className="animate-pulse" /> Workout Activity Feed
+                <div className="bg-[#121624] border border-slate-800 rounded-2xl p-6 shadow-lg space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                      <Dumbbell size={15} /> Workout Activity Feed
                     </h3>
                     <div className="flex items-center gap-1.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                      </span>
-                      <span className="text-[9px] text-slate-550 font-black uppercase tracking-widest">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
                         {refreshingFeed ? 'Syncing...' : 'Live'}
                       </span>
                     </div>
@@ -5647,16 +5766,15 @@ export default function DesktopCoachPortal() {
 
                   <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
                     {recentWorkouts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 text-slate-650">
+                      <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                         <Dumbbell size={24} className="mb-2.5 opacity-40" />
-                        <p className="text-[10px] font-black uppercase tracking-wider">No recent completions recorded</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider">No recent completions recorded</p>
                       </div>
                     ) : (
                       recentWorkouts.map((w, idx) => {
                         const name = w.profiles?.display_name || 'Anonymous';
                         const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                         
-                        // Pick tag colors based on day_type
                         const dayType = w.day_type || 'Rest';
                         let tagClass = 'bg-blue-500/10 border-blue-500/20 text-blue-400';
                         if (dayType.toUpperCase() === 'PULL') tagClass = 'bg-purple-500/10 border-purple-500/20 text-purple-400';
@@ -5667,32 +5785,32 @@ export default function DesktopCoachPortal() {
                           <div 
                             key={idx} 
                             onClick={() => setSelectedReceiptWorkout(w)}
-                            className="group relative bg-[#070912]/50 border border-slate-900 hover:border-blue-500/30 p-4 rounded-2xl flex justify-between items-center text-xs transition-all duration-300 cursor-pointer hover:bg-[#0c1020]/45 shadow-sm hover:shadow-md"
+                            className="bg-slate-900/40 border border-slate-800 hover:border-blue-500/40 p-4 rounded-xl flex justify-between items-center text-xs transition-all duration-200 cursor-pointer hover:bg-slate-900 shadow-sm"
                           >
                             <div className="flex items-center gap-3.5">
                               {/* Avatar Icon */}
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 border border-blue-500/20 flex items-center justify-center text-[10px] text-blue-400 font-black shadow-inner shrink-0">
+                              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] text-slate-300 font-bold shrink-0">
                                 {initials}
                               </div>
                               <div className="space-y-1">
                                 <div className="flex items-center gap-1.5">
-                                  <p className="font-extrabold text-white text-xs tracking-tight">{name}</p>
+                                  <p className="font-bold text-white text-xs tracking-tight">{name}</p>
                                   {w.profiles?.client_code && (
-                                    <span className="text-[8px] bg-slate-900 border border-slate-800 text-slate-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                    <span className="text-[8px] bg-slate-950 border border-slate-800 text-slate-400 px-1 py-0.5 rounded font-bold">
                                       #{w.profiles.client_code}
                                     </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-[8px] border px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${tagClass}`}>
+                                  <span className={`text-[8px] border px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${tagClass}`}>
                                     {dayType}
                                   </span>
-                                  <span className="text-[9px] text-slate-550 font-bold uppercase">Completed training session</span>
+                                  <span className="text-[9px] text-slate-400 font-medium">Completed training session</span>
                                 </div>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-black text-slate-200 text-xs font-mono tracking-tight">{formatDayTypeLabel(w.day_type, w.total_volume)}</p>
+                              <p className="font-bold text-slate-200 text-xs font-mono tracking-tight">{formatDayTypeLabel(w.day_type, w.total_volume)}</p>
                               <p className="text-slate-500 font-mono text-[9px] mt-0.5">{w.date}</p>
                             </div>
                           </div>
@@ -5703,25 +5821,22 @@ export default function DesktopCoachPortal() {
                 </div>
 
                 {/* Diets Feed */}
-                <div className="bg-[#0c1020]/30 border border-[#1e294b]/30 rounded-[32px] p-6 shadow-xl backdrop-blur-xl space-y-5">
-                  <div className="flex items-center justify-between border-b border-[#1e294b]/20 pb-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-emerald-450 flex items-center gap-2">
+                <div className="bg-[#121624] border border-slate-800 rounded-2xl p-6 shadow-lg space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-455 flex items-center gap-2">
                       <Apple size={15} /> Nutritional Intake Feed
                     </h3>
                     <div className="flex items-center gap-1.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                      </span>
-                      <span className="text-[9px] text-slate-550 font-black uppercase tracking-widest">Live</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Live</span>
                     </div>
                   </div>
 
                   <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 no-scrollbar">
                     {recentDiets.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 text-slate-650">
+                      <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                         <Apple size={24} className="mb-2.5 opacity-40" />
-                        <p className="text-[10px] font-black uppercase tracking-wider">No recent logs recorded</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider">No recent logs recorded</p>
                       </div>
                     ) : (
                       recentDiets.map((d, idx) => {
@@ -5734,32 +5849,32 @@ export default function DesktopCoachPortal() {
                           <div 
                             key={idx} 
                             onClick={() => handleOpenDietReceipt(d)}
-                            className="group relative bg-[#070912]/50 border border-slate-900 hover:border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center text-xs transition-all duration-300 cursor-pointer hover:bg-[#0c1020]/45 shadow-sm hover:shadow-md"
+                            className="bg-slate-900/40 border border-slate-800 hover:border-emerald-500/40 p-4 rounded-xl flex justify-between items-center text-xs transition-all duration-200 cursor-pointer hover:bg-slate-900 shadow-sm"
                           >
                             <div className="flex items-center gap-3.5">
                               {/* Avatar Icon */}
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-[10px] text-emerald-400 font-black shadow-inner shrink-0">
+                              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] text-slate-300 font-bold shrink-0">
                                 {initials}
                               </div>
                               <div className="space-y-1">
                                 <div className="flex items-center gap-1.5">
-                                  <p className="font-extrabold text-white text-xs tracking-tight">{name}</p>
+                                  <p className="font-bold text-white text-xs tracking-tight">{name}</p>
                                   {d.profiles?.client_code && (
-                                    <span className="text-[8px] bg-slate-900 border border-slate-800 text-slate-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                    <span className="text-[8px] bg-slate-950 border border-slate-800 text-slate-400 px-1 py-0.5 rounded font-bold">
                                       #{d.profiles.client_code}
                                     </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[8px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded font-black uppercase tracking-wider text-emerald-400">
+                                  <span className="text-[8px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-emerald-400">
                                     Nutrition
                                   </span>
-                                  <span className="text-[9px] text-slate-550 font-bold uppercase">Logged macro &amp; calorie values</span>
+                                  <span className="text-[9px] text-slate-400 font-medium">Logged macro &amp; calorie values</span>
                                 </div>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-black text-emerald-400 text-xs font-mono tracking-tight">
+                              <p className="font-bold text-emerald-400 text-xs font-mono tracking-tight">
                                 {kcal} kcal <span className="text-slate-500 font-sans font-bold">/</span> {protein}g P
                               </p>
                               <p className="text-slate-550 font-mono text-[9px] mt-0.5">{d.date}</p>

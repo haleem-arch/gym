@@ -50,6 +50,7 @@ const RippleButton = ({ onClick, className, children }: { onClick: (e: React.Mou
 };
 
 const TodayView = () => {
+  const isRunningInElectron = typeof window !== 'undefined' && (!!(window as any).electronAPI || navigator.userAgent.includes('Electron'));
   const navigate = useNavigate();
   const [userDisplayName, setUserDisplayName] = useState('');
   const [isHaleem, setIsHaleem] = useState(false);
@@ -425,9 +426,8 @@ const TodayView = () => {
         initial={{ opacity: 0, scale: 0.95 }} 
         animate={{ opacity: 1, scale: 1 }} 
         transition={{ delay: 0.1 }}
-        className="bg-surface rounded-2xl p-5 border border-gray-800 shadow-lg relative overflow-hidden flex flex-col w-full"
+        className="bg-surface rounded-2xl p-5 border border-gray-800 shadow-lg relative flex flex-col w-full"
       >
-        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-bold text-primary uppercase tracking-wider">Scheduled Plan</span>
           <select 
@@ -468,8 +468,8 @@ const TodayView = () => {
         {dayType !== 'REST' && dayType !== 'RUN + GYM' && (
           <ul className="space-y-2 mb-6 text-sm text-gray-300">
             {plan.exercises.map((ex: string, i: number) => (
-              <li key={i} className="flex items-center gap-2.5">
-                <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
+              <li key={i} className="flex items-start gap-2.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-600 mt-1.5 shrink-0" />
                 <span className="text-sm font-semibold text-gray-200">{ex}</span>
               </li>
             ))}
@@ -482,15 +482,15 @@ const TodayView = () => {
             {hasCompletedRun ? (
               <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 text-xs">
                 <Check size={16} />
-                RUN COMPLETED
+                Run Completed
               </div>
             ) : (
               <button 
                 onClick={() => navigate('/workout', { state: { activeDateStr, openRunModal: true, forceLiftingType: hybridLiftingType } })}
-                className="w-full h-[48px] bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full h-[48px] bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
                 <Activity size={16} />
-                LOG RUN (MANUAL)
+                Log Run Session
               </button>
             )}
 
@@ -498,15 +498,15 @@ const TodayView = () => {
             {hasCompletedGym ? (
               <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 text-xs">
                 <Check size={16} />
-                {hybridLiftingType} COMPLETED
+                {hybridLiftingType} Completed
               </div>
             ) : (
               <button 
                 onClick={() => navigate('/workout', { state: { activeDateStr, forceLiftingType: hybridLiftingType } })}
-                className="w-full h-[48px] bg-primary hover:bg-blue-600 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full h-[48px] bg-primary hover:bg-blue-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
                 <Play size={16} fill="currentColor" />
-                START {hybridLiftingType} WORKOUT
+                Start {hybridLiftingType} Workout
               </button>
             )}
           </div>
@@ -529,7 +529,7 @@ const TodayView = () => {
                 className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && workout.date === activeDateStr) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
               >
                 <Play size={18} fill="currentColor" />
-                {(workout && workout.date === activeDateStr) ? 'RESUME SESSION' : 'START WORKOUT'}
+                {(workout && workout.date === activeDateStr) ? 'Resume Session' : 'Start Workout'}
               </button>
               
               {workout && workout.date === activeDateStr && (
@@ -579,10 +579,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Calories</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
+                  <span className="text-gray-400 font-bold">{Math.round(macros.kcal)}/{targets.kcal}</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
+                  <div className="bg-[#3b82f6] h-1.5 rounded-full" style={{ width: `${Math.min((macros.kcal/targets.kcal)*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -590,10 +590,10 @@ const TodayView = () => {
               <div>
                 <div className="flex justify-between text-xs mb-1.5 leading-none">
                   <span className="font-semibold text-gray-300">Protein</span>
-                  <span className="text-gray-450 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
+                  <span className="text-gray-400 font-bold">{Math.round(macros.protein)}/{targets.protein}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-success h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
+                  <div className="bg-[#475569] h-1.5 rounded-full" style={{ width: `${Math.min((macros.protein/targets.protein)*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -604,7 +604,7 @@ const TodayView = () => {
                   <span className="text-gray-450 font-bold">{Math.round(macros.carbs)}/{targets.carbs || 250}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#38BDF8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
+                  <div className="bg-[#64748b] h-1.5 rounded-full" style={{ width: `${Math.min((macros.carbs/(targets.carbs || 250))*100, 100)}%` }}></div>
                 </div>
               </div>
 
@@ -615,7 +615,7 @@ const TodayView = () => {
                   <span className="text-gray-450 font-bold">{Math.round(macros.fat)}/{targets.fat || 75}g</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[#A78BFA] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
+                  <div className="bg-[#94a3b8] h-1.5 rounded-full" style={{ width: `${Math.min((macros.fat/(targets.fat || 75))*100, 100)}%` }}></div>
                 </div>
               </div>
             </div>
@@ -638,12 +638,12 @@ const TodayView = () => {
                    <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal">/{waterTarget}L</span></span>
                  </div>
                  <div className="w-full flex flex-col items-center">
-                   <RippleButton 
-                     onClick={() => logWater(0.25)} 
-                     className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5 cursor-pointer"
-                   >
-                     + 250ml WATER
-                   </RippleButton>
+                    <RippleButton 
+                      onClick={() => logWater(0.25)} 
+                      className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      Log 250ml Water
+                    </RippleButton>
                    <span className="text-xs font-semibold text-gray-500 mt-2 block text-center leading-none">
                      {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
                    </span>
@@ -705,26 +705,28 @@ const TodayView = () => {
       </div>
       
       {/* Dev Reset Button */}
-      <div className="mt-2 text-center">
-        <button 
-          onClick={() => {
-            if (window.confirm("This will clear all local app data and force update. Continue?")) {
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for(let registration of registrations) {
-                    registration.unregister();
-                  } 
-                });
+      {!isRunningInElectron && (
+        <div className="mt-2 text-center">
+          <button 
+            onClick={() => {
+              if (window.confirm("This will clear all local app data and force update. Continue?")) {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                      registration.unregister();
+                    } 
+                  });
+                }
+                localStorage.clear();
+                window.location.reload();
               }
-              localStorage.clear();
-              window.location.reload();
-            }
-          }}
-          className="text-[10px] text-gray-600 uppercase font-bold tracking-widest hover:text-danger transition-colors p-2 cursor-pointer"
-        >
-          Force Reset App Cache
-        </button>
-      </div>
+            }}
+            className="text-[10px] text-gray-600 uppercase font-bold tracking-widest hover:text-danger transition-colors p-2 cursor-pointer"
+          >
+            Force Reset App Cache
+          </button>
+        </div>
+      )}
 
       {/* Spacer for bottom nav */}
       <div className="h-4"></div>
@@ -850,7 +852,7 @@ const TodayView = () => {
 
                 {/* Title */}
                 <div className="flex items-center gap-2 mb-6">
-                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                  <div className="text-blue-400">
                     <Target size={18} />
                   </div>
                   <div>
@@ -868,7 +870,7 @@ const TodayView = () => {
                     isRestDay={dayType === 'REST'}
                     compact={false}
                   />
-                  <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  <div className="mt-4 px-3.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-slate-800 text-gray-300 border border-slate-700/60">
                     Overall Target Fulfillment
                   </div>
                 </div>
@@ -877,8 +879,8 @@ const TodayView = () => {
                 <div className="space-y-4 text-xs font-semibold text-gray-300 leading-relaxed mb-6">
                   {/* Nutrition Progress */}
                   <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#F97316] uppercase tracking-widest mb-3 flex items-center justify-between">
-                      <span>🍎 Nutrition Target</span>
+                    <h5 className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>Nutrition Target</span>
                       <span>{Math.round((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100)}%</span>
                     </h5>
                     <div className="flex flex-col gap-1.5">
@@ -887,15 +889,15 @@ const TodayView = () => {
                         <span className="text-white font-black">{Math.round(macros.kcal)} / {targets.kcal} kcal</span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#F97316] h-2 rounded-full" style={{ width: `${Math.min((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100, 100)}%` }}></div>
+                        <div className="bg-[#3b82f6] h-2 rounded-full" style={{ width: `${Math.min((targets.kcal > 0 ? (macros.kcal / targets.kcal) : 0) * 100, 100)}%` }}></div>
                       </div>
                     </div>
                   </div>
 
                   {/* Hydration Progress */}
                   <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#38BDF8] uppercase tracking-widest mb-3 flex items-center justify-between">
-                      <span>💧 Hydration Target</span>
+                    <h5 className="text-[10px] font-black text-[#475569] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>Hydration Target</span>
                       <span>{Math.round((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100)}%</span>
                     </h5>
                     <div className="flex flex-col gap-1.5">
@@ -904,15 +906,15 @@ const TodayView = () => {
                         <span className="text-white font-black">{(waterTotalMl / 1000).toFixed(1)} / {waterTarget} L</span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#38BDF8] h-2 rounded-full" style={{ width: `${Math.min((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100, 100)}%` }}></div>
+                        <div className="bg-[#475569] h-2 rounded-full" style={{ width: `${Math.min((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100, 100)}%` }}></div>
                       </div>
                     </div>
                   </div>
 
                   {/* Training Progress */}
                   <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#A78BFA] uppercase tracking-widest mb-3 flex items-center justify-between">
-                      <span>🏋️‍♂️ Training Compliance</span>
+                    <h5 className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-3 flex items-center justify-between">
+                      <span>Training Compliance</span>
                       <span>{Math.round((dayType === 'REST' ? 1.0 : workoutStatus) * 100)}%</span>
                     </h5>
                     <div className="flex flex-col gap-1.5">
@@ -923,7 +925,7 @@ const TodayView = () => {
                         </span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#A78BFA] h-2 rounded-full" style={{ width: `${Math.min((dayType === 'REST' ? 1.0 : workoutStatus) * 100, 100)}%` }}></div>
+                        <div className="bg-[#94a3b8] h-2 rounded-full" style={{ width: `${Math.min((dayType === 'REST' ? 1.0 : workoutStatus) * 100, 100)}%` }}></div>
                       </div>
                     </div>
                   </div>

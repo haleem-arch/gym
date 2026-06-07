@@ -66,6 +66,8 @@
     },
     "files": [
       "electron.cjs",
+      "preload.cjs",
+      "offline.html",
       "app_icon_rounded.png",
       "package.json"
     ],

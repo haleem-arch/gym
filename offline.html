@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connection Lost | Life Gym Coach Portal</title>
+  <style>
+    :root {
+      --bg-color: #07080e;
+      --card-bg: #111322;
+      --card-border: #1f2238;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 40px;
+      width: 90%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .icon-container {
+      width: 72px;
+      height: 72px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      position: relative;
+    }
+
+    .icon-container::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid rgba(239, 68, 68, 0.08);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1.15);
+        opacity: 0;
+      }
+    }
+
+    .icon-container svg {
+      width: 32px;
+      height: 32px;
+      color: #ef4444;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .retry-btn {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .retry-btn:hover {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    }
+
+    .retry-btn:active {
+      transform: scale(0.99);
+    }
+
+    .retry-btn svg {
+      width: 15px;
+      height: 15px;
+      color: currentColor;
+    }
+
+    .retry-btn.loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon-container">
+      <!-- Standard Wifi Off Icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.5"></path>
+        <path d="M5 12.5a10.94 10.94 0 0 1 5.83-2.84"></path>
+        <path d="M8.57 16.38a7.07 7.07 0 0 1 2.38-.81"></path>
+        <path d="M21 8.5a15.66 15.66 0 0 0-5.18-1.78"></path>
+        <path d="M3 8.5A15.66 15.66 0 0 1 12 6c1.09 0 2.18.12 3.25.35"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+    <h1>Connection Lost</h1>
+    <p>Please check your internet connection. We couldn't reach the server. Make sure your computer is connected to Wi-Fi or your ethernet cable is plugged in, then try again.</p>
+    <button class="retry-btn" id="retry-btn" onclick="handleRetry()">
+      <!-- Standard Refresh Cw Icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+      </svg>
+      <span id="btn-text">Try Reconnecting</span>
+    </button>
+  </div>
+
+  <script>
+    function handleRetry() {
+      const btn = document.getElementById('retry-btn');
+      const text = document.getElementById('btn-text');
+      
+      btn.classList.add('loading');
+      text.innerText = 'Retrying Connection...';
+      
+      const params = new URLSearchParams(window.location.search);
+      const targetUrl = params.get('url') || 'https://gym-kappa-three.vercel.app';
+      
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 800);
+    }
+  </script>
+</body>
+</html>
