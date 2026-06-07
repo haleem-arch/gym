@@ -5291,53 +5291,7 @@ export default function DesktopCoachPortal() {
             <span>{isTrialActive ? 'Upgrade License' : 'Manage Subscription'}</span>
           </button>
         </div>
-      )}
-
-      {/* App Update Banner */}
-      {updateStatus.available && (
-        <div className="w-full py-3 px-8 flex items-center justify-between text-xs font-medium select-none z-50 bg-blue-950/30 border-b border-blue-500/20 backdrop-blur-md text-gray-200">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            <div className="flex items-center gap-2">
-              <ArrowUpCircle size={14} className="text-blue-400" />
-              <span>
-                New app update available: <span className="font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full ml-1 font-mono">v{updateStatus.version}</span>
-              </span>
-            </div>
-            {updateStatus.error && (
-              <span className="text-red-400 text-[11px] font-medium ml-4">
-                ({updateStatus.error})
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            {updateStatus.downloading ? (
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] text-gray-400">Downloading Update...</span>
-                <div className="w-32 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${updateStatus.progress}%` }}
-                  />
-                </div>
-                <span className="font-mono text-[11px] font-bold text-blue-400">{updateStatus.progress}%</span>
-              </div>
-            ) : (
-              <button 
-                onClick={handleStartUpdate}
-                className="group relative overflow-hidden text-[10px] font-bold tracking-wider bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg transition-all duration-300 active:scale-[0.98] cursor-pointer flex items-center gap-2 shadow-lg shadow-blue-500/10"
-              >
-                <span className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
-                <span>Update Now</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Main Top Header Navbar */}
+      )}      {/* Main Top Header Navbar */}
       <header className="border-b border-gray-800 bg-[#070710]/80 backdrop-blur-xl px-8 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3.5">
           <svg 
@@ -11634,6 +11588,57 @@ export default function DesktopCoachPortal() {
         })()}
       </div>
     </div>
+
+    {/* Blocking Forced App Update Overlay */}
+    {isRunningInElectron && updateStatus.available && (
+      <div className="fixed inset-0 bg-[#07080e] z-[999] flex items-center justify-center p-6 select-none font-sans">
+        <div className="bg-[#111322] border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative flex flex-col items-center">
+          {/* Download Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
+            <ArrowUpCircle size={32} className="text-blue-500 animate-bounce" />
+          </div>
+
+          <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">Update Required</h2>
+          <p className="text-gray-400 text-xs leading-relaxed max-w-[320px] mb-8">
+            A new version of the Life Gym Coach Portal is available. You must update the application to version <span className="font-mono font-bold text-blue-400">v{updateStatus.version}</span> to continue using the platform.
+          </p>
+
+          {updateStatus.downloading ? (
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-center text-xs font-semibold text-gray-400 px-1">
+                <span>Downloading Setup...</span>
+                <span className="font-mono text-blue-400 font-bold">{updateStatus.progress}%</span>
+              </div>
+              <div className="w-full bg-slate-950 rounded-full h-3 overflow-hidden border border-slate-800/50">
+                <div 
+                  className="bg-blue-500 h-full rounded-full transition-all duration-300"
+                  style={{ width: `${updateStatus.progress}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-500 leading-normal">
+                Downloading setup installer package. The app will automatically close, install the update, and restart.
+              </p>
+            </div>
+          ) : (
+            <div className="w-full space-y-4">
+              <button
+                onClick={handleStartUpdate}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ArrowUpCircle size={15} />
+                <span>Download & Install Update Now</span>
+              </button>
+              {updateStatus.error && (
+                <div className="text-red-400 text-xs font-semibold mt-2 leading-relaxed bg-red-950/20 border border-red-900/30 px-3 py-2 rounded-xl">
+                  Error: {updateStatus.error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
     {showTutorial && renderGuidedTutorial()}
   </>
 );
