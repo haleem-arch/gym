@@ -147,6 +147,7 @@ export default function CoachLandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [onboardingStep, setOnboardingStep] = useState(1);
+  const [onboardingMode, setOnboardingMode] = useState<'options' | 'download_instructions' | 'form'>('form');
   const [loading, setLoading] = useState(false);
   const [showCreationLoader, setShowCreationLoader] = useState(false);
   const [creationProgress, setCreationProgress] = useState(0);
@@ -267,6 +268,13 @@ export default function CoachLandingPage() {
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
     setErrorMessage(null);
+
+    const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
+    if (mode === 'register' && isWindows) {
+      setOnboardingMode('options');
+    } else {
+      setOnboardingMode('form');
+    }
     setShowAuthModal(true);
   };
 
@@ -467,22 +475,6 @@ export default function CoachLandingPage() {
     }
   };
 
-  // Icon interactive hover and load variants
-  const iconVariants = {
-    hidden: { scale: 0.75, rotate: -15, opacity: 0 },
-    visible: { 
-      scale: 1, 
-      rotate: 0, 
-      opacity: 1,
-      transition: { type: "spring" as const, stiffness: 220, damping: 15 }
-    },
-    hover: { 
-      scale: 1.25, 
-      rotate: [0, -10, 15, -5, 0],
-      transition: { duration: 0.45, ease: "easeInOut" as const }
-    }
-  };
-
   const sharedFeaturesList = [
     { text: "Manage up to 50 active athletes" },
     { text: "Custom workout splits & day-type macros" },
@@ -491,26 +483,21 @@ export default function CoachLandingPage() {
   ];
 
   return (
-    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#060713] text-gray-100 font-sans selection:bg-blue-500/30 scroll-smooth no-scrollbar">
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 scroll-smooth no-scrollbar" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.015) 1px, transparent 0)', backgroundSize: '32px 32px' }}>
       
-      {/* BACKGROUND DECORATIONS */}
-      <div className="absolute top-0 left-0 right-0 h-[800px] bg-gradient-to-b from-blue-600/10 via-purple-600/5 to-transparent blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-[-10%] w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[20%] left-[-10%] w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
-
       {/* HEADER NAVBAR */}
-      <header className="relative z-10 max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-white/[0.04]">
+      <header className="relative z-10 max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-zinc-900">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center shadow-lg border border-blue-500/20">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
             <img src="/icon.svg" alt="Life Gym Logo" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-base font-black tracking-wider text-white">LIFE GYM</h1>
-            <p className="text-[9px] text-emerald-400 font-black tracking-widest uppercase">YOUR ULTIMATE FITNESS COACHING APP</p>
+            <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">YOUR ULTIMATE FITNESS COACHING APP</p>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-gray-400">
+        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-zinc-400">
           <a href="#features" className="hover:text-white transition-colors">Features</a>
           <a href="#preview" className="hover:text-white transition-colors">Platform Preview</a>
           <a href="#pricing" className="hover:text-white transition-colors">Pricing Plans</a>
@@ -521,17 +508,23 @@ export default function CoachLandingPage() {
           <a
             href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
             download
-            className="hidden lg:flex items-center gap-1.5 px-3 py-2.5 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 rounded-xl transition-all font-black whitespace-nowrap"
+            className="hidden lg:flex items-center gap-3 px-5 py-3 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs font-extrabold uppercase tracking-widest text-zinc-100 rounded-xl transition-all whitespace-nowrap shadow-md cursor-pointer active:scale-95 group"
+            title="Download Life Gym Coach App for Windows"
           >
-            <Download size={12} /> Download App
+            <img src="/icon.svg" className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
+            {/* Windows Logo */}
+            <svg className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+            </svg>
+            <span>Download for Windows</span>
           </a>
-          <div className="hidden sm:flex items-center gap-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-            <span>Already have an account?</span>
+          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+            <span>Already a coach?</span>
             <button 
               onClick={() => openAuth('login')}
-              className="text-blue-400 hover:text-blue-300 bg-transparent border-none p-0 cursor-pointer font-black"
+              className="text-zinc-300 hover:text-white bg-transparent border-none p-0 cursor-pointer font-black underline"
             >
-              Log In (Coaches Only)
+              Log In
             </button>
           </div>
           <button 
@@ -539,7 +532,7 @@ export default function CoachLandingPage() {
               const el = document.getElementById('pricing');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-95 cursor-pointer"
+            className="bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
           >
             Start Free Trial
           </button>
@@ -547,46 +540,59 @@ export default function CoachLandingPage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-20 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="space-y-6"
+          className="space-y-8"
         >
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-wider text-blue-400">
-            <Sparkles size={11} /> Next-Gen Fitness Coaching Platform
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+            Life Gym Desktop Portal
           </span>
 
-          <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1]">
-            Scale Your Coaching Business,<br />
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Not Your Admin Work.</span>
+          <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.12]">
+            Professional Coaching Portal.<br />
+            <span className="text-zinc-400">Built for Serious Coaches.</span>
           </h2>
 
-          <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium">
-            Design workouts splits, build nutrition targets, track body composition scans, and communicate with athletes on a single premium dashboard.
+          <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed font-medium">
+            Design training splits, build day-type nutrition targets, track segmental InBody scans, and sync metrics to the athlete portal in real-time.
           </p>
 
-          <div className="pt-6 flex flex-col items-center justify-center gap-3">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+          <div className="pt-4 flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto">
               <button
                 onClick={() => {
                   const el = document.getElementById('pricing');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider px-8 py-4.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
               >
                 <span>Start 14-Day Free Trial</span>
                 <ArrowRight size={14} />
               </button>
+              
+              <a
+                href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
+                download
+                className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group animate-pulse hover:animate-none"
+              >
+                <img src="/icon.svg" className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
+                <svg className="w-4 h-4 fill-current text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 24 24">
+                  <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+                </svg>
+                <span>Download for Windows</span>
+              </a>
+
               <button
                 onClick={() => openAuth('login')}
-                className="w-full sm:w-auto bg-white/5 border border-white/10 hover:bg-white/10 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-2xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto bg-transparent border border-zinc-800 hover:bg-zinc-900/40 text-zinc-400 hover:text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
               >
                 Coach Login
               </button>
             </div>
-            <p className="text-[10px] text-gray-500 font-bold tracking-wide">Already have an account? <span onClick={() => openAuth('login')} className="text-blue-400 hover:text-blue-300 cursor-pointer underline">Log In</span> (Coaches Only)</p>
+            <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-300 hover:text-white cursor-pointer underline font-extrabold">Log In</span> (Coaches Only)</p>
           </div>
         </motion.div>
       </section>
@@ -598,11 +604,11 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03]"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900"
       >
-        <div className="text-center space-y-3 mb-16">
+        <div className="text-center space-y-3 mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Engineered for Peak Performance</h3>
-          <p className="text-xs text-gray-400 max-w-md mx-auto">Everything you need to deliver a premium service and keep your athletes accountable.</p>
+          <p className="text-xs text-zinc-400 max-w-md mx-auto font-medium">Everything you need to deliver a premium service and keep your athletes accountable.</p>
         </div>
 
         <motion.div 
@@ -611,51 +617,46 @@ export default function CoachLandingPage() {
         >
           {[
             {
-              icon: <Activity className="text-blue-400" size={24} />,
+              icon: <Activity size={20} />,
               title: "Adaptive Training Splits",
               desc: "Build highly customized workout templates. Set exercises, rest periods, reps, and warmups. Give clients clear targets."
             },
             {
-              icon: <Apple className="text-purple-400" size={24} />,
+              icon: <Apple size={20} />,
               title: "Custom Day-Type Nutrition",
               desc: "Set macro plans based on day type (Work vs Rest). Adjust protein, carbs, fat, and hydration templates."
             },
             {
-              icon: <Scale className="text-emerald-400" size={24} />,
+              icon: <Scale size={20} />,
               title: "InBody Scan & Composition",
               desc: "Track client body composition, water, minerals, and muscle mass trends with interactive segmental mapping."
             },
             {
-              icon: <FileText className="text-orange-400" size={24} />,
+              icon: <FileText size={20} />,
               title: "Excel History Export",
               desc: "Export unified client logs history and biometrics sheets in one click for professional spreadsheet analysis."
             },
             {
-              icon: <Users className="text-pink-400" size={24} />,
+              icon: <Users size={20} />,
               title: "Direct Athlete Directory",
               desc: "Manage profiles, onboarding statuses, suspensions, and targets from a centralized dossier catalog."
             },
             {
-              icon: <Sparkles className="text-cyan-400" size={24} />,
+              icon: <Sparkles size={20} />,
               title: "Instant Athlete Sync",
               desc: "Updates to workouts, nutrition splits, and water targets synchronize to the athlete portal in real-time with zero delay."
             }
           ].map((feat, idx) => (
-            <motion.div 
+            <div 
               key={idx}
-              variants={cardEntranceVariants}
-              whileHover="hover"
-              className="p-8 rounded-[24px] bg-[#111326]/30 border border-white/[0.04] hover:border-white/[0.1] hover:bg-[#111326]/50 transition-all shadow-lg flex flex-col group cursor-default"
+              className="p-8 rounded-2xl bg-zinc-900/30 border border-zinc-900 hover:border-zinc-800/80 transition-colors flex flex-col text-left group"
             >
-              <motion.div 
-                variants={iconVariants}
-                className="w-12 h-12 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center mb-6"
-              >
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-855 flex items-center justify-center mb-6 text-zinc-450 group-hover:text-white transition-colors">
                 {feat.icon}
-              </motion.div>
-              <h4 className="text-sm font-black text-white mb-3 tracking-wide">{feat.title}</h4>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">{feat.desc}</p>
-            </motion.div>
+              </div>
+              <h4 className="text-sm font-bold text-white mb-2 uppercase tracking-wide">{feat.title}</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed font-medium">{feat.desc}</p>
+            </div>
           ))}
         </motion.div>
       </motion.section>
@@ -667,31 +668,30 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03] text-center"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900 text-center"
       >
-        <div className="text-center space-y-3 mb-12">
+        <div className="text-center space-y-3 mb-16">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">A Look Inside the Portal</h3>
-          <p className="text-xs text-gray-400">Roster control panel, active check-in tracking logs, and athlete metrics compliance board.</p>
+          <p className="text-xs text-zinc-400 font-medium">Roster control panel, active check-in tracking logs, and athlete metrics compliance board.</p>
         </div>
 
-        <div className="bg-[#111326]/50 border border-white/[0.06] rounded-[32px] p-4 shadow-2xl relative overflow-hidden backdrop-blur-md">
-          <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 via-transparent to-transparent pointer-events-none" />
-          <div className="rounded-[22px] border border-white/[0.05] overflow-hidden bg-[#070814]/90 aspect-[1918/1118] flex flex-col">
+        <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-[32px] p-4 shadow-2xl relative overflow-hidden backdrop-blur-md">
+          <div className="rounded-[22px] border border-zinc-800 overflow-hidden bg-zinc-950 aspect-[1918/1118] flex flex-col">
             
             {/* Mock Header */}
-            <div className="h-10 bg-[#0a0b16] border-b border-white/[0.03] px-4 flex items-center justify-between">
+            <div className="h-10 bg-zinc-900/80 border-b border-zinc-850 px-4 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+                <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
+                <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
+                <div className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
               </div>
-              <div className="w-48 h-4 bg-white/5 rounded-md flex items-center justify-center text-[8px] font-bold text-gray-400">
+              <div className="w-48 h-4 bg-zinc-950 rounded-md flex items-center justify-center text-[8px] font-bold text-zinc-550">
                 app.lifegym.com/coach-portal
               </div>
               <div className="w-6 h-4" />
             </div>
             {/* High Fidelity Mock Content Layout */}
-            <div className="flex-1 overflow-hidden bg-[#070814]">
+            <div className="flex-1 overflow-hidden bg-zinc-950">
               <img 
                 src="/coach_portal_preview.png" 
                 alt="Life Gym Coach Portal Preview" 
@@ -709,11 +709,11 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.03]"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900"
       >
-        <div className="text-center space-y-3 mb-16">
+        <div className="text-center space-y-3 mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Simple, Flexible Billing</h3>
-          <p className="text-xs text-gray-400">Choose a package tailored to your coaching business goals. Swap tiers anytime.</p>
+          <p className="text-xs text-zinc-400 font-medium">Choose a package tailored to your coaching business goals. Swap tiers anytime.</p>
           <p className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider mt-1">No payment or credit card required to start your free trial</p>
           <div className="pt-2">
             <button
@@ -725,14 +725,12 @@ export default function CoachLandingPage() {
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
               }}
-              className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline"
+              className="inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white font-extrabold uppercase tracking-wider bg-transparent border-none cursor-pointer underline transition-colors"
             >
               View Billing FAQ
             </button>
           </div>
         </div>
-
-
 
         <motion.div 
           variants={cardsContainerVariants}
@@ -742,33 +740,33 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-6 bg-[#111326]/30 border border-white/[0.04] rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-white/[0.1] hover:bg-[#111326]/40 transition-all group"
+            className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
           >
-            <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">2 Weeks</span>
+            <div className="space-y-5">
+              <span className="text-[9px] font-black text-zinc-305 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">2 Weeks</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">2,200</span>
-                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
-                <span className="text-[10px] text-gray-500 font-bold">/ 2 weeks</span>
+                <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-zinc-500 font-bold">/ 2 weeks</span>
               </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Perfect for testing the waters and experiencing the premium coaching tools.</p>
-              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Perfect for testing the waters and experiencing the premium coaching tools.</p>
+              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
                 {sharedFeaturesList.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                  <li key={i} className="flex items-start gap-2.5">
+                    <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
                     <span>{f.text}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+            <div className="mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '2_weeks')}
-                className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+                className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
               >
                 Start Free Trial
               </button>
-              <span className="text-[9px] text-gray-500 font-bold">No card needed</span>
+              <span className="text-[9px] text-zinc-650 font-bold uppercase tracking-wider">No card needed</span>
             </div>
           </motion.div>
 
@@ -776,36 +774,36 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-6 bg-[#161a35]/60 border border-blue-500/30 rounded-[28px] flex flex-col justify-between relative shadow-xl scale-105 hover:border-blue-500/50 transition-all group"
+            className="p-8 bg-zinc-900 border border-zinc-750 rounded-[28px] flex flex-col justify-between relative shadow-xl scale-105 hover:border-zinc-700 transition-all group"
           >
-            <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white font-black text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg z-10">
+            <div className="absolute top-0 right-8 -translate-y-1/2 bg-zinc-100 text-black font-black text-[8px] uppercase tracking-widest px-3 py-1 rounded-full shadow-lg z-10 border border-zinc-250">
               Most Popular
             </div>
-            <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">1 Month</span>
+            <div className="space-y-5">
+              <span className="text-[9px] font-black text-white uppercase tracking-widest bg-zinc-850 border border-zinc-750 px-3 py-1 rounded-lg">1 Month</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">3,500</span>
-                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
-                <span className="text-[10px] text-gray-500 font-bold">/ month</span>
+                <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-zinc-550 font-bold">/ month</span>
               </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Our standard monthly commitment, ideal for consistent training and tracking.</p>
-              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Our standard monthly commitment, ideal for consistent training and tracking.</p>
+              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-800">
                 {sharedFeaturesList.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                  <li key={i} className="flex items-start gap-2.5">
+                    <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
                     <span>{f.text}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+            <div className="mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '1_month')}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all cursor-pointer"
+                className="w-full py-3.5 bg-white hover:bg-zinc-200 active:scale-98 text-black font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
               >
                 Start Free Trial
               </button>
-              <span className="text-[9px] text-gray-550 font-bold">No card needed</span>
+              <span className="text-[9px] text-zinc-550 font-bold uppercase tracking-wider">No card needed</span>
             </div>
           </motion.div>
 
@@ -813,33 +811,33 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-6 bg-[#111326]/30 border border-white/[0.04] rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-white/[0.1] hover:bg-[#111326]/40 transition-all group"
+            className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
           >
-            <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">3 Months</span>
+            <div className="space-y-5">
+              <span className="text-[9px] font-black text-zinc-305 uppercase tracking-widest bg-zinc-850 border border-zinc-700/60 px-3 py-1 rounded-lg">3 Months</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">8,500</span>
-                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
-                <span className="text-[10px] text-gray-500 font-bold">/ 3 months</span>
+                <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-zinc-500 font-bold">/ 3 months</span>
               </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">Accelerate your progress with a quarterly plan. Highly recommended for transformations.</p>
-              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Accelerate your progress with a quarterly plan. Highly recommended for transformations.</p>
+              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
                 {sharedFeaturesList.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                  <li key={i} className="flex items-start gap-2.5">
+                    <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
                     <span>{f.text}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+            <div className="mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '3_months')}
-                className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+                className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
               >
                 Start Free Trial
               </button>
-              <span className="text-[9px] text-gray-500 font-bold">No card needed</span>
+              <span className="text-[9px] text-zinc-650 font-bold uppercase tracking-wider">No card needed</span>
             </div>
           </motion.div>
 
@@ -847,33 +845,33 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-6 bg-[#111326]/30 border border-white/[0.04] rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-white/[0.1] hover:bg-[#111326]/40 transition-all group"
+            className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
           >
-            <div className="space-y-4">
-              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg">6 Months</span>
+            <div className="space-y-5">
+              <span className="text-[9px] font-black text-zinc-305 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">6 Months</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">14,000</span>
-                <span className="text-xs text-gray-400 font-extrabold">EGP</span>
-                <span className="text-[10px] text-gray-500 font-bold">/ 6 months</span>
+                <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-zinc-500 font-bold">/ 6 months</span>
               </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed font-medium">The ultimate commitment to your goals. Best value for serious, long-term coaches.</p>
-              <ul className="space-y-2 pt-4 text-[11px] font-medium text-gray-300 border-t border-white/[0.03]">
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">The ultimate commitment to your goals. Best value for serious, long-term coaches.</p>
+              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
                 {sharedFeaturesList.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check size={12} className="text-blue-400 shrink-0 mt-0.5" /> 
+                  <li key={i} className="flex items-start gap-2.5">
+                    <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
                     <span>{f.text}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="mt-6 flex flex-col items-center gap-1.5 w-full">
+            <div className="mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '6_months')}
-                className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+                className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
               >
                 Start Free Trial
               </button>
-              <span className="text-[9px] text-gray-550 font-bold">No card needed</span>
+              <span className="text-[9px] text-zinc-650 font-bold uppercase tracking-wider">No card needed</span>
             </div>
           </motion.div>
         </motion.div>
@@ -886,20 +884,17 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-4xl mx-auto px-6 py-16 border-t border-white/[0.03]"
+        className="relative z-10 max-w-4xl mx-auto px-6 py-20 border-t border-zinc-900"
       >
-        <div className="bg-gradient-to-br from-[#111326]/60 to-[#161a35]/40 border border-white/[0.05] rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden text-center md:text-left md:flex md:items-center md:justify-between md:gap-8 backdrop-blur-md">
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[90px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
-
+        <div className="bg-zinc-900/30 border border-zinc-900 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden text-center md:text-left md:flex md:items-center md:justify-between md:gap-8 backdrop-blur-md">
           <div className="space-y-4 max-w-md relative z-10 text-left">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[9px] font-black uppercase tracking-wider text-purple-400">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-zinc-800 border border-zinc-750 text-[9px] font-black uppercase tracking-wider text-zinc-300">
               Join Our Newsletter
             </span>
-            <h3 className="text-2xl font-black text-white tracking-tight leading-tight">
+            <h3 className="text-2xl font-black text-white tracking-tight leading-tight uppercase">
               Join the Life Gym Circle
             </h3>
-            <p className="text-xs text-gray-400 leading-relaxed font-medium">
+            <p className="text-xs text-zinc-400 leading-relaxed font-medium">
               Subscribe to our mailing list to receive the latest updates, announcements, and strategies for scaling your fitness academy and coach workflows.
             </p>
           </div>
@@ -909,44 +904,44 @@ export default function CoachLandingPage() {
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl text-center space-y-3"
+                className="p-6 bg-zinc-900/80 border border-zinc-800 rounded-2xl text-center space-y-3"
               >
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">
+                <div className="w-10 h-10 rounded-full bg-zinc-800/80 border border-zinc-750 flex items-center justify-center mx-auto text-zinc-200">
                   <Check size={18} />
                 </div>
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">Welcome on board!</h4>
-                <p className="text-[9px] text-gray-400 leading-relaxed">
+                <p className="text-[9px] text-zinc-400 leading-relaxed">
                   We've successfully added <strong className="text-white">{leadEmail}</strong> to our list. Check your inbox for a welcome message!
                 </p>
                 <button
                   type="button"
                   onClick={() => setLeadSubmitted(false)}
-                  className="text-[9px] text-emerald-400 hover:text-emerald-300 font-bold underline bg-transparent border-none cursor-pointer"
+                  className="text-[9px] text-zinc-300 hover:text-white font-bold underline bg-transparent border-none cursor-pointer"
                 >
                   Subscribe another email
                 </button>
               </motion.div>
             ) : (
               <form onSubmit={handleLeadSubmit} className="space-y-3">
-                <div className="space-y-1 text-left">
-                  <label className="text-[8px] uppercase tracking-wider text-gray-500 font-black pl-1">Email Address</label>
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[8px] uppercase tracking-wider text-zinc-500 font-black pl-1">Email Address</label>
                   <input 
                     type="email" 
                     required 
                     value={leadEmail} 
                     onChange={e => setLeadEmail(e.target.value.replace(/\s/g, ''))} 
                     placeholder="coach@yourgym.com"
-                    className="w-full bg-[#060712]/60 border border-white/[0.06] focus:border-purple-500/50 rounded-xl p-3 text-xs text-white outline-none placeholder-gray-600 transition-all" 
+                    className="w-full bg-zinc-950 border border-zinc-900 focus:border-zinc-750 rounded-xl p-3.5 text-xs text-white outline-none placeholder-zinc-700 transition-all font-medium" 
                   />
                 </div>
                 <button 
                   type="submit" 
                   disabled={leadLoading}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-800 disabled:to-gray-800 text-white font-extrabold text-[10px] uppercase tracking-wider py-3.5 rounded-xl shadow-lg shadow-purple-600/10 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-800 text-black disabled:text-zinc-500 font-extrabold text-[10px] uppercase tracking-wider py-3.5 rounded-xl shadow-md active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   {leadLoading ? 'Subscribing...' : 'Join Mailing List'}
                 </button>
-                <p className="text-[8px] text-gray-650 font-bold text-center">No spam. Unsubscribe anytime in 1-click.</p>
+                <p className="text-[8px] text-zinc-600 font-bold text-center">No spam. Unsubscribe anytime in 1-click.</p>
               </form>
             )}
           </div>
@@ -960,11 +955,11 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-4xl mx-auto px-6 py-20 border-t border-white/[0.03]"
+        className="relative z-10 max-w-4xl mx-auto px-6 py-24 border-t border-zinc-900"
       >
-        <div className="text-center space-y-3 mb-16">
+        <div className="text-center space-y-3 mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Frequently Asked Questions</h3>
-          <p className="text-xs text-gray-400">Got questions? We've got answers. Explore everything about the platform.</p>
+          <p className="text-xs text-zinc-400 font-medium">Got questions? We've got answers. Explore everything about the platform.</p>
         </div>
 
         <div className="space-y-12">
@@ -974,28 +969,28 @@ export default function CoachLandingPage() {
               id={category.title === 'Subscriptions & Billing' ? 'faq-billing' : undefined}
               className="space-y-4 text-left"
             >
-              <h4 className="text-sm font-black text-blue-400 uppercase tracking-widest pl-1">
+              <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest pl-1">
                 {category.title}
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {category.items.map((item, itemIdx) => {
                   const id = `${catIdx}-${itemIdx}`;
                   const isOpen = activeFaq === id;
                   return (
                     <div 
                       key={itemIdx}
-                      className="bg-[#111326]/20 border border-white/[0.04] rounded-2xl overflow-hidden hover:border-white/[0.08] transition-all duration-300"
+                      className="bg-zinc-900/20 border border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-800 transition-all duration-300"
                     >
                       <button
                         type="button"
                         onClick={() => setActiveFaq(isOpen ? null : id)}
                         className="w-full flex items-center justify-between p-5 text-left text-white bg-transparent outline-none cursor-pointer border-none"
                       >
-                        <span className="text-xs font-bold tracking-wide pr-4">{item.q}</span>
+                        <span className="text-xs font-bold tracking-wide pr-4 text-zinc-200">{item.q}</span>
                         <motion.span
                           animate={{ rotate: isOpen ? 180 : 0 }}
                           transition={{ duration: 0.2 }}
-                          className="text-gray-500 shrink-0"
+                          className="text-zinc-500 shrink-0"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </motion.span>
@@ -1009,7 +1004,7 @@ export default function CoachLandingPage() {
                             transition={{ duration: 0.2, ease: "easeOut" }}
                             className="overflow-hidden"
                           >
-                            <div className="px-5 pb-5 text-[11px] text-gray-400 leading-relaxed font-medium">
+                            <div className="px-5 pb-5 text-[11px] text-zinc-400 leading-relaxed font-medium">
                               {item.a}
                             </div>
                           </motion.div>
@@ -1057,33 +1052,41 @@ export default function CoachLandingPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAuthModal(false)}
-              className="absolute inset-0 bg-[#060713]/85 backdrop-blur-md"
+              className="absolute inset-0 bg-[#09090b]/90 backdrop-blur-md"
             />
 
             {/* Modal Card Content */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-md bg-[#111326] border border-white/[0.06] rounded-[28px] overflow-hidden shadow-2xl z-10"
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              className="relative w-full max-w-md bg-zinc-950 border border-zinc-900 rounded-[28px] overflow-hidden shadow-2xl z-10"
             >
               
               {/* Close Button */}
               <button 
                 onClick={() => setShowAuthModal(false)}
-                className="absolute right-5 top-5 p-1 text-gray-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors z-20 cursor-pointer"
+                className="absolute right-5 top-5 p-1 text-zinc-500 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors z-20 cursor-pointer"
               >
                 <X size={16} />
               </button>
 
               {/* MODAL HEADER */}
-              <div className="p-6 pb-4 border-b border-white/[0.04] bg-[#0c0d1b] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center border border-blue-500/20">
+              <div className="p-6 pb-4 border-b border-zinc-900 bg-zinc-900/40 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
                   <img src="/icon.svg" alt="Life Gym Logo" className="w-5 h-5 object-contain" />
                 </div>
                 <div>
                   <h4 className="text-xs font-black tracking-wider text-white">LIFE GYM COACH HUB</h4>
-                  <p className="text-[8px] text-gray-400 font-black uppercase tracking-wider">{authMode === 'login' ? 'Authentication' : `Start Free Trial: Step ${onboardingStep} of 2`}</p>
+                  <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">
+                    {authMode === 'login' 
+                      ? 'Authentication' 
+                      : onboardingMode === 'options' 
+                        ? 'Choose Workspace' 
+                        : onboardingMode === 'download_instructions'
+                          ? 'Setup Instructions'
+                          : `Start Free Trial: Step ${onboardingStep} of 2`}
+                  </p>
                 </div>
               </div>
 
@@ -1099,20 +1102,20 @@ export default function CoachLandingPage() {
                 {authMode === 'login' ? (
                   errorMessage === 'athlete_detected' ? (
                     <div className="space-y-4 text-center p-2">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 shadow-md">
+                      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-200 shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12" y2="18"></line></svg>
                       </div>
                       <h5 className="text-sm font-black text-white uppercase tracking-wider">Athlete Account Detected</h5>
-                      <p className="text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto">
+                      <p className="text-xs text-zinc-400 leading-relaxed max-w-[280px] mx-auto font-medium">
                         You are registered as an athlete. To view your workouts, log meals, and update body stats, please log in from your mobile phone.
                       </p>
-                      <div className="p-3.5 bg-[#080910] rounded-2xl border border-white/[0.04] text-xs text-blue-400 font-extrabold break-all select-all text-center">
+                      <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-900 text-xs text-zinc-300 font-extrabold break-all select-all text-center">
                         app.lifegym.com/client-login
                       </div>
                       <button
                         type="button"
                         onClick={() => setErrorMessage(null)}
-                        className="mt-4 text-xs text-blue-400 hover:text-blue-300 font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline transition-all"
+                        className="mt-4 text-xs text-zinc-400 hover:text-white font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline transition-all"
                       >
                         Back to Login
                       </button>
@@ -1120,253 +1123,360 @@ export default function CoachLandingPage() {
                   ) : (
                     /* LOGIN VIEW */
                     <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Account Email</label>
-                      <input 
-                        type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@gym.com"
-                        className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Password</label>
-                      <input 
-                        type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
-                        className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-3 text-xs text-white outline-none" 
-                      />
-                    </div>
-                    <button 
-                      type="submit" disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
-                    >
-                      {loading ? 'Logging in...' : <><Lock size={12} /> Sign In to Portal</>}
-                    </button>
-                    <p className="text-[10px] text-gray-500 text-center mt-3 font-medium">
-                      Don't have an account? <span onClick={() => { setAuthMode('register'); setOnboardingStep(1); }} className="text-blue-400 hover:text-blue-300 font-black cursor-pointer">Register Trial</span>
-                    </p>
-                  </form>
-                )
-              ) : (
-                  /* MULTI-STEP REGISTER TRIAL VIEW */
-                  <form onSubmit={e => e.preventDefault()} className="space-y-4">
-                    
-                    {/* STEP 1: ACCOUNT CREDENTIALS */}
-                    {onboardingStep === 1 && (
-                      <div className="space-y-4">
-                        {/* Stepper Progress Bar */}
-                        <div className="flex items-center gap-2 mb-6">
-                          <div className="h-1.5 flex-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
-                          <div className="h-1.5 flex-1 rounded-full bg-white/5" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Full Name</label>
-                          <input 
-                            type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g. Captain Coach"
-                            className={`w-full bg-[#0a0b16]/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                              attemptedStep1Submit && !displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.05] focus:border-blue-500/50'
-                            }`} 
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Email Address</label>
-                          <input 
-                            type="email" required value={email} onChange={e => setEmail(e.target.value.replace(/\s/g, ''))} placeholder="coach@lifegym.com"
-                            className={`w-full bg-[#0a0b16]/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                              (attemptedStep1Submit && !email.trim()) || isEmailTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.05] focus:border-blue-500/50'
-                            }`} 
-                          />
-                          {isEmailChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
-                          {isEmailTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">This email is already registered.</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Secure Password</label>
-                          <input 
-                            type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters"
-                            className={`w-full bg-[#0a0b16]/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                              attemptedStep1Submit && password.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.05] focus:border-blue-500/50'
-                            }`} 
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAttemptedStep1Submit(true);
-                            if (!displayName.trim() || !email.trim() || password.length < 6) {
-                              if (password.length > 0 && password.length < 6) {
-                                toast.error('Password must be at least 6 characters.');
-                              } else {
-                                toast.error('Please fill in all empty fields.');
-                              }
-                              return;
-                            }
-                            if (isEmailTaken) {
-                              toast.error('Email is already registered. Please use another email.');
-                              return;
-                            }
-                            setOnboardingStep(2);
-                          }}
-                          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
-                        >
-                          <span>Continue to Profile Setup</span>
-                          <ArrowRight size={12} />
-                        </button>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Account Email</label>
+                        <input 
+                          type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@gym.com"
+                          className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl p-3 text-xs text-white outline-none" 
+                        />
                       </div>
-                    )}
-
-                    {/* STEP 2: PROFILE DETAILS */}
-                    {onboardingStep === 2 && (
-                      <div className="space-y-4">
-                        {/* Stepper Progress Bar */}
-                        <div className="flex items-center gap-2 mb-6">
-                          <div className="h-1.5 flex-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
-                          <div className="h-1.5 flex-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)] animate-pulse" />
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Password</label>
+                        <input 
+                          type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
+                          className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl p-3 text-xs text-white outline-none" 
+                        />
+                      </div>
+                      <button 
+                        type="submit" disabled={loading}
+                        className="w-full bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-800 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
+                      >
+                        {loading ? 'Logging in...' : <><Lock size={12} /> Sign In to Portal</>}
+                      </button>
+                      <p className="text-[10px] text-zinc-500 text-center mt-3 font-medium">
+                        Don't have an account? <span onClick={() => { setAuthMode('register'); setOnboardingStep(1); setOnboardingMode(typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent) ? 'options' : 'form'); }} className="text-zinc-300 hover:text-white font-black cursor-pointer underline">Register Trial</span>
+                      </p>
+                    </form>
+                  )
+                ) : (
+                  /* REGISTER TRIAL VIEWS (options | download_instructions | form) */
+                  <div>
+                    {onboardingMode === 'options' ? (
+                      /* CHOICE SCREEN FOR WINDOWS USERS */
+                      <div className="space-y-5 text-center py-2">
+                        <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-850 flex items-center justify-center mx-auto text-zinc-250 shadow-md">
+                          <Download size={26} />
+                        </div>
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-black text-white uppercase tracking-wider font-sans">Choose Workspace</h5>
+                          <p className="text-xs text-zinc-400 leading-relaxed max-w-[320px] mx-auto font-medium">
+                            For the absolute best coaching experience on Windows, we recommend installing our dedicated desktop app.
+                          </p>
                         </div>
 
-                        <div className="space-y-1.5 text-left">
-                          <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Phone Number (WhatsApp)</label>
-                          <div className="relative group">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4" />
-                            <input 
-                              type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
-                              className={`w-full bg-[#060712]/60 border rounded-2xl p-3.5 pl-11 text-xs text-white outline-none focus:outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)] ${
-                                attemptedStep2Submit && !phone.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50'
-                              }`} 
-                            />
+                        <div className="space-y-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Trigger auto-download
+                              const link = document.createElement('a');
+                              link.href = 'https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe';
+                              link.download = 'Life-Gym-Coach-Portal-Setup.exe';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              
+                              // Proceed to instructions
+                              setOnboardingMode('download_instructions');
+                            }}
+                            className="w-full bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2.5"
+                          >
+                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                              <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+                            </svg>
+                            <span>Download Desktop App</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setOnboardingMode('form')}
+                            className="w-full bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 hover:border-zinc-800 text-zinc-300 font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
+                          >
+                            <span>Continue via Web Browser</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : onboardingMode === 'download_instructions' ? (
+                      /* STEP-BY-STEP INSTRUCTIONS AFTER DOWNLOAD INITIATED */
+                      <div className="space-y-6 text-left py-2">
+                        <div className="text-center space-y-2">
+                          <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-850 flex items-center justify-center mx-auto text-emerald-500 shadow-md">
+                            <CheckCircle2 size={26} />
+                          </div>
+                          <h5 className="text-sm font-black text-white uppercase tracking-wider font-sans">Setup File Downloading</h5>
+                          <p className="text-xs text-zinc-400 font-medium">Follow these simple steps to activate your trial:</p>
+                        </div>
+
+                        <div className="space-y-4 bg-zinc-900/30 border border-zinc-900 p-5 rounded-2xl">
+                          <div className="flex gap-4">
+                            <span className="w-6 h-6 rounded-full bg-zinc-850 border border-zinc-750 flex items-center justify-center text-[10px] font-black text-white shrink-0">1</span>
+                            <div className="space-y-1">
+                              <h6 className="text-xs font-black text-white uppercase tracking-wider font-sans">Install the App</h6>
+                              <p className="text-[11px] text-zinc-400 leading-normal font-medium">Run the downloaded <strong className="text-zinc-200">Life-Gym-Coach-Portal-Setup.exe</strong> installer file.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4">
+                            <span className="w-6 h-6 rounded-full bg-zinc-850 border border-zinc-750 flex items-center justify-center text-[10px] font-black text-white shrink-0">2</span>
+                            <div className="space-y-1">
+                              <h6 className="text-xs font-black text-white uppercase tracking-wider font-sans">Register Account</h6>
+                              <p className="text-[11px] text-zinc-400 leading-normal font-medium">Open the desktop application and fill out the coach registration details.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4">
+                            <span className="w-6 h-6 rounded-full bg-zinc-850 border border-zinc-750 flex items-center justify-center text-[10px] font-black text-white shrink-0">3</span>
+                            <div className="space-y-1">
+                              <h6 className="text-xs font-black text-white uppercase tracking-wider font-sans">Start Free Trial</h6>
+                              <p className="text-[11px] text-zinc-400 leading-normal font-medium">Your 14-day free trial will automatically activate on your new dashboard.</p>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5 text-left">
-                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Age</label>
-                            <div className="relative group">
-                              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-emerald-400 transition-colors w-4 h-4" />
+                        <div className="space-y-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowAuthModal(false)}
+                            className="w-full bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
+                          >
+                            <span>Got It, Thanks!</span>
+                          </button>
+                          
+                          <div className="text-center">
+                            <button
+                              type="button"
+                              onClick={() => setOnboardingMode('form')}
+                              className="text-[10px] text-zinc-500 hover:text-zinc-300 font-bold uppercase tracking-wider underline bg-transparent border-none cursor-pointer"
+                            >
+                              Continue in browser instead
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* STANDARD MULTI-STEP REGISTER FORM */
+                      <form onSubmit={e => e.preventDefault()} className="space-y-4">
+                        
+                        {/* STEP 1: ACCOUNT CREDENTIALS */}
+                        {onboardingStep === 1 && (
+                          <div className="space-y-4">
+                            {/* Stepper Progress Bar */}
+                            <div className="flex items-center gap-2 mb-6">
+                              <div className="h-1.5 flex-1 rounded-full bg-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+                              <div className="h-1.5 flex-1 rounded-full bg-zinc-900" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Full Name</label>
                               <input 
-                                type="text" 
-                                inputMode="numeric" 
-                                pattern="[0-9]*" 
-                                required 
-                                value={age} 
-                                onChange={e => setAge(e.target.value.replace(/\D/g, ''))} 
-                                placeholder="e.g. 28"
-                                className={`w-full bg-[#060712]/60 border rounded-2xl p-3.5 pl-11 text-xs text-white outline-none focus:outline-none transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(16,185,129,0.08)] ${
-                                  attemptedStep2Submit && !age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-white/[0.06] group-hover:border-white/[0.12] focus:border-emerald-500/50'
+                                type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g. Captain Coach"
+                                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                  attemptedStep1Submit && !displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
                                 }`} 
                               />
                             </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Email Address</label>
+                              <input 
+                                type="email" required value={email} onChange={e => setEmail(e.target.value.replace(/\s/g, ''))} placeholder="coach@lifegym.com"
+                                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                  (attemptedStep1Submit && !email.trim()) || isEmailTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+                                }`} 
+                              />
+                              {isEmailChecking && <p className="text-[8px] text-zinc-500 mt-0.5 animate-pulse">Checking availability...</p>}
+                              {isEmailTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">This email is already registered.</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Secure Password</label>
+                              <input 
+                                type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters"
+                                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                  attemptedStep1Submit && password.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+                                }`} 
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAttemptedStep1Submit(true);
+                                if (!displayName.trim() || !email.trim() || password.length < 6) {
+                                  if (password.length > 0 && password.length < 6) {
+                                    toast.error('Password must be at least 6 characters.');
+                                  } else {
+                                    toast.error('Please fill in all empty fields.');
+                                  }
+                                  return;
+                                }
+                                if (isEmailTaken) {
+                                  toast.error('Email is already registered. Please use another email.');
+                                  return;
+                                }
+                                setOnboardingStep(2);
+                              }}
+                              className="w-full bg-zinc-150 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
+                            >
+                              <span>Continue to Profile Setup</span>
+                              <ArrowRight size={12} />
+                            </button>
                           </div>
+                        )}
 
-                          <div className="space-y-1.5 text-left">
-                            <label className="text-[9px] uppercase tracking-wider text-gray-400 font-black pl-1">Gender</label>
-                            <div className="grid grid-cols-2 p-1 bg-[#060712]/60 border border-white/[0.06] rounded-2xl relative">
-                              <button
-                                type="button"
-                                onClick={() => setGender('male')}
-                                className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'male' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
-                              >
-                                Male
-                                {gender === 'male' && (
-                                  <motion.div
-                                    layoutId="gender-pill"
-                                    className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-xl z-[-1]"
-                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        {/* STEP 2: PROFILE DETAILS */}
+                        {onboardingStep === 2 && (
+                          <div className="space-y-4">
+                            {/* Stepper Progress Bar */}
+                            <div className="flex items-center gap-2 mb-6">
+                              <div className="h-1.5 flex-1 rounded-full bg-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+                              <div className="h-1.5 flex-1 rounded-full bg-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
+                            </div>
+
+                            <div className="space-y-1.5 text-left">
+                              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Phone Number (WhatsApp)</label>
+                              <div className="relative group">
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-zinc-250 transition-colors w-4 h-4" />
+                                <input 
+                                  type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +201012345678"
+                                  className={`w-full bg-zinc-900/60 border rounded-2xl p-3.5 pl-11 text-xs text-white outline-none focus:outline-none transition-all placeholder-zinc-700 ${
+                                    attemptedStep2Submit && !phone.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 group-hover:border-zinc-800 focus:border-zinc-800'
+                                  }`} 
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1.5 text-left">
+                                <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Age</label>
+                                <div className="relative group">
+                                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-zinc-250 transition-colors w-4 h-4" />
+                                  <input 
+                                    type="text" 
+                                    inputMode="numeric" 
+                                    pattern="[0-9]*" 
+                                    required 
+                                    value={age} 
+                                    onChange={e => setAge(e.target.value.replace(/\D/g, ''))} 
+                                    placeholder="e.g. 28"
+                                    className={`w-full bg-zinc-900/60 border rounded-2xl p-3.5 pl-11 text-xs text-white outline-none focus:outline-none transition-all placeholder-zinc-700 ${
+                                      attemptedStep2Submit && !age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 group-hover:border-zinc-800 focus:border-zinc-800'
+                                    }`} 
                                   />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setGender('female')}
-                                className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'female' ? 'text-white' : 'text-gray-500 hover:text-gray-400'}`}
-                              >
-                                Female
-                                {gender === 'female' && (
-                                  <motion.div
-                                    layoutId="gender-pill"
-                                    className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 rounded-xl z-[-1]"
-                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                                  />
-                                )}
-                              </button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5 text-left">
+                                <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Gender</label>
+                                <div className="grid grid-cols-2 p-1 bg-zinc-900/60 border border-zinc-900 rounded-2xl relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => setGender('male')}
+                                    className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'male' ? 'text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
+                                  >
+                                    Male
+                                    {gender === 'male' && (
+                                      <motion.div
+                                        layoutId="gender-pill"
+                                        className="absolute inset-0 bg-zinc-800 border border-zinc-700 rounded-xl z-[-1]"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                      />
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setGender('female')}
+                                    className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${gender === 'female' ? 'text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
+                                  >
+                                    Female
+                                    {gender === 'female' && (
+                                      <motion.div
+                                        layoutId="gender-pill"
+                                        className="absolute inset-0 bg-zinc-800 border border-zinc-700 rounded-xl z-[-1]"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                      />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div 
+                              onClick={() => setAcceptedTerms(!acceptedTerms)}
+                              className="flex items-start gap-3 my-3 text-left cursor-pointer group"
+                            >
+                              <div className="relative mt-0.5 shrink-0">
+                                <input 
+                                  type="checkbox" 
+                                  checked={acceptedTerms} 
+                                  onChange={() => {}} 
+                                  className="sr-only"
+                                />
+                                <motion.div 
+                                  animate={{
+                                    backgroundColor: acceptedTerms ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.01)",
+                                    borderColor: acceptedTerms ? "#ffffff" : (attemptedStep2Submit ? "#ef4444" : "rgba(255, 255, 255, 0.08)")
+                                  }}
+                                  className="w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-200"
+                                  style={{ borderWidth: attemptedStep2Submit && !acceptedTerms ? '2px' : '1px' }}
+                                >
+                                  {acceptedTerms && (
+                                    <motion.svg 
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      className="w-2.5 h-2.5 text-white"
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      strokeWidth="3.5" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </motion.svg>
+                                  )}
+                                </motion.div>
+                              </div>
+                              <span className={`text-[10px] font-medium leading-normal select-none ${attemptedStep2Submit && !acceptedTerms ? 'text-red-400 font-bold' : 'text-zinc-450'}`}>
+                                I agree to the{' '}
+                                <button 
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); openLegalModal('privacy'); }}
+                                  className="text-zinc-200 hover:text-white underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
+                                >
+                                  Privacy Policy
+                                </button>{' '}
+                                and{' '}
+                                <button 
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); openLegalModal('terms'); }}
+                                  className="text-zinc-200 hover:text-white underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
+                                >
+                                  Terms of Use
+                                </button>.
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col items-center gap-2 mt-2 w-full">
+                              <div className="flex gap-3 w-full">
+                                <button
+                                  type="button" onClick={() => setOnboardingStep(1)}
+                                  className="px-6 py-4 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95"
+                                >
+                                  Back
+                                </button>
+                                <button
+                                  type="button" disabled={loading} onClick={handleRegister}
+                                  className="flex-1 bg-white hover:bg-zinc-200 disabled:bg-zinc-900 disabled:text-zinc-550 text-black font-extrabold text-xs uppercase py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                                >
+                                  {loading ? 'Starting Trial...' : <><CheckCircle2 size={13} /> Start My Free Trial</>}
+                                </button>
+                              </div>
+                              <span className="text-[10px] text-zinc-500 font-bold tracking-wide mt-1 uppercase">No card needed</span>
                             </div>
                           </div>
-                        </div>
+                        )}
 
-                        <div 
-                          onClick={() => setAcceptedTerms(!acceptedTerms)}
-                          className="flex items-start gap-3 my-3 text-left cursor-pointer group"
-                        >
-                          <div className="relative mt-0.5 shrink-0">
-                            <input 
-                              type="checkbox" 
-                              checked={acceptedTerms} 
-                              onChange={() => {}} 
-                              className="sr-only"
-                            />
-                            <motion.div 
-                              animate={{
-                                backgroundColor: acceptedTerms ? "rgba(16, 185, 129, 0.2)" : "rgba(255, 255, 255, 0.02)",
-                                borderColor: acceptedTerms ? "#10b981" : (attemptedStep2Submit ? "#ef4444" : "rgba(255, 255, 255, 0.12)")
-                              }}
-                              className="w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-200"
-                              style={{ borderWidth: attemptedStep2Submit && !acceptedTerms ? '2px' : '1px' }}
-                            >
-                              {acceptedTerms && (
-                                <motion.svg 
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  className="w-2.5 h-2.5 text-emerald-400"
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  strokeWidth="3.5" 
-                                  viewBox="0 0 24 24"
-                                >
-                                  <polyline points="20 6 9 17 4 12" />
-                                </motion.svg>
-                              )}
-                            </motion.div>
-                          </div>
-                          <span className={`text-[10px] font-medium leading-normal select-none ${attemptedStep2Submit && !acceptedTerms ? 'text-red-400 font-bold' : 'text-gray-400'}`}>
-                            I agree to the{' '}
-                            <button 
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); openLegalModal('privacy'); }}
-                              className="text-blue-400 hover:text-blue-300 underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
-                            >
-                              Privacy Policy
-                            </button>{' '}
-                            and{' '}
-                            <button 
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); openLegalModal('terms'); }}
-                              className="text-blue-400 hover:text-blue-300 underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
-                            >
-                              Terms of Use
-                            </button>.
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-2 mt-2 w-full">
-                          <div className="flex gap-3 w-full">
-                            <button
-                              type="button" onClick={() => setOnboardingStep(1)}
-                              className="px-6 py-4 bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.06] text-gray-400 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer hover:shadow-lg active:scale-95"
-                            >
-                              Back
-                            </button>
-                            <button
-                              type="button" disabled={loading} onClick={handleRegister}
-                              className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-gray-800 disabled:to-gray-800 disabled:opacity-50 text-white font-extrabold text-xs uppercase py-4 rounded-2xl transition-all shadow-[0_4px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.35)] active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              {loading ? 'Starting Trial...' : <><CheckCircle2 size={13} /> Start My Free Trial</>}
-                            </button>
-                          </div>
-                          <span className="text-[10px] text-gray-550 font-bold tracking-wide mt-1">No card needed</span>
-                        </div>
-                      </div>
+                        <p className="text-[10px] text-zinc-500 text-center mt-3 font-medium">
+                          Already have an account? <span onClick={() => { setAuthMode('login'); }} className="text-zinc-300 hover:text-white font-black cursor-pointer underline">Sign In</span>
+                        </p>
+                      </form>
                     )}
-
-                    <p className="text-[10px] text-gray-500 text-center mt-3 font-medium">
-                      Already have an account? <span onClick={() => { setAuthMode('login'); }} className="text-blue-400 hover:text-blue-300 font-black cursor-pointer">Sign In</span>
-                    </p>
-                  </form>
+                  </div>
                 )}
               </div>
 
@@ -1392,29 +1502,18 @@ export default function CoachLandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#060713]/98 backdrop-blur-lg z-[150] flex flex-col items-center justify-center p-6 text-center select-none"
+            className="fixed inset-0 bg-zinc-950/98 backdrop-blur-md z-[150] flex flex-col items-center justify-center p-6 text-center select-none"
           >
-            {/* Glowing background highlights */}
-            <div className="absolute w-72 h-72 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute w-72 h-72 bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none" style={{ transform: 'translate(100px, 100px)' }} />
-
             <div className="space-y-8 max-w-xs relative z-10">
               {/* Animated Lifting Dumbbell */}
               <div className="relative flex items-center justify-center">
-                {/* Glowing ring */}
-                <motion.div
-                  animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20"
-                />
-                
                 {/* Dumbbell Icon with lifting translation */}
                 <motion.div
-                  animate={{ y: [0, -14, 0] }}
+                  animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border border-blue-500/35 flex items-center justify-center text-blue-400 shadow-xl shadow-blue-500/10"
+                  className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white shadow-lg"
                 >
-                  <Dumbbell size={32} />
+                  <Dumbbell size={28} />
                 </motion.div>
               </div>
 
@@ -1429,13 +1528,13 @@ export default function CoachLandingPage() {
                   >
                     {creationProgress}
                   </motion.span>
-                  <span className="text-sm font-black text-blue-400 tracking-wider ml-1">%</span>
+                  <span className="text-sm font-black text-zinc-400 tracking-wider ml-1">%</span>
                 </div>
 
                 {/* Progress bar container */}
-                <div className="w-56 h-2.5 bg-gray-950 border border-white/[0.04] rounded-full overflow-hidden p-0.5">
+                <div className="w-56 h-2 bg-zinc-900 border border-zinc-850 rounded-full overflow-hidden p-0.5">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 via-teal-500 to-emerald-500 rounded-full transition-all duration-75"
+                    className="h-full bg-white rounded-full transition-all duration-75"
                     style={{ width: `${creationProgress}%` }}
                   />
                 </div>
@@ -1450,7 +1549,7 @@ export default function CoachLandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.25 }}
-                    className="text-xs text-blue-400 font-extrabold tracking-widest uppercase"
+                    className="text-xs text-zinc-400 font-extrabold tracking-widest uppercase"
                   >
                     {creationText}
                   </motion.p>
@@ -1469,7 +1568,7 @@ export default function CoachLandingPage() {
         className="fixed bottom-6 right-6 z-[120] group"
       >
         {/* Tooltip */}
-        <div className="absolute right-16 top-1/2 -translate-y-1/2 bg-[#0b0c16] border border-white/[0.08] text-[10px] font-black uppercase tracking-wider text-emerald-400 px-3.5 py-2 rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 shadow-xl whitespace-nowrap translate-x-2 group-hover:translate-x-0">
+        <div className="absolute right-16 top-1/2 -translate-y-1/2 bg-zinc-900 border border-zinc-800 text-[10px] font-black uppercase tracking-wider text-emerald-400 px-3.5 py-2 rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 shadow-xl whitespace-nowrap translate-x-2 group-hover:translate-x-0">
           Chat with us!
         </div>
 
@@ -1493,7 +1592,7 @@ export default function CoachLandingPage() {
           </svg>
 
           {/* Green Online Dot indicator */}
-          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-[2.5px] border-[#060713] flex items-center justify-center">
+          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-[2.5px] border-[#09090b] flex items-center justify-center">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </span>
         </a>
