@@ -103,14 +103,15 @@ Note: Your download link is active for the next 24 hours.
         </div>
       </div>
     `;
+    const uniqueId = Math.floor(100000 + Math.random() * 900000);
 
     // Asynchronously send the email using waitUntil
     waitUntil(
       sendBulkEmails({
         to: cleanEmail,
-        subject: '🎁 Your Free Guide: The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint',
-        text: textFallback,
-        html: htmlBody,
+        subject: `🎁 Your Free Guide: The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint [Ref: #${uniqueId}]`,
+        text: textFallback + `\n\nRef: #${uniqueId}`,
+        html: htmlBody + `<span style="display: none; color: transparent; font-size: 0px;">Ref: #${uniqueId}</span>`,
         fromName: 'Life Gym Team'
       }).catch(emailErr => {
         console.error('Failed to send blueprint email:', emailErr);
