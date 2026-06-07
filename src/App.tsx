@@ -39,6 +39,8 @@ import DownloadBlueprintPage from './pages/coach/DownloadBlueprintPage';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
+const isElectron = typeof window !== 'undefined' && navigator.userAgent.includes('Electron');
+
 const StravaGuard = ({ children }: { children: React.ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
@@ -149,6 +151,10 @@ const AppContent = () => {
   const anyOverlayActive = showSplash || showGymSplash;
 
   const isCoachPortal = location.pathname.startsWith('/coach-portal');
+
+  if (isElectron && !location.pathname.startsWith('/coach')) {
+    return <Navigate to="/coach-portal" replace />;
+  }
 
   if (isCoachPortal) {
     return (
@@ -326,6 +332,16 @@ function App() {
           return;
         }
 
+        if (profile.role === 'client' && isElectron) {
+          alert('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.');
+          await supabase.auth.signOut();
+          setSession(null);
+          setNeedsOnboarding(undefined);
+          setIsSuspended(false);
+          setUserRole(null);
+          return;
+        }
+
         setUserRole(profile.role || null);
         setClientProfile(profile);
 
@@ -443,6 +459,12 @@ function App() {
         if (payload.new) {
           setClientProfile(payload.new);
         }
+        if (payload.new?.role === 'client' && isElectron) {
+          alert('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.');
+          supabase.auth.signOut();
+          setSession(null);
+          return;
+        }
         if (session.user.id === OWNER_ID || userRole === 'coach' || payload.new?.role === 'coach') {
           setIsSuspended(false);
           setSuspensionReason(null);
@@ -545,13 +567,17 @@ function App() {
                 </>
               } />
               <Route path="/client-login" element={
-                <>
-                  <CookieConsent />
-                  <OnboardingFlow 
-                    initialStep={1} 
-                    onSessionConfigured={setSession} 
-                  />
-                </>
+                isElectron ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <>
+                    <CookieConsent />
+                    <OnboardingFlow 
+                      initialStep={1} 
+                      onSessionConfigured={setSession} 
+                    />
+                  </>
+                )
               } />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
