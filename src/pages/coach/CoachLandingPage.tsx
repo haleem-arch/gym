@@ -508,12 +508,12 @@ export default function CoachLandingPage() {
           <a
             href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
             download
-            className="hidden lg:flex items-center gap-3 px-5 py-3 border border-zinc-800 hover:border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs font-extrabold uppercase tracking-widest text-zinc-100 rounded-xl transition-all whitespace-nowrap shadow-md cursor-pointer active:scale-95 group"
+            className="hidden lg:flex items-center gap-3 px-5 py-3 border border-blue-950/60 hover:border-blue-900/80 bg-blue-950/30 hover:bg-blue-950/60 text-xs font-extrabold uppercase tracking-widest text-blue-400 rounded-xl transition-all whitespace-nowrap shadow-md cursor-pointer active:scale-95 group"
             title="Download Life Gym Coach App for Windows"
           >
             <img src="/icon.svg" className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
             {/* Windows Logo */}
-            <svg className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-3.5 h-3.5 text-blue-500/80 group-hover:text-blue-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
               <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
             </svg>
             <span>Download for Windows</span>
@@ -522,7 +522,7 @@ export default function CoachLandingPage() {
             <span>Already a coach?</span>
             <button 
               onClick={() => openAuth('login')}
-              className="text-zinc-300 hover:text-white bg-transparent border-none p-0 cursor-pointer font-black underline"
+              className="text-zinc-350 hover:text-white bg-transparent border-none p-0 cursor-pointer font-black underline"
             >
               Log In
             </button>
@@ -532,7 +532,7 @@ export default function CoachLandingPage() {
               const el = document.getElementById('pricing');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-lg shadow-blue-500/15 active:scale-95 cursor-pointer"
           >
             Start Free Trial
           </button>
@@ -547,13 +547,13 @@ export default function CoachLandingPage() {
           transition={{ duration: 0.5 }}
           className="space-y-8"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-950/30 border border-blue-900/40 text-[10px] font-black uppercase tracking-wider text-blue-400">
             Life Gym Desktop Portal
           </span>
 
           <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.12]">
             Professional Coaching Portal.<br />
-            <span className="text-zinc-400">Built for Serious Coaches.</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-400">Everything you need to manage your athletes.</span>
           </h2>
 
           <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed font-medium">
@@ -567,7 +567,7 @@ export default function CoachLandingPage() {
                   const el = document.getElementById('pricing');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="w-full sm:w-auto bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider px-8 py-4.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 border border-blue-500/30"
               >
                 <span>Start 14-Day Free Trial</span>
                 <ArrowRight size={14} />
@@ -576,10 +576,10 @@ export default function CoachLandingPage() {
               <a
                 href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
                 download
-                className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group animate-pulse hover:animate-none"
+                className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
               >
-                <img src="/icon.svg" className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
-                <svg className="w-4 h-4 fill-current text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 24 24">
+                <img src="/icon.svg" className="w-4 h-4 object-contain opacity-90 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
+                <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
                   <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
                 </svg>
                 <span>Download for Windows</span>
@@ -587,7 +587,7 @@ export default function CoachLandingPage() {
 
               <button
                 onClick={() => openAuth('login')}
-                className="w-full sm:w-auto bg-transparent border border-zinc-800 hover:bg-zinc-900/40 text-zinc-400 hover:text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4.5 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto bg-transparent border border-zinc-850 hover:border-zinc-700 text-zinc-350 hover:text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
               >
                 Coach Login
               </button>
@@ -651,7 +651,7 @@ export default function CoachLandingPage() {
               key={idx}
               className="p-8 rounded-2xl bg-zinc-900/30 border border-zinc-900 hover:border-zinc-800/80 transition-colors flex flex-col text-left group"
             >
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-855 flex items-center justify-center mb-6 text-zinc-450 group-hover:text-white transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-blue-950/20 border border-blue-900/30 flex items-center justify-center mb-6 text-blue-400 group-hover:text-blue-300 transition-colors">
                 {feat.icon}
               </div>
               <h4 className="text-sm font-bold text-white mb-2 uppercase tracking-wide">{feat.title}</h4>
@@ -774,23 +774,23 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-8 bg-zinc-900 border border-zinc-750 rounded-[28px] flex flex-col justify-between relative shadow-xl scale-105 hover:border-zinc-700 transition-all group"
+            className="p-8 bg-zinc-900 border border-blue-500/40 rounded-[28px] flex flex-col justify-between relative shadow-xl scale-105 hover:border-blue-500 transition-all group"
           >
-            <div className="absolute top-0 right-8 -translate-y-1/2 bg-zinc-100 text-black font-black text-[8px] uppercase tracking-widest px-3 py-1 rounded-full shadow-lg z-10 border border-zinc-250">
+            <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white font-black text-[8px] uppercase tracking-widest px-3 py-1 rounded-full shadow-lg z-10 border border-blue-500">
               Most Popular
             </div>
             <div className="space-y-5">
-              <span className="text-[9px] font-black text-white uppercase tracking-widest bg-zinc-850 border border-zinc-750 px-3 py-1 rounded-lg">1 Month</span>
+              <span className="text-[9px] font-black text-white uppercase tracking-widest bg-blue-950/40 border border-blue-900/60 px-3 py-1 rounded-lg">1 Month</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">3,500</span>
-                <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
-                <span className="text-[10px] text-zinc-550 font-bold">/ month</span>
+                <span className="text-xs text-blue-400 font-extrabold">EGP</span>
+                <span className="text-[10px] text-zinc-400 font-bold">/ month</span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Our standard monthly commitment, ideal for consistent training and tracking.</p>
               <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-800">
                 {sharedFeaturesList.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
+                    <Check size={12} className="text-blue-500 shrink-0 mt-0.5" /> 
                     <span>{f.text}</span>
                   </li>
                 ))}
@@ -799,11 +799,11 @@ export default function CoachLandingPage() {
             <div className="mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '1_month')}
-                className="w-full py-3.5 bg-white hover:bg-zinc-200 active:scale-98 text-black font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer border border-blue-500/30"
               >
                 Start Free Trial
               </button>
-              <span className="text-[9px] text-zinc-550 font-bold uppercase tracking-wider">No card needed</span>
+              <span className="text-[9px] text-blue-500 font-bold uppercase tracking-wider">No card needed</span>
             </div>
           </motion.div>
 
