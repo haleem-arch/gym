@@ -71,6 +71,7 @@ export default function AddClientPage() {
     username: '',
     password: '',
     clientCode: '',
+    contactEmail: '',
     phoneNumber: '',
     age: '',
     height: '',
@@ -433,11 +434,15 @@ export default function AddClientPage() {
     toast.success(`Added ${ex.name}`);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       setAttemptedStep1Submit(true);
-      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim()) {
+      if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim() || !formData.contactEmail.trim()) {
         toast.error('Please fill in all empty text boxes.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) {
+        toast.error('Please enter a valid email address.');
         return;
       }
       if (gender === null) {
@@ -451,6 +456,29 @@ export default function AddClientPage() {
       if (isClientCodeTaken) {
         toast.error('Client Number is already taken. Please change it.');
         return;
+      }
+
+      // Validate client email address (skip if virtual email)
+      const emailVal = formData.contactEmail.trim().toLowerCase();
+      if (!emailVal.endsWith('@stride.fit')) {
+        const toastId = toast.loading('Verifying client email address...');
+        try {
+          const valRes = await fetch('/api/validate-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailVal })
+          });
+          const validation = await valRes.json();
+          if (!valRes.ok || !validation.valid) {
+            toast.error(validation.reason || 'Invalid email address.', { id: toastId });
+            return;
+          }
+          toast.dismiss(toastId);
+        } catch (err) {
+          console.error(err);
+          toast.error('Failed to verify email address. Please try again.', { id: toastId });
+          return;
+        }
       }
     }
     if (step < 4) {
@@ -469,10 +497,16 @@ export default function AddClientPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim()) {
+    if (!formData.displayName.trim() || !formData.username.trim() || !formData.password.trim() || !formData.phoneNumber.trim() || !formData.age.trim() || !formData.height.trim() || !formData.contactEmail.trim()) {
       setAttemptedStep1Submit(true);
       setStep(1);
       toast.error('Please fill in all empty text boxes.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) {
+      setAttemptedStep1Submit(true);
+      setStep(1);
+      toast.error('Please enter a valid email address.');
       return;
     }
     if (gender === null) {
@@ -548,7 +582,11 @@ export default function AddClientPage() {
           email: virtualEmail,
           password: formData.password,
           display_name: formData.displayName,
-          gender: gender
+          gender: gender,
+          role: 'client',
+          targets: {
+            contact_email: formData.contactEmail.trim().toLowerCase()
+          }
         })
       });
 
@@ -583,6 +621,7 @@ export default function AddClientPage() {
         carbs,
         fat,
         client_code: nextClientCode,
+        contact_email: formData.contactEmail.trim().toLowerCase(),
         phone_number: formData.phoneNumber.trim()
       };
 
@@ -1024,6 +1063,20 @@ export default function AddClientPage() {
                     </div>
                     {isClientCodeChecking && <p className="text-[8px] text-gray-500 mt-0.5 animate-pulse">Checking availability...</p>}
                     {isClientCodeTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">Client Code is already taken.</p>}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block font-black pl-1">Email Address (Onboarding)</label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                    <input 
+                      type="email" required name="contactEmail" value={formData.contactEmail} onChange={handleInputChange}
+                      placeholder="e.g. athlete@gmail.com"
+                      className={`w-full bg-[#121620]/60 border rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all ${
+                        attemptedStep1Submit && (!formData.contactEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                      }`} 
+                    />
                   </div>
                 </div>
 

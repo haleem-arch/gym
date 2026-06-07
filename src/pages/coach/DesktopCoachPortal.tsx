@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
   DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
-  ArrowRight
+  ArrowRight, Server
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -360,6 +360,15 @@ export default function DesktopCoachPortal() {
   const [ownerTelegramChatId, setOwnerTelegramChatId] = useState('');
   const [savingTelegramId, setSavingTelegramId] = useState(false);
 
+  // Owner SMTP Configuration states
+  const [smtpEmail, setSmtpEmail] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('587');
+  const [smtpSecure, setSmtpSecure] = useState(false);
+  const [savingSMTP, setSavingSMTP] = useState(false);
+  const [testingSMTP, setTestingSMTP] = useState(false);
+
   // Coach WhatsApp Phone Number states
   const [ownWhatsAppNumber, setOwnWhatsAppNumber] = useState('');
   const [savingWhatsAppNumber, setSavingWhatsAppNumber] = useState(false);
@@ -438,6 +447,7 @@ export default function DesktopCoachPortal() {
     username: '',
     password: '',
     clientCode: '',
+    contactEmail: '',
     phoneNumber: '',
     age: '',
     height: '',
@@ -525,6 +535,8 @@ export default function DesktopCoachPortal() {
       formData.displayName.trim() !== '' &&
       formData.username.trim() !== '' &&
       formData.password.trim() !== '' &&
+      formData.contactEmail.trim() !== '' &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim()) &&
       formData.phoneNumber.trim() !== '' &&
       formData.age.trim() !== '' &&
       formData.height.trim() !== '' &&
@@ -905,6 +917,109 @@ export default function DesktopCoachPortal() {
       toast.error('Failed to update Telegram Chat ID: ' + err.message);
     } finally {
       setSavingTelegramId(false);
+    }
+  };
+
+  // Load SMTP Settings for Owner
+  useEffect(() => {
+    const fetchSMTPSettings = async () => {
+      if (coachUserId === OWNER_ID) {
+        try {
+          const { data, error } = await supabase
+            .from('owner_settings')
+            .select('smtp_email, smtp_password, smtp_host, smtp_port, smtp_secure')
+            .eq('id', 'smtp_config')
+            .maybeSingle();
+          if (error) throw error;
+          if (data) {
+            setSmtpEmail(data.smtp_email || '');
+            setSmtpPassword(data.smtp_password || '');
+            setSmtpHost(data.smtp_host || '');
+            setSmtpPort(data.smtp_port !== undefined && data.smtp_port !== null ? String(data.smtp_port) : '587');
+            setSmtpSecure(!!data.smtp_secure);
+          }
+        } catch (err) {
+          console.error('Failed to load owner SMTP settings in portal:', err);
+        }
+      }
+    };
+    fetchSMTPSettings();
+  }, [coachUserId]);
+
+  const handleSaveSMTP = async () => {
+    if (coachUserId !== OWNER_ID) return;
+    if (!smtpEmail.trim() || !smtpPassword.trim()) {
+      toast.error('Email and password/passcode are required for SMTP.');
+      return;
+    }
+    setSavingSMTP(true);
+    try {
+      const { error } = await supabase.from('owner_settings').upsert({
+        id: 'smtp_config',
+        smtp_email: smtpEmail.trim(),
+        smtp_password: smtpPassword.trim(),
+        smtp_host: smtpHost.trim() || null,
+        smtp_port: smtpPort.trim() ? parseInt(smtpPort.trim()) : null,
+        smtp_secure: smtpSecure,
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+      toast.success('SMTP Configuration saved successfully! 👑');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to save SMTP settings.');
+    } finally {
+      setSavingSMTP(false);
+    }
+  };
+
+  const handleTestSMTP = async () => {
+    if (!smtpEmail.trim() || !smtpPassword.trim()) {
+      toast.error('Please configure SMTP email and password before testing.');
+      return;
+    }
+    setTestingSMTP(true);
+    const toastId = toast.loading('Sending test email to tsmhaleem@gmail.com...');
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'tsmhaleem@gmail.com',
+          subject: 'Stride Rite/Life Gym - SMTP Connection Test 👑',
+          html: `
+            <div style="font-family: sans-serif; background-color: #060713; color: #f3f4f6; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.06); max-width: 500px; margin: 20px auto;">
+              <h2 style="color: #10b981; font-weight: 800; font-size: 18px; margin-top:0;">SMTP Connection Verified!</h2>
+              <p style="font-size: 13px; line-height: 1.6; color: #9ca3af;">
+                This email confirms that your custom SMTP server settings are correctly configured and authenticated.
+              </p>
+              <div style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; font-size: 12px; font-family: monospace;">
+                <strong>Host:</strong> ${smtpHost.trim() || 'Gmail (Fallback)'}<br/>
+                <strong>Port:</strong> ${smtpPort.trim() || '587'}<br/>
+                <strong>Secure (SSL/TLS):</strong> ${smtpSecure ? 'Enabled (Port 465)' : 'Disabled (STARTTLS)'}<br/>
+                <strong>Sender:</strong> ${smtpEmail.trim()}
+              </div>
+              <p style="font-size: 10px; color: #4b5563; margin-top:20px;">Sent via Life Gym Admin Panel Console.</p>
+            </div>
+          `,
+          smtpUser: smtpEmail.trim(),
+          smtpPass: smtpPassword.trim(),
+          smtpHost: smtpHost.trim() || undefined,
+          smtpPort: smtpPort.trim() ? parseInt(smtpPort.trim()) : undefined,
+          smtpSecure: smtpSecure
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to dispatch test email.');
+      }
+      toast.success('Test email sent successfully! Check tsmhaleem@gmail.com.', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'SMTP Connection failed. Check host, email, and password.', { id: toastId });
+    } finally {
+      setTestingSMTP(false);
     }
   };
 
@@ -3348,7 +3463,11 @@ export default function DesktopCoachPortal() {
           email: emailAddress,
           password: formData.password,
           display_name: formData.displayName,
-          gender: deployGender
+          gender: deployGender,
+          role: 'client',
+          targets: {
+            contact_email: formData.contactEmail.trim().toLowerCase()
+          }
         })
       });
 
@@ -3412,6 +3531,7 @@ export default function DesktopCoachPortal() {
         carbs: deployCarbs,
         fat: deployFat,
         client_code: nextClientCode,
+        contact_email: formData.contactEmail.trim().toLowerCase(),
         phone_number: formData.phoneNumber.trim(),
         subscription_duration: period,
         subscription_delay_days: delayDays,
@@ -3527,6 +3647,7 @@ export default function DesktopCoachPortal() {
         username: '',
         password: '',
         clientCode: '',
+        contactEmail: '',
         phoneNumber: '',
         age: '',
         height: '',
@@ -4647,6 +4768,7 @@ export default function DesktopCoachPortal() {
       username: '',
       password: '',
       clientCode: '',
+      contactEmail: '',
       phoneNumber: '',
       age: '',
       height: '',
@@ -4694,6 +4816,7 @@ export default function DesktopCoachPortal() {
                   username: 'thor_god_of_thunder',
                   password: 'mjolnir_password',
                   clientCode: '2011',
+                  contactEmail: 'thor@asgard.com',
                   phoneNumber: '+1-555-ASGARD',
                   age: '1500',
                   height: '198',
@@ -7109,6 +7232,16 @@ export default function DesktopCoachPortal() {
                             />
                           </div>
                           <div className="space-y-1">
+                            <label className="text-[9px] font-black uppercase text-gray-500">Email Address (Onboarding)</label>
+                            <input 
+                              type="email" required value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value.trim() })}
+                              placeholder="e.g. athlete@gmail.com"
+                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                attemptedStep1Submit && (!formData.contactEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
+                              }`}
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500 block mb-1">Sex</label>
                             <div className={`grid grid-cols-2 p-1 bg-[#121624]/60 border rounded-xl relative transition-all ${
                               attemptedStep1Submit && deployGender === null ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
@@ -7509,7 +7642,7 @@ export default function DesktopCoachPortal() {
                     </button>
                     {deployStep < 4 ? (
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           if (deployStep === 1) {
                             setAttemptedStep1Submit(true);
                             if (!isStep1Valid()) {
@@ -7523,6 +7656,29 @@ export default function DesktopCoachPortal() {
                                 toast.error('Please fill in all empty text boxes.');
                               }
                               return;
+                            }
+
+                            // Validate client email address (skip if virtual email)
+                            const emailVal = formData.contactEmail.trim().toLowerCase();
+                            if (!emailVal.endsWith('@stride.fit')) {
+                              const toastId = toast.loading('Verifying client email address...');
+                              try {
+                                const valRes = await fetch('/api/validate-email', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ email: emailVal })
+                                });
+                                const validation = await valRes.json();
+                                if (!valRes.ok || !validation.valid) {
+                                  toast.error(validation.reason || 'Invalid email address.', { id: toastId });
+                                  return;
+                                }
+                                toast.dismiss(toastId);
+                              } catch (err) {
+                                console.error(err);
+                                toast.error('Failed to verify email address. Please try again.', { id: toastId });
+                                return;
+                              }
                             }
                           }
                           setDeployError(null);
@@ -8371,6 +8527,106 @@ export default function DesktopCoachPortal() {
                               <Save size={13} /> Save Configuration
                             </>
                           )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Owner SMTP Configuration */}
+                  <div className="relative overflow-hidden rounded-3xl border border-blue-500/10 bg-gradient-to-br from-[#0b0c16]/95 via-[#0d1022]/95 to-[#05060b]/98 p-6 md:p-8 shadow-2xl backdrop-blur-md">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-indigo-500/[0.03] rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex items-center gap-4 border-b border-gray-850/80 pb-5 mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
+                        <Mail size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Owner SMTP Configuration</h3>
+                        <p className="text-xs text-gray-400 mt-0.5 font-medium">Configure a custom SMTP server or Gmail account to send professional onboarding emails to new coaches and athletes.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 text-xs font-bold text-gray-300">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="sm:col-span-2 space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">SMTP Host</label>
+                          <div className="relative">
+                            <Server className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                            <input
+                              type="text"
+                              value={smtpHost}
+                              onChange={e => setSmtpHost(e.target.value)}
+                              placeholder="Gmail (leave blank) or custom SMTP host"
+                              className="w-full bg-[#05050b]/80 border border-gray-850 focus:border-blue-500 rounded-2xl pl-10 pr-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">SMTP Port</label>
+                          <input
+                            type="text"
+                            value={smtpPort}
+                            onChange={e => setSmtpPort(e.target.value)}
+                            placeholder="587 or 465"
+                            className="w-full bg-[#05050b]/80 border border-gray-850 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between py-1 bg-gray-900/10 border border-gray-850/40 px-4 rounded-2xl">
+                        <div>
+                          <p className="text-xs font-bold text-white">SSL/TLS Connection</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">Use SSL (typically port 465) instead of STARTTLS (587)</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSmtpSecure(!smtpSecure)}
+                          className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${smtpSecure ? 'bg-blue-500 justify-end' : 'bg-gray-800 justify-start'}`}
+                        >
+                          <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">SMTP Sender Email / Username</label>
+                          <input
+                            type="email"
+                            value={smtpEmail}
+                            onChange={e => setSmtpEmail(e.target.value)}
+                            placeholder="e.g. tsmhaleem@gmail.com"
+                            className="w-full bg-[#05050b]/80 border border-gray-850 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-750"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">SMTP Password / App Password</label>
+                          <input
+                            type="password"
+                            value={smtpPassword}
+                            onChange={e => setSmtpPassword(e.target.value)}
+                            placeholder="••••••••••••••••"
+                            className="w-full bg-[#05050b]/80 border border-gray-850 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-750"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                        <button
+                          type="button"
+                          disabled={testingSMTP}
+                          onClick={handleTestSMTP}
+                          className="flex-1 bg-[#161f38] hover:bg-[#1f2b4e] text-blue-400 font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-colors outline-none cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          {testingSMTP ? 'Testing Connection...' : 'Test SMTP Settings'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={savingSMTP}
+                          onClick={handleSaveSMTP}
+                          className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg active:scale-98 cursor-pointer"
+                        >
+                          {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
                         </button>
                       </div>
                     </div>

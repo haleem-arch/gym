@@ -6,7 +6,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import {
   Lock, ArrowLeft, RefreshCw, ShieldAlert, UserCheck, UserX,
   Search, Shield, Key, Plus, Activity, CheckCircle, Database,
-  Copy, Check
+  Copy, Check, Mail, Server
 } from 'lucide-react';
 
 function formatDayTypeLabel(dayType: string, totalVolume: number) {
@@ -109,6 +109,15 @@ export default function SystemConsolePage() {
   const [disableWorkoutTemplatesToggle, setDisableWorkoutTemplatesToggle] = useState(false);
   const [disableNutritionTargetsToggle, setDisableNutritionTargetsToggle] = useState(false);
 
+  // SMTP Settings
+  const [smtpEmail, setSmtpEmail] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('587');
+  const [smtpSecure, setSmtpSecure] = useState(false);
+  const [savingSMTP, setSavingSMTP] = useState(false);
+  const [testingSMTP, setTestingSMTP] = useState(false);
+
   const fetchBaseData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -122,6 +131,16 @@ export default function SystemConsolePage() {
       if (ownerProfile?.targets) {
         setDisableWorkoutTemplatesToggle(!!ownerProfile.targets.disable_workout_templates);
         setDisableNutritionTargetsToggle(!!ownerProfile.targets.disable_nutrition_targets);
+      }
+
+      // Fetch SMTP Configuration
+      const { data: smtpData } = await supabase.from('owner_settings').select('smtp_email, smtp_password, smtp_host, smtp_port, smtp_secure').eq('id', 'smtp_config').maybeSingle();
+      if (smtpData) {
+        setSmtpEmail(smtpData.smtp_email || '');
+        setSmtpPassword(smtpData.smtp_password || '');
+        setSmtpHost(smtpData.smtp_host || '');
+        setSmtpPort(smtpData.smtp_port !== undefined && smtpData.smtp_port !== null ? String(smtpData.smtp_port) : '587');
+        setSmtpSecure(!!smtpData.smtp_secure);
       }
 
       // Fetch profiles
@@ -247,6 +266,83 @@ export default function SystemConsolePage() {
     } catch (err: any) {
       console.error(err);
       toast.error('Unable to save changes. Please try again.');
+    }
+  };
+
+  const handleSaveSMTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!smtpEmail.trim() || !smtpPassword.trim()) {
+      toast.error('Email and password/passcode are required for SMTP.');
+      return;
+    }
+    setSavingSMTP(true);
+    try {
+      const { error } = await supabase.from('owner_settings').upsert({
+        id: 'smtp_config',
+        smtp_email: smtpEmail.trim(),
+        smtp_password: smtpPassword.trim(),
+        smtp_host: smtpHost.trim() || null,
+        smtp_port: smtpPort.trim() ? parseInt(smtpPort.trim()) : null,
+        smtp_secure: smtpSecure,
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+      toast.success('SMTP Configuration saved successfully! 👑');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to save SMTP settings.');
+    } finally {
+      setSavingSMTP(false);
+    }
+  };
+
+  const handleTestSMTP = async () => {
+    if (!smtpEmail.trim() || !smtpPassword.trim()) {
+      toast.error('Please configure SMTP email and password before testing.');
+      return;
+    }
+    setTestingSMTP(true);
+    const toastId = toast.loading('Sending test email to tsmhaleem@gmail.com...');
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'tsmhaleem@gmail.com',
+          subject: 'Stride Rite/Life Gym - SMTP Connection Test 👑',
+          html: `
+            <div style="font-family: sans-serif; background-color: #060713; color: #f3f4f6; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.06); max-width: 500px; margin: 20px auto;">
+              <h2 style="color: #10b981; font-weight: 800; font-size: 18px; margin-top:0;">SMTP Connection Verified!</h2>
+              <p style="font-size: 13px; line-height: 1.6; color: #9ca3af;">
+                This email confirms that your custom SMTP server settings are correctly configured and authenticated.
+              </p>
+              <div style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; font-size: 12px; font-family: monospace;">
+                <strong>Host:</strong> ${smtpHost.trim() || 'Gmail (Fallback)'}<br/>
+                <strong>Port:</strong> ${smtpPort.trim() || '587'}<br/>
+                <strong>Secure (SSL/TLS):</strong> ${smtpSecure ? 'Enabled (Port 465)' : 'Disabled (STARTTLS)'}<br/>
+                <strong>Sender:</strong> ${smtpEmail.trim()}
+              </div>
+              <p style="font-size: 10px; color: #4b5563; margin-top:20px;">Sent via Life Gym Admin Panel Console.</p>
+            </div>
+          `,
+          smtpUser: smtpEmail.trim(),
+          smtpPass: smtpPassword.trim(),
+          smtpHost: smtpHost.trim() || undefined,
+          smtpPort: smtpPort.trim() ? parseInt(smtpPort.trim()) : undefined,
+          smtpSecure: smtpSecure
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to dispatch test email.');
+      }
+      toast.success('Test email sent successfully! Check tsmhaleem@gmail.com.', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'SMTP Connection failed. Check host, email, and password.', { id: toastId });
+    } finally {
+      setTestingSMTP(false);
     }
   };
 
@@ -668,6 +764,110 @@ export default function SystemConsolePage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Owner SMTP Configuration */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
+          <Mail size={14} /> Owner SMTP Configuration
+        </h3>
+        
+        <form onSubmit={handleSaveSMTP} className="space-y-4">
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-3">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Host (e.g. smtp.gmail.com)</label>
+                <div className="relative mt-1">
+                  <Server className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={smtpHost}
+                    onChange={e => setSmtpHost(e.target.value)}
+                    placeholder="Gmail (leave blank) or custom SMTP host"
+                    className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none transition-all"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Port</label>
+                <input
+                  type="text"
+                  value={smtpPort}
+                  onChange={e => setSmtpPort(e.target.value)}
+                  placeholder="587 or 465"
+                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl p-3 text-white text-xs outline-none transition-all mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between py-1 px-1">
+              <div>
+                <p className="text-xs font-bold text-white">SSL/TLS Connection</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">Use SSL (typically port 465) instead of STARTTLS (587)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSmtpSecure(!smtpSecure)}
+                className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${smtpSecure ? 'bg-blue-500 justify-end' : 'bg-gray-800 justify-start'}`}
+              >
+                <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+              </button>
+            </div>
+
+            <div className="border-t border-white/[0.03] my-2" />
+
+            <div>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Sender Email / Username</label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                <input
+                  type="email"
+                  required
+                  value={smtpEmail}
+                  onChange={e => setSmtpEmail(e.target.value)}
+                  placeholder="e.g. tsmhaleem@gmail.com"
+                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Password / App Password</label>
+              <div className="relative mt-1">
+                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                <input
+                  type="password"
+                  required
+                  value={smtpPassword}
+                  onChange={e => setSmtpPassword(e.target.value)}
+                  placeholder="••••••••••••••••"
+                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none transition-all"
+                />
+              </div>
+            </div>
+            
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={testingSMTP}
+              onClick={handleTestSMTP}
+              className="flex-1 bg-[#161f38] hover:bg-[#1f2b4e] text-blue-400 font-bold py-3 px-4 rounded-xl text-xs transition-colors outline-none cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              {testingSMTP ? 'Testing Connection...' : 'Test SMTP Settings'}
+            </button>
+            <button
+              type="submit"
+              disabled={savingSMTP}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer"
+            >
+              {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Create New Coach Account */}

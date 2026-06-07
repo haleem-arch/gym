@@ -178,7 +178,7 @@ export default function CoachLandingPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
 
-  const [clientCount, setClientCount] = useState(15);
+
   const [leadEmail, setLeadEmail] = useState('');
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadLoading, setLeadLoading] = useState(false);
@@ -317,46 +317,23 @@ export default function CoachLandingPage() {
     try {
       // 1. Start background database registration
       const registrationPromise = (async () => {
-        // Create authentication user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-        });
-
-        if (authError) throw authError;
-        if (!authData.user) throw new Error('User creation failed.');
-
-        // Normalize username
-        const baseUser = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-        const uniqueUsername = `${baseUser}${Math.floor(1000 + Math.random() * 9000)}`;
-
-        // Use display name or default for gymName internally to keep Supabase payload correct
-        const finalGymName = displayName.trim() + " Gym";
-
-        // Insert profile record with role = 'coach'
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            username: uniqueUsername,
+        const response = await fetch('/api/register-coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             email: email.trim(),
-            display_name: displayName.trim(),
-            role: 'coach',
-            targets: {
-              onboarding_completed: true,
-              is_new_signup: false,
-              show_welcome_animation: true,
-              phone_number: phone.trim(),
-              gym_name: finalGymName,
-              subscription_plan: selectedPlan || '1_month',
-              subscription_status: 'trial',
-              trial_end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-              age: parseInt(age) || null,
-              gender: gender
-            }
-          });
-
-        if (profileError) throw profileError;
+            password,
+            displayName: displayName.trim(),
+            phone: phone.trim(),
+            age,
+            gender,
+            selectedPlan
+          })
+        });
+        const resData = await response.json();
+        if (!response.ok) {
+          throw new Error(resData.error || 'Failed to register coach account.');
+        }
 
         // Notify Owner via Telegram Bot (Non-blocking background fetch)
         fetch('/api/notify-new-coach', {
@@ -366,7 +343,7 @@ export default function CoachLandingPage() {
             displayName: displayName.trim(),
             email: email.trim(),
             phone: phone.trim(),
-            gymName: finalGymName,
+            gymName: displayName.trim() + " Gym",
             plan: selectedPlan || '1_month',
             age: age,
             gender: gender
@@ -374,6 +351,14 @@ export default function CoachLandingPage() {
         }).catch(notifyErr => {
           console.error('Failed to notify owner:', notifyErr);
         });
+
+        // Sign in client-side immediately
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password
+        });
+        if (signInError) throw signInError;
+
 
         // Clean signup flag so App knows they are fully ready
         localStorage.setItem('is_new_signup', 'false');
@@ -721,64 +706,7 @@ export default function CoachLandingPage() {
           </div>
         </div>
 
-        {/* Interactive ROI & Time Calculator */}
-        <div className="bg-[#111326]/30 border border-white/[0.04] p-8 rounded-[32px] mb-16 max-w-3xl mx-auto shadow-2xl relative overflow-hidden backdrop-blur-md">
-          <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-purple-500/5 rounded-full blur-[70px] pointer-events-none" />
-          
-          <div className="relative z-10 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="text-left space-y-1">
-                <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Estimate Your Roster Size</span>
-                <div className="text-3xl font-black text-white flex items-baseline gap-1.5">
-                  <span>{clientCount}</span>
-                  <span className="text-xs text-blue-400 font-extrabold uppercase tracking-widest">Active Athletes</span>
-                </div>
-              </div>
-              <div className="flex-1 max-w-md w-full">
-                <input
-                  type="range"
-                  min="5"
-                  max="100"
-                  value={clientCount}
-                  onChange={(e) => setClientCount(Number(e.target.value))}
-                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"
-                />
-                <div className="flex justify-between text-[9px] text-gray-500 font-black mt-2 uppercase tracking-wider">
-                  <span>5 clients</span>
-                  <span>50 clients</span>
-                  <span>100 clients</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-white/[0.04]">
-              <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03] text-left space-y-1">
-                <div className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">Admin Time Saved</div>
-                <div className="text-lg font-black text-blue-400">{Math.round(clientCount * 1.5)} Hours<span className="text-[10px] text-gray-500 font-bold">/wk</span></div>
-                <p className="text-[8.5px] text-gray-400 leading-relaxed font-medium">Reclaimed from Excel data entry, message logs & PDFs.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03] text-left space-y-1">
-                <div className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">Hours Back / Month</div>
-                <div className="text-lg font-black text-purple-400">{Math.round(clientCount * 1.5 * 4)} Hours</div>
-                <p className="text-[8.5px] text-gray-400 leading-relaxed font-medium">Extra personal time or capacity to take on new clients.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03] text-left space-y-1">
-                <div className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">Coach Revenue Potential</div>
-                <div className="text-lg font-black text-emerald-400">{(clientCount * 500).toLocaleString()} <span className="text-[10px] font-bold text-emerald-500">EGP</span></div>
-                <p className="text-[8.5px] text-gray-400 leading-relaxed font-medium">Based on an average monthly fee of 500 EGP per athlete.</p>
-              </div>
-            </div>
-
-            <div className="text-center p-3.5 rounded-2xl bg-blue-500/5 border border-blue-500/10 text-[10.5px] font-bold text-gray-300 flex items-center justify-center gap-1.5">
-              <Sparkles size={13} className="text-blue-400 animate-pulse" />
-              <span>
-                <strong className="text-blue-400 font-black uppercase tracking-wider">Recommended Tier: </strong>
-                {clientCount <= 15 ? '1 Month Plan — Great for starting coaches' : clientCount <= 45 ? '3 Months Plan — Save 20% on billing' : '6 Months Plan — Maximum savings for high-volume gyms'}
-              </span>
-            </div>
-          </div>
-        </div>
 
         <motion.div 
           variants={cardsContainerVariants}
