@@ -306,7 +306,7 @@ export default function DesktopCoachPortal() {
       try {
         setUpdateStatus(prev => ({ ...prev, checking: true }));
         const currentVersion = await electronAPI.getAppVersion();
-        const response = await fetch('/app-version.json');
+        const response = await fetch('/app-version.json?t=' + Date.now());
         if (!response.ok) throw new Error('Failed to fetch version catalog');
         const data = await response.json();
         
@@ -363,7 +363,7 @@ export default function DesktopCoachPortal() {
 
     try {
       setUpdateStatus(prev => ({ ...prev, downloading: true, progress: 0, error: undefined }));
-      const response = await fetch('/app-version.json');
+      const response = await fetch('/app-version.json?t=' + Date.now());
       const data = await response.json();
       electronAPI.downloadAndInstallUpdate(data.url);
     } catch (err: any) {
