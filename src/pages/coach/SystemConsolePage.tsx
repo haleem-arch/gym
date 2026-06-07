@@ -834,7 +834,17 @@ export default function SystemConsolePage() {
             </div>
 
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Password / App Password</label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500">SMTP Password / App Password</label>
+                <a 
+                  href="https://myaccount.google.com/apppasswords" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-[8.5px] text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-wider font-extrabold"
+                >
+                  Get Gmail App Password ↗
+                </a>
+              </div>
               <div className="relative mt-1">
                 <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                 <input

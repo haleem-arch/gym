@@ -8600,7 +8600,17 @@ export default function DesktopCoachPortal() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">SMTP Password / App Password</label>
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-500 block">SMTP Password / App Password</label>
+                            <a 
+                              href="https://myaccount.google.com/apppasswords" 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-[9px] text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-wider font-extrabold"
+                            >
+                              Get Gmail App Password ↗
+                            </a>
+                          </div>
                           <input
                             type="password"
                             value={smtpPassword}
