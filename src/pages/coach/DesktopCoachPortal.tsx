@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown, ArrowUpCircle,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
   DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
-  ArrowRight, Server
+  ArrowRight, Server, Maximize, Minimize
 } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { DumbbellLoader } from '../../components/DumbbellLoader';
@@ -243,6 +243,30 @@ export default function DesktopCoachPortal() {
       }
     }
   }, [loading, coachUserId]);
+
+  // Fullscreen state and listeners
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+        .then(() => setIsFullscreen(true))
+        .catch(() => {});
+    } else {
+      document.exitFullscreen()
+        .then(() => setIsFullscreen(false))
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Electron App Update State
   const [updateStatus, setUpdateStatus] = useState<{
@@ -5386,6 +5410,15 @@ export default function DesktopCoachPortal() {
             title="Refresh database data only"
           >
             <RefreshCw size={11} className="text-emerald-400" /> Sync Data
+          </button>
+
+          <button 
+            onClick={toggleFullscreen}
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-700 bg-gray-900/60 hover:bg-gray-800 text-[10px] font-bold text-gray-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullscreen ? <Minimize size={11} className="text-gray-400" /> : <Maximize size={11} className="text-gray-400" />}
+            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </button>
 
           {!isRunningInElectron && (
