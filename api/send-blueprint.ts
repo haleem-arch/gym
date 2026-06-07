@@ -36,7 +36,20 @@ export default async function handler(req: any, res: any) {
     const uniqueId = Math.floor(100000 + Math.random() * 900000);
     const origin = req.headers.origin || (req.headers.host ? 'https://' + req.headers.host : 'https://lifegym.app');
     
-    const downloadUrl = `${origin}/ultimate-coach-blueprint.pdf?v=${uniqueId}`;
+    const getHash = (emailStr: string) => {
+      let hash = 0;
+      const salt = "lifegym-salt-2026";
+      const str = emailStr.trim().toLowerCase() + salt;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+      }
+      return Math.abs(hash).toString(16);
+    };
+
+    const token = getHash(cleanEmail);
+    const downloadUrl = `${origin}/download-blueprint?email=${encodeURIComponent(cleanEmail)}&token=${token}`;
 
     // Text Fallback (highly recommended for compatibility)
     const textFallback = `

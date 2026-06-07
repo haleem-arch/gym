@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Disposition",
-          "value": "inline; filename=\"ultimate-coach-blueprint.pdf\""
+          "value": "attachment; filename=\"ultimate-coach-blueprint.pdf\""
         },
         {
           "key": "Content-Type",
