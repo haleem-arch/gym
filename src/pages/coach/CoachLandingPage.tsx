@@ -519,7 +519,7 @@ export default function CoachLandingPage() {
 
         <div className="flex items-center gap-4">
           <a
-            href="/Life-Gym-Coach-Portal-Setup.exe"
+            href="https://hppzxppssmhhaefwqffg.supabase.co/storage/v1/object/public/documents/Life-Gym-Coach-Portal-Setup.exe"
             download
             className="hidden lg:flex items-center gap-1.5 px-3 py-2.5 border border-blue-500/20 hover:border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 rounded-xl transition-all font-black whitespace-nowrap"
           >
