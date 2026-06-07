@@ -18,7 +18,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon.svg'],
       workbox: {
-        maximumFileSizeToCacheInBytes: 3000000
+        maximumFileSizeToCacheInBytes: 3000000,
+        navigateFallbackDenylist: [
+          /^\/api/,
+          /\.pdf($|\?)/
+        ]
       },
       manifest: {
         name: 'Haleem',

@@ -33,9 +33,10 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: validation.reason });
     }
 
+    const uniqueId = Math.floor(100000 + Math.random() * 900000);
     const origin = req.headers.origin || (req.headers.host ? 'https://' + req.headers.host : 'https://lifegym.app');
     
-    const downloadUrl = `${origin}/ultimate-coach-blueprint.pdf`;
+    const downloadUrl = `${origin}/ultimate-coach-blueprint.pdf?v=${uniqueId}`;
 
     // Text Fallback (highly recommended for compatibility)
     const textFallback = `
@@ -103,7 +104,6 @@ Note: Your download link is active for the next 24 hours.
         </div>
       </div>
     `;
-    const uniqueId = Math.floor(100000 + Math.random() * 900000);
 
     // Asynchronously send the email using waitUntil
     waitUntil(
