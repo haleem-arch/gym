@@ -26,6 +26,8 @@ export default function DownloadBlueprintPage() {
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [countdown, setCountdown] = useState(2);
   const [downloadTriggered, setDownloadTriggered] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
 
   // 1. Verify token validity on mount
   useEffect(() => {
@@ -55,6 +57,20 @@ export default function DownloadBlueprintPage() {
     }
   }, [isValid, countdown, downloadTriggered]);
 
+  // 3. Handle redirection countdown
+  useEffect(() => {
+    if (!isRedirecting) return;
+
+    if (redirectCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRedirectCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      navigate('/', { replace: true });
+    }
+  }, [isRedirecting, redirectCountdown, navigate]);
+
   const triggerDownload = () => {
     setDownloadTriggered(true);
     // Trigger download of the PDF
@@ -64,6 +80,9 @@ export default function DownloadBlueprintPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Start exit / redirect sequence
+    setIsRedirecting(true);
   };
 
   return (
@@ -116,6 +135,76 @@ export default function DownloadBlueprintPage() {
                 <ArrowLeft size={14} />
                 <span>Go to Homepage</span>
               </button>
+            </motion.div>
+          ) : isRedirecting ? (
+            /* Redirecting / Success State */
+            <motion.div
+              key="redirecting"
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -15 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="space-y-6 py-4"
+            >
+              {/* Logo / Branding */}
+              <div className="flex items-center justify-center gap-2.5 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center border border-blue-500/20">
+                  <img src="/icon.svg" alt="Life Gym Logo" className="w-5 h-5 object-contain" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black tracking-widest text-white uppercase">Life Gym</h4>
+                </div>
+              </div>
+
+              {/* Pulsing Success Checkmark */}
+              <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                <motion.div 
+                  className="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20"
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                  className="text-emerald-400 z-10"
+                >
+                  <CheckCircle2 size={44} />
+                </motion.div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-white uppercase tracking-wider">Download Started!</h3>
+                <p className="text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto font-medium">
+                  Returning to the landing page in <span className="text-purple-400 font-bold">{redirectCountdown}s</span>...
+                </p>
+              </div>
+
+              {/* Progress bar representing redirect countdown */}
+              <div className="w-full bg-white/[0.03] border border-white/[0.05] h-1.5 rounded-full overflow-hidden max-w-[200px] mx-auto">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-emerald-400"
+                  initial={{ width: "100%" }}
+                  animate={{ width: "0%" }}
+                  transition={{ duration: 3, ease: "linear" }}
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = '/ultimate-coach-blueprint.pdf';
+                    link.setAttribute('download', 'The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint.pdf');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="text-[10px] text-gray-500 hover:text-gray-300 font-bold underline transition-colors cursor-pointer"
+                >
+                  Didn't start? Click here to download again
+                </button>
+              </div>
             </motion.div>
           ) : (
             /* Valid / Success State */
