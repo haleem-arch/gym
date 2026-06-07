@@ -843,21 +843,31 @@ export default function AddClientPage() {
                 {copiedField === 'Username' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
               </button>
             </div>
-            <div className="border-t border-gray-800/60 my-2" />
-            <div className="flex items-center justify-between group">
-              <div>
-                <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Email</span>
-                <p className="font-mono text-sm text-white">{deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCopyField(deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`, 'Email')}
-                className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
-                title="Copy Email"
-              >
-                {copiedField === 'Email' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-              </button>
-            </div>
+            {(() => {
+              const actualEmail = deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`;
+              if (actualEmail && !actualEmail.endsWith('@stride.fit')) {
+                return (
+                  <>
+                    <div className="border-t border-gray-800/60 my-2" />
+                    <div className="flex items-center justify-between group">
+                      <div>
+                        <span className="text-[9px] uppercase tracking-widest text-gray-500 font-black">Email</span>
+                        <p className="font-mono text-sm text-white">{actualEmail}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField(actualEmail, 'Email')}
+                        className="p-2 rounded-xl bg-gray-900/40 border border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+                        title="Copy Email"
+                      >
+                        {copiedField === 'Email' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  </>
+                );
+              }
+              return null;
+            })()}
             <div className="border-t border-gray-800/60 my-2" />
             <div className="flex items-center justify-between group">
               <div>
@@ -880,7 +890,8 @@ export default function AddClientPage() {
               onClick={() => {
                 const loginUrl = `${window.location.origin}/login`;
                 const actualEmail = deployedData.contactEmail || deployedData.email || `${deployedData.username}@stride.fit`;
-                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\nEmail: ${actualEmail}\nPassword: ${deployedData.password}\n\nLogin URL: ${loginUrl}`;
+                const emailLine = actualEmail.endsWith('@stride.fit') ? '' : `Email: ${actualEmail}\n`;
+                const text = `Life Gym Access:\nClient Code: #${deployedData.clientCode}\nUsername: ${deployedData.username}\n${emailLine}Password: ${deployedData.password}\n\nLogin URL: ${loginUrl}`;
                 navigator.clipboard.writeText(text);
                 toast.success('Credentials copied to clipboard!');
               }}
