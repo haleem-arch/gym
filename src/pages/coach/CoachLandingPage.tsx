@@ -144,6 +144,7 @@ const FAQ_CATEGORIES = [
 
 export default function CoachLandingPage() {
   const navigate = useNavigate();
+  const isElectron = typeof window !== 'undefined' && (!!(window as any).electronAPI || navigator.userAgent.includes('Electron'));
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -270,7 +271,7 @@ export default function CoachLandingPage() {
     setErrorMessage(null);
 
     const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
-    if (mode === 'register' && isWindows) {
+    if (mode === 'register' && isWindows && !isElectron) {
       setOnboardingMode('options');
     } else {
       setOnboardingMode('form');
@@ -505,19 +506,21 @@ export default function CoachLandingPage() {
         </nav>
 
         <div className="flex items-center gap-6">
-          <a
-            href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
-            download
-            className="hidden lg:flex items-center gap-3 px-5 py-3 border border-blue-950/60 hover:border-blue-900/80 bg-blue-950/30 hover:bg-blue-950/60 text-xs font-extrabold uppercase tracking-widest text-blue-400 rounded-xl transition-all whitespace-nowrap shadow-md cursor-pointer active:scale-95 group"
-            title="Download Life Gym Coach App for Windows"
-          >
-            <img src="/icon.svg" className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
-            {/* Windows Logo */}
-            <svg className="w-3.5 h-3.5 text-blue-500/80 group-hover:text-blue-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
-            </svg>
-            <span>Download for Windows</span>
-          </a>
+          {!isElectron && (
+            <a
+              href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
+              download
+              className="hidden lg:flex items-center gap-3 px-5 py-3 border border-blue-950/60 hover:border-blue-900/80 bg-blue-950/30 hover:bg-blue-950/60 text-xs font-extrabold uppercase tracking-widest text-blue-400 rounded-xl transition-all whitespace-nowrap shadow-md cursor-pointer active:scale-95 group"
+              title="Download Life Gym Coach App for Windows"
+            >
+              <img src="/icon.svg" className="w-5 h-5 object-contain opacity-90 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
+              {/* Windows Logo */}
+              <svg className="w-3.5 h-3.5 text-blue-500/80 group-hover:text-blue-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+              </svg>
+              <span>Download for Windows</span>
+            </a>
+          )}
           <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
             <span>Already a coach?</span>
             <button 
@@ -564,17 +567,19 @@ export default function CoachLandingPage() {
                 <ArrowRight size={14} />
               </button>
               
-              <a
-                href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
-                download
-                className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
-              >
-                <img src="/icon.svg" className="w-4 h-4 object-contain opacity-90 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
-                <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
-                  <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
-                </svg>
-                <span>Download for Windows</span>
-              </a>
+              {!isElectron && (
+                <a
+                  href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
+                  download
+                  className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
+                >
+                  <img src="/icon.svg" className="w-5 h-5 object-contain opacity-95 group-hover:opacity-100 transition-opacity" alt="Life Gym" />
+                  <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
+                    <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+                  </svg>
+                  <span>Download for Windows</span>
+                </a>
+              )}
             </div>
             <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-300 hover:text-white cursor-pointer underline font-extrabold">Log In</span> (Coaches Only)</p>
           </div>
