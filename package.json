@@ -66,12 +66,12 @@
     },
     "files": [
       "electron.cjs",
-      "icon-transparent.png",
+      "app_icon_rounded.png",
       "package.json"
     ],
     "win": {
       "target": "nsis",
-      "icon": "icon-transparent.png"
+      "icon": "app_icon_rounded.png"
     },
     "nsis": {
       "oneClick": true,

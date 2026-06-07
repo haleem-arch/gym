@@ -19,7 +19,8 @@ import {
   Sparkles,
   Phone,
   Calendar,
-  Dumbbell
+  Dumbbell,
+  Download
 } from 'lucide-react';
 
 const FAQ_CATEGORIES = [
@@ -517,6 +518,13 @@ export default function CoachLandingPage() {
         </nav>
 
         <div className="flex items-center gap-4">
+          <a
+            href="/Life-Gym-Coach-Portal-Setup.exe"
+            download
+            className="hidden lg:flex items-center gap-1.5 px-3.5 py-2 border border-white/[0.08] hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.04] text-[10px] uppercase tracking-wider text-gray-300 hover:text-white rounded-xl transition-all font-black"
+          >
+            <Download size={12} className="text-blue-400" /> Download App (Windows)
+          </a>
           <div className="hidden sm:flex items-center gap-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
             <span>Already have an account?</span>
             <button 

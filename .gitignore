@@ -31,3 +31,6 @@ scratch/
 .vercel
 .env*.local
 .env.production
+
+# Compiled Desktop App
+public/Life-Gym-Coach-Portal-Setup.exe

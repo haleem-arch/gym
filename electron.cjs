@@ -10,7 +10,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 768,
     title: 'Life Gym Coach Portal',
-    icon: path.join(__dirname, 'icon-transparent.png'),
+    icon: path.join(__dirname, 'app_icon_rounded.png'),
     backgroundColor: '#060713', // Dark theme matching the portal style
     show: false, // Don't show the window until it's ready to avoid white flash
     webPreferences: {
@@ -36,47 +36,11 @@ function createWindow() {
     mainWindow.focus();
   });
 
-  // Set standard application menu
-  const menuTemplate = [
-    {
-      label: 'File',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'close' },
-        { type: 'separator' },
-        { role: 'quit' }
-      ]
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' }
-      ]
-    }
-  ];
-
-  const menu = Menu.buildFromTemplate(menuTemplate);
-  Menu.setApplicationMenu(menu);
+  // Disable native menu bar (removes File/Edit/View menu on Windows/Linux)
+  Menu.setApplicationMenu(null);
+  if (mainWindow) {
+    mainWindow.setMenu(null);
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
