@@ -558,7 +558,7 @@ export default function CoachLandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
               <button
                 onClick={() => {
-                  const el = document.getElementById('pricing');
+                  const el = document.getElementById('billing-plans');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 border border-blue-500/30"
@@ -698,7 +698,7 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900 scroll-mt-24"
       >
         <div className="text-center space-y-3 mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Simple, Flexible Billing</h3>
@@ -722,8 +722,9 @@ export default function CoachLandingPage() {
         </div>
 
         <motion.div 
+          id="billing-plans"
           variants={cardsContainerVariants}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch scroll-mt-24"
         >
           {/* 2 Weeks Plan */}
           <motion.div 
@@ -956,7 +957,7 @@ export default function CoachLandingPage() {
             <div 
               key={catIdx} 
               id={category.title === 'Subscriptions & Billing' ? 'faq-billing' : undefined}
-              className="space-y-4 text-left"
+              className={`space-y-4 text-left ${category.title === 'Subscriptions & Billing' ? 'scroll-mt-24' : ''}`}
             >
               <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest pl-1">
                 {category.title}
