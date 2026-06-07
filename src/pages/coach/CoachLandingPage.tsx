@@ -733,7 +733,7 @@ export default function CoachLandingPage() {
             className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
           >
             <div className="space-y-5">
-              <span className="text-[9px] font-black text-zinc-305 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">2 Weeks</span>
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">2 Weeks</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">2,200</span>
                 <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
@@ -804,7 +804,7 @@ export default function CoachLandingPage() {
             className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
           >
             <div className="space-y-5">
-              <span className="text-[9px] font-black text-zinc-305 uppercase tracking-widest bg-zinc-850 border border-zinc-700/60 px-3 py-1 rounded-lg">3 Months</span>
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-850 border border-zinc-700/60 px-3 py-1 rounded-lg">3 Months</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">8,500</span>
                 <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
@@ -838,7 +838,7 @@ export default function CoachLandingPage() {
             className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
           >
             <div className="space-y-5">
-              <span className="text-[9px] font-black text-zinc-305 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">6 Months</span>
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">6 Months</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">14,000</span>
                 <span className="text-xs text-zinc-400 font-extrabold">EGP</span>
@@ -1302,7 +1302,7 @@ export default function CoachLandingPage() {
                                 }
                                 setOnboardingStep(2);
                               }}
-                              className="w-full bg-zinc-150 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
+                              className="w-full bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
                             >
                               <span>Continue to Profile Setup</span>
                               <ArrowRight size={12} />

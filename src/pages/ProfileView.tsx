@@ -154,6 +154,8 @@ export default function ProfileView() {
     isExpired = remainingDays === 0;
   }
 
+  const isCoachUser = profile?.role === 'coach' || profile?.role === 'owner' || profile?.role === 'admin' || profile?.role === 'superadmin';
+
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full pb-28 text-gray-200">
       {/* Title */}
@@ -161,7 +163,9 @@ export default function ProfileView() {
         <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
           <User className="text-blue-500" /> My Profile
         </h1>
-        <p className="text-sm text-gray-400">Account settings and coach reference</p>
+        <p className="text-sm text-gray-400">
+          {isCoachUser ? 'Coach account settings and platform status' : 'Account settings and coach reference'}
+        </p>
       </motion.div>
 
       {/* Account Info Dossier Card */}
@@ -175,10 +179,12 @@ export default function ProfileView() {
           <img src="/icon.svg" className="w-full h-full object-contain" alt="Stride Rite Logo" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">Athlete Profile</p>
+          <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">
+            {isCoachUser ? 'Coach Profile' : 'Athlete Profile'}
+          </p>
           <h2 className="text-base font-black text-white truncate flex items-center gap-1.5">
-            {profile?.display_name || 'Unnamed Client'}
-            {profile?.targets?.client_code && (
+            {profile?.display_name || 'Unnamed User'}
+            {profile?.targets?.client_code && !isCoachUser && (
               <span className="text-[10px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1.5 py-0.5 rounded font-black tracking-normal">
                 #{profile.targets.client_code}
               </span>
@@ -202,7 +208,7 @@ export default function ProfileView() {
         <div className="absolute -top-12 -right-12 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2 mb-4">
-          <Clock size={14} /> Subscription Status
+          <Clock size={14} /> {isCoachUser ? 'Website Subscription' : 'Subscription Status'}
         </h3>
 
         {subEndDateStr ? (
@@ -223,19 +229,27 @@ export default function ProfileView() {
             {isExpired && (
               <div className="bg-red-950/40 border border-red-500/20 rounded-xl p-3 flex items-center gap-2 text-red-400 text-xs">
                 <AlertCircle size={14} className="shrink-0" />
-                <span>Your subscription has expired. Please contact your coach to renew your plan.</span>
+                <span>
+                  {isCoachUser 
+                    ? 'Your platform subscription has expired. Please renew your plan from the coach portal.' 
+                    : 'Your subscription has expired. Please contact your coach to renew your plan.'}
+                </span>
               </div>
             )}
           </div>
         ) : (
           <div className="space-y-2">
             <span className="text-lg font-black text-white">Lifetime Access</span>
-            <p className="text-xs text-gray-400">Your account is on an unlimited coach target split plan.</p>
+            <p className="text-xs text-gray-400">
+              {isCoachUser 
+                ? 'Your account has unlimited developer/owner platform access.' 
+                : 'Your account is on an unlimited coach target split plan.'}
+            </p>
           </div>
         )}
 
         {/* WhatsApp Contact Coach CTA inside Subscription Card */}
-        {coachProfile && (
+        {!isCoachUser && coachProfile && (
           <div className="mt-5 pt-4 border-t border-gray-800/60 flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gray-950/80 border border-gray-800 flex items-center justify-center shrink-0 p-1.5 shadow-inner">
