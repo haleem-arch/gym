@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron . --dev\"",
+    "electron:package": "electron-builder build --win"
   },
   "dependencies": {
     "@google/genai": "^2.2.0",
@@ -40,6 +43,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
+    "concurrently": "^10.0.3",
+    "electron": "^42.3.3",
+    "electron-builder": "^26.15.0",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -49,6 +55,30 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "com.lifegym.coachportal",
+    "productName": "Life Gym Coach Portal",
+    "directories": {
+      "output": "dist_desktop"
+    },
+    "files": [
+      "electron.cjs",
+      "icon-transparent.png",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon-transparent.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Life Gym Coach"
+    }
   }
 }
