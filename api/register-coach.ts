@@ -89,40 +89,62 @@ export default async function handler(req: any, res: any) {
 
     // 3. Send welcome email to coach asynchronously
     const origin = req.headers.origin || (req.headers.host ? 'https://' + req.headers.host : 'https://lifegym.app');
+    
+    const textWelcome = `
+LIFE GYM - Coach Portal Activated
+Welcome to the Team, Coach ${displayName.trim()}! 👑
+
+Thank you for choosing Life Gym. Your professional coach account has been successfully created. You can now access your portal to configure your gym settings, add clients, prescribe workout routines, and track diet logs in real-time.
+
+Your Coach Details:
+• Login Email: ${cleanEmail}
+• Subscription Status: 14-Day Free Trial
+
+Log In to Coach Portal:
+${origin}/login
+
+© 2026 Life Gym. All rights reserved.
+    `.trim();
+
+    const htmlWelcome = `
+      <div style="font-family: sans-serif; background-color: #f4f4f5; padding: 20px; color: #18181b;">
+        <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; max-width: 520px; margin: 20px auto; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #10b981; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
+            <p style="font-size: 9px; color: #3b82f6; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Coach Portal Activated</p>
+          </div>
+          
+          <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome to the Team, Coach ${displayName.trim()}! 👑</h2>
+          
+          <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
+            Thank you for choosing Life Gym. Your professional coach account has been successfully created. You can now access your portal to configure your gym settings, add clients, prescribe workout routines, and track diet logs in real-time.
+          </p>
+          
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
+            <span style="color: #10b981; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Coach Details</span>
+            <strong>Login Email:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail}</code><br />
+            <strong>Subscription Status:</strong> <span style="color: #10b981; font-weight: bold;">14-Day Free Trial</span>
+          </div>
+          
+          <div style="text-align: center; margin-bottom: 28px;">
+            <a href="${origin}/login" target="_blank" style="background-color: #10b981; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+              Log In to Coach Portal
+            </a>
+          </div>
+          
+          <p style="font-size: 10px; color: #9ca3af; margin-top: 36px; border-top: 1px solid #e4e4e7; padding-top: 16px; text-align: center; margin-bottom: 0;">
+            © 2026 Life Gym. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
     waitUntil(
       sendBulkEmails({
         to: cleanEmail,
         subject: 'Welcome to Life Gym! 👑 Your Coach Account is Ready',
-        html: `
-          <div style="font-family: sans-serif; background-color: #060713; color: #f3f4f6; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.06); max-width: 520px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #10b981; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
-              <p style="font-size: 9px; color: #3b82f6; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Coach Portal Activated</p>
-            </div>
-            
-            <h2 style="color: #ffffff; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome to the Team, Coach ${displayName.trim()}! 👑</h2>
-            
-            <p style="font-size: 13px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px;">
-              Thank you for choosing Life Gym. Your professional coach account has been successfully created. You can now access your portal to configure your gym settings, add clients, prescribe workout routines, and track diet logs in real-time.
-            </p>
-            
-            <div style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 20px; font-size: 13px; color: #f3f4f6; margin-bottom: 24px; text-align: left; line-height: 1.6;">
-              <span style="color: #10b981; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Coach Details</span>
-              <strong>Login Email:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail}</code><br />
-              <strong>Subscription Status:</strong> <span style="color: #10b981; font-weight: bold;">14-Day Free Trial</span>
-            </div>
-            
-            <div style="text-align: center; margin-bottom: 28px;">
-              <a href="${origin}/login" target="_blank" style="background-color: #10b981; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-                Log In to Coach Portal
-              </a>
-            </div>
-            
-            <p style="font-size: 10px; color: #4b5563; margin-top: 36px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; text-align: center; margin-bottom: 0;">
-              © 2026 Life Gym. All rights reserved.
-            </p>
-          </div>
-        `,
+        text: textWelcome,
+        html: htmlWelcome,
         fromName: 'Life Gym Team'
       }).catch(emailErr => {
         console.error('Failed to send coach welcome email:', emailErr);
