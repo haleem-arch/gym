@@ -417,7 +417,7 @@ function App() {
 
         const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
 
-        if (profile.targets?.show_welcome_animation === true) {
+        if (profile?.targets?.show_welcome_animation === true) {
           setWelcomeName(profile.display_name || '');
           setShowWelcomeSplash(true);
 
@@ -430,7 +430,7 @@ function App() {
             .eq('id', session.user.id);
         }
 
-        if (profile.targets?.onboarding_completed === true || !isNewSignup) {
+        if (profile?.targets?.onboarding_completed === true || !isNewSignup) {
           setNeedsOnboarding(false);
         } else {
           setNeedsOnboarding(true);
