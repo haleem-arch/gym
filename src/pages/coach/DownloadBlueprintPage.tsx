@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, ArrowDownToLine, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 
 // Deterministic hashing helper with salt for offline link verification
 const getHash = (email: string) => {
@@ -24,10 +24,7 @@ export default function DownloadBlueprintPage() {
   const token = searchParams.get('token') || '';
   
   const [isValid, setIsValid] = useState<boolean | null>(null);
-  const [countdown, setCountdown] = useState(2);
   const [downloadTriggered, setDownloadTriggered] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [redirectCountdown, setRedirectCountdown] = useState(3);
 
   // 1. Verify token validity on mount
   useEffect(() => {
@@ -43,36 +40,20 @@ export default function DownloadBlueprintPage() {
     }
   }, [email, token]);
 
-  // 2. Handle countdown and trigger download
+  // 2. Trigger download and redirect after a brief 1.2-second delay (gives browser time to process the window activity)
   useEffect(() => {
-    if (isValid !== true) return;
+    if (isValid !== true || downloadTriggered) return;
 
-    if (countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (!downloadTriggered) {
+    const timer = setTimeout(() => {
       triggerDownload();
-    }
-  }, [isValid, countdown, downloadTriggered]);
+    }, 1200);
 
-  // 3. Handle redirection countdown
-  useEffect(() => {
-    if (!isRedirecting) return;
-
-    if (redirectCountdown > 0) {
-      const timer = setTimeout(() => {
-        setRedirectCountdown(prev => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      navigate('/', { replace: true });
-    }
-  }, [isRedirecting, redirectCountdown, navigate]);
+    return () => clearTimeout(timer);
+  }, [isValid, downloadTriggered]);
 
   const triggerDownload = () => {
     setDownloadTriggered(true);
+    
     // Trigger download of the PDF
     const link = document.createElement('a');
     link.href = '/ultimate-coach-blueprint.pdf';
@@ -81,8 +62,8 @@ export default function DownloadBlueprintPage() {
     link.click();
     document.body.removeChild(link);
 
-    // Start exit / redirect sequence
-    setIsRedirecting(true);
+    // Redirect immediately to the landing page so the user cannot copy the link
+    navigate('/', { replace: true });
   };
 
   return (
@@ -97,7 +78,7 @@ export default function DownloadBlueprintPage() {
         
         <AnimatePresence mode="wait">
           {isValid === null ? (
-            /* Loading State */
+            /* Verifying State */
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
@@ -136,86 +117,15 @@ export default function DownloadBlueprintPage() {
                 <span>Go to Homepage</span>
               </button>
             </motion.div>
-          ) : isRedirecting ? (
-            /* Redirecting / Success State */
-            <motion.div
-              key="redirecting"
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: -15 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="space-y-6 py-4"
-            >
-              {/* Logo / Branding */}
-              <div className="flex items-center justify-center gap-2.5 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center border border-blue-500/20">
-                  <img src="/icon.svg" alt="Life Gym Logo" className="w-5 h-5 object-contain" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black tracking-widest text-white uppercase">Life Gym</h4>
-                </div>
-              </div>
-
-              {/* Pulsing Success Checkmark */}
-              <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-                <motion.div 
-                  className="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20"
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                  className="text-emerald-400 z-10"
-                >
-                  <CheckCircle2 size={44} />
-                </motion.div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-white uppercase tracking-wider">Download Started!</h3>
-                <p className="text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto font-medium">
-                  Returning to the landing page in <span className="text-purple-400 font-bold">{redirectCountdown}s</span>...
-                </p>
-              </div>
-
-              {/* Progress bar representing redirect countdown */}
-              <div className="w-full bg-white/[0.03] border border-white/[0.05] h-1.5 rounded-full overflow-hidden max-w-[200px] mx-auto">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-emerald-400"
-                  initial={{ width: "100%" }}
-                  animate={{ width: "0%" }}
-                  transition={{ duration: 3, ease: "linear" }}
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = '/ultimate-coach-blueprint.pdf';
-                    link.setAttribute('download', 'The Ultimate 12-Week Coach Onboarding & Client Retention Blueprint.pdf');
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                  className="text-[10px] text-gray-500 hover:text-gray-300 font-bold underline transition-colors cursor-pointer"
-                >
-                  Didn't start? Click here to download again
-                </button>
-              </div>
-            </motion.div>
           ) : (
-            /* Valid / Success State */
+            /* Verified - Preparing Download State (Redirects immediately on trigger) */
             <motion.div
-              key="success"
+              key="preparing"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-6"
+              className="space-y-6 py-6"
             >
-              {/* Logo / Branding */}
               <div className="flex items-center justify-center gap-2.5 mb-2">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600/10 to-indigo-600/10 flex items-center justify-center border border-blue-500/20">
                   <img src="/icon.svg" alt="Life Gym Logo" className="w-5 h-5 object-contain" />
@@ -225,74 +135,12 @@ export default function DownloadBlueprintPage() {
                 </div>
               </div>
 
-              {/* Animated Download Icon / Circle Progress */}
-              <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
-                {/* Outer Ring */}
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="44"
-                    stroke="rgba(255,255,255,0.03)"
-                    strokeWidth="4"
-                    fill="transparent"
-                  />
-                  <motion.circle
-                    cx="50"
-                    cy="50"
-                    r="44"
-                    stroke="#8b5cf6"
-                    strokeWidth="4"
-                    fill="transparent"
-                    strokeDasharray="276"
-                    initial={{ strokeDashoffset: 276 }}
-                    animate={{ strokeDashoffset: countdown === 2 ? 276 : countdown === 1 ? 138 : 0 }}
-                    transition={{ duration: 1, ease: "linear" }}
-                  />
-                </svg>
-                
-                {/* Central Icon */}
-                <div className="absolute inset-0 flex items-center justify-center text-purple-400">
-                  {countdown === 0 ? (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                      <CheckCircle2 size={32} className="text-emerald-400" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                      <FileText size={32} />
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-
+              <div className="w-16 h-16 rounded-full border-2 border-t-emerald-500 border-r-transparent border-b-transparent border-l-transparent animate-spin mx-auto" />
+              
               <div className="space-y-2">
-                <h3 className="text-lg font-black text-white uppercase tracking-wider">
-                  {countdown === 0 ? "Download Ready!" : "Preparing Your Guide"}
-                </h3>
-                <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                  {countdown > 0 
-                    ? `Your download will start automatically in ${countdown} ${countdown === 1 ? 'second' : 'seconds'}...`
-                    : "If the download didn't start automatically, click the button below to retrieve the PDF file."
-                  }
-                </p>
-              </div>
-
-              <div className="pt-2 space-y-3">
-                <button
-                  onClick={triggerDownload}
-                  disabled={countdown > 0}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-800 disabled:to-gray-800 text-white font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-purple-600/10 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <ArrowDownToLine size={14} />
-                  <span>{countdown > 0 ? "Preparing File..." : "Download PDF Guide"}</span>
-                </button>
-
-                <p className="text-[9px] text-gray-550 font-bold max-w-[260px] mx-auto leading-normal">
-                  Recipient: <span className="text-gray-400">{email}</span><br />
-                  Download key is securely signed. Unsubscribe in 1-click at any time.
+                <h3 className="text-lg font-black text-white uppercase tracking-wider">Link Verified!</h3>
+                <p className="text-xs text-gray-400 leading-relaxed max-w-[280px] mx-auto font-medium">
+                  Preparing your secure PDF download. You will be returned to the homepage in a moment...
                 </p>
               </div>
             </motion.div>
