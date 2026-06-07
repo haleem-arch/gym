@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const path = require('path');
 const https = require('https');
 const http = require('http');
@@ -147,14 +147,10 @@ ipcMain.on('download-and-install-update', (event, downloadUrl) => {
         mainWindow.webContents.send('update-progress', percent);
       }
     },
-    () => {
-      // Setup download complete, execute installer detached and close the app
+    async () => {
+      // Setup download complete, execute installer using shell.openPath and close the app
       try {
-        const child = spawn(tempFilePath, [], {
-          detached: true,
-          stdio: 'ignore'
-        });
-        child.unref();
+        await shell.openPath(tempFilePath);
         app.quit();
       } catch (err) {
         console.error('Failed to execute update installer:', err);
