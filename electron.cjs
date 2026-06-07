@@ -91,11 +91,15 @@ function createWindow() {
     mainWindow.focus();
   });
 
-  // Full Screen F11 keyboard shortcut listener
+  // Full Screen F11 and refresh (F5/Ctrl+R) keyboard shortcut listener
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F11' && input.type === 'keyDown') {
       const isFullScreen = mainWindow.isFullScreen();
       mainWindow.setFullScreen(!isFullScreen);
+      event.preventDefault();
+    }
+    if ((input.key === 'F5' || (input.control && input.key.toLowerCase() === 'r')) && input.type === 'keyDown') {
+      mainWindow.webContents.reloadIgnoringCache();
       event.preventDefault();
     }
   });
