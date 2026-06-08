@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
   // Auth Lock Screen State
   const [passcode, setPasscode] = useState('');
-  const [isAuthed, setIsAuthed] = useState(() => sessionStorage.getItem('coach_hub_authed') === 'true');
+  const [isAuthed, setIsAuthed] = useState(true);
   const [shake, setShake] = useState(false);
 
   // General Coach states
@@ -666,10 +666,10 @@ export default function DashboardPage() {
     setPasscode(prev => prev.slice(0, -1));
   };
 
-  const handleLogOut = () => {
+  const handleLogOut = async () => {
     sessionStorage.removeItem('coach_hub_authed');
-    setIsAuthed(false);
-    setPasscode('');
+    await supabase.auth.signOut();
+    navigate('/');
   };
 
   // ─── BASELINE TARGET MUTATORS ──────────────────────────────────

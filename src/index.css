@@ -218,3 +218,27 @@ button, a, select, label, [role="button"] {
 .tutorial-card * {
   pointer-events: auto !important;
 }
+
+/* ─── Premium Shimmer Sweep Animation ─── */
+@keyframes shimmer-move {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.premium-shimmer {
+  background-color: #1b1e27 !important;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.02) 20%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.02) 80%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer-move 1.6s infinite linear !important;
+}

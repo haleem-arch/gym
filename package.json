@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron . --dev\"",
-    "electron:package": "electron-builder build --win"
+    "electron:package": "electron-builder build --win",
+    "test:bot": "node scratch/test_bot.cjs",
+    "test:load": "node scratch/load_test_native.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.2.0",
@@ -51,6 +53,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "postcss": "^8.5.14",
+    "puppeteer": "^25.1.0",
     "tailwindcss": "^3.4.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",

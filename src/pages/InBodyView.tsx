@@ -3,12 +3,15 @@ import { supabase } from '../lib/supabase';
 import { Plus, ChevronDown, ChevronUp, Scale, Activity, Droplet, Flame, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
-import { DumbbellLoader } from '../components/DumbbellLoader';
 import { SegmentalBodyMap } from '../components/SegmentalBodyMap';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ScanCardSkeleton } from '../components/SkeletonLoaders';
 
 export default function InBodyView() {
+  const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
   const [scans, setScans] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(debugLoading || true);
+  const effectiveLoading = debugLoading || loading;
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -65,7 +68,7 @@ export default function InBodyView() {
       .order('created_at', { ascending: false });
 
     if (data) setScans(data);
-    setLoading(false);
+    if (!debugLoading) setLoading(false);
   };
 
   const handleDeleteScan = async (id: string) => {
@@ -302,150 +305,156 @@ export default function InBodyView() {
         </button>
       </motion.div>
 
-      {loading ? (
-        <DumbbellLoader label="Loading scans..." size={100} />
-      ) : scans.length === 0 ? (
-        <div className="text-center p-10 bg-surface rounded-3xl border border-gray-800">
-          <div className="bg-gray-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Scale size={32} className="text-gray-400" />
+      <ErrorBoundary title="InBody Scans List">
+        {effectiveLoading ? (
+          <div className="space-y-4">
+            <ScanCardSkeleton />
+            <ScanCardSkeleton />
+            <ScanCardSkeleton />
           </div>
-          <h3 className="text-white font-bold text-lg mb-2">No Scans Yet</h3>
-          <p className="text-gray-400 text-sm">Log your first InBody test to start tracking your body composition.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {scans.map((scan, index) => {
-            const prev = getPreviousScan(index);
-            const isExpanded = expandedId === scan.id;
-            const seg = scan.segmental || {};
-            const prevSeg = prev?.segmental || {};
+        ) : scans.length === 0 ? (
+          <div className="text-center p-10 bg-surface rounded-3xl border border-gray-800">
+            <div className="bg-gray-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Scale size={32} className="text-gray-400" />
+            </div>
+            <h3 className="text-white font-bold text-lg mb-2">No Scans Yet</h3>
+            <p className="text-gray-400 text-sm">Log your first InBody test to start tracking your body composition.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {scans.map((scan, index) => {
+              const prev = getPreviousScan(index);
+              const isExpanded = expandedId === scan.id;
+              const seg = scan.segmental || {};
+              const prevSeg = prev?.segmental || {};
 
-            return (
-              <SwipeToDeleteRow 
-                key={scan.id} 
-                onDelete={() => handleDeleteScan(scan.id)}
-                backgroundRounded="rounded-3xl"
-              >
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }} 
-                  animate={{ opacity: 1, scale: 1 }} 
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-surface border border-gray-800 rounded-3xl overflow-hidden shadow-lg"
+              return (
+                <SwipeToDeleteRow 
+                  key={scan.id} 
+                  onDelete={() => handleDeleteScan(scan.id)}
+                  backgroundRounded="rounded-3xl"
                 >
-                  {/* Header (Always Visible) */}
-                  <div 
-                    className="p-5 cursor-pointer flex justify-between items-center"
-                    onClick={() => setExpandedId(isExpanded ? null : scan.id)}
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }} 
+                    animate={{ opacity: 1, scale: 1 }} 
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-surface border border-gray-800 rounded-3xl overflow-hidden shadow-lg"
                   >
-                    <div>
-                      <h3 className="font-bold text-white text-lg">
-                        {new Date(scan.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </h3>
-                      <div className="flex gap-4 mt-2">
-                        <div>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Weight</p>
-                          <p className="text-white font-semibold">
-                            {scan.weight}kg {prev && calculateDelta(scan.weight, prev.weight, true)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">BF %</p>
-                          <p className="text-white font-semibold">
-                            {scan.bf_percent}% {prev && calculateDelta(scan.bf_percent, prev.bf_percent, true)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Score</p>
-                          <p className="text-blue-400 font-bold">
-                            {scan.score} {prev && calculateDelta(scan.score, prev.score)}
-                          </p>
+                    {/* Header (Always Visible) */}
+                    <div 
+                      className="p-5 cursor-pointer flex justify-between items-center"
+                      onClick={() => setExpandedId(isExpanded ? null : scan.id)}
+                    >
+                      <div>
+                        <h3 className="font-bold text-white text-lg">
+                          {new Date(scan.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </h3>
+                        <div className="flex gap-4 mt-2">
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Weight</p>
+                            <p className="text-white font-semibold">
+                              {scan.weight}kg {prev && calculateDelta(scan.weight, prev.weight, true)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">BF %</p>
+                            <p className="text-white font-semibold">
+                              {scan.bf_percent}% {prev && calculateDelta(scan.bf_percent, prev.bf_percent, true)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Score</p>
+                            <p className="text-blue-400 font-bold">
+                              {scan.score} {prev && calculateDelta(scan.score, prev.score)}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                      <div className="text-gray-500 bg-gray-800/50 p-2 rounded-full">
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </div>
                     </div>
-                    <div className="text-gray-500 bg-gray-800/50 p-2 rounded-full">
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </div>
-                  </div>
 
-                  {/* Expanded Details */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden border-t border-gray-800/50"
-                      >
-                        <div className="p-5 bg-black/20 space-y-6">
-                          
-                          {/* Muscle-Fat Analysis */}
-                          <div>
-                            <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                              <Activity size={14} /> Muscle-Fat Analysis
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 uppercase">Skeletal Muscle Mass</p>
-                                <p className="text-lg text-white font-bold">{scan.smm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.smm, prev.smm)}</p>
-                              </div>
-                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 uppercase">Body Fat Mass</p>
-                                <p className="text-lg text-white font-bold">{scan.bfm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.bfm, prev.bfm, true)}</p>
+                    {/* Expanded Details */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden border-t border-gray-800/50"
+                        >
+                          <div className="p-5 bg-black/20 space-y-6">
+                            
+                            {/* Muscle-Fat Analysis */}
+                            <div>
+                              <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                                <Activity size={14} /> Muscle-Fat Analysis
+                              </h4>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 uppercase">Skeletal Muscle Mass</p>
+                                  <p className="text-lg text-white font-bold">{scan.smm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.smm, prev.smm)}</p>
+                                </div>
+                                <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 uppercase">Body Fat Mass</p>
+                                  <p className="text-lg text-white font-bold">{scan.bfm} <span className="text-sm text-gray-500">kg</span> {prev && calculateDelta(scan.bfm, prev.bfm, true)}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Body Composition Analysis */}
-                          <div>
-                            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                              <Droplet size={14} /> Body Composition
-                            </h4>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 mb-1">Total Water</p>
-                                <p className="text-sm text-white font-bold">{seg.tbw || 0}L</p>
-                              </div>
-                              <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 mb-1">Protein</p>
-                                <p className="text-sm text-white font-bold">{seg.protein || 0}kg</p>
-                              </div>
-                              <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 mb-1">Minerals</p>
-                                <p className="text-sm text-white font-bold">{seg.minerals || 0}kg</p>
+                            {/* Body Composition Analysis */}
+                            <div>
+                              <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                                <Droplet size={14} /> Body Composition
+                              </h4>
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 mb-1">Total Water</p>
+                                  <p className="text-sm text-white font-bold">{seg.tbw || 0}L</p>
+                                </div>
+                                <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 mb-1">Protein</p>
+                                  <p className="text-sm text-white font-bold">{seg.protein || 0}kg</p>
+                                </div>
+                                <div className="bg-gray-800/40 p-2 rounded-xl text-center border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 mb-1">Minerals</p>
+                                  <p className="text-sm text-white font-bold">{seg.minerals || 0}kg</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Obesity Evaluation */}
-                          <div>
-                            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 flex items-center gap-1">
-                              <Flame size={14} /> Obesity Evaluation
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 uppercase">Visceral Fat Level</p>
-                                <p className="text-lg text-white font-bold">{seg.visceralFat || 0} {prev && calculateDelta(seg.visceralFat, prevSeg.visceralFat, true)}</p>
-                              </div>
-                              <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
-                                <p className="text-[10px] text-gray-400 uppercase">Basal Metabolic Rate</p>
-                                <p className="text-lg text-white font-bold">{scan.bmr} <span className="text-sm text-gray-500">kcal</span></p>
+                            {/* Obesity Evaluation */}
+                            <div>
+                              <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                                <Flame size={14} /> Obesity Evaluation
+                              </h4>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 uppercase">Visceral Fat Level</p>
+                                  <p className="text-lg text-white font-bold">{seg.visceralFat || 0} {prev && calculateDelta(seg.visceralFat, prevSeg.visceralFat, true)}</p>
+                                </div>
+                                <div className="bg-gray-800/40 p-3 rounded-xl border border-gray-700/50">
+                                  <p className="text-[10px] text-gray-400 uppercase">Basal Metabolic Rate</p>
+                                  <p className="text-lg text-white font-bold">{scan.bmr} <span className="text-sm text-gray-500">kcal</span></p>
+                                </div>
                               </div>
                             </div>
+
+                            {/* Segmental Lean Analysis – Interactive Body Map */}
+                            <SegmentalBodyMap scan={scan} allScans={scans} />
+
                           </div>
-
-                          {/* Segmental Lean Analysis – Interactive Body Map */}
-                          <SegmentalBodyMap scan={scan} allScans={scans} />
-
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </SwipeToDeleteRow>
-            );
-          })}
-        </div>
-      )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </SwipeToDeleteRow>
+              );
+            })}
+          </div>
+        )}
+      </ErrorBoundary>
 
       {/* Log Scan Modal */}
       {showModal && (

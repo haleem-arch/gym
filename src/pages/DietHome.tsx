@@ -6,12 +6,14 @@ import { Plus, Utensils, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { supabase } from '../lib/supabase';
-import { DumbbellLoader } from '../components/DumbbellLoader';
 import { DietNutritionSettings } from '../components/DietNutritionSettings';
+import { NutritionCardSkeleton, HydrationCardSkeleton, MealItemSkeleton } from '../components/SkeletonLoaders';
 
 const DietHome = () => {
   const navigate = useNavigate();
   const { log, meals, waterLogs, loading, targets, dayType, dayNutrition, allDayTypes, saveDayNutrition, activeDate, setActiveDate, createMeal, startDay, toggleDayCompletion, reload, resetWater, waterGoalMl } = useDiet();
+  const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
+  const effectiveLoading = debugLoading || loading;
   const [showSettings, setShowSettings] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [disableNutritionTargets, setDisableNutritionTargets] = useState(false);
@@ -102,15 +104,44 @@ const DietHome = () => {
     );
   }
 
-  if (loading) {
+  if (effectiveLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <DumbbellLoader label="Loading nutrition data..." size={100} />
+      <>
+      <div className="p-5 flex flex-col gap-6 min-h-full pb-28">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Nutrition</h1>
+            <span className="text-sm text-gray-400 font-semibold uppercase tracking-wider mt-1 block">Daily Dashboard</span>
+          </div>
+        </motion.div>
+
+        {/* Date Navigation */}
+        <div className="flex items-center justify-between bg-surface border border-gray-800 rounded-xl p-2">
+          <button onClick={handlePrevDay} className="p-2 hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span className="font-bold text-lg">{dateDisplay}</span>
+          <button onClick={handleNextDay} className="p-2 hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        {/* Skeleton components */}
+        <NutritionCardSkeleton />
+        <HydrationCardSkeleton />
+        
+        <div className="flex flex-col gap-3 mt-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Logged Meals</h2>
+          <MealItemSkeleton />
+          <MealItemSkeleton />
+          <MealItemSkeleton />
+        </div>
       </div>
+      </>
     );
   }
 
-  const totals = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const totals = log?.daily_totals || { kcal: 0, protein: 0, carbs: 0, fat: 0, completed: false };
 
   return (
     <>

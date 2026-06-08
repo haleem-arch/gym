@@ -7,16 +7,20 @@ import { Play, History, ChevronRight, Check, Activity, RefreshCw, BarChart2, Lay
 import { motion } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
-import { DumbbellLoader } from '../components/DumbbellLoader';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { WorkoutButtonSkeleton, WorkoutTemplatesSkeleton, PastSessionItemSkeleton } from '../components/SkeletonLoaders';
 
 const WorkoutHome = () => {
   const navigate = useNavigate();
   const { workout, loadWorkout, endWorkout } = useActiveWorkout();
   
+  const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
+
   const location = useLocation();
   const selectedDateStr = location.state?.activeDateStr || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const getLocalDateString = () => selectedDateStr;
-  const { dayType, setDayType, loading: scheduleLoading } = useSchedule(getLocalDateString());
+  const { dayType, setDayType, loading: scheduleLoadingRaw } = useSchedule(getLocalDateString());
+  const scheduleLoading = debugLoading || scheduleLoadingRaw;
 
   const [hybridLiftingType, setHybridLiftingType] = useState(location.state?.forceLiftingType || 'PUSH');
   const [pastWorkouts, setPastWorkouts] = useState<any[]>([]);
@@ -27,7 +31,8 @@ const WorkoutHome = () => {
     exercises: []
   });
   const [savedTemplates, setSavedTemplates] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(debugLoading || true);
+  const effectiveLoading = debugLoading || loading;
 
   const [showRunModal, setShowRunModal] = useState(false);
   const [runStats, setRunStats] = useState({ distance: '', elevation: '', pace: '', duration: '' });
@@ -341,7 +346,7 @@ const WorkoutHome = () => {
         }
       }
       
-      setLoading(false);
+      if (!debugLoading) setLoading(false);
     };
     
     const timeout = setTimeout(() => loadData(), 500);
@@ -511,255 +516,272 @@ const WorkoutHome = () => {
         <AnalyticsCharts userId={currentUserId} />
       ) : (
         <>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-        {dayType === 'REST' ? (
-          <div className="bg-surface border border-gray-800 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg">
-            <span className="text-4xl mb-3">💤</span>
-            <h2 className="text-xl font-bold text-white mb-2">Rest Day</h2>
-            <p className="text-sm text-gray-400">Rest is part of training. Hydrate, eat well, and relax if possible.</p>
-          </div>
-        ) : dayType === 'RUN' ? (
-          <div className="bg-surface border border-blue-900/30 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10 w-full">
-            <span className="text-4xl mb-3">🏃</span>
-            <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
-            <p className="text-sm text-gray-400 mb-5">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
-            {hasCompletedRunToday ? (
-              <div className="flex flex-col gap-3 w-full">
-                <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
-                  <Check size={18} /> RUN COMPLETED
-                </div>
-                <button 
-                  onClick={() => setShowRunModal(true)}
-                  className="bg-surface border border-gray-700 hover:border-gray-500 text-gray-300 font-extrabold py-3 px-8 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer text-[10px] uppercase tracking-wider"
-                >
-                  + Add Another Run
-                </button>
+      <ErrorBoundary title="Today's Workout Button">
+        {effectiveLoading || scheduleLoading ? (
+          <WorkoutButtonSkeleton />
+        ) : (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+            {dayType === 'REST' ? (
+              <div className="bg-surface border border-gray-800 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg">
+                <span className="text-4xl mb-3">💤</span>
+                <h2 className="text-xl font-bold text-white mb-2">Rest Day</h2>
+                <p className="text-sm text-gray-400">Rest is part of training. Hydrate, eat well, and relax if possible.</p>
               </div>
-            ) : (
-              <button 
-                onClick={() => setShowRunModal(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-8 rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer text-xs uppercase tracking-wider w-full"
-              >
-                Log Run (Manual)
-              </button>
-            )}
-          </div>
-        ) : dayType === 'RUN + GYM' ? (
-          <div className="bg-surface border border-purple-900/40 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-2xl shadow-purple-900/10 w-full gap-5">
-            <div className="flex items-center gap-2 text-3xl mb-1">🏃 + 🏋️‍♂️</div>
-            <h2 className="text-xl font-black text-white tracking-tight">Hybrid Day: Run + Gym</h2>
-            <p className="text-xs text-gray-400 mb-1 leading-relaxed">Complete both your cardio mileage and your lifting volume to fulfill today's rings.</p>
-            
-            {/* Gym split sub-selector */}
-            <div className="flex items-center gap-2 bg-gray-900/80 p-1.5 rounded-2xl border border-gray-800 w-full max-w-xs shadow-inner overflow-x-auto scrollbar-none">
-              <span className="text-xs font-bold text-gray-400 px-3 shrink-0">Gym Split:</span>
-              {savedTemplates.map(tmpl => {
-                const t = tmpl.plan_type;
-                return (
-                  <button
-                    key={t}
-                    disabled={hasCompletedGymToday}
-                    onClick={() => setHybridLiftingType(t)}
-                    className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'} ${hasCompletedGymToday ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
-                  >
-                    {t} {hasCompletedGymToday && hybridLiftingType === t ? '✓' : ''}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-col gap-3 w-full mt-2">
-              {/* Run Button */}
-              {hasCompletedRunToday ? (
-                <div className="flex flex-col gap-2 w-full">
-                  <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
-                    <Check size={18} /> RUN COMPLETED
+            ) : dayType === 'RUN' ? (
+              <div className="bg-surface border border-blue-900/30 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg shadow-blue-900/10 w-full">
+                <span className="text-4xl mb-3">🏃</span>
+                <h2 className="text-xl font-bold text-white mb-2">Run Day</h2>
+                <p className="text-sm text-gray-400 mb-5">Time to hit the pavement. Focus on Zone 2 unless scheduled for tempo.</p>
+                {hasCompletedRunToday ? (
+                  <div className="flex flex-col gap-3 w-full">
+                    <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                      <Check size={18} /> RUN COMPLETED
+                    </div>
+                    <button 
+                      onClick={() => setShowRunModal(true)}
+                      className="bg-surface border border-gray-700 hover:border-gray-500 text-gray-300 font-extrabold py-3 px-8 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer text-[10px] uppercase tracking-wider"
+                    >
+                      + Add Another Run
+                    </button>
                   </div>
+                ) : (
                   <button 
                     onClick={() => setShowRunModal(true)}
-                    className="w-full bg-surface border border-gray-700 hover:border-gray-500 text-gray-300 font-extrabold py-3 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer text-[10px] uppercase tracking-wider"
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 px-8 rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer text-xs uppercase tracking-wider w-full"
                   >
-                    + Add Another Run
+                    Log Run (Manual)
                   </button>
+                )}
+              </div>
+            ) : dayType === 'RUN + GYM' ? (
+              <div className="bg-surface border border-purple-900/40 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-2xl shadow-purple-900/10 w-full gap-5">
+                <div className="flex items-center gap-2 text-3xl mb-1">🏃 + 🏋️‍♂️</div>
+                <h2 className="text-xl font-black text-white tracking-tight">Hybrid Day: Run + Gym</h2>
+                <p className="text-xs text-gray-400 mb-1 leading-relaxed">Complete both your cardio mileage and your lifting volume to fulfill today's rings.</p>
+                
+                {/* Gym split sub-selector */}
+                <div className="flex items-center gap-2 bg-gray-900/80 p-1.5 rounded-2xl border border-gray-800 w-full max-w-xs shadow-inner overflow-x-auto scrollbar-none">
+                  <span className="text-xs font-bold text-gray-400 px-3 shrink-0">Gym Split:</span>
+                  {savedTemplates.map(tmpl => {
+                    const t = tmpl.plan_type;
+                    return (
+                      <button
+                        key={t}
+                        disabled={hasCompletedGymToday}
+                        onClick={() => setHybridLiftingType(t)}
+                        className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 ${hybridLiftingType === t ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'} ${hasCompletedGymToday ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
+                      >
+                        {t} {hasCompletedGymToday && hybridLiftingType === t ? '✓' : ''}
+                      </button>
+                    );
+                  })}
                 </div>
-              ) : (
-                <button
-                  onClick={() => setShowRunModal(true)}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
-                >
-                  <Activity size={18} /> LOG RUN (MANUAL)
-                </button>
-              )}
 
-              {/* Gym Button */}
-              {hasCompletedGymToday ? (
-                <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
-                  <Check size={18} /> {hybridLiftingType} COMPLETED
+                <div className="flex flex-col gap-3 w-full mt-2">
+                  {/* Run Button */}
+                  {hasCompletedRunToday ? (
+                    <div className="flex flex-col gap-2 w-full">
+                      <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                        <Check size={18} /> RUN COMPLETED
+                      </div>
+                      <button 
+                        onClick={() => setShowRunModal(true)}
+                        className="w-full bg-surface border border-gray-700 hover:border-gray-500 text-gray-300 font-extrabold py-3 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer text-[10px] uppercase tracking-wider"
+                      >
+                        + Add Another Run
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowRunModal(true)}
+                      className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
+                    >
+                      <Activity size={18} /> LOG RUN (MANUAL)
+                    </button>
+                  )}
+
+                  {/* Gym Button */}
+                  {hasCompletedGymToday ? (
+                    <div className="w-full py-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-sm">
+                      <Check size={18} /> {hybridLiftingType} COMPLETED
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleStartWorkout}
+                      className="w-full py-4 bg-primary hover:bg-blue-600 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
+                    >
+                      <Play size={18} fill="currentColor" /> START {hybridLiftingType} WORKOUT
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  onClick={handleStartWorkout}
-                  className="w-full py-4 bg-primary hover:bg-blue-600 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98] cursor-pointer tracking-wider uppercase"
+              </div>
+            ) : (
+              <div className="w-full flex flex-col items-center gap-2">
+                <button 
+                  onClick={isTodayCompleted ? undefined : handleStartWorkout}
+                  disabled={isTodayCompleted}
+                  className={`w-full font-bold py-5 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xl cursor-pointer ${
+                    isTodayCompleted 
+                      ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
+                      : workout || inProgressWorkout 
+                        ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
+                        : 'bg-primary hover:bg-blue-600 text-white shadow-primary/20'
+                  }`}
                 >
-                  <Play size={18} fill="currentColor" /> START {hybridLiftingType} WORKOUT
+                  {isTodayCompleted ? (
+                    <>
+                      <div className="flex items-center gap-2 text-xl">
+                        <Check size={20} />
+                        WORKOUT COMPLETED
+                      </div>
+                      <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Excellent training today!</span>
+                    </>
+                  ) : workout ? (
+                    <>
+                      <div className="flex items-center gap-2 text-xl">
+                        <Play size={20} fill="currentColor" />
+                        RESUME SESSION
+                      </div>
+                      <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
+                    </>
+                  ) : inProgressWorkout ? (
+                    <>
+                      <div className="flex items-center gap-2 text-xl">
+                        <Play size={20} fill="currentColor" />
+                        RESUME WORKOUT
+                      </div>
+                      <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 text-xl">
+                        <Play size={20} fill="currentColor" />
+                        START TODAY'S WORKOUT
+                      </div>
+                      <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
+                    </>
+                  )}
                 </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="w-full flex flex-col items-center gap-2">
-            <button 
-              onClick={isTodayCompleted ? undefined : handleStartWorkout}
-              disabled={isTodayCompleted}
-              className={`w-full font-bold py-5 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xl cursor-pointer ${
-                isTodayCompleted 
-                  ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
-                  : workout || inProgressWorkout 
-                    ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
-                    : 'bg-primary hover:bg-blue-600 text-white shadow-primary/20'
-              }`}
-            >
-              {isTodayCompleted ? (
-                <>
-                  <div className="flex items-center gap-2 text-xl">
-                    <Check size={20} />
-                    WORKOUT COMPLETED
-                  </div>
-                  <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Excellent training today!</span>
-                </>
-              ) : workout ? (
-                <>
-                  <div className="flex items-center gap-2 text-xl">
-                    <Play size={20} fill="currentColor" />
-                    RESUME SESSION
-                  </div>
-                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
-                </>
-              ) : inProgressWorkout ? (
-                <>
-                  <div className="flex items-center gap-2 text-xl">
-                    <Play size={20} fill="currentColor" />
-                    RESUME WORKOUT
-                  </div>
-                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 text-xl">
-                    <Play size={20} fill="currentColor" />
-                    START TODAY'S WORKOUT
-                  </div>
-                  <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled: {todayPlan.type}</span>
-                </>
-              )}
-            </button>
 
-            {!isTodayCompleted && (workout || inProgressWorkout) && (
-              <button
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
-                    localStorage.removeItem('athlete_dashboard_active_workout');
-                    endWorkout();
-                    setInProgressWorkout(null);
-                    
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                      await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
-                    }
-                  }
-                }}
-                className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 cursor-pointer"
-              >
-                Restart Session & Start Fresh
-              </button>
+                {!isTodayCompleted && (workout || inProgressWorkout) && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
+                        localStorage.removeItem('athlete_dashboard_active_workout');
+                        endWorkout();
+                        setInProgressWorkout(null);
+                        
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
+                          await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
+                        }
+                      }
+                    }}
+                    className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 cursor-pointer"
+                  >
+                    Restart Session & Start Fresh
+                  </button>
+                )}
+              </div>
             )}
-          </div>
+          </motion.div>
         )}
-      </motion.div>
+      </ErrorBoundary>
 
       {/* ── Workout Templates & Programs Section ── */}
-      {!loading && (currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableWorkoutTemplates) && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.15 }}
-          className="mt-2"
-        >
-          <button
-            onClick={() => navigate('/workout/builder')}
-            className="w-full py-4 bg-surface hover:bg-slate-800/80 text-white font-extrabold rounded-2xl flex items-center justify-between px-5 border border-gray-800 hover:border-gray-700 transition-all active:scale-[0.98] shadow-md cursor-pointer text-xs uppercase tracking-wider"
-          >
-            <div className="flex items-center gap-2.5">
-              <Layers size={15} className="text-primary animate-pulse" />
-              <span>Workout Templates &amp; Programs</span>
-            </div>
-            <ChevronRight size={16} className="text-gray-500" />
-          </button>
-        </motion.div>
-      )}
-
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-2">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2 text-gray-400">
-            <History size={18} />
-            <h2 className="text-sm font-semibold uppercase tracking-wider">Past Sessions</h2>
-          </div>
-
-        </div>
-
-        {loading ? (
-          <DumbbellLoader label="Loading history..." size={80} />
-        ) : pastWorkouts.length === 0 ? (
-          <div className="text-center text-gray-500 py-4 bg-surface border border-gray-800 rounded-xl">No workouts logged yet.</div>
+      <ErrorBoundary title="Workout Templates & Programs">
+        {effectiveLoading ? (
+          <WorkoutTemplatesSkeleton />
         ) : (
-          <div className="flex flex-col gap-3">
-            {pastWorkouts.map((session) => (
-              <SwipeToDeleteRow 
-                key={session.id} 
-                onDelete={() => handleDeleteSession(session.id)}
-                backgroundRounded="rounded-2xl"
+          (currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableWorkoutTemplates) && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.15 }}
+              className="mt-2"
+            >
+              <button
+                onClick={() => navigate('/workout/builder')}
+                className="w-full py-4 bg-surface hover:bg-slate-800/80 text-white font-extrabold rounded-2xl flex items-center justify-between px-5 border border-gray-800 hover:border-gray-700 transition-all active:scale-[0.98] shadow-md cursor-pointer text-xs uppercase tracking-wider"
               >
-                <div 
-                  onClick={() => navigate(`/workout/${session.id}`)}
-                  className="bg-surface rounded-2xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer hover:border-gray-700 active:scale-[0.98] transition-all w-full shadow-md"
-                >
-                  <div>
-                    <span className="text-xs text-gray-500 mb-1 block font-medium">{formatDate(session.date)}</span>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${session.day_type === 'RUN' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-gray-800 text-primary border-gray-700'}`}>
-                        {session.day_type}
-                      </span>
-                      {(() => {
-                        if (session.day_type === 'RUN' && session.notes && session.notes.includes('"type":"run_stats"')) {
-                          try {
-                            const stats = JSON.parse(session.notes);
-                            return (
-                              <>
-                                <span className="text-sm font-black text-blue-400">{stats.distance_km} km</span>
-                                <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{stats.pace}/km</span>
-                                <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
-                              </>
-                            );
-                          } catch (e) {}
-                        }
-                        return (
-                          <>
-                            <span className="text-sm font-black text-white">{session.total_volume} kg</span>
-                            <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full border border-gray-800">
-                    <ChevronRight size={18} />
-                  </button>
+                <div className="flex items-center gap-2.5">
+                  <Layers size={15} className="text-primary animate-pulse" />
+                  <span>Workout Templates &amp; Programs</span>
                 </div>
-              </SwipeToDeleteRow>
-            ))}
-          </div>
+                <ChevronRight size={16} className="text-gray-500" />
+              </button>
+            </motion.div>
+          )
         )}
-      </motion.div>
+      </ErrorBoundary>
+
+      <ErrorBoundary title="Past Workout Sessions">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-2">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2 text-gray-400">
+              <History size={18} />
+              <h2 className="text-sm font-semibold uppercase tracking-wider">Past Sessions</h2>
+            </div>
+          </div>
+
+          {effectiveLoading ? (
+            <div className="flex flex-col gap-3">
+              <PastSessionItemSkeleton />
+              <PastSessionItemSkeleton />
+              <PastSessionItemSkeleton />
+            </div>
+          ) : pastWorkouts.length === 0 ? (
+            <div className="text-center text-gray-500 py-4 bg-surface border border-gray-800 rounded-xl">No workouts logged yet.</div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {pastWorkouts.map((session) => (
+                <SwipeToDeleteRow 
+                  key={session.id} 
+                  onDelete={() => handleDeleteSession(session.id)}
+                  backgroundRounded="rounded-2xl"
+                >
+                  <div 
+                    onClick={() => navigate(`/workout/${session.id}`)}
+                    className="bg-surface rounded-2xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer hover:border-gray-700 active:scale-[0.98] transition-all w-full shadow-md"
+                  >
+                    <div>
+                      <span className="text-xs text-gray-500 mb-1 block font-medium">{formatDate(session.date)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${session.day_type === 'RUN' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-gray-800 text-primary border-gray-700'}`}>
+                          {session.day_type}
+                        </span>
+                        {(() => {
+                          if (session.day_type === 'RUN' && session.notes && session.notes.includes('"type":"run_stats"')) {
+                            try {
+                              const stats = JSON.parse(session.notes);
+                              return (
+                                <>
+                                  <span className="text-sm font-black text-blue-400">{stats.distance_km} km</span>
+                                  <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{stats.pace}/km</span>
+                                  <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                                </>
+                              );
+                            } catch (e) {}
+                          }
+                          return (
+                            <>
+                              <span className="text-sm font-black text-white">{session.total_volume} kg</span>
+                              <span className="text-xs font-bold text-gray-400 border-l border-gray-700 pl-2">{formatDuration(session.duration)}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <button className="text-primary hover:text-blue-400 transition-colors p-2 bg-gray-900 rounded-full border border-gray-800">
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </SwipeToDeleteRow>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </ErrorBoundary>
 
       {/* Run Log Modal */}
       {showRunModal && (

@@ -28,7 +28,7 @@ export default function SystemConsolePage() {
 
   // Auth
   const [passcode, setPasscode] = useState('');
-  const [isAuthed, setIsAuthed] = useState(() => sessionStorage.getItem('owner_dashboard_authed') === 'true');
+  const [isAuthed, setIsAuthed] = useState(true);
   const [shake, setShake] = useState(false);
 
   // Data

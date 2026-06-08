@@ -15,7 +15,7 @@ export default function OwnerDashboardPage() {
 
   // Auth
   const [passcode, setPasscode] = useState('');
-  const [isAuthed, setIsAuthed] = useState(() => sessionStorage.getItem('owner_dashboard_authed') === 'true');
+  const [isAuthed, setIsAuthed] = useState(true);
   const [shake, setShake] = useState(false);
 
   // Data

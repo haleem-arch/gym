@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { DumbbellLoader } from '../components/DumbbellLoader';
+import { ProfileSkeleton } from '../components/SkeletonLoaders';
 
 export default function ProfileView() {
+  const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
   const [profile, setProfile] = useState<any>(null);
   const [coachProfile, setCoachProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const effectiveLoading = debugLoading || loading;
   
   // Password Form State
   const [newPassword, setNewPassword] = useState('');
@@ -70,7 +72,7 @@ export default function ProfileView() {
     } catch (err) {
       console.error('Error fetching profile details:', err);
     } finally {
-      setLoading(false);
+      if (!debugLoading) setLoading(false);
     }
   };
 
@@ -134,12 +136,8 @@ export default function ProfileView() {
     window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh]">
-        <DumbbellLoader label="Loading profile dossier..." size={100} />
-      </div>
-    );
+  if (effectiveLoading) {
+    return <ProfileSkeleton />;
   }
 
   // Calculate remaining subscription days
