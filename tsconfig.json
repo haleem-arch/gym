@@ -10,5 +10,5 @@
     "strict": false,
     "esModuleInterop": true
   },
-  "include": ["api/**/*.ts"]
+  "include": ["api/**/*.ts", "middleware.ts"]
 }
