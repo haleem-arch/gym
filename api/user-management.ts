@@ -625,31 +625,35 @@ ${origin}/client-login
         return res.status(404).json({ error: 'No archived records found for this user.' });
       }
 
-      // 1. Recreate auth user if deleted
-      const profileRow = userRows.find(r => r.table_name === 'profiles');
-      const clientProfileRow = userRows.find(r => r.table_name === 'client_profiles');
+      // 1. Recreate auth users for all restored profiles (coach + clients)
+      const profileRows = userRows.filter(r => r.table_name === 'profiles');
       
-      if (profileRow?.record_data) {
-        const pData = profileRow.record_data;
-        const cpData = clientProfileRow?.record_data || {};
-        const email = pData.email;
-        const displayName = pData.display_name;
-        const passcode = cpData.generated_passcode || pData.targets?.generated_passcode || '123456';
-        
-        // Delete auth user if it somehow exists (just to avoid conflict)
-        await supabaseAdmin.auth.admin.deleteUser(targetUid).catch(() => {});
+      for (const pRow of profileRows) {
+        if (pRow.record_data) {
+          const pData = pRow.record_data;
+          const currentUserId = pData.id;
+          const email = pData.email;
+          const displayName = pData.display_name;
+          
+          // Find matching client profile to get passcode if exists
+          const clientProfileRow = userRows.find(r => r.table_name === 'client_profiles' && r.record_data?.user_id === currentUserId);
+          const cpData = clientProfileRow?.record_data || {};
+          const passcode = cpData.generated_passcode || pData.targets?.generated_passcode || '123456';
+          
+          // Delete auth user if it somehow exists (just to avoid conflict)
+          await supabaseAdmin.auth.admin.deleteUser(currentUserId).catch(() => {});
 
-        const { error: authErr } = await supabaseAdmin.auth.admin.createUser({
-          id: targetUid,
-          email,
-          password: passcode,
-          email_confirm: true,
-          user_metadata: { display_name: displayName }
-        });
+          const { error: authErr } = await supabaseAdmin.auth.admin.createUser({
+            id: currentUserId,
+            email,
+            password: passcode,
+            email_confirm: true,
+            user_metadata: { display_name: displayName }
+          });
 
-        if (authErr) {
-          console.error('Failed to recreate auth user during restore:', authErr);
-          return res.status(500).json({ error: 'Restoring auth account failed: ' + authErr.message });
+          if (authErr) {
+            console.error(`Restoring auth account failed for user ${currentUserId}:`, authErr.message);
+          }
         }
       }
 
