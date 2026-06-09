@@ -287,18 +287,127 @@ ${origin}/client-login
         console.error('Error fetching target profile:', profileErr);
       }
 
-      const cleanupUserDb = async (userId: string) => {
-        console.log(`Cleaning up database records for user ${userId}...`);
+      const archiveAndCleanupUserDb = async (userId: string, deletedBy: string) => {
+        console.log(`Archiving database records for user ${userId}...`);
         try {
+          // 1. Fetch records from all user-related tables
+          const simpleTables = [
+            { name: 'profiles', key: 'id' },
+            { name: 'client_profiles', key: 'user_id' },
+            { name: 'inbody_scans', key: 'user_id' },
+            { name: 'client_workout_days', key: 'user_id' },
+            { name: 'schedules', key: 'user_id' },
+            { name: 'ai_chat', key: 'user_id' }
+          ];
+
+          for (const table of simpleTables) {
+            const { data, error } = await supabaseAdmin
+              .from(table.name)
+              .select('*')
+              .eq(table.key, userId);
+
+            if (!error && data && data.length > 0) {
+              const archiveRows = data.map((row: any) => ({
+                original_id: userId,
+                table_name: table.name,
+                record_data: row,
+                deleted_by: deletedBy
+              }));
+
+              await supabaseAdmin.from('deleted_records_archive').insert(archiveRows);
+            }
+          }
+
+          // Progress notes
+          const { data: notes, error: notesErr } = await supabaseAdmin
+            .from('progress_notes')
+            .select('*')
+            .or(`user_id.eq.${userId},coach_id.eq.${userId}`);
+
+          if (!notesErr && notes && notes.length > 0) {
+            const archiveRows = notes.map((row: any) => ({
+              original_id: row.id,
+              table_name: 'progress_notes',
+              record_data: row,
+              deleted_by: deletedBy
+            }));
+            await supabaseAdmin.from('deleted_records_archive').insert(archiveRows);
+          }
+
+          // Workouts & workout_exercises
+          const { data: workouts, error: workoutsErr } = await supabaseAdmin
+            .from('workouts')
+            .select('*')
+            .eq('user_id', userId);
+
+          if (!workoutsErr && workouts && workouts.length > 0) {
+            const workoutRows = workouts.map((w: any) => ({
+              original_id: w.id,
+              table_name: 'workouts',
+              record_data: w,
+              deleted_by: deletedBy
+            }));
+            await supabaseAdmin.from('deleted_records_archive').insert(workoutRows);
+
+            const workoutIds = workouts.map((w: any) => w.id);
+            const { data: exercises, error: exercisesErr } = await supabaseAdmin
+              .from('workout_exercises')
+              .select('*')
+              .in('workout_id', workoutIds);
+
+            if (!exercisesErr && exercises && exercises.length > 0) {
+              const exerciseRows = exercises.map((e: any) => ({
+                original_id: e.id,
+                table_name: 'workout_exercises',
+                record_data: e,
+                deleted_by: deletedBy
+              }));
+              await supabaseAdmin.from('deleted_records_archive').insert(exerciseRows);
+            }
+          }
+
+          // Diet logs & diet_meals
+          const { data: dietLogs, error: dietErr } = await supabaseAdmin
+            .from('diet_logs')
+            .select('*')
+            .eq('user_id', userId);
+
+          if (!dietErr && dietLogs && dietLogs.length > 0) {
+            const dietRows = dietLogs.map((d: any) => ({
+              original_id: d.id,
+              table_name: 'diet_logs',
+              record_data: d,
+              deleted_by: deletedBy
+            }));
+            await supabaseAdmin.from('deleted_records_archive').insert(dietRows);
+
+            const logIds = dietLogs.map((d: any) => d.id);
+            const { data: meals, error: mealsErr } = await supabaseAdmin
+              .from('diet_meals')
+              .select('*')
+              .in('diet_log_id', logIds);
+
+            if (!mealsErr && meals && meals.length > 0) {
+              const mealRows = meals.map((m: any) => ({
+                original_id: m.id,
+                table_name: 'diet_meals',
+                record_data: m,
+                deleted_by: deletedBy
+              }));
+              await supabaseAdmin.from('deleted_records_archive').insert(mealRows);
+            }
+          }
+
+          // 2. Perform deletions from active tables
           await supabaseAdmin.from('inbody_scans').delete().eq('user_id', userId);
           await supabaseAdmin.from('client_workout_days').delete().eq('user_id', userId);
           await supabaseAdmin.from('user_workout_plans').delete().eq('user_id', userId);
-          await supabaseAdmin.from('progress_notes').delete().eq('user_id', userId);
+          await supabaseAdmin.from('progress_notes').delete().or(`user_id.eq.${userId},coach_id.eq.${userId}`);
           await supabaseAdmin.from('water_logs').delete().eq('user_id', userId);
           await supabaseAdmin.from('client_profiles').delete().eq('user_id', userId);
           await supabaseAdmin.from('profiles').delete().eq('id', userId);
         } catch (e) {
-          console.error(`Database cleanup error for user ${userId}:`, e);
+          console.error(`Archiving and cleanup error for user ${userId}:`, e);
         }
       };
 
@@ -326,7 +435,7 @@ ${origin}/client-login
 
         if (clientIds.size > 0) {
           for (const clientId of clientIds) {
-            await cleanupUserDb(clientId);
+            await archiveAndCleanupUserDb(clientId, user.id);
             const { error: clientDelErr } = await supabaseAdmin.auth.admin.deleteUser(clientId);
             if (clientDelErr) {
               console.error(`Failed to delete client auth user ${clientId}:`, clientDelErr);
@@ -345,7 +454,7 @@ ${origin}/client-login
         }
       }
 
-      await cleanupUserDb(uid);
+      await archiveAndCleanupUserDb(uid, user.id);
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(uid);
       if (deleteError) {
         console.log(`Auth deletion warning for user ${uid}:`, deleteError.message);
