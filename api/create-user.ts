@@ -171,7 +171,14 @@ ${origin}/login
         subject: 'Welcome to Life Gym! 👑 Your Coach Account is Ready',
         text: textCoachWelcome,
         html: htmlCoachWelcome,
-        fromName: 'Life Gym Admin'
+        fromName: 'Life Gym Admin',
+        templateId: 'coach_signup',
+        templateVariables: {
+          display_name: display_name?.trim() || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          password: password,
+          origin: origin
+        }
       });
     } else if (userRole === 'client') {
       const contactEmail = targets?.contact_email?.trim()?.toLowerCase() || cleanEmail;
@@ -233,7 +240,15 @@ ${origin}/client-login
           subject: `Welcome to Life Gym! 🏋️ Your Athlete Account is Ready`,
           text: textAthleteWelcome,
           html: htmlAthleteWelcome,
-          fromName: `${coachName} via Life Gym`
+          fromName: `${coachName} via Life Gym`,
+          templateId: 'client_welcome',
+          templateVariables: {
+            display_name: display_name?.trim() || 'Athlete',
+            coach_name: coachName,
+            username: cleanEmail.split('@')[0],
+            password: password,
+            origin: origin
+          }
         });
       }
     }

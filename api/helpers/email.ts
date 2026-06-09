@@ -110,6 +110,8 @@ interface SendBulkEmailParams {
   smtpHost?: string;
   smtpPort?: number;
   smtpSecure?: boolean;
+  templateId?: 'coach_signup' | 'client_welcome' | 'maillist';
+  templateVariables?: Record<string, string>;
 }
 
 export async function sendBulkEmails({
@@ -123,7 +125,9 @@ export async function sendBulkEmails({
   smtpPass,
   smtpHost,
   smtpPort,
-  smtpSecure
+  smtpSecure,
+  templateId,
+  templateVariables
 }: SendBulkEmailParams) {
   const dbSMTP = await getOwnerSMTP();
   const user = smtpUser || dbSMTP.user;
@@ -131,6 +135,25 @@ export async function sendBulkEmails({
   const host = smtpHost || dbSMTP.host;
   const port = smtpPort !== undefined ? smtpPort : dbSMTP.port;
   const secure = smtpSecure !== undefined ? smtpSecure : dbSMTP.secure;
+
+  let template: any = null;
+  if (templateId) {
+    try {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+      const { data, error } = await supabaseAdmin
+        .from('email_templates')
+        .select('*')
+        .eq('id', templateId)
+        .maybeSingle();
+      if (!error && data) {
+        template = data;
+      }
+    } catch (err) {
+      console.error('Failed to load email template from DB:', err);
+    }
+  }
 
   let transportConfig: any;
 
@@ -178,24 +201,83 @@ export async function sendBulkEmails({
 
   for (const recipient of recipientList) {
     try {
-      // Validate recipient address first
-      const validation = await validateEmailAddress(recipient);
-      if (!validation.valid) {
-        results.push({ email: recipient, success: false, error: validation.reason });
+      let finalRecipient = recipient.trim().toLowerCase();
+      
+      // Resolve virtual emails ending in @stride.fit
+      if (finalRecipient.endsWith('@stride.fit')) {
+        try {
+          const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { persistSession: false, autoRefreshToken: false }
+          });
+          const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .select('targets')
+            .eq('email', finalRecipient)
+            .maybeSingle();
+          
+          if (!error && data && data.targets && data.targets.contact_email) {
+            const contactEmail = data.targets.contact_email.trim().toLowerCase();
+            if (contactEmail && !contactEmail.endsWith('@stride.fit')) {
+              finalRecipient = contactEmail;
+            }
+          }
+        } catch (dbErr) {
+          console.error(`Failed to resolve real email for virtual address ${recipient}:`, dbErr);
+        }
+      }
+
+      // If it still ends in @stride.fit (or we couldn't resolve a real email), skip it
+      if (finalRecipient.endsWith('@stride.fit')) {
+        results.push({ email: recipient, success: false, error: 'Cannot send to virtual @stride.fit email. No contact email provided.' });
         continue;
       }
 
+      // Validate recipient address first
+      const validation = await validateEmailAddress(finalRecipient);
+      if (!validation.valid) {
+        results.push({ email: finalRecipient, success: false, error: validation.reason });
+        continue;
+      }
+
+      let finalSubject = subject;
+      let finalHtml = html;
+      let finalText = text;
+      let finalFromName = fromName;
+      let finalSenderEmail = user;
+
+      if (template) {
+        finalSubject = template.subject;
+        finalHtml = template.html_body;
+        finalText = template.text_body || '';
+        finalFromName = template.sender_name || fromName;
+        finalSenderEmail = template.sender_email || user;
+      }
+
+      // Compile placeholders
+      const vars = {
+        ...templateVariables,
+        email: finalRecipient,
+        username: finalRecipient.split('@')[0]
+      };
+
+      Object.entries(vars).forEach(([key, val]) => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        if (finalSubject) finalSubject = finalSubject.replace(regex, val || '');
+        if (finalHtml) finalHtml = finalHtml.replace(regex, val || '');
+        if (finalText) finalText = finalText.replace(regex, val || '');
+      });
+
       const mailOptions = {
-        from: fromName ? `"${fromName}" <${user}>` : user,
-        to: recipient,
-        subject,
-        text,
-        html,
+        from: finalFromName ? `"${finalFromName}" <${finalSenderEmail}>` : finalSenderEmail,
+        to: finalRecipient,
+        subject: finalSubject,
+        text: finalText,
+        html: finalHtml,
         attachments: formattedAttachments
       };
 
       const info = await transporter.sendMail(mailOptions);
-      results.push({ email: recipient, success: true, messageId: info.messageId });
+      results.push({ email: finalRecipient, success: true, messageId: info.messageId });
     } catch (err: any) {
       console.error(`Failed to send email to ${recipient}:`, err);
       results.push({ email: recipient, success: false, error: err.message || err });

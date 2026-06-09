@@ -145,7 +145,14 @@ ${origin}/login
         subject: 'Welcome to Life Gym! 👑 Your Coach Account is Ready',
         text: textWelcome,
         html: htmlWelcome,
-        fromName: 'Life Gym Team'
+        fromName: 'Life Gym Team',
+        templateId: 'coach_signup',
+        templateVariables: {
+          display_name: displayName.trim(),
+          email: cleanEmail,
+          password: password,
+          origin: origin
+        }
       }).catch(emailErr => {
         console.error('Failed to send coach welcome email:', emailErr);
       })

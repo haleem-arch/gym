@@ -97,7 +97,12 @@ Stay tuned for exciting announcements, feature drops, and updates.
         subject: `⚡ Welcome to Life Gym: You're on the list! [Ref: #${uniqueId}]`,
         text: textFallback + `\n\nRef: #${uniqueId}`,
         html: htmlBody + `<span style="display: none; color: transparent; font-size: 0px;">Ref: #${uniqueId}</span>`,
-        fromName: 'Life Gym Team'
+        fromName: 'Life Gym Team',
+        templateId: 'maillist',
+        templateVariables: {
+          email: cleanEmail,
+          unique_id: String(uniqueId)
+        }
       }).catch(emailErr => {
         console.error('Failed to send blueprint email:', emailErr);
       })

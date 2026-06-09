@@ -42,6 +42,24 @@ export default function SystemConsolePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
+  // Edit Profile details for selected user
+  const [editSelectedDisplayName, setEditSelectedDisplayName] = useState('');
+  const [editSelectedContactEmail, setEditSelectedContactEmail] = useState('');
+  const [editSelectedPhoneNumber, setEditSelectedPhoneNumber] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (selectedUser) {
+      setEditSelectedDisplayName(selectedUser.display_name || '');
+      setEditSelectedContactEmail(selectedUser.targets?.contact_email || '');
+      setEditSelectedPhoneNumber(selectedUser.targets?.phone_number || '');
+    } else {
+      setEditSelectedDisplayName('');
+      setEditSelectedContactEmail('');
+      setEditSelectedPhoneNumber('');
+    }
+  }, [selectedUser]);
+
   // New Coach Account Form
   const [coachName, setCoachName] = useState('');
   const [coachEmail, setCoachEmail] = useState('');
@@ -496,6 +514,56 @@ export default function SystemConsolePage() {
       toast.error('Failed to update password. Please check your connection.');
     } finally {
       setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleSaveProfileDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    setIsSavingProfile(true);
+    try {
+      const currentTargets = selectedUser.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        contact_email: editSelectedContactEmail.trim().toLowerCase(),
+        phone_number: editSelectedPhoneNumber.trim()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: editSelectedDisplayName.trim(),
+          targets: updatedTargets
+        })
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+      toast.success('User profile details updated! 💾');
+
+      // Update locally
+      setProfiles((prev: any[]) => prev.map(p => {
+        if (p.id === selectedUser.id) {
+          return {
+            ...p,
+            display_name: editSelectedDisplayName.trim(),
+            targets: updatedTargets
+          };
+        }
+        return p;
+      }));
+
+      setSelectedUser((prev: any) => ({
+        ...prev,
+        display_name: editSelectedDisplayName.trim(),
+        targets: updatedTargets
+      }));
+      
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to update details: ' + err.message);
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -1050,7 +1118,19 @@ export default function SystemConsolePage() {
                       </span>
                     )}
                   </p>
-                  <p className="text-[10px] text-gray-500 font-medium">{user.email}</p>
+                  {(() => {
+                    const email = user.email || '';
+                    const isVirtual = email.toLowerCase().endsWith('@stride.fit');
+                    const contactEmail = user.targets?.contact_email;
+                    if (isVirtual) {
+                      return contactEmail ? (
+                        <p className="text-[10px] text-gray-400 font-medium">{contactEmail}</p>
+                      ) : (
+                        <p className="text-[10px] text-red-400 font-semibold italic">No Contact Email</p>
+                      );
+                    }
+                    return <p className="text-[10px] text-gray-450 font-medium">{user.email}</p>;
+                  })()}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusClass}`}>
@@ -1067,8 +1147,25 @@ export default function SystemConsolePage() {
           <div className="bg-[#0f1424] border border-gray-800 rounded-2xl p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex justify-between items-start pb-2 border-b border-gray-800">
               <div>
-                <h4 className="text-xs font-black text-white uppercase tracking-wider">{selectedUser.display_name || 'Selected User'}</h4>
-                <p className="text-[10px] text-gray-550 font-mono mt-0.5">{selectedUser.email || selectedUser.targets?.email || 'No email'}</p>
+                {(() => {
+                  const email = selectedUser.email || '';
+                  const isVirtual = email.toLowerCase().endsWith('@stride.fit');
+                  const contactEmail = selectedUser.targets?.contact_email;
+                  const displayEmail = (isVirtual && contactEmail) ? contactEmail : (isVirtual ? '' : email);
+                  return (
+                    <div>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">{selectedUser.display_name || 'Selected User'}</h4>
+                      {displayEmail ? (
+                        <p className="text-[10px] text-gray-300 font-mono mt-0.5">{displayEmail}</p>
+                      ) : (
+                        <p className="text-[10px] text-amber-500 font-semibold italic mt-0.5">No Contact Email</p>
+                      )}
+                      {isVirtual && (
+                        <p className="text-[9px] text-gray-500 font-sans mt-0.5">Virtual Login: {email}</p>
+                      )}
+                    </div>
+                  );
+                })()}
                 {selectedUser.role === 'coach' && (
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[8px] bg-blue-950 text-blue-400 font-extrabold px-1.5 py-0.5 rounded border border-blue-900/50 uppercase tracking-wide">
@@ -1141,6 +1238,53 @@ export default function SystemConsolePage() {
                 )}
               </div>
             </div>
+
+            {/* Edit Profile Info Form */}
+            <form onSubmit={handleSaveProfileDetails} className="space-y-3 border-t border-gray-800 pt-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Edit Profile Info</p>
+              
+              <div className="space-y-1.5">
+                <label className="text-[8px] text-gray-500 font-bold uppercase block">Display Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editSelectedDisplayName}
+                  onChange={e => setEditSelectedDisplayName(e.target.value)}
+                  placeholder="Display Name"
+                  className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[8px] text-gray-500 font-bold uppercase block">Contact Email (Real Email)</label>
+                <input
+                  type="email"
+                  value={editSelectedContactEmail}
+                  onChange={e => setEditSelectedContactEmail(e.target.value.trim())}
+                  placeholder="Contact Email"
+                  className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[8px] text-gray-500 font-bold uppercase block">Phone Number</label>
+                <input
+                  type="text"
+                  value={editSelectedPhoneNumber}
+                  onChange={e => setEditSelectedPhoneNumber(e.target.value)}
+                  placeholder="Phone Number"
+                  className="w-full bg-[#11162a] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSavingProfile}
+                className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all cursor-pointer flex items-center justify-center"
+              >
+                {isSavingProfile ? 'Saving Details...' : 'Save Profile Details'}
+              </button>
+            </form>
 
             {/* Change Password Form */}
             <form onSubmit={handleChangeUserPassword} className="space-y-2 border-t border-gray-800 pt-3">
