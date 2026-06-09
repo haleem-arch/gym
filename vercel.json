@@ -16,6 +16,34 @@
   ],
   "rewrites": [
     {
+      "source": "/api/request-password-reset",
+      "destination": "/api/password-reset?action=request"
+    },
+    {
+      "source": "/api/verify-reset-token",
+      "destination": "/api/password-reset?action=verify"
+    },
+    {
+      "source": "/api/complete-password-reset",
+      "destination": "/api/password-reset?action=complete"
+    },
+    {
+      "source": "/api/create-user",
+      "destination": "/api/user-management?action=create"
+    },
+    {
+      "source": "/api/delete-user",
+      "destination": "/api/user-management?action=delete"
+    },
+    {
+      "source": "/api/update-user",
+      "destination": "/api/user-management?action=update"
+    },
+    {
+      "source": "/api/update-user-password",
+      "destination": "/api/user-management?action=update-password"
+    },
+    {
       "source": "/((?!api/)[^.]*)",
       "destination": "/index.html"
     }
