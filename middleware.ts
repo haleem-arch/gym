@@ -1,41 +1,52 @@
 import { ipAddress } from '@vercel/functions';
 import { Ratelimit } from '@upstash/ratelimit';
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
 
-const isKvConfigured = !!(process.env.KV_REST_API_URL || process.env.KV_URL);
+const redisUrl = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL || process.env.KV_URL || process.env.STORAGE_URL;
+const redisToken = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN;
+
+const isKvConfigured = !!(redisUrl && redisToken);
+
+// Create custom Redis client using either KV or STORAGE credentials
+const redisClient = isKvConfigured
+  ? createClient({
+      url: redisUrl,
+      token: redisToken,
+    })
+  : null;
 
 // Configure the rate limiters
 // 1. Password Reset Request IP limiter (5 requests per 10 minutes)
-const passwordResetIpLimit = isKvConfigured
+const passwordResetIpLimit = isKvConfigured && redisClient
   ? new Ratelimit({
-      redis: kv,
+      redis: redisClient,
       limiter: Ratelimit.slidingWindow(5, '10 m'),
       prefix: 'rl:pw_reset:ip:',
     })
   : null;
 
 // 2. Password Reset Request Email limiter (2 requests per 5 minutes)
-const passwordResetEmailLimit = isKvConfigured
+const passwordResetEmailLimit = isKvConfigured && redisClient
   ? new Ratelimit({
-      redis: kv,
+      redis: redisClient,
       limiter: Ratelimit.slidingWindow(2, '5 m'),
       prefix: 'rl:pw_reset:email:',
     })
   : null;
 
 // 3. Password Reset Verify/Complete IP limiter (10 requests per 10 minutes)
-const passwordResetVerifyIpLimit = isKvConfigured
+const passwordResetVerifyIpLimit = isKvConfigured && redisClient
   ? new Ratelimit({
-      redis: kv,
+      redis: redisClient,
       limiter: Ratelimit.slidingWindow(10, '10 m'),
       prefix: 'rl:pw_verify:ip:',
     })
   : null;
 
 // 4. Coach Registration IP limiter (3 registrations per hour)
-const registerCoachIpLimit = isKvConfigured
+const registerCoachIpLimit = isKvConfigured && redisClient
   ? new Ratelimit({
-      redis: kv,
+      redis: redisClient,
       limiter: Ratelimit.slidingWindow(3, '1 h'),
       prefix: 'rl:register_coach:ip:',
     })
