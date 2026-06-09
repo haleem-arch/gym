@@ -36,6 +36,7 @@ import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
 import CoachLandingPage from './pages/coach/CoachLandingPage';
 import DownloadBlueprintPage from './pages/coach/DownloadBlueprintPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -552,6 +553,7 @@ function App() {
           {/* ── Standalone HR dashboard — no auth required ── */}
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Guest Routes (when NOT logged in) */}
           {!effectiveSession ? (

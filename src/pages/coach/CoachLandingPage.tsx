@@ -155,6 +155,13 @@ export default function CoachLandingPage() {
   const [creationText, setCreationText] = useState('Here we start...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Forgot password states
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+
   const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'cookies'>('privacy');
 
@@ -315,6 +322,43 @@ export default function CoachLandingPage() {
       setErrorMessage(err.message || 'Failed to sign in.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotEmail.trim()) {
+      setForgotError('Email is required.');
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError(null);
+    try {
+      const finalEmail = forgotEmail.includes('@') ? forgotEmail.trim() : `${forgotEmail.trim().toLowerCase()}@stride.fit`;
+      
+      const res = await fetch('/api/request-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: finalEmail }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setForgotSuccess(true);
+        toast.success('Reset link sent!');
+      } else {
+        setForgotError(data.error || 'Failed to request password reset.');
+        toast.error(data.error || 'Failed to request password reset.');
+      }
+    } catch (err) {
+      console.error('Request reset error:', err);
+      setForgotError('Failed to send reset link. Please check your connection.');
+      toast.error('Failed to send reset link.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -1110,6 +1154,77 @@ export default function CoachLandingPage() {
                         Back to Login
                       </button>
                     </div>
+                  ) : showForgotModal ? (
+                    /* FORGOT PASSWORD VIEW */
+                    <div className="space-y-4 text-left">
+                      <div>
+                        <h4 className="text-sm font-black text-white uppercase tracking-wider">Reset Password</h4>
+                        <p className="text-[10px] text-zinc-550 font-bold uppercase mt-1">Enter your account email to receive a recovery link.</p>
+                      </div>
+
+                      {forgotSuccess ? (
+                        <div className="space-y-4 text-center py-2 flex flex-col items-center">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 leading-relaxed font-bold">
+                            We've sent a password reset link to your email. Please check your inbox and click the link to reset your password. (Valid for 10 minutes)
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowForgotModal(false);
+                              setForgotSuccess(false);
+                              setForgotEmail('');
+                            }}
+                            className="w-full mt-2 py-3 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 rounded-xl text-xs font-black uppercase text-zinc-300 transition-all cursor-pointer"
+                          >
+                            Back to Login
+                          </button>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleRequestReset} className="space-y-3.5">
+                          <div className="space-y-1.5 text-left">
+                            <label className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Account Email</label>
+                            <input 
+                              type="email" 
+                              required 
+                              value={forgotEmail} 
+                              onChange={e => { setForgotEmail(e.target.value); setForgotError(null); }} 
+                              placeholder="name@gym.com" 
+                              className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl p-3 text-xs text-white outline-none" 
+                            />
+                          </div>
+
+                          {forgotError && (
+                            <p className="text-[10px] font-black tracking-widest uppercase text-red-400 text-left leading-relaxed">
+                              ⚠️ {forgotError}
+                            </p>
+                          )}
+
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowForgotModal(false);
+                                setForgotError(null);
+                                setForgotEmail('');
+                              }}
+                              className="flex-1 py-3.5 rounded-xl border border-zinc-900 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 font-bold text-xs uppercase transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={forgotLoading}
+                              className="flex-1 bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-800 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                            >
+                              {forgotLoading ? 'Sending...' : 'Send Link'}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
                   ) : (
                     /* LOGIN VIEW */
                     <form onSubmit={handleLogin} className="space-y-4">
@@ -1126,6 +1241,20 @@ export default function CoachLandingPage() {
                           type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
                           className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl p-3 text-xs text-white outline-none" 
                         />
+                        <div className="text-right pt-1 select-none">
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setShowForgotModal(true);
+                              setForgotEmail(email);
+                              setForgotError(null);
+                              setForgotSuccess(false);
+                            }}
+                            className="text-[10px] text-zinc-400 hover:text-white font-bold transition-colors cursor-pointer bg-transparent border-none"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
                       </div>
                       <button 
                         type="submit" disabled={loading}

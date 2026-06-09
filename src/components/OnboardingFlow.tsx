@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { 
   User, Lock, Dumbbell, Apple, Check, 
   ChevronLeft, ChevronRight, Plus, Trash2, 
-  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X
+  Scale, LogOut, ArrowRight, Eye, EyeOff, Search, X,
+  Mail, CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SplashOverlay } from './SplashOverlay';
@@ -129,6 +130,13 @@ export default function OnboardingFlow({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Forgot password states
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   // Flying Arrow States & Refs
   const [showArrow, setShowArrow] = useState(false);
@@ -497,6 +505,43 @@ export default function OnboardingFlow({
     }
   };
 
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotEmail.trim()) {
+      setForgotError('Email is required.');
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError(null);
+    try {
+      const finalEmail = forgotEmail.includes('@') ? forgotEmail.trim() : `${forgotEmail.trim().toLowerCase()}@stride.fit`;
+      
+      const res = await fetch('/api/request-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: finalEmail }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setForgotSuccess(true);
+        toast.success('Reset link sent!');
+      } else {
+        setForgotError(data.error || 'Failed to request password reset.');
+        toast.error(data.error || 'Failed to request password reset.');
+      }
+    } catch (err) {
+      console.error('Request reset error:', err);
+      setForgotError('Failed to send reset link. Please check your connection.');
+      toast.error('Failed to send reset link.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
 
 
   // Log out action
@@ -861,6 +906,80 @@ export default function OnboardingFlow({
                       </button>
                     </div>
                   </div>
+                ) : showForgotModal ? (
+                  /* ── FORGOT PASSWORD FORM ── */
+                  <div className="space-y-4 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl text-left">
+                    <div>
+                      <h3 className="text-sm font-black text-white uppercase tracking-wider">Reset Password</h3>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase mt-0.5">Enter your account email to receive a recovery link.</p>
+                    </div>
+
+                    {forgotSuccess ? (
+                      <div className="space-y-4 text-center py-2 flex flex-col items-center">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner">
+                          <CheckCircle className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs text-gray-300 leading-relaxed font-bold">
+                          We've sent a password reset link to your email. Please check your inbox and click the link to reset your password. (Valid for 10 minutes)
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowForgotModal(false);
+                            setForgotSuccess(false);
+                            setForgotEmail('');
+                          }}
+                          className="w-full mt-2 py-3 bg-gray-900 hover:bg-gray-850 border border-gray-800 rounded-xl text-xs font-black uppercase text-gray-300 transition-all cursor-pointer"
+                        >
+                          Back to Sign In
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleRequestReset} className="space-y-3.5">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Email Address</label>
+                          <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                            <input 
+                              type="text" 
+                              required 
+                              value={forgotEmail} 
+                              onChange={e => { setForgotEmail(e.target.value); setForgotError(null); }} 
+                              placeholder="name@example.com" 
+                              className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
+                            />
+                          </div>
+                        </div>
+
+                        {forgotError && (
+                          <p className="text-[10px] font-black tracking-widest uppercase text-red-400 leading-relaxed">
+                            ⚠️ {forgotError}
+                          </p>
+                        )}
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowForgotModal(false);
+                              setForgotError(null);
+                              setForgotEmail('');
+                            }}
+                            className="flex-1 py-3 rounded-xl border border-gray-800 bg-[#181d29] hover:bg-gray-900 text-gray-400 font-bold text-xs uppercase transition-colors cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={forgotLoading}
+                            className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95 shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                          >
+                            {forgotLoading ? 'Sending...' : 'Send Link'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
                 ) : (
                   /* ── SIGN IN FORM ── */
                   <form onSubmit={handleSignInAuth} className="space-y-3.5 bg-[#121620]/60 border border-gray-800 p-5 rounded-2xl shadow-xl">
@@ -889,6 +1008,20 @@ export default function OnboardingFlow({
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
                         >
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                      <div className="text-right pt-1 select-none">
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setShowForgotModal(true);
+                            setForgotEmail(email);
+                            setForgotError(null);
+                            setForgotSuccess(false);
+                          }}
+                          className="text-[10px] text-blue-400 hover:text-blue-300 font-bold transition-colors cursor-pointer"
+                        >
+                          Forgot Password?
                         </button>
                       </div>
                     </div>

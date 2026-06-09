@@ -5765,7 +5765,15 @@ export default function DesktopCoachPortal() {
                         <div>
                           <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Active Staff</p>
                           <h3 className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">
-                            {profiles.filter(p => p.role === 'coach').length}
+                            {profiles.filter(p => {
+                              if (p.role !== 'coach') return false;
+                              if (p.id === OWNER_ID) return true; // Owner is always active
+                              const tg = p.targets || {};
+                              const isDeact = tg.is_deactivated === true;
+                              const isExpired = tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date);
+                              const isPending = tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date);
+                              return !isDeact && !isExpired && !isPending;
+                            }).length}
                           </h3>
                         </div>
                         <Shield size={18} className="text-blue-500" />
@@ -8751,7 +8759,14 @@ export default function DesktopCoachPortal() {
                       },
                       {
                         label: 'Active Coaches',
-                        value: systemCoaches.filter(c => c.targets?.is_deactivated !== true).length,
+                        value: systemCoaches.filter(c => {
+                          if (c.id === OWNER_ID) return true; // Owner is always active
+                          const tg = c.targets || {};
+                          const isDeact = tg.is_deactivated === true;
+                          const isExpired = tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date);
+                          const isPending = tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date);
+                          return !isDeact && !isExpired && !isPending;
+                        }).length,
                         icon: <UserCheck className="text-emerald-400" size={18} />,
                         colorClass: 'text-emerald-400',
                         glowClass: 'from-emerald-500/10 to-transparent',
@@ -8760,7 +8775,14 @@ export default function DesktopCoachPortal() {
                       },
                       {
                         label: 'Suspended / Inactive',
-                        value: systemCoaches.filter(c => c.targets?.is_deactivated === true).length,
+                        value: systemCoaches.filter(c => {
+                          if (c.id === OWNER_ID) return false; // Owner is never suspended
+                          const tg = c.targets || {};
+                          const isDeact = tg.is_deactivated === true;
+                          const isExpired = tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date);
+                          const isPending = tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date);
+                          return isDeact || isExpired || isPending;
+                        }).length,
                         icon: <UserX className="text-rose-400" size={18} />,
                         colorClass: 'text-rose-400',
                         glowClass: 'from-rose-500/10 to-transparent',
