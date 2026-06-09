@@ -297,7 +297,9 @@ ${origin}/client-login
             { name: 'inbody_scans', key: 'user_id' },
             { name: 'client_workout_days', key: 'user_id' },
             { name: 'schedules', key: 'user_id' },
-            { name: 'ai_chat', key: 'user_id' }
+            { name: 'ai_chat', key: 'user_id' },
+            { name: 'water_logs', key: 'user_id' },
+            { name: 'user_workout_plans', key: 'user_id' }
           ];
 
           for (const table of simpleTables) {
@@ -659,6 +661,8 @@ ${origin}/client-login
         'client_workout_days',
         'schedules',
         'ai_chat',
+        'water_logs',
+        'user_workout_plans',
         'workouts',
         'diet_logs',
         'progress_notes',
