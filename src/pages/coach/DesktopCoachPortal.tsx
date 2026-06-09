@@ -5459,6 +5459,44 @@ export default function DesktopCoachPortal() {
             </button>
           )}
 
+          {isRunningInElectron && (
+            <button 
+              onClick={async () => {
+                const toastId = toast.loading("Checking for updates...");
+                const electronAPI = (window as any).electronAPI;
+                if (!electronAPI) {
+                  toast.error("Electron API not found", { id: toastId });
+                  return;
+                }
+                try {
+                  const currentVersion = await electronAPI.getAppVersion();
+                  const response = await fetch('/app-version.json?t=' + Date.now());
+                  if (!response.ok) throw new Error('Failed to fetch version catalog');
+                  const data = await response.json();
+                  
+                  if (data.version && data.version !== currentVersion) {
+                    setUpdateStatus({
+                      available: true,
+                      checking: false,
+                      downloading: false,
+                      progress: 0,
+                      version: data.version
+                    });
+                    toast.success(`New version v${data.version} is available!`, { id: toastId });
+                  } else {
+                    toast.success(`You are running the latest version (v${currentVersion})!`, { id: toastId });
+                  }
+                } catch (err: any) {
+                  toast.error("Failed to check updates: " + err.message, { id: toastId });
+                }
+              }}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-800 hover:border-gray-750 bg-gray-900/60 hover:bg-gray-800 text-[10px] font-bold text-gray-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+              title="Manually check if a new desktop update is available"
+            >
+              <RefreshCw size={11} className="text-gray-400" /> Check Updates
+            </button>
+          )}
+
           <button 
             onClick={() => {
               setIsTutorialModeActive(true);
