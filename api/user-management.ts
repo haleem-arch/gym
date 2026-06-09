@@ -545,6 +545,144 @@ ${origin}/client-login
 
       return res.status(200).json({ success: true });
 
+    } else if (action === 'get-archived') {
+      if (req.method !== 'GET' && req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+      if (!isOwner) {
+        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('deleted_records_archive')
+        .select('*')
+        .order('deleted_at', { ascending: false });
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ archive: data });
+
+    } else if (action === 'delete-archived') {
+      if (req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+      if (!isOwner) {
+        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      }
+
+      const { targetUid } = req.body;
+      if (!targetUid) {
+        return res.status(400).json({ error: 'Missing targetUid parameter' });
+      }
+
+      const { error } = await supabaseAdmin
+        .from('deleted_records_archive')
+        .delete()
+        .eq('original_id', targetUid);
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      return res.status(200).json({ success: true });
+
+    } else if (action === 'restore-archived') {
+      if (req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+      if (!isOwner) {
+        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      }
+
+      const { targetUid } = req.body;
+      if (!targetUid) {
+        return res.status(400).json({ error: 'Missing targetUid parameter' });
+      }
+
+      // Fetch all archived rows related to this user ID
+      const { data: archivedRows, error: fetchErr } = await supabaseAdmin
+        .from('deleted_records_archive')
+        .select('*');
+
+      if (fetchErr || !archivedRows) {
+        return res.status(500).json({ error: fetchErr?.message || 'Failed to query archive' });
+      }
+
+      const userRows = archivedRows.filter(row => 
+        row.original_id === targetUid || 
+        row.record_data?.user_id === targetUid || 
+        row.record_data?.coach_id === targetUid
+      );
+
+      if (userRows.length === 0) {
+        return res.status(404).json({ error: 'No archived records found for this user.' });
+      }
+
+      // 1. Recreate auth user if deleted
+      const profileRow = userRows.find(r => r.table_name === 'profiles');
+      const clientProfileRow = userRows.find(r => r.table_name === 'client_profiles');
+      
+      if (profileRow?.record_data) {
+        const pData = profileRow.record_data;
+        const cpData = clientProfileRow?.record_data || {};
+        const email = pData.email;
+        const displayName = pData.display_name;
+        const passcode = cpData.generated_passcode || pData.targets?.generated_passcode || '123456';
+        
+        // Delete auth user if it somehow exists (just to avoid conflict)
+        await supabaseAdmin.auth.admin.deleteUser(targetUid).catch(() => {});
+
+        const { error: authErr } = await supabaseAdmin.auth.admin.createUser({
+          id: targetUid,
+          email,
+          password: passcode,
+          email_confirm: true,
+          user_metadata: { display_name: displayName }
+        });
+
+        if (authErr) {
+          console.error('Failed to recreate auth user during restore:', authErr);
+          return res.status(500).json({ error: 'Restoring auth account failed: ' + authErr.message });
+        }
+      }
+
+      // 2. Restore SQL tables in dependency order
+      const restoreOrder = [
+        'profiles',
+        'client_profiles',
+        'inbody_scans',
+        'client_workout_days',
+        'schedules',
+        'ai_chat',
+        'workouts',
+        'diet_logs',
+        'progress_notes',
+        'workout_exercises',
+        'diet_meals'
+      ];
+
+      for (const tableName of restoreOrder) {
+        const rowsToRestore = userRows.filter(r => r.table_name === tableName);
+        if (rowsToRestore.length > 0) {
+          const records = rowsToRestore.map(r => r.record_data);
+          const { error: upsertErr } = await supabaseAdmin.from(tableName).upsert(records);
+          if (upsertErr) {
+            console.error(`Failed to restore table ${tableName}:`, upsertErr);
+          }
+        }
+      }
+
+      // 3. Purge from archive
+      const rowIds = userRows.map(r => r.id);
+      await supabaseAdmin.from('deleted_records_archive').delete().in('id', rowIds);
+
+      return res.status(200).json({ success: true });
+
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }

@@ -38,6 +38,86 @@ export default function SystemConsolePage() {
   const [coachUserId, setCoachUserId] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
 
+  // Recycle Bin State
+  const [archivedRecords, setArchivedRecords] = useState<any[]>([]);
+  const [loadingArchive, setLoadingArchive] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [purgingId, setPurgingId] = useState<string | null>(null);
+
+  const fetchArchivedRecords = async (tokenStr: string | null = sessionToken) => {
+    if (!tokenStr) return;
+    try {
+      setLoadingArchive(true);
+      const response = await fetch('/api/user-management?action=get-archived', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenStr}`
+        }
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setArchivedRecords(result.archive || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch archive:', err);
+    } finally {
+      setLoadingArchive(false);
+    }
+  };
+
+  const handleRestoreUser = async (userId: string) => {
+    setRestoringId(userId);
+    const toastId = toast.loading('Restoring user account and database files...');
+    try {
+      const response = await fetch('/api/user-management?action-status=disabled&action=restore-archived', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ targetUid: userId })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Restore failed');
+      }
+      toast.success('User restored successfully! 👑', { id: toastId });
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to restore user', { id: toastId });
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const handlePurgeUser = async (userId: string) => {
+    setPurgingId(userId);
+    const toastId = toast.loading('Permanently purging user from archive...');
+    try {
+      const response = await fetch('/api/user-management?action=delete-archived', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ targetUid: userId })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Purge failed');
+      }
+      toast.success('User permanently purged from database', { id: toastId });
+      fetchBaseData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to purge user', { id: toastId });
+    } finally {
+      setPurgingId(null);
+    }
+  };
+
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -142,6 +222,7 @@ export default function SystemConsolePage() {
       if (session) {
         setCoachUserId(session.user.id);
         setSessionToken(session.access_token);
+        fetchArchivedRecords(session.access_token);
       }
 
       // Fetch Haleem's toggles
@@ -1386,6 +1467,108 @@ export default function SystemConsolePage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Recycle Bin (Archived Users) */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+          Recycle Bin (Archived Users)
+        </h3>
+
+        {loadingArchive ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mx-auto" />
+            <p className="text-[10px] text-gray-550 mt-2">Loading archived records...</p>
+          </div>
+        ) : (() => {
+          // Group archived records by original_id in UI
+          const groupedArchive = archivedRecords.reduce((acc: Record<string, any>, item: any) => {
+            const userId = item.original_id;
+            if (!acc[userId]) {
+              acc[userId] = {
+                userId,
+                deletedAt: item.deleted_at,
+                displayName: 'Deleted User',
+                email: 'N/A',
+                role: 'client',
+                recordsCount: 0,
+              };
+            }
+            acc[userId].recordsCount += 1;
+            if (item.table_name === 'profiles') {
+              acc[userId].displayName = item.record_data?.display_name || acc[userId].displayName;
+              acc[userId].email = item.record_data?.email || acc[userId].email;
+              acc[userId].role = item.record_data?.role || acc[userId].role;
+            }
+            return acc;
+          }, {});
+
+          const archivedUsersList = Object.values(groupedArchive);
+
+          if (archivedUsersList.length === 0) {
+            return (
+              <div className="bg-[#11162a]/95 border border-gray-850 p-6 text-center rounded-2xl">
+                <p className="text-xs text-gray-500">The Recycle Bin is empty.</p>
+                <p className="text-[10px] text-gray-500 mt-1.5 leading-normal">
+                  Deleted users will be archived here for 30 days before automatic deletion.
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-2.5">
+              {archivedUsersList.map((item: any) => {
+                const formattedDate = new Date(item.deletedAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                return (
+                  <div key={item.userId} className="bg-[#11162a]/95 border border-gray-850 p-4 rounded-2xl flex flex-col gap-3">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                          {item.displayName}
+                          <span className="text-[8px] bg-red-950 text-red-400 font-extrabold px-1.5 py-0.5 rounded-md border border-red-900/50 uppercase tracking-wide">
+                            {item.role}
+                          </span>
+                        </p>
+                        <p className="text-[10px] text-gray-400 font-mono">{item.email}</p>
+                        <p className="text-[9px] text-gray-500">Deleted: {formattedDate} ({item.recordsCount} files archived)</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={restoringId !== null || purgingId !== null}
+                        onClick={() => handleRestoreUser(item.userId)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-xl text-[10px] tracking-wide uppercase transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {restoringId === item.userId ? 'Restoring...' : 'Restore User'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={restoringId !== null || purgingId !== null}
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to permanently delete ${item.displayName} and all their archived files? This cannot be undone.`)) {
+                            handlePurgeUser(item.userId);
+                          }
+                        }}
+                        className="flex-1 bg-red-950/20 border border-red-900/30 hover:bg-red-600 hover:text-white text-red-400 font-extrabold py-2 rounded-xl text-[10px] tracking-wide uppercase transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {purgingId === item.userId ? 'Purging...' : 'Purge'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Custom Confirmation Modal */}
