@@ -335,18 +335,18 @@ const TodayView = () => {
     const handlePlanUpdated = () => fetchWorkoutTemplates();
     window.addEventListener('plan_updated', handlePlanUpdated);
     
-    // Subscribe to real-time changes on user_workout_plans to sync coach template updates
-    const channelId = `user-plans-channel-${Date.now()}-${Math.random()}`;
-    const subscription = supabase.channel(channelId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans' }, () => {
+    // Auto-refresh when user brings the tab back to focus (saves connection but keeps data fresh)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
         fetchWorkoutTemplates();
-      })
-      .subscribe();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
       
     return () => {
       active = false;
       window.removeEventListener('plan_updated', handlePlanUpdated);
-      supabase.removeChannel(subscription);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

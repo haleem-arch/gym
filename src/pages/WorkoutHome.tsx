@@ -353,18 +353,18 @@ const WorkoutHome = () => {
     const handlePlanUpdated = () => loadData();
     window.addEventListener('plan_updated', handlePlanUpdated);
     
-    // Subscribe to real-time changes on user_workout_plans to update UI instantly when coach edits/deletes templates
-    const channelId = `user-plans-channel-${Date.now()}-${Math.random()}`;
-    const subscription = supabase.channel(channelId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_workout_plans' }, () => {
+    // Auto-refresh when user brings the tab back to focus (saves connection but keeps data fresh)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
         loadData();
-      })
-      .subscribe();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('plan_updated', handlePlanUpdated);
-      supabase.removeChannel(subscription);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [dayType, hybridLiftingType, selectedDateStr]);
 
