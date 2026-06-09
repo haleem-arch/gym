@@ -3507,80 +3507,7 @@ export default function DesktopCoachPortal() {
         }
 
         try {
-          // 1. Cascade delete from workouts & exercises
-          try {
-            const { data: userWorkouts } = await supabase
-              .from('workouts')
-              .select('id')
-              .eq('user_id', managementSelectedClientId);
-            const workoutIds = userWorkouts?.map(w => w.id) || [];
-            if (workoutIds.length > 0) {
-              await supabase.from('workout_exercises').delete().in('workout_id', workoutIds);
-              await supabase.from('workouts').delete().in('id', workoutIds);
-            }
-          } catch (err) {
-            console.warn('Failed to delete workouts cascade:', err);
-          }
-
-          // 2. Cascade delete from diet logs & meals
-          try {
-            const { data: userDietLogs } = await supabase
-              .from('diet_logs')
-              .select('id')
-              .eq('user_id', managementSelectedClientId);
-            const dietLogIds = userDietLogs?.map(d => d.id) || [];
-            if (dietLogIds.length > 0) {
-              await supabase.from('diet_meals').delete().in('diet_log_id', dietLogIds);
-              await supabase.from('diet_logs').delete().in('id', dietLogIds);
-            }
-          } catch (err) {
-            console.warn('Failed to delete diet logs cascade:', err);
-          }
-
-          // 3. Delete progress notes
-          try {
-            await supabase.from('progress_notes').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 4. Delete water logs
-          try {
-            await supabase.from('water_logs').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 5. Delete InBody scans
-          try {
-            await supabase.from('inbody_scans').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 6. Delete workout plans / split templates
-          try {
-            await supabase.from('user_workout_plans').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 6.1. Delete schedules (weekly splits)
-          try {
-            await supabase.from('schedules').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 6.2. Delete food inventory (custom foods)
-          try {
-            await supabase.from('food_inventory').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 6.3. Delete AI chat history
-          try {
-            await supabase.from('ai_chat').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 7. Delete client profiles
-          try {
-            await supabase.from('client_profiles').delete().eq('user_id', managementSelectedClientId);
-          } catch (err) { console.warn(err); }
-
-          // 8. Delete base profile
-          await supabase.from('profiles').delete().eq('id', managementSelectedClientId);
-
-          // 9. Delete user from auth via API LAST
+          // Delete user via secure API (handles archiving and database cleanup)
           const res = await fetch('/api/delete-user', {
             method: 'POST',
             headers: {
@@ -3592,7 +3519,7 @@ export default function DesktopCoachPortal() {
 
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
-            console.warn('Auth deletion warning:', errData.error);
+            throw new Error(errData.error || 'Failed to delete user');
           }
 
           toast.success('Athlete wiped successfully.', { id: toastId });
@@ -11490,72 +11417,7 @@ export default function DesktopCoachPortal() {
                             setIsDeletingCoach(true);
                             const toastId = toast.loading('Deleting coach and all clients...');
                             try {
-                              // 1. Fetch all client IDs belonging to this coach
-                              const { data: coachClientsData } = await supabase
-                                .from('profiles')
-                                .select('id, display_name')
-                                .eq('coach_id', currentCoach.id)
-                                .eq('role', 'client');
-                              
-                              const coachClientsList = coachClientsData || [];
-                              
-                              // 2. Cascade delete every client belonging to this coach
-                              for (const client of coachClientsList) {
-                                try {
-                                  // a. Delete workout exercises and workouts
-                                  const { data: userWorkouts } = await supabase
-                                    .from('workouts')
-                                    .select('id')
-                                    .eq('user_id', client.id);
-                                  const workoutIds = userWorkouts?.map(w => w.id) || [];
-                                  if (workoutIds.length > 0) {
-                                    await supabase.from('workout_exercises').delete().in('workout_id', workoutIds);
-                                    await supabase.from('workouts').delete().in('id', workoutIds);
-                                  }
-
-                                  // b. Delete diet logs and meals
-                                  const { data: userDietLogs } = await supabase
-                                    .from('diet_logs')
-                                    .select('id')
-                                    .eq('user_id', client.id);
-                                  const dietLogIds = userDietLogs?.map(d => d.id) || [];
-                                  if (dietLogIds.length > 0) {
-                                    await supabase.from('diet_meals').delete().in('diet_log_id', dietLogIds);
-                                    await supabase.from('diet_logs').delete().in('id', dietLogIds);
-                                  }
-
-                                  // c. Delete other client records safely
-                                  await supabase.from('progress_notes').delete().eq('user_id', client.id);
-                                  await supabase.from('water_logs').delete().eq('user_id', client.id);
-                                  await supabase.from('inbody_scans').delete().eq('user_id', client.id);
-                                  await supabase.from('user_workout_plans').delete().eq('user_id', client.id);
-                                  await supabase.from('schedules').delete().eq('user_id', client.id);
-                                  await supabase.from('food_inventory').delete().eq('user_id', client.id);
-                                  await supabase.from('ai_chat').delete().eq('user_id', client.id);
-                                  await supabase.from('client_profiles').delete().eq('user_id', client.id);
-                                  await supabase.from('profiles').delete().eq('id', client.id);
-
-                                  // d. Delete Client Auth record via API
-                                  await fetch('/api/delete-user', {
-                                    method: 'POST',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                      'Authorization': `Bearer ${sessionToken}`
-                                    },
-                                    body: JSON.stringify({ uid: client.id })
-                                  });
-                                } catch (clientErr) {
-                                  console.warn(`Error deleting client ${client.display_name}:`, clientErr);
-                                }
-                              }
-
-                              // 3. Delete coach profile
-                              await supabase
-                                .from('profiles')
-                                .delete()
-                                .eq('id', currentCoach.id);
-
-                              // 4. Delete Coach Auth record via API LAST
+                              // Delete coach via secure API (handles cascading deletes for clients and archives everything)
                               const res = await fetch('/api/delete-user', {
                                     method: 'POST',
                                     headers: {
@@ -11567,7 +11429,7 @@ export default function DesktopCoachPortal() {
 
                               if (!res.ok) {
                                 const errData = await res.json().catch(() => ({}));
-                                console.warn('Auth deletion warning:', errData.error);
+                                throw new Error(errData.error || 'Failed to delete coach');
                               }
 
                               toast.success('Coach and all assigned clients deleted successfully.', { id: toastId });
