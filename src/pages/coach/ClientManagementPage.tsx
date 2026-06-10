@@ -7,7 +7,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { 
   ChevronLeft, Key, Trash2, Calendar, Scale, Ruler, 
   Droplets, Dumbbell, Clipboard, Lock, Sparkles, User, UserCheck,
-  Phone, TrendingUp, Zap, ChevronRight, Save
+  Phone, TrendingUp, Zap, ChevronRight
 } from 'lucide-react';
 
 const getMuscleColor = (muscle: string) => {

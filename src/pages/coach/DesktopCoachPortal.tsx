@@ -8317,6 +8317,7 @@ export default function DesktopCoachPortal() {
 
                 </div>
                 </div>
+                </div>
               )}
             </div>
           )}

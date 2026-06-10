@@ -1258,7 +1258,6 @@ export default function DashboardPage() {
   const handleUpdateClientSubscription = async () => {
     setUpdatingSubscriptionState(true);
     try {
-      const isDeactivated = profileTargets?.is_deactivated || false;
       const history = Array.isArray(profileTargets?.subscription_history) ? [...profileTargets.subscription_history] : [];
       
       let subscription_start_date = null;
