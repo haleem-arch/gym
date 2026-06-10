@@ -8311,7 +8311,7 @@ export default function DesktopCoachPortal() {
                             </button>
                           </div>
                         );
-                      })
+                      })}
                     </div>
                   </Card>
 
