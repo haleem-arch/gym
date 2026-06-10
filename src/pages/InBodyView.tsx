@@ -338,7 +338,7 @@ export default function InBodyView() {
                     initial={{ opacity: 0, scale: 0.95 }} 
                     animate={{ opacity: 1, scale: 1 }} 
                     transition={{ delay: index * 0.05 }}
-                    className="bg-[#0d0d11] border border-zinc-900 rounded-3xl overflow-hidden shadow-lg animate-fadeIn"
+                    className="bg-white/[0.02] backdrop-blur-md border border-white/[0.05] rounded-3xl overflow-hidden shadow-xl animate-fadeIn"
                   >
                     {/* Header (Always Visible) */}
                     <div 
@@ -364,13 +364,13 @@ export default function InBodyView() {
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Score</p>
-                            <p className="text-[#06b6d4] font-black text-base mt-0.5">
+                            <p className="text-[#3b82f6] font-black text-base mt-0.5">
                               {scan.score} {prev && calculateDelta(scan.score, prev.score)}
                             </p>
                           </div>
                         </div>
                       </div>
-                      <div className="text-zinc-500 bg-zinc-900/60 p-2 rounded-full border border-zinc-800">
+                      <div className="text-zinc-400 bg-white/[0.04] p-2 rounded-full border border-white/[0.05]">
                         {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                       </div>
                     </div>
@@ -389,14 +389,14 @@ export default function InBodyView() {
                             {/* Muscle-Fat Analysis */}
                             <div>
                               <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-1 select-none">
-                                <Activity size={14} className="text-[#06b6d4]" /> Muscle-Fat Analysis
+                                <Activity size={14} className="text-[#3b82f6]" /> Muscle-Fat Analysis
                               </h4>
                               <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-[#070709] p-3 rounded-xl border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Skeletal Muscle Mass</p>
                                   <p className="text-lg text-white font-black mt-0.5">{scan.smm} <span className="text-xs text-zinc-500 font-normal">kg</span> {prev && calculateDelta(scan.smm, prev.smm)}</p>
                                 </div>
-                                <div className="bg-[#070709] p-3 rounded-xl border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Body Fat Mass</p>
                                   <p className="text-lg text-white font-black mt-0.5">{scan.bfm} <span className="text-xs text-zinc-500 font-normal">kg</span> {prev && calculateDelta(scan.bfm, prev.bfm, true)}</p>
                                 </div>
@@ -409,15 +409,15 @@ export default function InBodyView() {
                                 <Droplet size={14} className="text-[#8b5cf6]" /> Body Composition
                               </h4>
                               <div className="grid grid-cols-3 gap-2">
-                                <div className="bg-[#070709] p-2 rounded-xl text-center border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-2 rounded-xl text-center border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Total Water</p>
                                   <p className="text-sm text-white font-black">{seg.tbw || 0}L</p>
                                 </div>
-                                <div className="bg-[#070709] p-2 rounded-xl text-center border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-2 rounded-xl text-center border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Protein</p>
                                   <p className="text-sm text-white font-black">{seg.protein || 0}kg</p>
                                 </div>
-                                <div className="bg-[#070709] p-2 rounded-xl text-center border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-2 rounded-xl text-center border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Minerals</p>
                                   <p className="text-sm text-white font-black">{seg.minerals || 0}kg</p>
                                 </div>
@@ -430,11 +430,11 @@ export default function InBodyView() {
                                 <Flame size={14} className="text-[#10b981]" /> Obesity Evaluation
                               </h4>
                               <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-[#070709] p-3 rounded-xl border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Visceral Fat Level</p>
                                   <p className="text-lg text-white font-black mt-0.5">{seg.visceralFat || 0} {prev && calculateDelta(seg.visceralFat, prevSeg.visceralFat, true)}</p>
                                 </div>
-                                <div className="bg-[#070709] p-3 rounded-xl border border-zinc-900/60">
+                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Basal Metabolic Rate</p>
                                   <p className="text-lg text-white font-black mt-0.5">{scan.bmr} <span className="text-xs text-zinc-500 font-normal">kcal</span></p>
                                 </div>

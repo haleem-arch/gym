@@ -210,7 +210,7 @@ const DietHome = () => {
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ delay: 0.1 }}
-            className="bg-[#09090b] rounded-2xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden"
+            className="bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 border border-white/[0.05] shadow-2xl relative overflow-hidden"
           >
             {totals.completed && (
               <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider border-l border-b border-zinc-900/50">
@@ -242,7 +242,7 @@ const DietHome = () => {
             className="mt-4 rounded-2xl overflow-hidden shadow-xl"
           >
             <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
-              <div className="bg-[#09090b] p-5 border border-zinc-900 w-full h-full">
+              <div className="bg-white/[0.02] backdrop-blur-md p-5 border border-white/[0.05] w-full h-full">
                 <div className="flex items-center gap-2 mb-3 border-b border-zinc-900 pb-2.5">
                   <span className="text-sm">💧</span>
                   <h2 className="text-xs font-black uppercase tracking-wider text-blue-400">Hydration Logger</h2>
@@ -295,14 +295,14 @@ const DietHome = () => {
                   >
                     <div 
                       onClick={() => !totals.completed && navigate(`/diet/meal/${meal.id}`)}
-                      className={`bg-[#0d0d11] rounded-xl p-4 border border-zinc-900 flex flex-col w-full ${totals.completed ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-[0.98] transition-transform hover:border-zinc-800'}`}
+                      className={`bg-white/[0.02] backdrop-blur-sm rounded-xl p-4 border border-white/[0.05] flex flex-col w-full ${totals.completed ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-[0.98] transition-transform hover:border-white/[0.1]'}`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-black text-white text-base tracking-tight">{meal.name}</span>
-                        <span className="text-xs font-black text-zinc-300 bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-850">{Math.round(mealMacros.kcal)} kcal</span>
+                        <span className="text-xs font-black text-zinc-300 bg-white/[0.03] px-2.5 py-1 rounded-lg border border-white/[0.05]">{Math.round(mealMacros.kcal)} kcal</span>
                       </div>
                       <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-wider text-zinc-550">
-                        <span>P: <span className="text-[#06b6d4]">{Math.round(mealMacros.protein)}g</span></span>
+                        <span>P: <span className="text-[#3b82f6]">{Math.round(mealMacros.protein)}g</span></span>
                         <span>C: <span className="text-[#10b981]">{Math.round(mealMacros.carbs)}g</span></span>
                         <span>F: <span className="text-[#f59e0b]">{Math.round(mealMacros.fat)}g</span></span>
                       </div>

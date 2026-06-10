@@ -139,12 +139,12 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
       
       {/* LIFTING VOLUME CHART */}
       {volumeData.length > 0 && (
-        <div className="bg-[#070709] rounded-3xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden">
+        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl p-5 border border-white/[0.05] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-zinc-850">
             <TrendingUp size={100} />
           </div>
           <div className="flex items-center space-x-3 mb-6 relative z-10">
-            <div className="p-2.5 bg-[#06b6d4]/10 text-[#06b6d4] rounded-xl border border-[#06b6d4]/20">
+            <div className="p-2.5 bg-[#3b82f6]/10 text-[#3b82f6] rounded-xl border border-[#3b82f6]/20">
               <TrendingUp size={20} />
             </div>
             <div>
@@ -158,8 +158,8 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
               <AreaChart data={volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" vertical={false} />
@@ -170,11 +170,11 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
                   type="monotone" 
                   dataKey="volume" 
                   name="Volume"
-                  stroke="#06b6d4" 
+                  stroke="#3b82f6" 
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorVolume)" 
-                  activeDot={{ r: 6, fill: '#06b6d4', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -184,7 +184,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
 
       {/* RUN PERFORMANCE CHART */}
       {runData.length > 0 && (
-        <div className="bg-[#070709] rounded-3xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden">
+        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl p-5 border border-white/[0.05] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-zinc-850">
             <Activity size={100} />
           </div>
@@ -216,7 +216,7 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
 
       {/* BODYWEIGHT TRENDS */}
       {weightData.length > 0 && (
-        <div className="bg-[#070709] rounded-3xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden">
+        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl p-5 border border-white/[0.05] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-zinc-850">
             <Scale size={100} />
           </div>
@@ -252,8 +252,8 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
         </div>
       )}
       {volumeData.length === 0 && runData.length === 0 && weightData.length === 0 && (
-        <div className="text-center p-10 bg-[#070709] rounded-3xl border border-zinc-900">
-          <div className="bg-zinc-900/50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
+        <div className="text-center p-10 bg-white/[0.02] backdrop-blur-md rounded-3xl border border-white/[0.05] shadow-2xl">
+          <div className="bg-white/[0.04] h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/[0.05]">
             <TrendingUp size={32} className="text-zinc-500" />
           </div>
           <h3 className="text-white font-bold text-lg mb-2">No Data Yet</h3>
