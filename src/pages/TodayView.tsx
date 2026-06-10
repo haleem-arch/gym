@@ -289,9 +289,9 @@ const TodayView = () => {
         // Seed default splits (PUSH/PULL/LEGS) only if user has NO templates at all
         if (activePlans.length === 0) {
           const defaultExercises: Record<string, string[]> = {
-            PUSH: ['Incline DB Bench Press (45°)', 'DB Shoulder Press (seated neutral)', 'Incline DB Y-Raise (20-30°)', 'Cable Chest Fly (low pulley)', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
+            PUSH: ['Incline DB Bench Press (45 Degree)', 'DB Shoulder Press (seated neutral)', 'Incline DB Y-Raise (20-30 Degree)', 'Cable Chest Fly (low pulley)', 'Overhead Cable Extension (rope)', 'DB Lateral Raise (elbow-lead)'],
             PULL: ['Lat Pulldown (wide grip)', 'Chest-Supported DB Row', 'Sideways One-Arm Rear Delt Fly', 'Face Pull (rope eye height)', 'Incline DB Curl - Bayesian', 'Zottman Curl'],
-            LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45° Back Extension (BW/DB)', 'Standing Calf Raise']
+            LEGS: ['Leg Press (feet high for glutes)', 'DB Romanian Deadlift', 'DB Bulgarian Split Squat', 'Seated Leg Curl', '45 Degree Back Extension (BW/DB)', 'Standing Calf Raise']
           };
           const defaultInserts = ['PUSH', 'PULL', 'LEGS'].map(split => ({
             user_id: session.user.id,

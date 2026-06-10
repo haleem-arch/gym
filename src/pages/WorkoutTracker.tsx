@@ -109,11 +109,13 @@ const WorkoutTracker = () => {
       // For resumed workouts, clear old sets before inserting new ones
       await supabase.from('workout_exercises').delete().eq('workout_id', workout.id);
 
-      const exerciseInserts = workout.exercises.map(ex => ({
+      const baseTime = new Date();
+      const exerciseInserts = workout.exercises.map((ex, index) => ({
         workout_id: workoutData.id,
         exercise_id: ex.id, 
         sets: ex.sets,
-        notes: ex.notes
+        notes: ex.notes,
+        created_at: new Date(baseTime.getTime() + index * 1000).toISOString()
       }));
 
       const { error: exError } = await supabase.from('workout_exercises').insert(exerciseInserts);

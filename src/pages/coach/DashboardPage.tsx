@@ -196,9 +196,9 @@ export default function DashboardPage() {
       label: 'Push', 
       color: '#3b82f6', 
       exercises: [
-        { id: 'dp-push-0', name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', sets: 3, rest: 120 },
+        { id: 'dp-push-0', name: 'Incline DB Bench Press (45 Degree)', muscle_group: 'Chest', sets: 3, rest: 120 },
         { id: 'dp-push-1', name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
-        { id: 'dp-push-2', name: 'Incline DB Y-Raise (20-30°)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
+        { id: 'dp-push-2', name: 'Incline DB Y-Raise (20-30 Degree)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
         { id: 'dp-push-3', name: 'Cable Chest Fly (low pulley)', muscle_group: 'Chest', sets: 3, rest: 120 },
         { id: 'dp-push-4', name: 'Overhead Cable Extension (rope)', muscle_group: 'Triceps', sets: 3, rest: 120 },
         { id: 'dp-push-5', name: 'DB Lateral Raise (elbow-lead)', muscle_group: 'Shoulders', sets: 3, rest: 120 }
@@ -226,7 +226,7 @@ export default function DashboardPage() {
         { id: 'dp-legs-1', name: 'DB Romanian Deadlift', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
         { id: 'dp-legs-2', name: 'DB Bulgarian Split Squat', muscle_group: 'Quads', sets: 3, rest: 120 },
         { id: 'dp-legs-3', name: 'Seated Leg Curl', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
-        { id: 'dp-legs-4', name: '45° Back Extension (BW/DB)', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'dp-legs-4', name: '45 Degree Back Extension (BW/DB)', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
         { id: 'dp-legs-5', name: 'Standing Calf Raise', muscle_group: 'Calves', sets: 3, rest: 120 }
       ]
     }
@@ -278,9 +278,7 @@ export default function DashboardPage() {
   const [managementNewPassword, setManagementNewPassword] = useState('');
   const [managementUpdatingPassword, setManagementUpdatingPassword] = useState(false);
   const [managementUpdatingSuspension, setManagementUpdatingSuspension] = useState(false);
-  const [managementUpdatingQuota, setManagementUpdatingQuota] = useState(false);
   const [managementUpdatingFeatures, setManagementUpdatingFeatures] = useState(false);
-  const [managementAiQuotaInput, setManagementAiQuotaInput] = useState<number>(20);
   const [editSubscriptionPeriod, setEditSubscriptionPeriod] = useState('1 month');
   const [editSubscriptionDelay, setEditSubscriptionDelay] = useState('0');
   const [editCustomSubscriptionEnd, setEditCustomSubscriptionEnd] = useState(getLocalDateTimeString());
@@ -550,7 +548,6 @@ export default function DashboardPage() {
         .maybeSingle();
       if (clientProfile) {
         setSelectedClientProfile(clientProfile);
-        setManagementAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
         setEditSubscriptionPeriod(clientProfile.user?.targets?.subscription_duration ?? '1 month');
         setEditSubscriptionDelay(String(clientProfile.user?.targets?.subscription_delay_days ?? '0'));
         if (clientProfile.user?.targets?.subscription_end_date) {
@@ -1230,21 +1227,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleUpdateClientQuota = async () => {
-    setManagementUpdatingQuota(true);
-    try {
-      const upd = { ...profileTargets, ai_quota_limit: managementAiQuotaInput };
-      const { error } = await supabase.from('profiles').update({ targets: upd }).eq('id', selectedUserId);
-      if (error) throw error;
-      setProfileTargets(upd);
-      toast.success('AI messages limit updated!');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to save quota limits.');
-    } finally {
-      setManagementUpdatingQuota(false);
-    }
-  };
+
 
   const handleToggleClientFeatures = async (fKey: string, active: boolean) => {
     setManagementUpdatingFeatures(true);
@@ -1315,7 +1298,9 @@ export default function DashboardPage() {
         subscription_delay_days: delayDays,
         subscription_start_date,
         subscription_end_date,
-        is_deactivated: isDeactivated,
+        is_deactivated: false,
+        is_free_trial: false,
+        subscription_status: 'active',
         subscription_history: [...history, newEntry]
       };
 
@@ -1375,7 +1360,7 @@ export default function DashboardPage() {
       try { await supabase.from('user_workout_plans').delete().eq('user_id', selectedUserId); } catch (e) {}
       try { await supabase.from('schedules').delete().eq('user_id', selectedUserId); } catch (e) {}
       try { await supabase.from('food_inventory').delete().eq('user_id', selectedUserId); } catch (e) {}
-      try { await supabase.from('ai_chat').delete().eq('user_id', selectedUserId); } catch (e) {}
+
       try { await supabase.from('client_profiles').delete().eq('user_id', selectedUserId); } catch (e) {}
       
       await supabase.from('profiles').delete().eq('id', selectedUserId);
@@ -2765,33 +2750,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* AI Message limits & quota setups */}
-              <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm rounded-3xl p-5 shadow-xl space-y-4">
-                <h3 className="text-xs font-black uppercase text-blue-400 tracking-wider flex items-center gap-1.5 select-none">
-                  <Clock size={13} /> AI Assistant Messages Limit
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 tracking-wider select-none">
-                    <span>Limit quota: {managementAiQuotaInput} messages</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={managementAiQuotaInput}
-                    onChange={e => setManagementAiQuotaInput(parseInt(e.target.value))}
-                    className="w-full bg-[#1c1d2e] border-none rounded-lg h-2 accent-blue-500 cursor-pointer"
-                  />
-                  <button
-                    onClick={handleUpdateClientQuota}
-                    disabled={managementUpdatingQuota}
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all shadow-md select-none"
-                  >
-                    Save limit configurations
-                  </button>
-                </div>
-              </div>
+
 
               {/* Subscriptions duration extensions */}
               <div className="bg-[#0c0d16]/75 border border-white/[0.05] backdrop-blur-sm rounded-3xl p-5 shadow-xl space-y-4">

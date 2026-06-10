@@ -37,8 +37,6 @@ export default function ClientManagementPage() {
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   
-  const [aiQuotaInput, setAiQuotaInput] = useState<number>(20);
-  const [updatingQuota, setUpdatingQuota] = useState(false);
   const [updatingSuspension, setUpdatingSuspension] = useState(false);
   
   // Workout tab state
@@ -96,10 +94,7 @@ export default function ClientManagementPage() {
 
       setClient(clientProfile);
 
-      const limit = typeof clientProfile.user?.targets?.ai_quota_limit === 'number'
-        ? clientProfile.user.targets.ai_quota_limit
-        : 20;
-      setAiQuotaInput(limit);
+
 
       // Fetch latest weight from scans
       const { data: scans } = await supabase
@@ -190,36 +185,7 @@ export default function ClientManagementPage() {
     }
   };
 
-  const handleSaveAiQuota = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (aiQuotaInput < 0) {
-      toast.error('Quota limit cannot be negative.');
-      return;
-    }
-    setUpdatingQuota(true);
-    try {
-      const currentTargets = client.user?.targets || {};
-      const updatedTargets = {
-        ...currentTargets,
-        ai_quota_limit: aiQuotaInput
-      };
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ targets: updatedTargets })
-        .eq('id', client.user_id);
-
-      if (error) throw error;
-
-      toast.success('AI message quota updated successfully!');
-      fetchClientDetails();
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Unable to update AI quota. Please try again.');
-    } finally {
-      setUpdatingQuota(false);
-    }
-  };
 
   const handleToggleSuspension = async () => {
     const isSuspended = client.user?.targets?.is_deactivated === true;
@@ -610,72 +576,7 @@ export default function ClientManagementPage() {
           </form>
         </Card>
 
-        {/* AI Quota & Usage Card */}
-        <Card className="p-5 space-y-4">
-          <h2 className="text-sm font-extrabold text-white border-b border-gray-800 pb-2 uppercase tracking-wider flex items-center gap-2">
-            <Sparkles className="text-blue-500 w-4 h-4" /> AI Coach Quota
-          </h2>
-          
-          {/* Usage Metrics */}
-          {(() => {
-            const limit = client.user?.targets?.ai_quota_limit ?? 20;
-            const usage = client.user?.targets?.ai_usage || { date: '', count: 0 };
-            const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-            const activeUsage = usage.date === todayStr ? usage.count : 0;
-            const pct = Math.min((activeUsage / limit) * 100, 100);
 
-            return (
-              <div className="space-y-3.5">
-                <div className="bg-[#181d29] border border-gray-800 rounded-xl p-3.5 flex justify-between items-center text-xs">
-                  <div>
-                    <p className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">Today's AI Usage</p>
-                    <p className="text-white font-extrabold text-base mt-0.5">{activeUsage} <span className="text-gray-500 text-xs font-normal">/ {limit} messages</span></p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-black text-blue-400 text-xs shadow-lg">
-                    {Math.round(pct)}%
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Edit Form */}
-          <form onSubmit={handleSaveAiQuota} className="space-y-3 pt-1">
-            <div className="space-y-1">
-              <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block">Daily Message Limit</label>
-              <input 
-                type="number"
-                min="0"
-                max="1000"
-                value={aiQuotaInput}
-                onChange={e => setAiQuotaInput(parseInt(e.target.value) || 0)}
-                className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-blue-500 transition-colors"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={updatingQuota}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 flex items-center justify-center gap-1.5"
-            >
-              {updatingQuota ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save size={13} /> Update Quota
-                </>
-              )}
-            </button>
-          </form>
-        </Card>
 
         {/* Account Status Card */}
         <Card className="p-5 space-y-4">

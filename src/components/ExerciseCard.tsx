@@ -73,7 +73,7 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
     }
   };
 
-  const cleanName = (name: string) => name.replace(/\$\^\\circ\$/g, '°').replace(/\$\^\{\\circ\}\$/g, '°');
+  const cleanName = (name: string) => name.replace(/\$\^\\circ\$/g, ' Degree').replace(/\$\^\{\\circ\}\$/g, ' Degree').replace(/°/g, ' Degree');
 
   return (
     <div className="bg-surface rounded-2xl border border-gray-800 overflow-hidden mb-4 shadow-lg">

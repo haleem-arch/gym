@@ -83,7 +83,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
             .from('workout_exercises')
             .select('*, exercises(name, tier)')
             .eq('workout_id', workoutId)
-            .order('id', { ascending: true });
+            .order('created_at', { ascending: true });
             
           if (exError) throw exError;
           if (exData) {

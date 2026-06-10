@@ -246,9 +246,9 @@ const WorkoutHome = () => {
       // 3. Fetch real exercises based on day_type
       const planMap: Record<string, string[]> = {
         PUSH: [
-          'Incline DB Bench Press (45°)',
+          'Incline DB Bench Press (45 Degree)',
           'DB Shoulder Press (seated neutral)',
-          'Incline DB Y-Raise (20-30°)',
+          'Incline DB Y-Raise (20-30 Degree)',
           'Cable Chest Fly (low pulley)',
           'Overhead Cable Extension (rope)',
           'DB Lateral Raise (elbow-lead)'
@@ -266,7 +266,7 @@ const WorkoutHome = () => {
           'DB Romanian Deadlift',
           'DB Bulgarian Split Squat',
           'Seated Leg Curl',
-          '45° Back Extension (BW/DB)',
+          '45 Degree Back Extension (BW/DB)',
           'Standing Calf Raise'
         ]
       };
@@ -409,7 +409,8 @@ const WorkoutHome = () => {
       const { data: exercisesData } = await supabase
         .from('workout_exercises')
         .select(`*, exercises(*)`)
-        .eq('workout_id', inProgressWorkout.id);
+        .eq('workout_id', inProgressWorkout.id)
+        .order('created_at', { ascending: true });
 
       if (exercisesData) {
         const reconstructedExercises = exercisesData.map((we: any) => ({

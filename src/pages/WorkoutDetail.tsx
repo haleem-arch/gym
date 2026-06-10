@@ -126,7 +126,7 @@ const WorkoutDetail = () => {
             .from('workout_exercises')
             .select('*, exercises(name, tier)')
             .eq('workout_id', id)
-            .order('id', { ascending: true });
+            .order('created_at', { ascending: true });
             
           if (exData) {
             setExercises(exData);

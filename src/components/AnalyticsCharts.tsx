@@ -104,10 +104,10 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xl">
-          <p className="text-slate-300 font-medium mb-1">{label}</p>
+        <div className="bg-[#0d0d12]/90 backdrop-blur-md p-3 rounded-xl border border-zinc-850 shadow-2xl">
+          <p className="text-zinc-400 font-bold mb-1 text-[11px] uppercase tracking-wider">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="font-bold">
+            <p key={index} style={{ color: entry.color }} className="font-black text-xs">
               {entry.name}: {entry.value}
               {entry.dataKey === 'volume' && ' kg'}
               {entry.dataKey === 'distance' && ' km'}
@@ -139,17 +139,17 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
       
       {/* LIFTING VOLUME CHART */}
       {volumeData.length > 0 && (
-        <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800/50 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+        <div className="bg-[#070709] rounded-3xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-zinc-850">
             <TrendingUp size={100} />
           </div>
           <div className="flex items-center space-x-3 mb-6 relative z-10">
-            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl">
+            <div className="p-2.5 bg-[#06b6d4]/10 text-[#06b6d4] rounded-xl border border-[#06b6d4]/20">
               <TrendingUp size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">Volume Trends</h3>
-              <p className="text-slate-400 text-sm">Total kg lifted per session</p>
+              <h3 className="font-black text-white text-lg tracking-tight uppercase">Volume Trends</h3>
+              <p className="text-zinc-500 text-xs mt-0.5">Total kg lifted per session</p>
             </div>
           </div>
           
@@ -158,23 +158,23 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
               <AreaChart data={volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" vertical={false} />
+                <XAxis dataKey="date" stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} />
+                <YAxis stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area 
                   type="monotone" 
                   dataKey="volume" 
                   name="Volume"
-                  stroke="#3b82f6" 
+                  stroke="#06b6d4" 
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorVolume)" 
-                  activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#06b6d4', stroke: '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -184,30 +184,30 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
 
       {/* RUN PERFORMANCE CHART */}
       {runData.length > 0 && (
-        <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800/50 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+        <div className="bg-[#070709] rounded-3xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-zinc-850">
             <Activity size={100} />
           </div>
           <div className="flex items-center space-x-3 mb-6 relative z-10">
-            <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl">
+            <div className="p-2.5 bg-[#10b981]/10 text-[#10b981] rounded-xl border border-[#10b981]/20">
               <Activity size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">Run Performance</h3>
-              <p className="text-slate-400 text-sm">Distance vs Pace</p>
+              <h3 className="font-black text-white text-lg tracking-tight uppercase">Run Performance</h3>
+              <p className="text-zinc-500 text-xs mt-0.5">Distance vs Pace</p>
             </div>
           </div>
           
           <div className="h-64 w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={runData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} reversed />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" vertical={false} />
+                <XAxis dataKey="date" stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} reversed />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar yAxisId="left" dataKey="distance" name="Distance" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                <Line yAxisId="right" type="monotone" dataKey="paceDecimal" name="Pace" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                <Line yAxisId="right" type="monotone" dataKey="paceDecimal" name="Pace" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -216,34 +216,34 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
 
       {/* BODYWEIGHT TRENDS */}
       {weightData.length > 0 && (
-        <div className="bg-slate-900 rounded-3xl p-5 border border-slate-800/50 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+        <div className="bg-[#070709] rounded-3xl p-5 border border-zinc-900 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none text-zinc-850">
             <Scale size={100} />
           </div>
           <div className="flex items-center space-x-3 mb-6 relative z-10">
-            <div className="p-2.5 bg-purple-500/20 text-purple-400 rounded-xl">
+            <div className="p-2.5 bg-[#8b5cf6]/10 text-[#8b5cf6] rounded-xl border border-[#8b5cf6]/20">
               <Scale size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">Bodyweight Trends</h3>
-              <p className="text-slate-400 text-sm">Weight fluctuation</p>
+              <h3 className="font-black text-white text-lg tracking-tight uppercase">Bodyweight Trends</h3>
+              <p className="text-zinc-500 text-xs mt-0.5">Weight fluctuation</p>
             </div>
           </div>
           
           <div className="h-64 w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weightData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 2', 'dataMax + 2']} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e24" vertical={false} />
+                <XAxis dataKey="date" stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} />
+                <YAxis stroke="#71717a" fontSize={11} fontWeight="bold" tickLine={false} axisLine={false} domain={['dataMin - 2', 'dataMax + 2']} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
                   dataKey="weight" 
                   name="Weight"
-                  stroke="#a855f7" 
+                  stroke="#8b5cf6" 
                   strokeWidth={3}
-                  dot={{ r: 4, fill: '#a855f7', strokeWidth: 0 }}
+                  dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }}
                   activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
                 />
               </LineChart>
@@ -252,12 +252,12 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ userId }) => {
         </div>
       )}
       {volumeData.length === 0 && runData.length === 0 && weightData.length === 0 && (
-        <div className="text-center p-10 bg-slate-800/50 rounded-3xl border border-slate-700/50">
-          <div className="bg-slate-700/50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <TrendingUp size={32} className="text-slate-400" />
+        <div className="text-center p-10 bg-[#070709] rounded-3xl border border-zinc-900">
+          <div className="bg-zinc-900/50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
+            <TrendingUp size={32} className="text-zinc-500" />
           </div>
           <h3 className="text-white font-bold text-lg mb-2">No Data Yet</h3>
-          <p className="text-slate-400 text-sm">Complete workouts, runs, and InBody tests to see your progress charts here.</p>
+          <p className="text-zinc-500 text-sm">Complete workouts, runs, and InBody tests to see your progress charts here.</p>
         </div>
       )}
 

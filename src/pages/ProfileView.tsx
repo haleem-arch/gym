@@ -141,7 +141,9 @@ export default function ProfileView() {
   }
 
   // Calculate remaining subscription days
-  const subEndDateStr = profile?.targets?.subscription_end_date;
+  const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+  const isOwner = profile?.id === OWNER_ID;
+  const subEndDateStr = isOwner ? null : profile?.targets?.subscription_end_date;
   let remainingDays: number | null = null;
   let isExpired = false;
 

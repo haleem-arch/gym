@@ -471,10 +471,8 @@ export default function DesktopCoachPortal() {
   const [managementNewPassword, setManagementNewPassword] = useState('');
   const [managementUpdatingPassword, setManagementUpdatingPassword] = useState(false);
   const [managementUpdatingSuspension, setManagementUpdatingSuspension] = useState(false);
-  const [managementUpdatingQuota, setManagementUpdatingQuota] = useState(false);
   const [managementUpdatingFeatures, setManagementUpdatingFeatures] = useState(false);
   const [deletingClient, setDeletingClient] = useState(false);
-  const [managementAiQuotaInput, setManagementAiQuotaInput] = useState<number>(20);
   const [editSubscriptionPeriod, setEditSubscriptionPeriod] = useState('1 month');
   const [editSubscriptionDelay, setEditSubscriptionDelay] = useState('0');
   const [editCustomSubscriptionEnd, setEditCustomSubscriptionEnd] = useState(getLocalDateTimeString());
@@ -708,9 +706,9 @@ export default function DesktopCoachPortal() {
       emoji: '🔴',
       color: '#ef4444', 
       exercises: [
-        { id: 'dp-push-0', name: 'Incline DB Bench Press (45°)', muscle_group: 'Chest', sets: 3, rest: 120 },
+        { id: 'dp-push-0', name: 'Incline DB Bench Press (45 Degree)', muscle_group: 'Chest', sets: 3, rest: 120 },
         { id: 'dp-push-1', name: 'DB Shoulder Press (seated neutral)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
-        { id: 'dp-push-2', name: 'Incline DB Y-Raise (20-30°)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
+        { id: 'dp-push-2', name: 'Incline DB Y-Raise (20-30 Degree)', muscle_group: 'Shoulders', sets: 3, rest: 120 },
         { id: 'dp-push-3', name: 'Cable Chest Fly (low pulley)', muscle_group: 'Chest', sets: 3, rest: 120 },
         { id: 'dp-push-4', name: 'Overhead Cable Extension (rope)', muscle_group: 'Triceps', sets: 3, rest: 120 },
         { id: 'dp-push-5', name: 'DB Lateral Raise (elbow-lead)', muscle_group: 'Shoulders', sets: 3, rest: 120 }
@@ -740,7 +738,7 @@ export default function DesktopCoachPortal() {
         { id: 'dp-legs-1', name: 'DB Romanian Deadlift', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
         { id: 'dp-legs-2', name: 'DB Bulgarian Split Squat', muscle_group: 'Quads', sets: 3, rest: 120 },
         { id: 'dp-legs-3', name: 'Seated Leg Curl', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
-        { id: 'dp-legs-4', name: '45° Back Extension (BW/DB)', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
+        { id: 'dp-legs-4', name: '45 Degree Back Extension (BW/DB)', muscle_group: 'Hamstrings', sets: 3, rest: 120 },
         { id: 'dp-legs-5', name: 'Standing Calf Raise', muscle_group: 'Calves', sets: 3, rest: 120 }
       ]
     }
@@ -2546,7 +2544,6 @@ export default function DesktopCoachPortal() {
         } : getMockClientProfile(clientId);
 
         setManagementClientProfile(mockProfile);
-        setManagementAiQuotaInput(mockProfile.user?.targets?.ai_quota_limit ?? 20);
         setEditSubscriptionPeriod(mockProfile.user?.targets?.subscription_duration ?? '1 month');
         setEditSubscriptionDelay(String(mockProfile.user?.targets?.subscription_delay_days ?? '0'));
         setEditCustomSubscriptionEnd(getLocalDateTimeString());
@@ -2567,7 +2564,6 @@ export default function DesktopCoachPortal() {
 
       if (clientProfile) {
         setManagementClientProfile(clientProfile);
-        setManagementAiQuotaInput(clientProfile.user?.targets?.ai_quota_limit ?? 20);
         setEditSubscriptionPeriod(clientProfile.user?.targets?.subscription_duration ?? '1 month');
         setEditSubscriptionDelay(String(clientProfile.user?.targets?.subscription_delay_days ?? '0'));
         if (clientProfile.user?.targets?.subscription_end_date) {
@@ -2690,6 +2686,8 @@ export default function DesktopCoachPortal() {
         subscription_start_date,
         subscription_end_date,
         is_deactivated: isDeactivated,
+        is_free_trial: false,
+        subscription_status: 'active',
         subscription_history: [...history, newEntry]
       };
 
@@ -2796,6 +2794,8 @@ export default function DesktopCoachPortal() {
         subscription_start_date,
         subscription_end_date,
         is_deactivated: isDeactivated,
+        is_free_trial: false,
+        subscription_status: 'active',
         subscription_history: [...history, newEntry]
       };
 
@@ -3109,44 +3109,6 @@ export default function DesktopCoachPortal() {
     }
   };
 
-
-
-  const handleSaveManagementQuota = async () => {
-    if (!managementSelectedClientId || !managementClientProfile) return;
-    setManagementUpdatingQuota(true);
-    try {
-      const currentTargets = managementClientProfile.user?.targets || {};
-      const updatedTargets = { ...currentTargets, ai_quota_limit: managementAiQuotaInput };
-
-      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
-        toast.success('AI Coach quota updated!');
-        setManagementClientProfile((prev: any) => ({
-          ...prev,
-          user: { ...prev.user, targets: updatedTargets }
-        }));
-        setManagementUpdatingQuota(false);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ targets: updatedTargets })
-        .eq('id', managementSelectedClientId);
-
-      if (error) throw error;
-      toast.success('AI Coach quota updated!');
-      setManagementClientProfile((prev: any) => ({
-        ...prev,
-        user: { ...prev.user, targets: updatedTargets }
-      }));
-      fetchBaseData();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update quota.');
-    } finally {
-      setManagementUpdatingQuota(false);
-    }
-  };
 
   const handleToggleManagementFeature = async (featureKey: string, currentValue: boolean) => {
     if (!managementSelectedClientId || !managementClientProfile) return;
@@ -8349,84 +8311,7 @@ export default function DesktopCoachPortal() {
                             </button>
                           </div>
                         );
-                      })}
-                    </div>
-                  </Card>
-                </div>
-
-
-                  {/* Card 3: AI Quota & Global usage stats (Col Span 2) */}
-                  <Card className="lg:col-span-2 p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222] space-y-6">
-                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                        <Sparkles size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black uppercase text-blue-400">AI Coach Assistant Quota &amp; usage statistics</h3>
-                        <p className="text-[10px] text-gray-500">Configure client message limits and view system-wide dashboard aggregate totals.</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Individual limit config */}
-                      <div className="bg-gray-900/40 border border-gray-850 p-4 rounded-2xl flex flex-col justify-between gap-4">
-                        <div>
-                          <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Configure Individual Quota</h4>
-                          <p className="text-[9px] text-gray-400 mt-0.5">Set the maximum daily message limit for this athlete.</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            value={managementAiQuotaInput}
-                            onChange={e => setManagementAiQuotaInput(parseInt(e.target.value) || 0)}
-                            className="flex-1 bg-[#121624] border border-gray-850 rounded-xl p-2.5 text-xs text-white text-center font-bold"
-                          />
-                          <button
-                            onClick={handleSaveManagementQuota}
-                            disabled={managementUpdatingQuota}
-                            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap"
-                          >
-                            Set Limit
-                          </button>
-                        </div>
-                        <p className="text-[9px] text-gray-500 font-medium">
-                          Active Daily limit: <span className="text-blue-400 font-black">{managementClientProfile.user?.targets?.ai_quota_limit ?? 20} messages</span>
-                        </p>
-                      </div>
-
-                      {/* Global AI quota indicator */}
-                      {(() => {
-                        const todayStr = getLocalDateString();
-                        let totalAiToday = 0;
-                        profiles.forEach(p => {
-                          if (p.targets?.ai_usage?.date === todayStr) {
-                            totalAiToday += p.targets.ai_usage.count || 0;
-                          }
-                        });
-                        const limit = 1500;
-                        const remaining = Math.max(0, limit - totalAiToday);
-                        const pct = Math.min((totalAiToday / limit) * 100, 100);
-
-                        return (
-                          <div className="bg-gray-900/40 border border-gray-850 p-4 rounded-2xl flex flex-col justify-between gap-4">
-                            <div>
-                              <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">System-Wide Quota (Today)</h4>
-                              <p className="text-[9px] text-gray-400 mt-0.5">Total API queries processed across all dashboard clients.</p>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center text-xs font-black text-gray-300">
-                                <span>{totalAiToday} messages</span>
-                                <span className="text-blue-400">{remaining} remaining</span>
-                              </div>
-                              <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
-                              </div>
-                              <p className="text-[8px] text-gray-500 text-right">Aggregate Limit: 1500 / day</p>
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      })
                     </div>
                   </Card>
 
@@ -8542,13 +8427,17 @@ export default function DesktopCoachPortal() {
                         activeClientsList.map((c: any) => {
                           const targets = c.targets || {};
                           const now = new Date();
-                          const isDeactivated = targets.is_deactivated === true;
-                          const isExpired = targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
-                          const isPending = targets.subscription_start_date && now < new Date(targets.subscription_start_date);
+                          const isOwner = c.id === OWNER_ID;
+                          const isDeactivated = !isOwner && targets.is_deactivated === true;
+                          const isExpired = !isOwner && targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
+                          const isPending = !isOwner && targets.subscription_start_date && now < new Date(targets.subscription_start_date);
                           
                           let statusLabel = 'ACTIVE';
                           let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-                          if (isDeactivated) {
+                          if (isOwner) {
+                            statusLabel = 'ACTIVE';
+                            statusColor = 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20';
+                          } else if (isDeactivated) {
                             statusLabel = 'SUSPENDED';
                             statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
                           } else if (isExpired) {
@@ -8972,12 +8861,15 @@ export default function DesktopCoachPortal() {
                             const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === coach.id);
                             
                             const now = new Date();
-                            const isExpired = tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
-                            const isPending = tg.subscription_start_date && now < new Date(tg.subscription_start_date);
+                            const isExpired = !isSelf && tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
+                            const isPending = !isSelf && tg.subscription_start_date && now < new Date(tg.subscription_start_date);
                             
                             let statusLabel = 'ACTIVE';
                             let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-                            if (isDeact) {
+                            if (isSelf) {
+                              statusLabel = 'ACTIVE';
+                              statusColor = 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20';
+                            } else if (isDeact) {
                               statusLabel = 'SUSPENDED';
                               statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
                             } else if (isExpired) {
@@ -10736,13 +10628,17 @@ export default function DesktopCoachPortal() {
         {selectedSubClient && (() => {
           const targets = selectedSubClient.targets || {};
           const now = new Date();
-          const isDeactivated = targets.is_deactivated === true;
-          const isExpired = targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
-          const isPending = targets.subscription_start_date && now < new Date(targets.subscription_start_date);
+          const isOwner = selectedSubClient.id === OWNER_ID;
+          const isDeactivated = !isOwner && targets.is_deactivated === true;
+          const isExpired = !isOwner && targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
+          const isPending = !isOwner && targets.subscription_start_date && now < new Date(targets.subscription_start_date);
 
           let statusLabel = 'ACTIVE';
           let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-          if (isDeactivated) {
+          if (isOwner) {
+            statusLabel = 'ACTIVE';
+            statusColor = 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20';
+          } else if (isDeactivated) {
             statusLabel = 'SUSPENDED';
             statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
           } else if (isExpired) {
