@@ -227,7 +227,7 @@ const DietHome = () => {
               />
               <div className="h-px bg-zinc-900 w-full" />
               <div className="flex flex-col gap-3.5">
-                <MacroProgressBar label="Protein" current={totals.protein} target={targets.protein} colorClass="bg-gradient-to-r from-[#06b6d4] to-[#3b82f6]" />
+                <MacroProgressBar label="Protein" current={totals.protein} target={targets.protein} colorClass="bg-gradient-to-r from-[#2563eb] to-[#3b82f6]" />
                 <MacroProgressBar label="Carbs" current={totals.carbs} target={targets.carbs} colorClass="bg-gradient-to-r from-[#10b981] to-[#059669]" />
                 <MacroProgressBar label="Fat" current={totals.fat} target={targets.fat} colorClass="bg-gradient-to-r from-[#f59e0b] to-[#d97706]" />
               </div>

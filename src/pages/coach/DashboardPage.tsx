@@ -2369,7 +2369,7 @@ export default function DashboardPage() {
                     <button
                       key={preset.amount}
                       onClick={() => { setNewWaterAmount(preset.amount); setTimeout(handleAddWater, 50); }}
-                      className="py-3 bg-white/[0.02] border border-white/[0.04] hover:bg-cyan-600/10 hover:border-cyan-500/30 text-white rounded-2xl cursor-pointer active:scale-95 transition-all shadow-md flex flex-col items-center gap-1.5 text-[9px] font-black uppercase tracking-wider"
+                      className="py-3 bg-white/[0.02] border border-white/[0.04] hover:bg-blue-600/10 hover:border-blue-500/30 text-white rounded-2xl cursor-pointer active:scale-95 transition-all shadow-md flex flex-col items-center gap-1.5 text-[9px] font-black uppercase tracking-wider"
                     >
                       <span>+{preset.amount}ml</span>
                       <span className="text-[8px] text-gray-500">{preset.label}</span>
@@ -2385,7 +2385,7 @@ export default function DashboardPage() {
                   ) : (
                     waterLogs.map(wl => (
                       <div key={wl.id} className="flex justify-between items-center bg-white/[0.01] border border-white/[0.03] p-3 rounded-xl select-none shadow-inner">
-                        <span className="text-[10px] font-black text-cyan-400 font-mono">+{wl.amount_ml} ml</span>
+                        <span className="text-[10px] font-black text-blue-400 font-mono">+{wl.amount_ml} ml</span>
                         <div className="flex items-center gap-2">
                           <span className="text-[8px] text-gray-500 font-mono">{new Date(wl.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           <button

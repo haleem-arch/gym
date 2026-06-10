@@ -181,13 +181,13 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
 
                   {/* Inputs Section */}
                   <div className="space-y-4">
-                    {/* Calories Card (Cyan Accent) */}
+                    {/* Calories Card (Blue Accent) */}
                     <div className="rounded-2xl p-5 border border-zinc-900 bg-[#070709] relative overflow-hidden group hover:border-zinc-800 transition-colors">
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">
                           🔥 Total Calories Target
                         </label>
-                        <Flame size={12} className="text-cyan-500" />
+                        <Flame size={12} className="text-blue-500" />
                       </div>
                       <div className="flex items-baseline gap-1 mt-1">
                         <input
@@ -198,10 +198,10 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                         />
                         <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">kcal</span>
                       </div>
-                      {/* Premium Cyan Progress Line */}
+                      {/* Premium Blue Progress Line */}
                       <div className="h-1 rounded-full mt-4 bg-zinc-950 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 shadow-[0_0_8px_rgba(6,182,212,0.4)]"
+                          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
                           style={{ width: `${Math.min((active.kcal / 4000) * 100, 100)}%` }}
                         />
                       </div>

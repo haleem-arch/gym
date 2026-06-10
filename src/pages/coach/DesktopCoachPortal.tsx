@@ -8941,7 +8941,7 @@ export default function DesktopCoachPortal() {
                                   <div className={`w-9 h-9 rounded-xl font-black flex items-center justify-center text-xs uppercase shadow-inner border transition-all ${
                                     isSelf 
                                       ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/30 text-indigo-300 group-hover:border-indigo-500/50' 
-                                      : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300 group-hover:border-blue-500/50'
+                                      : 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border-blue-500/30 text-blue-300 group-hover:border-blue-500/50'
                                   }`}>
                                     {coach.display_name?.charAt(0) || '?'}
                                   </div>
@@ -9229,7 +9229,7 @@ export default function DesktopCoachPortal() {
                       </div>
                       <div className="h-1.5 bg-gray-800/80 border border-gray-700/50 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+                          className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.4)]"
                           style={{
                             width: `${(() => {
                               const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
