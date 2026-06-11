@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useSchedule } from '../hooks/useSchedule';
 import { Play, History, ChevronRight, Check, Activity, BarChart2, Layers } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { AnalyticsCharts } from '../components/AnalyticsCharts';
 import { ErrorBoundary } from '../components/ErrorBoundary';
