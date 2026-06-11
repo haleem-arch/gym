@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Search, Plus, Globe, UtensilsCrossed, ChevronLeft } from 'lucide-react';
+import { Search, Plus, Globe, UtensilsCrossed, ChevronLeft, Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DumbbellLoader } from '../components/DumbbellLoader';
 
@@ -18,6 +18,68 @@ const DietSearch = () => {
   const [selectedFood, setSelectedFood] = useState<any | null>(null);
   const [grams, setGrams] = useState<string>('100');
   const [isAdding, setIsAdding] = useState(false);
+
+  // Barcode Scanner State
+  const [showScanner, setShowScanner] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [customBarcode, setCustomBarcode] = useState('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 1200;
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.warn("Audio beep failed:", e);
+    }
+  };
+
+  const handleScanSuccess = (code: string) => {
+    playBeep();
+    setQuery(code);
+    setShowScanner(false);
+  };
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const startCamera = async () => {
+      if (showScanner) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+          });
+          setCameraStream(stream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (err) {
+          console.warn("Webcam access unavailable:", err);
+        }
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      setCameraStream(null);
+    };
+  }, [showScanner]);
 
   useEffect(() => {
     const searchFoods = async () => {
@@ -246,8 +308,16 @@ const DietSearch = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search food or scan barcode..." 
-            className="w-full bg-surface border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            className="w-full bg-surface border border-gray-700 rounded-lg py-3 pl-10 pr-12 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
           />
+          <button 
+            onClick={() => setShowScanner(true)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary active:scale-90 p-1.5 transition-colors cursor-pointer"
+            title="Scan Barcode"
+            type="button"
+          >
+            <Camera size={18} />
+          </button>
         </div>
       </div>
 
@@ -392,6 +462,128 @@ const DietSearch = () => {
                     <Plus size={20} /> Add to Meal
                   </>
                 )}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Barcode Scanner Modal */}
+      <AnimatePresence>
+        {showScanner && (
+          <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+              onClick={() => setShowScanner(false)} 
+            />
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 pb-10 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2">
+                  <Camera className="text-primary w-5 h-5" />
+                  <h3 className="text-lg font-bold text-white">Barcode Scanner</h3>
+                </div>
+                <button 
+                  onClick={() => setShowScanner(false)}
+                  className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Viewfinder Container */}
+              <div className="relative w-full h-48 bg-slate-950 rounded-2xl overflow-hidden border border-gray-800 flex items-center justify-center mb-6">
+                {cameraStream ? (
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center p-4 text-gray-500">
+                    <Camera size={28} className="mx-auto mb-2 opacity-30 animate-pulse" />
+                    <p className="text-xs">Camera feed unavailable or loading...</p>
+                    <p className="text-[10px] text-gray-600 mt-1">Point your physical camera to scan packaging</p>
+                  </div>
+                )}
+
+                {/* Laser scan line animation */}
+                <motion.div 
+                  animate={{ y: [-96, 96] }} 
+                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }} 
+                  className="absolute left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_8px_#ef4444]" 
+                />
+
+                {/* Viewfinder target brackets */}
+                <div className="absolute inset-8 border border-white/20 rounded-lg pointer-events-none" />
+              </div>
+
+              {/* Presets Grid */}
+              <div className="mb-6">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-3">Simulate Quick Scans</label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    { name: 'Snickers Bar 🍫', code: '5000159461122' },
+                    { name: 'Coca-Cola Can 🥤', code: '5449000000996' },
+                    { name: 'Tuna Salad 🐟', code: '6221007010471' },
+                    { name: 'Lurpak Butter 🧈', code: '5711953046187' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.code}
+                      onClick={() => handleScanSuccess(preset.code)}
+                      className="bg-gray-900/40 hover:bg-gray-900 border border-gray-800 hover:border-primary/30 p-3 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                    >
+                      <span className="text-xs font-bold text-white block truncate">{preset.name}</span>
+                      <span className="text-[9px] text-gray-550 block font-mono mt-0.5">{preset.code}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Manual Barcode Input */}
+              <div className="bg-gray-950/40 border border-gray-850 p-4 rounded-xl mb-6">
+                <label className="text-[10px] font-bold text-gray-550 uppercase tracking-widest block mb-2">Manual Barcode Input</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={customBarcode}
+                    onChange={(e) => setCustomBarcode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="e.g. 5000159461122"
+                    className="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-primary/50 font-mono font-bold"
+                    inputMode="numeric"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customBarcode.trim()) {
+                        handleScanSuccess(customBarcode.trim());
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (customBarcode.trim()) {
+                        handleScanSuccess(customBarcode.trim());
+                      }
+                    }}
+                    className="bg-primary hover:bg-blue-600 px-4 py-2 rounded-lg text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer active:scale-95"
+                  >
+                    Log
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowScanner(false)}
+                className="w-full py-3.5 rounded-xl bg-gray-900 hover:bg-gray-850 text-gray-400 font-bold text-xs uppercase tracking-wider transition-colors active:scale-95 border border-gray-800"
+              >
+                Close Scanner
               </button>
             </motion.div>
           </div>

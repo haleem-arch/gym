@@ -278,19 +278,21 @@ const DietHome = () => {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="mt-4 flex flex-col gap-2 pt-3.5 border-t border-blue-900/15 overflow-hidden"
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
                     >
-                      {waterLogs.map((log: any) => {
-                        const d = new Date(log.time);
-                        const timeStr = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                        return (
-                          <div key={log.id} className="flex justify-between items-center text-[11px] font-sans border-b border-blue-950/20 pb-1.5 last:border-0 last:pb-0">
-                            <span className="text-zinc-555 font-medium">{timeStr}</span>
-                            <span className="font-extrabold text-blue-300">+{log.amount_ml} ml</span>
-                          </div>
-                        );
-                      })}
+                      <div className="mt-4 flex flex-col gap-2 pt-3.5 border-t border-blue-900/15">
+                        {waterLogs.map((log: any) => {
+                          const d = new Date(log.time);
+                          const timeStr = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                          return (
+                            <div key={log.id} className="flex justify-between items-center text-[11px] font-sans border-b border-blue-950/20 pb-1.5 last:border-0 last:pb-0">
+                              <span className="text-zinc-555 font-medium">{timeStr}</span>
+                              <span className="font-extrabold text-blue-300">+{log.amount_ml} ml</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
