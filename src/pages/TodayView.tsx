@@ -418,6 +418,8 @@ const TodayView = () => {
 
   const hasCompletedRun = completedWorkoutsList.some(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
   const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
+  const completedGymCount = completedWorkoutsList.filter(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST').length;
+  const completedRunCount = completedWorkoutsList.filter(w => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats')))).length;
 
   return (
     <div className="px-4 pt-6 pb-24 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
@@ -534,7 +536,7 @@ const TodayView = () => {
                 {hasCompletedRun ? (
                   <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 text-xs">
                     <Check size={16} />
-                    Run Completed
+                    {completedRunCount > 1 ? `${completedRunCount}x Runs Completed` : 'Run Completed'}
                   </div>
                 ) : (
                   <button 
@@ -550,7 +552,7 @@ const TodayView = () => {
                 {hasCompletedGym ? (
                   <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2 text-xs">
                     <Check size={16} />
-                    {hybridLiftingType} Completed
+                    {completedGymCount > 1 ? `${completedGymCount}x Workouts Completed` : `${hybridLiftingType} Completed`}
                   </div>
                 ) : (
                   <button 
@@ -561,58 +563,92 @@ const TodayView = () => {
                     Start {hybridLiftingType} Workout
                   </button>
                 )}
+
+                {/* Always allow starting another session on hybrid days */}
+                <button 
+                  onClick={() => navigate('/workout', { state: { activeDateStr, openAddWorkoutModal: true } })}
+                  className="w-full h-[40px] bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/40 text-primary hover:text-blue-400 font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98] cursor-pointer shadow-md uppercase tracking-wider mt-1"
+                >
+                  + Start Another Session
+                </button>
               </div>
-            ) : dayType !== 'REST' && (
-              workoutStatus === 1.0 ? (
-                <div className="w-full flex flex-col gap-2">
+            ) : (completedGymCount > 0 || completedRunCount > 0) ? (
+              <div className="w-full flex flex-col gap-2">
+                {completedGymCount > 0 && (
                   <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
                     <Check size={18} />
-                    WORKOUT COMPLETED
+                    {completedGymCount > 1 ? `${completedGymCount}x WORKOUTS COMPLETED` : `${dayType !== 'REST' && dayType !== 'RUN' ? dayType : 'WORKOUT'} COMPLETED`}
                   </div>
+                )}
+                {completedRunCount > 0 && (
+                  <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
+                    <Check size={18} />
+                    {completedRunCount > 1 ? `${completedRunCount}x RUNS COMPLETED` : 'RUN COMPLETED'}
+                  </div>
+                )}
+                {dayType === 'RUN' && (
                   <button 
-                    onClick={() => navigate('/workout', { state: { activeDateStr } })}
-                    className="w-full h-[40px] bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/40 text-primary hover:text-blue-400 font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98] cursor-pointer shadow-md uppercase tracking-wider animate-fade-in"
+                    onClick={() => navigate('/workout', { state: { activeDateStr, openRunModal: true } })}
+                    className="w-full h-[40px] bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/40 text-blue-400 hover:text-blue-300 font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98] cursor-pointer shadow-md uppercase tracking-wider animate-fade-in"
                   >
-                    + Start Another Session
+                    + Log Another Run
                   </button>
-                </div>
-              ) : (
-                <div className="w-full flex flex-col items-center gap-2">
-                  <button 
-                    onClick={() => {
-                      if (workout && workout.date === activeDateStr) {
-                        navigate('/workout/active');
-                      } else {
-                        navigate('/workout', { state: { activeDateStr } });
+                )}
+                <button 
+                  onClick={() => navigate('/workout', { state: { activeDateStr, openAddWorkoutModal: true } })}
+                  className="w-full h-[40px] bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/40 text-primary hover:text-blue-400 font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98] cursor-pointer shadow-md uppercase tracking-wider animate-fade-in"
+                >
+                  + Start Another Session
+                </button>
+              </div>
+            ) : dayType === 'RUN' ? (
+              <div className="w-full flex flex-col items-center gap-2">
+                <button 
+                  onClick={() => navigate('/workout', { state: { activeDateStr, openRunModal: true } })}
+                  className="w-full h-[48px] bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shadow-md shadow-blue-500/10 text-xs uppercase tracking-wider font-extrabold"
+                >
+                  <Activity size={18} />
+                  Log Run
+                </button>
+              </div>
+            ) : dayType === 'REST' ? (
+              null
+            ) : (
+              <div className="w-full flex flex-col items-center gap-2">
+                <button 
+                  onClick={() => {
+                    if (workout && workout.date === activeDateStr) {
+                      navigate('/workout/active');
+                    } else {
+                      navigate('/workout', { state: { activeDateStr } });
+                    }
+                  }}
+                  className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && workout.date === activeDateStr) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
+                >
+                  <Play size={18} fill="currentColor" />
+                  {(workout && workout.date === activeDateStr) ? 'Resume Session' : 'Start Workout'}
+                </button>
+                
+                {workout && workout.date === activeDateStr && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
+                        localStorage.removeItem('athlete_dashboard_active_workout');
+                        endWorkout();
+                        
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
+                          await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
+                        }
+                        setWorkoutStatus(0.0);
                       }
                     }}
-                    className={`w-full h-[48px] font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${(workout && workout.date === activeDateStr) ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/10' : 'bg-primary hover:bg-blue-600 text-white shadow-md shadow-blue-500/10'}`}
+                    className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 animate-fade-in"
                   >
-                    <Play size={18} fill="currentColor" />
-                    {(workout && workout.date === activeDateStr) ? 'Resume Session' : 'Start Workout'}
+                    Restart Session & Start Fresh
                   </button>
-                  
-                  {workout && workout.date === activeDateStr && (
-                    <button
-                      onClick={async () => {
-                        if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
-                          localStorage.removeItem('athlete_dashboard_active_workout');
-                          endWorkout();
-                          
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (session) {
-                            await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
-                          }
-                          setWorkoutStatus(0.0);
-                        }
-                      }}
-                      className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 animate-fade-in"
-                    >
-                      Restart Session & Start Fresh
-                    </button>
-                  )}
-                </div>
-              )
+                )}
+              </div>
             )}
           </motion.div>
         )}

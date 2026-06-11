@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Clock, CalendarDays, Zap, TrendingUp, Activity, MapPin, ChevronLeft } from 'lucide-react';
+import { Clock, CalendarDays, Zap, TrendingUp, Activity, MapPin, ChevronLeft, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { DumbbellLoader } from '../components/DumbbellLoader';
 
@@ -11,6 +11,7 @@ const WorkoutDetail = () => {
   const [workout, setWorkout] = useState<any>(null);
   const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userWeight, setUserWeight] = useState<number>(75);
 
   useEffect(() => {
     const fetchWorkout = async () => {
@@ -25,6 +26,33 @@ const WorkoutDetail = () => {
       if (wData) {
         setWorkout(wData);
         
+        // Fetch user weight
+        try {
+          const { data: scans } = await supabase
+            .from('inbody_scans')
+            .select('weight')
+            .eq('user_id', wData.user_id)
+            .order('date', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (scans && scans.length > 0 && scans[0].weight) {
+            setUserWeight(parseFloat(scans[0].weight));
+          } else {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('targets')
+              .eq('id', wData.user_id)
+              .maybeSingle();
+              
+            if (profile?.targets?.weight) {
+              setUserWeight(parseFloat(profile.targets.weight));
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching user weight:", e);
+        }
+
         if (wData.day_type !== 'RUN') {
           const { data: exData } = await supabase
             .from('workout_exercises')
@@ -60,6 +88,10 @@ const WorkoutDetail = () => {
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    if (s > 0) {
+      return `${m}m ${s}s`;
+    }
     return `${m}m`;
   };
 
@@ -94,6 +126,12 @@ const WorkoutDetail = () => {
   if (isRun && workout.notes && workout.notes.includes('"type":"run_stats"')) {
     try { runStats = JSON.parse(workout.notes); } catch(e) {}
   }
+
+  const approxCalories = (() => {
+    if (!runStats || !runStats.distance_km) return 0;
+    const dist = parseFloat(runStats.distance_km) || 0;
+    return Math.round(userWeight * dist * 1.036);
+  })();
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background relative pb-28 overflow-x-hidden text-gray-200">
@@ -159,27 +197,35 @@ const WorkoutDetail = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col gap-6">
             
             {/* Quick Stats Banner */}
-            <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+            <div className="grid grid-cols-2 gap-3 flex-shrink-0">
               <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg">
                 <MapPin size={16} className="text-primary mb-1" />
                 <span className="text-base font-extrabold text-white">
                   {runStats?.distance_km || '0.00'}
                 </span>
-                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Distance (km)</span>
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider mt-0.5">Distance (km)</span>
               </div>
               <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg">
                 <Zap size={16} className="text-yellow-500 mb-1" />
                 <span className="text-base font-extrabold text-white">
                   {runStats?.pace || '0:00'}
                 </span>
-                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Pace (/km)</span>
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider mt-0.5">Pace (/km)</span>
               </div>
               <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg">
                 <TrendingUp size={16} className="text-green-500 mb-1" />
                 <span className="text-base font-extrabold text-white">
                   {runStats?.elevation_m || '0'}m
                 </span>
-                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mt-0.5">Elevation</span>
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider mt-0.5">Elevation</span>
+              </div>
+              <div className="bg-surface border border-gray-800 rounded-2xl p-3.5 flex flex-col items-center justify-center text-center shadow-lg relative">
+                <Flame size={16} className="text-orange-500 mb-1" />
+                <span className="text-base font-extrabold text-white">
+                  {approxCalories} kcal
+                </span>
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider mt-0.5">Approx Calories</span>
+                <span className="text-[8px] text-red-500 font-bold mt-1 block">not very accurate</span>
               </div>
             </div>
           </motion.div>

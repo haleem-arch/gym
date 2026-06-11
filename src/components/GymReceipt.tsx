@@ -58,6 +58,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
   const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchedTotalSets, setFetchedTotalSets] = useState<number | null>(null);
+  const [userWeight, setUserWeight] = useState<number>(75);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,6 +76,33 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
         if (wError) throw wError;
         if (wData) {
           setDbWorkout(wData);
+          
+          // Fetch weight
+          try {
+            const { data: scans } = await supabase
+              .from('inbody_scans')
+              .select('weight')
+              .eq('user_id', wData.user_id)
+              .order('date', { ascending: false })
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            if (scans && scans.length > 0 && scans[0].weight) {
+              setUserWeight(parseFloat(scans[0].weight));
+            } else {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('targets')
+                .eq('id', wData.user_id)
+                .maybeSingle();
+                
+              if (profile?.targets?.weight) {
+                setUserWeight(parseFloat(profile.targets.weight));
+              }
+            }
+          } catch (e) {
+            console.error("Error fetching user weight in coach receipt:", e);
+          }
         }
         
         // 2. Fetch workout exercises from the DB
@@ -144,20 +172,26 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
         return isNaN(num) ? 0 : num;
       })();
   
-  // Duration in minutes
-  const rawDurationMinutes = (() => {
-    const dm = mergedStats.durationMinutes;
-    if (dm !== undefined && dm !== null) {
-      const num = Number(dm);
-      if (!isNaN(num)) return num;
-    }
+  const durationSeconds = (() => {
     const d = mergedStats.duration;
     if (d !== undefined && d !== null) {
       const num = Number(d);
-      if (!isNaN(num)) return Math.round(num / 60);
+      if (!isNaN(num)) return num;
+    }
+    const dm = mergedStats.durationMinutes;
+    if (dm !== undefined && dm !== null) {
+      const num = Number(dm);
+      if (!isNaN(num)) return num * 60;
     }
     return 0;
   })();
+
+  const formatSecondsToMinSec = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = Math.round(totalSeconds % 60);
+    if (s > 0) return `${m}m ${s}s`;
+    return `${m}m`;
+  };
 
   // Display Date
   const rawDate = mergedStats.date || mergedStats.created_at;
@@ -229,7 +263,13 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
   const volumeDecimals = dayType === 'RUN' ? 2 : 0;
   const volume = useCountUp(volumeTarget, 1400, volumeDecimals);
   const sets = useCountUp(displayTotalSets, 1000, 0);
-  const duration = useCountUp(rawDurationMinutes, 900, 0);
+  const durationSec = useCountUp(durationSeconds, 900, 0);
+
+  const approxCalories = (() => {
+    if (dayType !== 'RUN') return 0;
+    const dist = parseFloat(runStats?.distance_km || 0);
+    return Math.round(userWeight * dist * 1.036);
+  })();
 
   const statCards = dayType === 'RUN' ? [
     {
@@ -249,10 +289,18 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
     {
       icon: <Clock size={18} className="text-purple-400" />,
       label: 'Duration',
-      value: `${duration}`,
-      unit: 'minutes',
+      value: formatSecondsToMinSec(durationSec),
+      unit: '',
       color: '#a78bfa',
     },
+    {
+      icon: <Flame size={18} className="text-orange-500 animate-pulse" />,
+      label: 'Approx Calories',
+      value: `${approxCalories}`,
+      unit: 'kcal',
+      color: '#f97316',
+      warning: 'not very accurate'
+    }
   ] : [
     {
       icon: <Dumbbell size={18} className="text-blue-400" />,
@@ -271,8 +319,8 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
     {
       icon: <Clock size={18} className="text-purple-400" />,
       label: 'Gym Time',
-      value: `${duration}`,
-      unit: 'minutes',
+      value: formatSecondsToMinSec(durationSec),
+      unit: '',
       color: '#a78bfa',
     },
   ];
@@ -376,7 +424,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
               </div>
 
               {/* Stats Columns */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+              <div className={`grid gap-3 mb-5 ${dayType === 'RUN' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
                 {statCards.map((card, i) => (
                   <motion.div
                     key={card.label}
@@ -393,9 +441,14 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
                   >
                     <div className="p-2 rounded-xl bg-white/5">{card.icon}</div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{card.label}</span>
-                    <div className="flex items-baseline gap-0.5">
-                      <span className="text-base font-black text-white">{card.value}</span>
-                      <span className="text-[10px] text-gray-500 font-semibold">{card.unit}</span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-base font-black text-white">{card.value}</span>
+                        {card.unit && <span className="text-[10px] text-gray-500 font-semibold">{card.unit}</span>}
+                      </div>
+                      {card.warning && (
+                        <span className="text-[8px] text-red-500 font-bold leading-none mt-1">{card.warning}</span>
+                      )}
                     </div>
                   </motion.div>
                 ))}
