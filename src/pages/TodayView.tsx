@@ -179,6 +179,7 @@ const TodayView = () => {
                             (workout && workout.date === activeDateStr) || 
                             hasInProgressLocal;
 
+        let resolvedStatus = 0.0;
         if (hasInProgress) {
           resolvedStatus = 0.5;
         } else if (dayType === 'RUN + GYM') {

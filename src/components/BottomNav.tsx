@@ -1,4 +1,4 @@
-import { Home, Dumbbell, Apple, Activity, MapPin, User } from 'lucide-react';
+import { Home, Dumbbell, Apple, Activity, User } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -44,7 +44,15 @@ const BottomNav = () => {
     return null;
   }
 
-  const allNavItems = [
+  interface NavItem {
+    to: string;
+    icon: React.ReactNode;
+    label: string;
+    lockKey?: string;
+    restrict?: boolean;
+  }
+
+  const allNavItems: NavItem[] = [
     { to: '/', icon: <Home size={24} />, label: 'Today' },
     { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout', lockKey: 'disable_workout' },
     { to: '/diet', icon: <Apple size={24} />, label: 'Diet', lockKey: 'disable_diet' },
