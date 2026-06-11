@@ -242,3 +242,11 @@ button, a, select, label, [role="button"] {
   background-size: 200% 100% !important;
   animation: shimmer-move 1.6s infinite linear !important;
 }
+
+/* ─── Barcode Scanner Custom Video Frame overrides ─── */
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 16px !important;
+}

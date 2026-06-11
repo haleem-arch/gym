@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Search, Plus, Globe, UtensilsCrossed, ChevronLeft, Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DumbbellLoader } from '../components/DumbbellLoader';
+import { Html5Qrcode } from 'html5-qrcode';
 
 const DietSearch = () => {
   const navigate = useNavigate();
@@ -21,10 +22,9 @@ const DietSearch = () => {
 
   // Barcode Scanner State
   const [showScanner, setShowScanner] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraStream, setCameraStream] = useState<any | null>(null);
   const [customBarcode, setCustomBarcode] = useState('');
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const activeStreamRef = useRef<MediaStream | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
   const playBeep = () => {
     try {
@@ -55,36 +55,66 @@ const DietSearch = () => {
   };
 
   useEffect(() => {
-    const startCamera = async () => {
+    let isActive = true;
+    let scannerInstance: Html5Qrcode | null = null;
+
+    const startScanning = async () => {
       if (showScanner) {
+        // Wait 250ms for modal rendering to mount the #reader element
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        if (!isActive) return;
+
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-          });
-          activeStreamRef.current = stream;
-          setCameraStream(stream);
+          const scanner = new Html5Qrcode("reader");
+          scannerInstance = scanner;
+          scannerRef.current = scanner;
+
+          await scanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: (width, height) => {
+                const minEdge = Math.min(width, height);
+                const boxWidth = Math.floor(minEdge * 0.85);
+                const boxHeight = Math.floor(boxWidth * 0.55);
+                return { width: boxWidth, height: boxHeight };
+              },
+              aspectRatio: 1.7777778
+            },
+            (decodedText) => {
+              handleScanSuccess(decodedText);
+            },
+            () => {
+              // Frame parse errors, silent
+            }
+          );
+          if (isActive) {
+            setCameraStream({}); // set dummy active object so UI knows webcam is running
+          }
         } catch (err) {
-          console.warn("Webcam access unavailable:", err);
+          console.warn("Html5Qrcode scanner failed to initialize:", err);
+          if (isActive) setCameraStream(null);
         }
       }
     };
 
-    startCamera();
+    startScanning();
 
     return () => {
-      if (activeStreamRef.current) {
-        activeStreamRef.current.getTracks().forEach(track => track.stop());
-        activeStreamRef.current = null;
-      }
+      isActive = false;
       setCameraStream(null);
+      if (scannerInstance) {
+        if (scannerInstance.isScanning) {
+          scannerInstance.stop().then(() => {
+            console.log("Scanner stopped successfully");
+          }).catch((e) => {
+            console.warn("Failed to stop scanner:", e);
+          });
+        }
+      }
+      scannerRef.current = null;
     };
   }, [showScanner]);
-
-  useEffect(() => {
-    if (videoRef.current && cameraStream) {
-      videoRef.current.srcObject = cameraStream;
-    }
-  }, [cameraStream]);
 
   useEffect(() => {
     const searchFoods = async () => {
@@ -506,11 +536,9 @@ const DietSearch = () => {
 
               {/* Viewfinder Container */}
               <div className="relative w-full h-48 bg-slate-950 rounded-2xl overflow-hidden border border-gray-800 flex items-center justify-center mb-6">
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  className={`w-full h-full object-cover ${cameraStream ? 'block' : 'hidden'}`}
+                <div 
+                  id="reader" 
+                  className={`w-full h-full ${cameraStream ? 'block' : 'hidden'}`}
                 />
                 
                 {!cameraStream && (
