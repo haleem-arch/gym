@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDiet } from '../hooks/useDiet';
 import { MacroProgressBar } from '../components/MacroProgressBar';
 import { Plus, Utensils, SlidersHorizontal } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { supabase } from '../lib/supabase';
 import { DietNutritionSettings } from '../components/DietNutritionSettings';
@@ -18,6 +18,7 @@ const DietHome = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [disableNutritionTargets, setDisableNutritionTargets] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [showWaterDetails, setShowWaterDetails] = useState(false);
 
   useEffect(() => {
     const fetchToggles = async () => {
@@ -243,33 +244,56 @@ const DietHome = () => {
           >
             <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
               <div className="bg-[#0c1020]/40 backdrop-blur-md p-5 border border-blue-900/20 w-full h-full">
-                <div className="flex items-center gap-2 mb-3 border-b border-blue-900/15 pb-2.5">
-                  <span className="text-sm">💧</span>
-                  <h2 className="text-xs font-black uppercase tracking-wider text-blue-400">Hydration Logger</h2>
+                <div 
+                  className="flex items-center justify-between mb-3 border-b border-blue-900/15 pb-2.5 cursor-pointer hover:opacity-80 transition-opacity select-none"
+                  onClick={() => setShowWaterDetails(!showWaterDetails)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">💧</span>
+                    <h2 className="text-xs font-black uppercase tracking-wider text-blue-400">Hydration Logger</h2>
+                  </div>
+                  {waterLogs && waterLogs.length > 0 && (
+                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
+                      {showWaterDetails ? 'Hide Logs ▴' : 'Show Logs ▾'}
+                    </span>
+                  )}
                 </div>
                 
-                <MacroProgressBar 
-                  label="Water Intake" 
-                  current={waterTotalMl} 
-                  target={WATER_GOAL_ML} 
-                  colorClass="bg-gradient-to-r from-[#38bdf8] to-[#0284c7]" 
-                  unit="ml" 
-                />
+                <div 
+                  onClick={() => setShowWaterDetails(!showWaterDetails)} 
+                  className="cursor-pointer hover:opacity-95 transition-opacity"
+                >
+                  <MacroProgressBar 
+                    label="Water Intake" 
+                    current={waterTotalMl} 
+                    target={WATER_GOAL_ML} 
+                    colorClass="bg-gradient-to-r from-[#38bdf8] to-[#0284c7]" 
+                    unit="ml" 
+                  />
+                </div>
 
-                {waterLogs && waterLogs.length > 0 && (
-                  <div className="mt-4 flex flex-col gap-2 pt-3.5 border-t border-blue-900/15">
-                    {waterLogs.map((log: any) => {
-                      const d = new Date(log.time);
-                      const timeStr = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                      return (
-                        <div key={log.id} className="flex justify-between items-center text-[11px] font-sans border-b border-blue-950/20 pb-1.5 last:border-0 last:pb-0">
-                          <span className="text-zinc-555 font-medium">{timeStr}</span>
-                          <span className="font-extrabold text-blue-300">+{log.amount_ml} ml</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {showWaterDetails && waterLogs && waterLogs.length > 0 && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-4 flex flex-col gap-2 pt-3.5 border-t border-blue-900/15 overflow-hidden"
+                    >
+                      {waterLogs.map((log: any) => {
+                        const d = new Date(log.time);
+                        const timeStr = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                        return (
+                          <div key={log.id} className="flex justify-between items-center text-[11px] font-sans border-b border-blue-950/20 pb-1.5 last:border-0 last:pb-0">
+                            <span className="text-zinc-555 font-medium">{timeStr}</span>
+                            <span className="font-extrabold text-blue-300">+{log.amount_ml} ml</span>
+                          </div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </SwipeToDeleteRow>
           </motion.div>

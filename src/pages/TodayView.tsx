@@ -725,7 +725,7 @@ const TodayView = () => {
                   <div className="p-4 flex flex-col justify-between h-full bg-surface">
                     <div className="flex items-center justify-between text-gray-400 mb-2">
                       <div className="flex items-center gap-2">
-                        <Droplets size={16} className="text-blue-400 animate-pulse" />
+                        <Droplets size={16} className="text-blue-400" />
                         <span className="text-sm font-bold uppercase tracking-wider">Hydration</span>
                       </div>
                     </div>
