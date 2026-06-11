@@ -21,7 +21,6 @@ import FoodCreator from './pages/FoodCreator';
 import FoodInventory from './pages/FoodInventory';
 
 import InBodyView from './pages/InBodyView';
-import StravaAnalyzer from './pages/StravaAnalyzer';
 import ProfileView from './pages/ProfileView';
 
 // Coach Pages
@@ -42,23 +41,7 @@ const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
 const isElectron = typeof window !== 'undefined' && navigator.userAgent.includes('Electron');
 
-const StravaGuard = ({ children }: { children: React.ReactNode }) => {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id || null);
-      setChecking(false);
-    });
-  }, []);
-
-  if (checking) return null;
-  if (userId !== OWNER_ID) return <Navigate to="/" replace />;
-  return <>{children}</>;
-};
-
-const TAB_ORDER = ['/', '/workout', '/diet', '/strava', '/inbody', '/profile'];
+const TAB_ORDER = ['/', '/workout', '/diet', '/inbody', '/profile'];
 
 const getTabIndex = (pathname: string) => {
   if (pathname === '/') return 0;
@@ -91,7 +74,6 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
     path.startsWith('/diet/search') ||
     path.startsWith('/diet/food/new') ||
     path.startsWith('/diet/inventory') ||
-    path.startsWith('/strava') ||
     (/^\/workout\/[^/]+$/.test(path) && !path.endsWith('/builder') && !path.startsWith('/workout/active'));
 
   return (
@@ -102,7 +84,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
       animate="animate"
       exit="exit"
       transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-8 no-scrollbar bg-background"
+      className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-0 no-scrollbar bg-background"
       style={hasStickyHeader ? {} : { paddingTop: 'env(safe-area-inset-top)' }}
     >
       {children}
@@ -200,13 +182,7 @@ const AppContent = () => {
               <Route path="/diet/food/new" element={<PageTransition direction={direction}><FoodCreator /></PageTransition>} />
               <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
               <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
-              <Route path="/strava" element={
-                <PageTransition direction={direction}>
-                  <StravaGuard>
-                    <StravaAnalyzer />
-                  </StravaGuard>
-                </PageTransition>
-              } />
+
 
               <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
 

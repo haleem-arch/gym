@@ -151,6 +151,7 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
                           onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { weight: parseFloat(e.target.value) || 0 })}
                           className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
                           disabled={set.done}
+                          inputMode="decimal"
                         />
                       </div>
                       <div className="col-span-3">
@@ -160,6 +161,8 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
                           onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { reps: parseInt(e.target.value) || 0 })}
                           className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
                           disabled={set.done}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                         />
                       </div>
                       <div className="col-span-2">
@@ -169,6 +172,8 @@ export const ExerciseCard = ({ exercise, exerciseIndex, onUpdateSet, onAddSet, o
                           onChange={(e) => onUpdateSet(exerciseIndex, setIndex, { rpe: parseInt(e.target.value) || 0 })}
                           className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 text-center text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
                           disabled={set.done}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                         />
                       </div>
                       <div className="col-span-2 flex justify-center">

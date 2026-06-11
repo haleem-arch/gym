@@ -164,9 +164,24 @@ const TodayView = () => {
           setHybridLiftingType(completedGym.day_type);
         }
 
-        let resolvedStatus = 0.0;
+        // Check for in-progress first to allow completing multiple sessions in the same day
+        const hasInProgressLocal = (() => {
+          const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
+          if (activeStr) {
+            try {
+              const parsed = JSON.parse(activeStr);
+              return parsed && parsed.date === activeDateStr;
+            } catch (e) {}
+          }
+          return false;
+        })();
+        const hasInProgress = workoutsList.some((w: any) => w.status === 'in_progress') || 
+                            (workout && workout.date === activeDateStr) || 
+                            hasInProgressLocal;
 
-        if (dayType === 'RUN + GYM') {
+        if (hasInProgress) {
+          resolvedStatus = 0.5;
+        } else if (dayType === 'RUN + GYM') {
           const hasRun = workoutsList.some((w: any) => w.status === 'completed' && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
           const hasGym = workoutsList.some((w: any) => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
           
@@ -187,27 +202,8 @@ const TodayView = () => {
             if (workout) endWorkout();
           }
           resolvedStatus = 1.0;
-        } else if (workoutsList.some((w: any) => w.status === 'in_progress')) {
-          resolvedStatus = 0.5;
         } else {
-          const activeStr = localStorage.getItem('athlete_dashboard_active_workout');
-          let foundActiveLocal = false;
-          if (activeStr) {
-            try {
-              const parsed = JSON.parse(activeStr);
-              if (parsed && parsed.date === activeDateStr) {
-                resolvedStatus = 0.5;
-                foundActiveLocal = true;
-              }
-            } catch (e) {}
-          }
-          if (!foundActiveLocal) {
-            if (workout && workout.date === activeDateStr) {
-              resolvedStatus = 0.5;
-            } else {
-              resolvedStatus = 0.0;
-            }
-          }
+          resolvedStatus = 0.0;
         }
 
         setWorkoutStatus(resolvedStatus);
@@ -423,7 +419,7 @@ const TodayView = () => {
   const hasCompletedGym = completedWorkoutsList.some(w => w.status === 'completed' && w.day_type !== 'RUN' && w.day_type !== 'REST');
 
   return (
-    <div className="px-4 py-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
+    <div className="px-4 pt-6 pb-24 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
@@ -567,9 +563,17 @@ const TodayView = () => {
               </div>
             ) : dayType !== 'REST' && (
               workoutStatus === 1.0 ? (
-                <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
-                  <Check size={18} />
-                  WORKOUT COMPLETED
+                <div className="w-full flex flex-col gap-2">
+                  <div className="w-full h-[48px] bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl flex items-center justify-center gap-2">
+                    <Check size={18} />
+                    WORKOUT COMPLETED
+                  </div>
+                  <button 
+                    onClick={() => navigate('/workout', { state: { activeDateStr } })}
+                    className="w-full h-[40px] bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/40 text-primary hover:text-blue-400 font-extrabold rounded-xl flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98] cursor-pointer shadow-md uppercase tracking-wider animate-fade-in"
+                  >
+                    + Start Another Session
+                  </button>
                 </div>
               ) : (
                 <div className="w-full flex flex-col items-center gap-2">

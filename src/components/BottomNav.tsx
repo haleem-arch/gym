@@ -48,7 +48,6 @@ const BottomNav = () => {
     { to: '/', icon: <Home size={24} />, label: 'Today' },
     { to: '/workout', icon: <Dumbbell size={24} />, label: 'Workout', lockKey: 'disable_workout' },
     { to: '/diet', icon: <Apple size={24} />, label: 'Diet', lockKey: 'disable_diet' },
-    { to: '/strava', icon: <MapPin size={24} />, label: 'Strava', restrict: true },
     { to: '/inbody', icon: <Activity size={24} />, label: 'InBody', lockKey: 'disable_inbody' },
     { to: '/profile', icon: <User size={24} />, label: 'Profile' }
   ];

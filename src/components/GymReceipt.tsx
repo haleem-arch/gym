@@ -225,11 +225,35 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
 
   const prHighlight = mergedStats.prExercise || mergedStats.pr_exercise || computedBestSet;
 
-  const volume = useCountUp(rawTotalVolume, 1400, 0);
+  const volumeTarget = dayType === 'RUN' ? parseFloat(runStats?.distance_km || 0) : rawTotalVolume;
+  const volumeDecimals = dayType === 'RUN' ? 2 : 0;
+  const volume = useCountUp(volumeTarget, 1400, volumeDecimals);
   const sets = useCountUp(displayTotalSets, 1000, 0);
   const duration = useCountUp(rawDurationMinutes, 900, 0);
 
-  const statCards = [
+  const statCards = dayType === 'RUN' ? [
+    {
+      icon: <Dumbbell size={18} className="text-blue-400" />,
+      label: 'Distance',
+      value: `${volume}`,
+      unit: 'km',
+      color: '#3b82f6',
+    },
+    {
+      icon: <Flame size={18} className="text-orange-400" />,
+      label: 'Avg Pace',
+      value: `${runStats?.pace || '0:00'}`,
+      unit: '/km',
+      color: '#fb923c',
+    },
+    {
+      icon: <Clock size={18} className="text-purple-400" />,
+      label: 'Duration',
+      value: `${duration}`,
+      unit: 'minutes',
+      color: '#a78bfa',
+    },
+  ] : [
     {
       icon: <Dumbbell size={18} className="text-blue-400" />,
       label: 'Total Volume',

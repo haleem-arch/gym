@@ -35,14 +35,13 @@ const WorkoutHome = () => {
   const effectiveLoading = debugLoading || loading;
 
   const [showRunModal, setShowRunModal] = useState(false);
-  const [runStats, setRunStats] = useState({ distance: '', elevation: '', pace: '', duration: '' });
+  const [runStats, setRunStats] = useState({ name: '', distance: '', elevation: '', paceMin: '', paceSec: '', duration: '' });
+  const [lastEditedFields, setLastEditedFields] = useState<string[]>([]);
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
-  const [isPullingStrava, setIsPullingStrava] = useState(false);
-  
-
   
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [showAddWorkoutModal, setShowAddWorkoutModal] = useState(false);
 
 
   // Auto-open Run modal if navigated from TodayView with openRunModal flag
@@ -55,7 +54,15 @@ const WorkoutHome = () => {
     }
   }, [location.state]);
 
-  const saveRunDirectly = async (statsToSave: { distance: string; elevation: string; pace: string; duration: string }) => {
+  const getDefaultRunName = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Morning Run";
+    if (hour >= 12 && hour < 17) return "Afternoon Run";
+    if (hour >= 17 && hour < 21) return "Evening Run";
+    return "Night Run";
+  };
+
+  const saveRunDirectly = async (statsToSave: { name: string; distance: string; elevation: string; paceMin: string; paceSec: string; duration: string }) => {
     setIsSubmittingRun(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,17 +71,21 @@ const WorkoutHome = () => {
       const localDateStr = getLocalDateString();
       const durationSeconds = (parseFloat(statsToSave.duration) || 0) * 60;
       
+      const finalName = statsToSave.name.trim() || getDefaultRunName();
+      const formattedPace = `${statsToSave.paceMin || '0'}:${(statsToSave.paceSec || '00').padStart(2, '0')}`;
+
       const runData = {
         type: 'run_stats',
         distance_km: parseFloat(statsToSave.distance) || 0,
         elevation_m: parseInt(statsToSave.elevation) || 0,
-        pace: statsToSave.pace
+        pace: formattedPace
       };
 
       const { data, error } = await supabase.from('workouts').insert({
         user_id: session.user.id,
         date: localDateStr,
         day_type: 'RUN',
+        name: finalName,
         duration: durationSeconds,
         total_volume: 0,
         notes: JSON.stringify(runData),
@@ -85,12 +96,14 @@ const WorkoutHome = () => {
       
       setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setShowRunModal(false);
-      setRunStats({ distance: '', elevation: '', pace: '', duration: '' });
+      setRunStats({ name: '', distance: '', elevation: '', paceMin: '', paceSec: '', duration: '' });
+      setLastEditedFields([]);
+      
       // Dispatch custom window event to trigger root-level brand ribbon explosion + premium receipt
       window.dispatchEvent(new CustomEvent('trigger-run-saved', {
         detail: {
           distance: statsToSave.distance,
-          pace: statsToSave.pace,
+          pace: formattedPace,
           duration: statsToSave.duration,
           elevation: statsToSave.elevation,
           workoutId: data.id
@@ -110,68 +123,61 @@ const WorkoutHome = () => {
     await saveRunDirectly(runStats);
   };
 
-  const handlePullFromStrava = async () => {
-    setIsPullingStrava(true);
-    try {
-      let lastAct: any = null;
-
-      const { data, error } = await supabase
-        .from('strava_activities')
-        .select('*')
-        .order('start_date', { ascending: false })
-        .limit(1);
-
-      if (!error && data && data.length > 0) {
-        lastAct = data[0];
-      }
-
-      if (!lastAct) {
-        const localSaved = localStorage.getItem('strava_cached_runs');
-        if (localSaved) {
-          const parsed = JSON.parse(localSaved);
-          if (parsed && parsed.length > 0) lastAct = parsed[0];
-        }
-      }
-
-      if (!lastAct) {
-        const token = localStorage.getItem('strava_access_token') || '87684dfa24b420b56af7503fa2a3c618944f16e3';
-        const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const acts = await res.json();
-          if (acts && acts.length > 0) lastAct = acts[0];
-        }
-      }
-
-      if (!lastAct) {
-        throw new Error("No Strava runs found. Please connect Strava in the Strava tab first!");
-      }
-
-      const distKm = lastAct.distance ? (Number(lastAct.distance) / 1000).toFixed(2) : '5.0';
-      const elevM = Math.round(lastAct.total_elevation_gain || lastAct.elevation_gain || 0).toString();
-      const durationMins = lastAct.moving_time ? (Number(lastAct.moving_time) / 60).toFixed(1) : '27.5';
-      
-      let paceStr = '5:30';
-      const speedMs = Number(lastAct.average_speed || 0);
-      if (speedMs > 0) {
-        const paceSeconds = 1000 / speedMs;
-        const mins = Math.floor(paceSeconds / 60);
-        const secs = Math.floor(paceSeconds % 60);
-        paceStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-      }
-
-      const newStats = { distance: distKm, elevation: elevM, pace: paceStr, duration: durationMins };
-      setRunStats(newStats);
-      
-      await saveRunDirectly(newStats);
-
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Failed to pull run from Strava.");
-    } finally {
-      setIsPullingStrava(false);
+  const handleFieldChange = (field: 'distance' | 'duration' | 'pace', val: any) => {
+    let newStats = { ...runStats };
+    
+    if (field === 'distance') {
+      newStats.distance = val;
+    } else if (field === 'duration') {
+      newStats.duration = val;
+    } else if (field === 'pace') {
+      newStats.paceMin = val.min;
+      newStats.paceSec = val.sec;
     }
+
+    // Keep track of the order of edited fields (only distance, duration, pace)
+    let updatedEdited = lastEditedFields.filter(f => f !== field);
+    updatedEdited.push(field);
+
+    if (updatedEdited.length >= 2) {
+      const lastTwo = updatedEdited.slice(-2);
+      const targetField = ['distance', 'duration', 'pace'].find(f => !lastTwo.includes(f));
+
+      const distVal = parseFloat(newStats.distance);
+      const durVal = parseFloat(newStats.duration);
+      const paceMinVal = parseInt(newStats.paceMin) || 0;
+      const paceSecVal = parseInt(newStats.paceSec) || 0;
+      const paceDec = paceMinVal + (paceSecVal / 60);
+
+      if (targetField === 'pace') {
+        if (!isNaN(distVal) && !isNaN(durVal) && distVal > 0) {
+          const calculatedPaceDec = durVal / distVal;
+          const mins = Math.floor(calculatedPaceDec);
+          const secs = Math.round((calculatedPaceDec - mins) * 60);
+          
+          if (secs === 60) {
+            newStats.paceMin = (mins + 1).toString();
+            newStats.paceSec = '0';
+          } else {
+            newStats.paceMin = mins.toString();
+            newStats.paceSec = secs.toString();
+          }
+        }
+      } else if (targetField === 'duration') {
+        if (!isNaN(distVal) && paceDec > 0) {
+          const calculatedDur = distVal * paceDec;
+          newStats.duration = parseFloat(calculatedDur.toFixed(2)).toString();
+        }
+      } else if (targetField === 'distance') {
+        if (!isNaN(durVal) && paceDec > 0) {
+          const calculatedDist = durVal / paceDec;
+          newStats.distance = parseFloat(calculatedDist.toFixed(2)).toString();
+        }
+      }
+    }
+
+    setLastEditedFields(updatedEdited);
+    setRunStats(newStats);
   };
 
 
@@ -445,6 +451,75 @@ const WorkoutHome = () => {
     navigate('/workout/active', { state: { startNew: true, plan: todayPlan, activeDateStr: selectedDateStr } });
   };
 
+  const handleStartWorkoutForSplit = async (splitName: string) => {
+    if (workout) {
+      if (workout.date === selectedDateStr && workout.dayType.toUpperCase() === splitName.toUpperCase()) {
+        navigate('/workout/active');
+        return;
+      }
+      
+      const confirmMsg = workout.date !== selectedDateStr
+        ? "You have an unfinished workout from a previous day. Do you want to discard it and start today's workout?"
+        : `You have an active ${workout.dayType} workout in progress. Do you want to discard it and start a new ${splitName} workout?`;
+        
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
+      endWorkout();
+    }
+
+    const matchingPlan = savedTemplates.find(p => p.plan_type.toUpperCase() === splitName.toUpperCase());
+    const targetItems = (matchingPlan?.exercises && matchingPlan.exercises.length > 0) 
+      ? matchingPlan.exercises 
+      : [];
+
+    const namesOnly = targetItems.map((e: any) => typeof e === 'string' ? e : e.name);
+
+    let richExercises: any[] = [];
+    if (namesOnly.length > 0) {
+      const { data: exData } = await supabase
+        .from('exercises')
+        .select('*')
+        .in('name', namesOnly);
+        
+      const dbExMap = new Map();
+      if (exData) {
+        exData.forEach(ex => {
+          dbExMap.set(ex.name, ex);
+        });
+      }
+
+      richExercises = targetItems.map((item: any, idx: number) => {
+        const name = typeof item === 'string' ? item : item.name;
+        const setsCount = typeof item === 'string' ? 3 : item.sets || 3;
+        const restTime = typeof item === 'string' ? 120 : item.rest || 120;
+
+        const dbEx = dbExMap.get(name);
+        return {
+          id: dbEx?.id || `custom-ex-${idx}-${Date.now()}`,
+          name,
+          muscle_group: dbEx?.muscle_group || 'Custom',
+          tier: dbEx?.tier || 'A',
+          focus: dbEx?.focus || '',
+          cue: dbEx?.cue || '',
+          rationale: dbEx?.rationale || '',
+          equipment: dbEx?.equipment || '',
+          setsCount,
+          restTime
+        };
+      });
+    }
+
+    const planToStart = {
+      type: splitName,
+      title: `${splitName} Session`,
+      exercises: richExercises
+    };
+
+    setShowAddWorkoutModal(false);
+    navigate('/workout/active', { state: { startNew: true, plan: planToStart, activeDateStr: selectedDateStr } });
+  };
+
 
   const handleDeleteSession = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this activity?")) {
@@ -468,6 +543,8 @@ const WorkoutHome = () => {
   const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString() && w.day_type === dayType);
   const hasCompletedRunToday = pastWorkouts.some(w => w.date === getLocalDateString() && (w.day_type === 'RUN' || (w.notes && w.notes.includes('run_stats'))));
   const hasCompletedGymToday = pastWorkouts.some(w => w.date === getLocalDateString() && w.day_type !== 'RUN' && w.day_type !== 'REST');
+  const hasCompletedWorkoutsToday = pastWorkouts.some(w => w.date === getLocalDateString());
+  const showActiveOrResume = !!(workout || inProgressWorkout);
 
   useEffect(() => {
     const completedGym = pastWorkouts.find(w => w.date === getLocalDateString() && w.day_type !== 'RUN' && w.day_type !== 'REST');
@@ -619,39 +696,41 @@ const WorkoutHome = () => {
             ) : (
               <div className="w-full flex flex-col items-center gap-2">
                 <button 
-                  onClick={isTodayCompleted ? undefined : handleStartWorkout}
-                  disabled={isTodayCompleted}
+                  onClick={showActiveOrResume ? handleStartWorkout : isTodayCompleted ? undefined : handleStartWorkout}
+                  disabled={isTodayCompleted && !showActiveOrResume}
                   className={`w-full font-bold py-5 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xl cursor-pointer ${
-                    isTodayCompleted 
-                      ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
-                      : workout || inProgressWorkout 
-                        ? 'bg-yellow-500 text-black shadow-yellow-500/20' 
+                    showActiveOrResume
+                      ? 'bg-yellow-500 text-black shadow-yellow-500/20'
+                      : isTodayCompleted 
+                        ? 'bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 shadow-none cursor-default' 
                         : 'bg-primary hover:bg-blue-600 text-white shadow-primary/20'
                   }`}
                 >
-                  {isTodayCompleted ? (
+                  {showActiveOrResume ? (
+                    workout ? (
+                      <>
+                        <div className="flex items-center gap-2 text-xl">
+                          <Play size={20} fill="currentColor" />
+                          RESUME SESSION
+                        </div>
+                        <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 text-xl">
+                          <Play size={20} fill="currentColor" />
+                          RESUME WORKOUT
+                        </div>
+                        <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
+                      </>
+                    )
+                  ) : isTodayCompleted ? (
                     <>
                       <div className="flex items-center gap-2 text-xl">
                         <Check size={20} />
                         WORKOUT COMPLETED
                       </div>
                       <span className="text-xs font-semibold opacity-85 uppercase tracking-wide">Excellent training today!</span>
-                    </>
-                  ) : workout ? (
-                    <>
-                      <div className="flex items-center gap-2 text-xl">
-                        <Play size={20} fill="currentColor" />
-                        RESUME SESSION
-                      </div>
-                      <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Active session in progress</span>
-                    </>
-                  ) : inProgressWorkout ? (
-                    <>
-                      <div className="flex items-center gap-2 text-xl">
-                        <Play size={20} fill="currentColor" />
-                        RESUME WORKOUT
-                      </div>
-                      <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">Saved: {inProgressWorkout.day_type} (In Progress)</span>
                     </>
                   ) : (
                     <>
@@ -664,7 +743,16 @@ const WorkoutHome = () => {
                   )}
                 </button>
 
-                {!isTodayCompleted && (workout || inProgressWorkout) && (
+                {hasCompletedWorkoutsToday && !workout && !inProgressWorkout && (
+                  <button
+                    onClick={() => setShowAddWorkoutModal(true)}
+                    className="w-full mt-2 py-4 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/40 text-primary hover:text-blue-400 font-extrabold rounded-3xl flex items-center justify-center gap-2 text-xs transition-all active:scale-[0.98] cursor-pointer shadow-md uppercase tracking-wider animate-fade-in"
+                  >
+                    + Start Another Session
+                  </button>
+                )}
+
+                {showActiveOrResume && (
                   <button
                     onClick={async () => {
                       if (window.confirm("Are you sure you want to discard this active session and start fresh?")) {
@@ -678,7 +766,7 @@ const WorkoutHome = () => {
                         }
                       }
                     }}
-                    className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-0.5 active:scale-95 cursor-pointer"
+                    className="text-[11px] font-bold text-gray-500 hover:text-danger transition-colors py-1 px-3 mt-1 active:scale-95 cursor-pointer"
                   >
                     Restart Session & Start Fresh
                   </button>
@@ -795,39 +883,30 @@ const WorkoutHome = () => {
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <span>🏃</span> Log Run
             </h3>
-
-            {currentUserId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' && (
-              <button
-                type="button"
-                onClick={handlePullFromStrava}
-                disabled={isPullingStrava}
-                className="w-full mb-5 py-3.5 rounded-2xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-xl hover:shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wider uppercase border border-blue-500/30 disabled:opacity-50 cursor-pointer"
-              >
-                {isPullingStrava ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    <span>Pulling Last Run from Strava...</span>
-                  </>
-                ) : (
-                  <>
-                    <Activity size={16} />
-                    <span>Log from Strava (Auto-Fill Last Run)</span>
-                  </>
-                )}
-              </button>
-            )}
             
             <form onSubmit={handleLogRun} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-400 mb-1 block">Run Name (Optional)</label>
+                <input 
+                  type="text" 
+                  value={runStats.name}
+                  onChange={e => setRunStats({...runStats, name: e.target.value})}
+                  className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
+                  placeholder="e.g. Afternoon Run"
+                />
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-gray-400 mb-1 block">Distance (km)</label>
                 <input 
                   type="number" 
-                  step="0.01"
+                  step="any"
                   required
                   value={runStats.distance}
-                  onChange={e => setRunStats({...runStats, distance: e.target.value})}
+                  onChange={e => handleFieldChange('distance', e.target.value)}
                   className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
-                  placeholder="5.0"
+                  placeholder="5.00"
+                  inputMode="decimal"
                 />
               </div>
               
@@ -840,18 +919,34 @@ const WorkoutHome = () => {
                     onChange={e => setRunStats({...runStats, elevation: e.target.value})}
                     className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
                     placeholder="120"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-400 mb-1 block">Avg Pace</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={runStats.pace}
-                    onChange={e => setRunStats({...runStats, pace: e.target.value})}
-                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
-                    placeholder="5:30"
-                  />
+                  <label className="text-xs font-bold text-gray-400 mb-1 block">Avg Pace (Min:Sec)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input 
+                      type="number" 
+                      required
+                      value={runStats.paceMin}
+                      onChange={e => handleFieldChange('pace', { min: e.target.value, sec: runStats.paceSec })}
+                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                      placeholder="M"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                    <input 
+                      type="number" 
+                      required
+                      value={runStats.paceSec}
+                      onChange={e => handleFieldChange('pace', { min: runStats.paceMin, sec: e.target.value })}
+                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                      placeholder="S"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -862,9 +957,10 @@ const WorkoutHome = () => {
                   step="any"
                   required
                   value={runStats.duration}
-                  onChange={e => setRunStats({...runStats, duration: e.target.value})}
+                  onChange={e => handleFieldChange('duration', e.target.value)}
                   className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none"
-                  placeholder="27.5"
+                  placeholder="27.50"
+                  inputMode="decimal"
                 />
               </div>
               
@@ -885,6 +981,45 @@ const WorkoutHome = () => {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Start Another Workout Modal */}
+      {showAddWorkoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-[#0c1020]/95 backdrop-blur-md w-full max-w-sm rounded-3xl p-6 border border-blue-900/35 shadow-2xl relative animate-fade-in"
+          >
+            <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">
+              <span>🏋️‍♂️</span> Start Another Session
+            </h3>
+            <p className="text-xs text-gray-400 mb-6 font-medium leading-relaxed">Select one of your saved workout splits to begin another training session for today.</p>
+
+            <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto no-scrollbar mb-6">
+              {savedTemplates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleStartWorkoutForSplit(template.plan_type)}
+                  className="w-full p-4 rounded-2xl bg-slate-900/50 hover:bg-[#1d4ed8]/20 border border-gray-800 hover:border-blue-500/30 text-white font-black text-sm text-left transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between"
+                >
+                  <span>{template.plan_type} Split</span>
+                  <span className="text-[10px] bg-blue-950 text-blue-400 px-2.5 py-1 rounded-lg border border-blue-900/40 uppercase font-extrabold tracking-wider">Start</span>
+                </button>
+              ))}
+              {savedTemplates.length === 0 && (
+                <p className="text-center text-xs text-gray-550 italic py-4">No split templates found. Create some in templates tab!</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowAddWorkoutModal(false)}
+              className="w-full py-4 rounded-2xl border border-gray-800 hover:bg-gray-800 text-gray-300 font-bold transition-all text-xs uppercase tracking-wider cursor-pointer"
+            >
+              Cancel
+            </button>
           </motion.div>
         </div>
       )}
