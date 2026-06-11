@@ -1084,10 +1084,35 @@ const TodayView = () => {
                 {/* Presets Grid */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   {[
-                    { amount: 250, label: 'Cup', desc: '250 ml', icon: '💧' },
-                    { amount: 500, label: 'Small Bottle', desc: '500 ml', icon: '💧💧' },
-                    { amount: 750, label: 'Large Bottle', desc: '750 ml', icon: '🥤' },
-                    { amount: 1000, label: 'Flask', desc: '1.0 L', icon: '🧪' }
+                    { amount: 250, label: 'Cup', desc: '250 ml', icon: (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                        <path d="M6 3h12l-1 15a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 3z" />
+                        <path d="M6 8h12" />
+                      </svg>
+                    )},
+                    { amount: 500, label: 'Small Bottle', desc: '500 ml', icon: (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                        <path d="M10 2h4v2h-4V2z" />
+                        <path d="M11 4h2v3h-2V4z" />
+                        <path d="M9 7h6a2 2 0 0 1 2 2v10a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V9a2 2 0 0 1 2-2z" />
+                      </svg>
+                    )},
+                    { amount: 750, label: 'Large Bottle', desc: '750 ml', icon: (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                        <path d="M10 2h4v2h-4V2z" />
+                        <path d="M12 4a3 3 0 0 0-3 3h6a3 3 0 0 0-3-3z" />
+                        <path d="M7 8h10l-1.5 12a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2L7 8z" />
+                        <line x1="9" y1="12" x2="12" y2="12" />
+                        <line x1="9" y1="16" x2="11" y2="16" />
+                      </svg>
+                    )},
+                    { amount: 1000, label: 'Flask', desc: '1.0 L', icon: (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                        <rect x="7" y="6" width="10" height="14" rx="2" />
+                        <path d="M10 2h4v4h-4V2z" />
+                        <path d="M17 9h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2" />
+                      </svg>
+                    )}
                   ].map((preset) => (
                     <button
                       key={preset.amount}
@@ -1097,9 +1122,9 @@ const TodayView = () => {
                       }}
                       className="bg-slate-950/40 hover:bg-slate-950/80 border border-slate-800 hover:border-blue-500/30 p-4 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer active:scale-95 group"
                     >
-                      <span className="text-xl mb-1 group-hover:scale-110 transition-transform">{preset.icon}</span>
+                      <div className="mb-2 group-hover:scale-110 transition-transform">{preset.icon}</div>
                       <span className="text-xs font-bold text-white block">{preset.label}</span>
-                      <span className="text-[9px] text-gray-500 font-bold uppercase block mt-0.5">{preset.desc}</span>
+                      <span className="text-[9px] text-gray-550 font-bold uppercase block mt-0.5">{preset.desc}</span>
                     </button>
                   ))}
                 </div>

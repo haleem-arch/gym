@@ -495,7 +495,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Loading logs...</span>
                 </div>
               ) : dayType === 'RUN' ? (
-                stats.notes ? (
+                stats.notes && !stats.notes.includes('"type":"run_stats"') ? (
                   <div className="space-y-3 mb-5">
                     <div style={{ borderTop: '1px dashed rgba(255,255,255,0.08)', margin: '12px 0' }} />
                     <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Workout Notes</h3>
