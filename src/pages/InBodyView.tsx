@@ -244,7 +244,7 @@ export default function InBodyView() {
 
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-[#070709] text-gray-200">
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-gradient-to-b from-[#080b1e] to-[#05060f] text-zinc-350">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
           <Scale size={28} className="text-red-500" />
         </div>
@@ -257,7 +257,7 @@ export default function InBodyView() {
   }
 
   return (
-    <div className="p-5 flex flex-col gap-6 min-h-full pb-28 bg-[#070709]">
+    <div className="p-5 flex flex-col gap-6 min-h-full pb-28 bg-gradient-to-b from-[#080b1e] to-[#05060f]">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -287,9 +287,9 @@ export default function InBodyView() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-[#0d0d11] border border-zinc-900 rounded-2xl p-4 flex items-center gap-4 shadow-lg"
+        className="bg-[#0c1020]/40 border border-blue-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-lg"
       >
-        <div className="w-11 h-11 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 bg-zinc-900/60 border border-zinc-800 rounded-xl flex items-center justify-center shrink-0">
           <Upload size={20} className={isImporting ? 'animate-pulse text-zinc-400' : 'text-zinc-400'} />
         </div>
         <div className="flex-1 min-w-0">
@@ -299,7 +299,7 @@ export default function InBodyView() {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isImporting}
-          className="shrink-0 px-4 py-2.5 bg-[#070709] border border-zinc-800 hover:bg-[#0d0d11] hover:border-zinc-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+          className="shrink-0 px-4 py-2.5 bg-[#070709]/80 border border-zinc-800 hover:bg-[#0d0d11] hover:border-zinc-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all disabled:opacity-50 cursor-pointer"
         >
           {isImporting ? 'Importing...' : 'Upload CSV'}
         </button>
@@ -313,7 +313,7 @@ export default function InBodyView() {
             <ScanCardSkeleton />
           </div>
         ) : scans.length === 0 ? (
-          <div className="text-center p-10 bg-[#0d0d11] rounded-3xl border border-zinc-900">
+          <div className="text-center p-10 bg-[#0c1020]/20 border border-blue-900/15 backdrop-blur-md rounded-3xl">
             <div className="bg-zinc-900/50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
               <Scale size={32} className="text-gray-500" />
             </div>
@@ -338,7 +338,7 @@ export default function InBodyView() {
                     initial={{ opacity: 0, scale: 0.95 }} 
                     animate={{ opacity: 1, scale: 1 }} 
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white/[0.02] backdrop-blur-md border border-white/[0.05] rounded-3xl overflow-hidden shadow-xl animate-fadeIn"
+                    className="bg-[#0c1020]/40 backdrop-blur-md border border-blue-900/20 rounded-3xl overflow-hidden shadow-xl animate-fadeIn"
                   >
                     {/* Header (Always Visible) */}
                     <div 
@@ -370,7 +370,7 @@ export default function InBodyView() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-zinc-400 bg-white/[0.04] p-2 rounded-full border border-white/[0.05]">
+                      <div className="text-zinc-400 bg-[#080b1e]/40 p-2 rounded-full border border-blue-950/25">
                         {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                       </div>
                     </div>
@@ -382,7 +382,7 @@ export default function InBodyView() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden border-t border-zinc-900"
+                          className="overflow-hidden border-t border-blue-900/15"
                         >
                           <div className="p-5 bg-black/10 space-y-6">
                             
@@ -392,11 +392,11 @@ export default function InBodyView() {
                                 <Activity size={14} className="text-[#3b82f6]" /> Muscle-Fat Analysis
                               </h4>
                               <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-3 rounded-xl border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Skeletal Muscle Mass</p>
                                   <p className="text-lg text-white font-black mt-0.5">{scan.smm} <span className="text-xs text-zinc-500 font-normal">kg</span> {prev && calculateDelta(scan.smm, prev.smm)}</p>
                                 </div>
-                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-3 rounded-xl border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Body Fat Mass</p>
                                   <p className="text-lg text-white font-black mt-0.5">{scan.bfm} <span className="text-xs text-zinc-500 font-normal">kg</span> {prev && calculateDelta(scan.bfm, prev.bfm, true)}</p>
                                 </div>
@@ -409,15 +409,15 @@ export default function InBodyView() {
                                 <Droplet size={14} className="text-[#8b5cf6]" /> Body Composition
                               </h4>
                               <div className="grid grid-cols-3 gap-2">
-                                <div className="bg-white/[0.02] p-2 rounded-xl text-center border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-2 rounded-xl text-center border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Total Water</p>
                                   <p className="text-sm text-white font-black">{seg.tbw || 0}L</p>
                                 </div>
-                                <div className="bg-white/[0.02] p-2 rounded-xl text-center border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-2 rounded-xl text-center border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Protein</p>
                                   <p className="text-sm text-white font-black">{seg.protein || 0}kg</p>
                                 </div>
-                                <div className="bg-white/[0.02] p-2 rounded-xl text-center border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-2 rounded-xl text-center border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Minerals</p>
                                   <p className="text-sm text-white font-black">{seg.minerals || 0}kg</p>
                                 </div>
@@ -430,11 +430,11 @@ export default function InBodyView() {
                                 <Flame size={14} className="text-[#10b981]" /> Obesity Evaluation
                               </h4>
                               <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-3 rounded-xl border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Visceral Fat Level</p>
                                   <p className="text-lg text-white font-black mt-0.5">{seg.visceralFat || 0} {prev && calculateDelta(seg.visceralFat, prevSeg.visceralFat, true)}</p>
                                 </div>
-                                <div className="bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
+                                <div className="bg-[#0c1020]/30 p-3 rounded-xl border border-blue-900/15">
                                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Basal Metabolic Rate</p>
                                   <p className="text-lg text-white font-black mt-0.5">{scan.bmr} <span className="text-xs text-zinc-500 font-normal">kcal</span></p>
                                 </div>
@@ -463,98 +463,98 @@ export default function InBodyView() {
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-[#0d0d11] w-full max-w-md rounded-3xl border border-zinc-900 shadow-2xl p-6"
+              className="bg-[#0a0d1e] w-full max-w-md rounded-3xl border border-blue-950/40 backdrop-blur-xl shadow-2xl p-6"
             >
               <h2 className="text-xl font-black text-white mb-6 uppercase tracking-wider">Log InBody Scan</h2>
               
               <form onSubmit={handleSave} className="space-y-6">
                 <div>
-                  <label className="text-[10px] text-zinc-500 mb-1 block uppercase font-bold tracking-wider">Scan Date</label>
-                  <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full bg-[#070709] border border-zinc-900 rounded-xl p-3 text-white focus:border-zinc-750 outline-none transition-colors" />
+                  <label className="text-[10px] text-zinc-550 mb-1 block uppercase font-bold tracking-wider">Scan Date</label>
+                  <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-colors" />
                 </div>
 
                 {/* Core Metrics */}
-                <div className="bg-[#070709] p-4 rounded-2xl border border-zinc-900 space-y-4">
+                <div className="bg-[#070a1a]/80 p-4 rounded-2xl border border-blue-900/15 backdrop-blur-md space-y-4">
                   <h3 className="text-xs font-black text-zinc-400 mb-2 uppercase tracking-wider">Core Metrics</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Weight (kg)</label>
-                      <input type="number" step="any" required value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="80.5" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Weight (kg)</label>
+                      <input type="number" step="any" required value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="80.5" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">InBody Score</label>
-                      <input type="number" required value={formData.score} onChange={e => setFormData({...formData, score: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="85" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">InBody Score</label>
+                      <input type="number" required value={formData.score} onChange={e => setFormData({...formData, score: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="85" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">SMM (kg)</label>
-                      <input type="number" step="any" required value={formData.smm} onChange={e => setFormData({...formData, smm: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="38.2" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">SMM (kg)</label>
+                      <input type="number" step="any" required value={formData.smm} onChange={e => setFormData({...formData, smm: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="38.2" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Body Fat Mass (kg)</label>
-                      <input type="number" step="any" required value={formData.bfm} onChange={e => setFormData({...formData, bfm: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="12.4" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Body Fat Mass (kg)</label>
+                      <input type="number" step="any" required value={formData.bfm} onChange={e => setFormData({...formData, bfm: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="12.4" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Body Fat %</label>
-                      <input type="number" step="any" required value={formData.bf_percent} onChange={e => setFormData({...formData, bf_percent: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="15.5" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Body Fat %</label>
+                      <input type="number" step="any" required value={formData.bf_percent} onChange={e => setFormData({...formData, bf_percent: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="15.5" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">BMR (kcal)</label>
-                      <input type="number" required value={formData.bmr} onChange={e => setFormData({...formData, bmr: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="1850" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">BMR (kcal)</label>
+                      <input type="number" required value={formData.bmr} onChange={e => setFormData({...formData, bmr: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="1850" />
                     </div>
                   </div>
                 </div>
 
                 {/* Composition & Obesity */}
-                <div className="bg-[#070709] p-4 rounded-2xl border border-zinc-900 space-y-4">
+                <div className="bg-[#070a1a]/80 p-4 rounded-2xl border border-blue-900/15 backdrop-blur-md space-y-4">
                   <h3 className="text-xs font-black text-zinc-400 mb-2 uppercase tracking-wider">Detailed Analysis</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Visceral Fat Level</label>
-                      <input type="number" step="any" value={formData.visceralFat} onChange={e => setFormData({...formData, visceralFat: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="6" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Visceral Fat Level</label>
+                      <input type="number" step="any" value={formData.visceralFat} onChange={e => setFormData({...formData, visceralFat: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="6" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Total Water (L)</label>
-                      <input type="number" step="any" value={formData.tbw} onChange={e => setFormData({...formData, tbw: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="45.2" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Total Water (L)</label>
+                      <input type="number" step="any" value={formData.tbw} onChange={e => setFormData({...formData, tbw: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="45.2" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Protein (kg)</label>
-                      <input type="number" step="any" value={formData.protein} onChange={e => setFormData({...formData, protein: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="12.1" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Protein (kg)</label>
+                      <input type="number" step="any" value={formData.protein} onChange={e => setFormData({...formData, protein: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="12.1" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Minerals (kg)</label>
-                      <input type="number" step="any" value={formData.minerals} onChange={e => setFormData({...formData, minerals: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="4.1" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Minerals (kg)</label>
+                      <input type="number" step="any" value={formData.minerals} onChange={e => setFormData({...formData, minerals: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="4.1" />
                     </div>
                   </div>
                 </div>
 
                 {/* Segmental Lean */}
-                <div className="bg-[#070709] p-4 rounded-2xl border border-zinc-900 space-y-4">
+                <div className="bg-[#070a1a]/80 p-4 rounded-2xl border border-blue-900/15 backdrop-blur-md space-y-4">
                   <h3 className="text-xs font-black text-zinc-400 mb-2 uppercase tracking-wider">Segmental Lean (kg)</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Left Arm</label>
-                      <input type="number" step="any" value={formData.laLean} onChange={e => setFormData({...formData, laLean: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="3.5" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Left Arm</label>
+                      <input type="number" step="any" value={formData.laLean} onChange={e => setFormData({...formData, laLean: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="3.5" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Right Arm</label>
-                      <input type="number" step="any" value={formData.raLean} onChange={e => setFormData({...formData, raLean: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="3.6" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Right Arm</label>
+                      <input type="number" step="any" value={formData.raLean} onChange={e => setFormData({...formData, raLean: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="3.6" />
                     </div>
                     <div className="col-span-2">
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Trunk</label>
-                      <input type="number" step="any" value={formData.trunkLean} onChange={e => setFormData({...formData, trunkLean: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="28.4" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Trunk</label>
+                      <input type="number" step="any" value={formData.trunkLean} onChange={e => setFormData({...formData, trunkLean: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="28.4" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Left Leg</label>
-                      <input type="number" step="any" value={formData.llLean} onChange={e => setFormData({...formData, llLean: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="10.1" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Left Leg</label>
+                      <input type="number" step="any" value={formData.llLean} onChange={e => setFormData({...formData, llLean: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="10.1" />
                     </div>
                     <div>
-                      <label className="text-[9px] text-zinc-500 mb-1 block uppercase font-bold">Right Leg</label>
-                      <input type="number" step="any" value={formData.rlLean} onChange={e => setFormData({...formData, rlLean: e.target.value})} className="w-full bg-[#0d0d11] border border-zinc-850 rounded-xl p-2.5 text-white outline-none focus:border-zinc-700 transition-colors" placeholder="10.2" />
+                      <label className="text-[9px] text-zinc-550 mb-1 block uppercase font-bold">Right Leg</label>
+                      <input type="number" step="any" value={formData.rlLean} onChange={e => setFormData({...formData, rlLean: e.target.value})} className="w-full bg-[#05060f] border border-blue-950/30 rounded-xl p-2.5 text-white outline-none focus:border-blue-500 transition-colors" placeholder="10.2" />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4 sticky bottom-0 bg-[#0d0d11]/90 pb-2">
+                <div className="flex gap-3 pt-4 sticky bottom-0 bg-[#0a0d1e]/90 pb-2">
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 rounded-xl border border-zinc-850 text-zinc-400 font-extrabold hover:bg-zinc-900 transition-all uppercase tracking-wider text-xs active:scale-[0.98]">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-extrabold transition-all disabled:opacity-50 uppercase tracking-wider text-xs active:scale-[0.98]">
                     {isSubmitting ? 'Saving...' : 'Save Scan'}

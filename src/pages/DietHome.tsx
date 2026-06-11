@@ -92,7 +92,7 @@ const DietHome = () => {
 
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-[#070709] text-gray-255">
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 bg-gradient-to-b from-[#080b1e] to-[#05060f] text-zinc-350">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
           <Utensils size={28} className="text-red-500" />
         </div>
@@ -107,7 +107,7 @@ const DietHome = () => {
   if (effectiveLoading) {
     return (
       <>
-      <div className="p-5 flex flex-col gap-6 min-h-full pb-28 bg-[#070709]">
+      <div className="p-5 flex flex-col gap-6 min-h-full pb-28 bg-gradient-to-b from-[#080b1e] to-[#05060f]">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
           <div>
             <h1 className="text-2xl font-black text-white tracking-tight">Nutrition</h1>
@@ -116,7 +116,7 @@ const DietHome = () => {
         </motion.div>
 
         {/* Date Navigation */}
-        <div className="flex items-center justify-between bg-[#0d0d11] border border-zinc-900 rounded-xl p-2">
+        <div className="flex items-center justify-between bg-[#0c1020]/40 border border-blue-900/20 backdrop-blur-md rounded-xl p-2">
           <button onClick={handlePrevDay} className="p-2 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-colors active:scale-95">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
@@ -145,7 +145,7 @@ const DietHome = () => {
 
   return (
     <>
-    <div className="p-5 flex flex-col gap-6 min-h-full pb-28 bg-[#070709]">
+    <div className="p-5 flex flex-col gap-6 min-h-full pb-28 bg-gradient-to-b from-[#080b1e] to-[#05060f]">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight">Nutrition</h1>
@@ -154,7 +154,7 @@ const DietHome = () => {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => navigate('/diet/inventory')}
-            className="text-[10px] font-black uppercase tracking-wider bg-[#0d0d11] border border-zinc-900 text-zinc-300 px-3 py-2.5 rounded-lg flex items-center gap-1.5 active:scale-95 transition-all shadow-md hover:bg-zinc-900"
+            className="text-[10px] font-black uppercase tracking-wider bg-[#0c1020]/50 border border-blue-900/25 text-zinc-300 px-3 py-2.5 rounded-lg flex items-center gap-1.5 active:scale-95 transition-all shadow-md hover:bg-[#0c1020]/75"
           >
             <Utensils size={13} />
             MY FOODS
@@ -162,7 +162,7 @@ const DietHome = () => {
           {(userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && (
             <button
               onClick={() => setShowSettings(true)}
-              className="w-9 h-9 bg-[#0d0d11] border border-zinc-900 rounded-lg flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-all shadow-md hover:bg-zinc-900"
+              className="w-9 h-9 bg-[#0c1020]/50 border border-blue-900/25 rounded-lg flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-all shadow-md hover:bg-[#0c1020]/75"
               title="Nutrition Targets"
             >
               <SlidersHorizontal size={14} />
@@ -172,7 +172,7 @@ const DietHome = () => {
       </motion.div>
 
       {/* Date Navigation + Day Type Badge */}
-      <div className="flex items-center justify-between bg-[#0d0d11] border border-zinc-900 rounded-xl p-2">
+      <div className="flex items-center justify-between bg-[#0c1020]/40 border border-blue-900/20 backdrop-blur-md rounded-xl p-2">
         <button onClick={handlePrevDay} className="p-2 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg transition-colors active:scale-95">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
@@ -210,10 +210,10 @@ const DietHome = () => {
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ delay: 0.1 }}
-            className="bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 border border-white/[0.05] shadow-2xl relative overflow-hidden"
+            className="bg-[#0c1020]/40 backdrop-blur-md rounded-2xl p-5 border border-blue-900/20 shadow-2xl relative overflow-hidden"
           >
             {totals.completed && (
-              <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider border-l border-b border-zinc-900/50">
+              <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider border-l border-b border-[#0c1020]/50">
                 COMPLETED
               </div>
             )}
@@ -225,7 +225,7 @@ const DietHome = () => {
                 colorClass="bg-gradient-to-r from-[#6366f1] to-[#4f46e5]" 
                 unit="kcal" 
               />
-              <div className="h-px bg-zinc-900 w-full" />
+              <div className="h-px bg-blue-900/15 w-full" />
               <div className="flex flex-col gap-3.5">
                 <MacroProgressBar label="Protein" current={totals.protein} target={targets.protein} colorClass="bg-gradient-to-r from-[#2563eb] to-[#3b82f6]" />
                 <MacroProgressBar label="Carbs" current={totals.carbs} target={targets.carbs} colorClass="bg-gradient-to-r from-[#10b981] to-[#059669]" />
@@ -242,8 +242,8 @@ const DietHome = () => {
             className="mt-4 rounded-2xl overflow-hidden shadow-xl"
           >
             <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
-              <div className="bg-white/[0.02] backdrop-blur-md p-5 border border-white/[0.05] w-full h-full">
-                <div className="flex items-center gap-2 mb-3 border-b border-zinc-900 pb-2.5">
+              <div className="bg-[#0c1020]/40 backdrop-blur-md p-5 border border-blue-900/20 w-full h-full">
+                <div className="flex items-center gap-2 mb-3 border-b border-blue-900/15 pb-2.5">
                   <span className="text-sm">💧</span>
                   <h2 className="text-xs font-black uppercase tracking-wider text-blue-400">Hydration Logger</h2>
                 </div>
@@ -257,12 +257,12 @@ const DietHome = () => {
                 />
 
                 {waterLogs && waterLogs.length > 0 && (
-                  <div className="mt-4 flex flex-col gap-2 pt-3.5 border-t border-zinc-900/60">
+                  <div className="mt-4 flex flex-col gap-2 pt-3.5 border-t border-blue-900/15">
                     {waterLogs.map((log: any) => {
                       const d = new Date(log.time);
                       const timeStr = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                       return (
-                        <div key={log.id} className="flex justify-between items-center text-[11px] font-sans border-b border-zinc-950 pb-1.5 last:border-0 last:pb-0">
+                        <div key={log.id} className="flex justify-between items-center text-[11px] font-sans border-b border-blue-950/20 pb-1.5 last:border-0 last:pb-0">
                           <span className="text-zinc-555 font-medium">{timeStr}</span>
                           <span className="font-extrabold text-blue-300">+{log.amount_ml} ml</span>
                         </div>
@@ -281,7 +281,7 @@ const DietHome = () => {
             </div>
 
             {meals.length === 0 ? (
-              <div className="text-center text-zinc-500 py-6 bg-[#0d0d11] border border-zinc-900 rounded-xl select-none">
+              <div className="text-center text-zinc-500 py-6 bg-[#0c1020]/20 border border-blue-900/15 backdrop-blur-md rounded-xl select-none">
                 <p className="text-sm">No meals logged yet.</p>
               </div>
             ) : (
@@ -295,11 +295,11 @@ const DietHome = () => {
                   >
                     <div 
                       onClick={() => !totals.completed && navigate(`/diet/meal/${meal.id}`)}
-                      className={`bg-white/[0.02] backdrop-blur-sm rounded-xl p-4 border border-white/[0.05] flex flex-col w-full ${totals.completed ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-[0.98] transition-transform hover:border-white/[0.1]'}`}
+                      className={`bg-[#0c1020]/40 backdrop-blur-sm rounded-xl p-4 border border-blue-900/20 flex flex-col w-full ${totals.completed ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-[0.98] transition-transform hover:border-blue-900/35'}`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-black text-white text-base tracking-tight">{meal.name}</span>
-                        <span className="text-xs font-black text-zinc-300 bg-white/[0.03] px-2.5 py-1 rounded-lg border border-white/[0.05]">{Math.round(mealMacros.kcal)} kcal</span>
+                        <span className="text-xs font-black text-zinc-300 bg-[#080b1e]/40 px-2.5 py-1 rounded-lg border border-blue-950/25">{Math.round(mealMacros.kcal)} kcal</span>
                       </div>
                       <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-wider text-zinc-550">
                         <span>P: <span className="text-[#3b82f6]">{Math.round(mealMacros.protein)}g</span></span>
@@ -308,9 +308,9 @@ const DietHome = () => {
                       </div>
                       
                       {meal.items && meal.items.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-zinc-950">
+                        <div className="mt-3 pt-3 border-t border-blue-900/15">
                           <p className="text-[10px] text-zinc-500 line-clamp-1">
-                            {meal.items.map(i => i.name).join(', ')}
+                             {meal.items.map(i => i.name).join(', ')}
                           </p>
                         </div>
                       )}
@@ -324,7 +324,7 @@ const DietHome = () => {
             {!totals.completed && (
               <button 
                 onClick={handleCreateMeal}
-                className="w-full mt-2 border-2 border-dashed border-zinc-850 hover:border-zinc-700 hover:text-white active:scale-95 text-zinc-500 font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all text-xs uppercase tracking-wider"
+                className="w-full mt-2 border-2 border-dashed border-blue-900/30 hover:border-blue-700/50 hover:text-white active:scale-95 text-zinc-550 font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all text-xs uppercase tracking-wider"
               >
                 <Plus size={16} />
                 CREATE MEAL
@@ -334,7 +334,7 @@ const DietHome = () => {
             {/* End Day Button */}
             <button
               onClick={toggleDayCompletion}
-              className={`w-full mt-4 font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg text-xs uppercase tracking-wider ${totals.completed ? 'bg-[#0d0d11] border border-zinc-900 text-zinc-400' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
+              className={`w-full mt-4 font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg text-xs uppercase tracking-wider ${totals.completed ? 'bg-[#0c1020]/40 border border-blue-900/20 text-zinc-400' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               {totals.completed ? 'REOPEN DAY' : 'FINISH DAY'}

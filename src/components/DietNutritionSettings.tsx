@@ -110,10 +110,10 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 320 }}
-            className={`${portalRoot ? 'absolute' : 'fixed'} inset-0 z-[70] bg-[#000000] flex flex-col overflow-hidden pointer-events-auto`}
+            className={`${portalRoot ? 'absolute' : 'fixed'} inset-0 z-[70] bg-[#0a0d1e] flex flex-col overflow-hidden pointer-events-auto`}
           >
             {/* Header: Fixed reachable spacing on phones with clock/notch status bar */}
-            <div className="flex items-center justify-between px-6 pb-5 pt-[calc(max(1.5rem,env(safe-area-inset-top))+10px)] border-b border-zinc-900 bg-[#08080c]/85 backdrop-blur-md">
+            <div className="flex items-center justify-between px-6 pb-5 pt-[calc(max(1.5rem,env(safe-area-inset-top))+10px)] border-b border-blue-900/15 bg-[#07080e]/90 backdrop-blur-md">
               <button
                 onClick={onClose}
                 className="w-10 h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition-all flex items-center justify-center active:scale-90 cursor-pointer"
@@ -129,7 +129,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
             </div>
 
             {/* Day Type Tabs — scrollable, clean minimalist pills */}
-            <div className="flex gap-2.5 px-6 py-4 overflow-x-auto no-scrollbar border-b border-zinc-950 bg-[#040406]">
+            <div className="flex gap-2.5 px-6 py-4 overflow-x-auto no-scrollbar border-b border-blue-950/20 bg-[#060814]/80 backdrop-blur-md">
               {allDayTypes.map((dt) => {
                 const isActive = dt === activeTab;
                 return (
@@ -139,7 +139,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                     className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 border cursor-pointer ${
                       isActive 
                         ? 'bg-white text-black border-white shadow-lg shadow-white/5' 
-                        : 'bg-zinc-950 text-zinc-500 border-zinc-900 hover:border-zinc-800 hover:text-zinc-300'
+                        : 'bg-[#070709]/80 text-zinc-500 border-zinc-900 hover:border-zinc-800 hover:text-zinc-300'
                     }`}
                   >
                     {dt}
@@ -149,7 +149,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
             </div>
 
             {/* Active Tab Content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 bg-[#000000]">
+            <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 bg-[#0a0d1e]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -165,14 +165,14 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                       <span className="text-xs font-black text-zinc-400 uppercase tracking-widest block">Selected Target Group</span>
                       <h3 className="text-lg font-black text-white uppercase tracking-tight mt-0.5">{activeLabel}</h3>
                       {currentDayType === activeTab && (
-                        <span className="inline-block text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-emerald-400 mt-1.5">
+                        <span className="inline-block text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#0c1020]/40 border border-blue-900/20 text-emerald-400 mt-1.5">
                           Active Today
                         </span>
                       )}
                     </div>
                     <button
                       onClick={resetTab}
-                      className="text-[10px] text-zinc-500 font-black hover:text-white uppercase tracking-wider flex items-center gap-1 bg-zinc-950 hover:bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-900 transition-all cursor-pointer"
+                      className="text-[10px] text-zinc-500 font-black hover:text-white uppercase tracking-wider flex items-center gap-1 bg-[#070709]/85 hover:bg-zinc-900/85 px-3 py-2 rounded-xl border border-zinc-900 transition-all cursor-pointer"
                     >
                       <RotateCcw size={11} />
                       Reset
@@ -182,7 +182,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                   {/* Inputs Section */}
                   <div className="space-y-4">
                     {/* Calories Card (Blue Accent) */}
-                    <div className="rounded-2xl p-5 border border-zinc-900 bg-[#070709] relative overflow-hidden group hover:border-zinc-800 transition-colors">
+                    <div className="rounded-2xl p-5 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md relative overflow-hidden group hover:border-blue-900/40 transition-colors">
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">
                           🔥 Total Calories Target
@@ -214,7 +214,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                         { key: 'carbs'   as const, label: 'Carbs',   emoji: '🍚', dotColor: 'bg-emerald-500' },
                         { key: 'fat'     as const, label: 'Fat',     emoji: '🥑', dotColor: 'bg-amber-500' },
                       ]).map(({ key, label, dotColor }) => (
-                        <div key={key} className="rounded-xl p-4 border border-zinc-900 bg-[#070709] flex flex-col gap-1 hover:border-zinc-800 transition-colors">
+                        <div key={key} className="rounded-xl p-4 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md flex flex-col gap-1 hover:border-blue-900/40 transition-colors">
                           <div className="flex items-center gap-1.5 mb-1">
                             <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
                             <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest block">{label}</span>
@@ -233,7 +233,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                     </div>
 
                     {/* Calorie Split Preview */}
-                    <div className="bg-[#070709] rounded-xl p-5 border border-zinc-900">
+                    <div className="bg-[#0c1020]/30 backdrop-blur-md rounded-xl p-5 border border-blue-950/20">
                       <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mb-3.5">Calorie Split Preview</p>
                       
                       <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-zinc-950 p-0.5">
@@ -269,7 +269,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
             </div>
 
             {/* Save Button */}
-            <div className="px-6 pb-9 pt-4 border-t border-zinc-950 bg-[#040406] backdrop-blur-md">
+            <div className="px-6 pb-9 pt-4 border-t border-blue-950/20 bg-[#060814]/90 backdrop-blur-md">
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleSave}
