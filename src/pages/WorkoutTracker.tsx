@@ -137,7 +137,7 @@ const WorkoutTracker = () => {
               tier: ex.tier || 'A',
               cue: ex.cue || '',
               rationale: ex.rationale || '',
-              equipment: ex.equipment || ''
+              equipment: (ex as any).equipment || ''
             })
             .select('id')
             .single();
