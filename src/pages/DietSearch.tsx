@@ -24,6 +24,7 @@ const DietSearch = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [customBarcode, setCustomBarcode] = useState('');
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const activeStreamRef = useRef<MediaStream | null>(null);
 
   const playBeep = () => {
     try {
@@ -54,17 +55,14 @@ const DietSearch = () => {
   };
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
     const startCamera = async () => {
       if (showScanner) {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({
+          const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' }
           });
+          activeStreamRef.current = stream;
           setCameraStream(stream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
         } catch (err) {
           console.warn("Webcam access unavailable:", err);
         }
@@ -74,12 +72,19 @@ const DietSearch = () => {
     startCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (activeStreamRef.current) {
+        activeStreamRef.current.getTracks().forEach(track => track.stop());
+        activeStreamRef.current = null;
       }
       setCameraStream(null);
     };
   }, [showScanner]);
+
+  useEffect(() => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream]);
 
   useEffect(() => {
     const searchFoods = async () => {
@@ -501,15 +506,15 @@ const DietSearch = () => {
 
               {/* Viewfinder Container */}
               <div className="relative w-full h-48 bg-slate-950 rounded-2xl overflow-hidden border border-gray-800 flex items-center justify-center mb-6">
-                {cameraStream ? (
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-center p-4 text-gray-500">
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  className={`w-full h-full object-cover ${cameraStream ? 'block' : 'hidden'}`}
+                />
+                
+                {!cameraStream && (
+                  <div className="text-center p-4 text-gray-555 absolute inset-0 flex flex-col items-center justify-center bg-slate-950">
                     <Camera size={28} className="mx-auto mb-2 opacity-30 animate-pulse" />
                     <p className="text-xs">Camera feed unavailable or loading...</p>
                     <p className="text-[10px] text-gray-600 mt-1">Point your physical camera to scan packaging</p>
