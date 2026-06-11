@@ -35,7 +35,7 @@ const WorkoutHome = () => {
   const effectiveLoading = debugLoading || loading;
 
   const [showRunModal, setShowRunModal] = useState(false);
-  const [runStats, setRunStats] = useState({ name: '', distance: '', elevation: '', paceMin: '', paceSec: '', durationMin: '', durationSec: '' });
+  const [runStats, setRunStats] = useState({ name: '', distance: '', elevation: '', paceMin: '', paceSec: '', durationHour: '', durationMin: '', durationSec: '' });
   const [lastEditedFields, setLastEditedFields] = useState<string[]>([]);
   const [isSubmittingRun, setIsSubmittingRun] = useState(false);
   
@@ -65,18 +65,18 @@ const WorkoutHome = () => {
     return "Night Run";
   };
 
-  const saveRunDirectly = async (statsToSave: { name: string; distance: string; elevation: string; paceMin: string; paceSec: string; durationMin: string; durationSec: string }) => {
+  const saveRunDirectly = async (statsToSave: { name: string; distance: string; elevation: string; paceMin: string; paceSec: string; durationHour: string; durationMin: string; durationSec: string }) => {
     setIsSubmittingRun(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
       const localDateStr = getLocalDateString();
-      const durationSeconds = (parseInt(statsToSave.durationMin) || 0) * 60 + (parseInt(statsToSave.durationSec) || 0);
+      const durationSeconds = (parseInt(statsToSave.durationHour) || 0) * 3600 + (parseInt(statsToSave.durationMin) || 0) * 60 + (parseInt(statsToSave.durationSec) || 0);
       
       const finalName = statsToSave.name.trim() || getDefaultRunName();
       const formattedPace = `${statsToSave.paceMin || '0'}:${(statsToSave.paceSec || '00').padStart(2, '0')}`;
-      const formattedDuration = `${statsToSave.durationMin || '0'}m ${(statsToSave.durationSec || '00')}s`;
+      const formattedDuration = formatDuration(durationSeconds);
 
       const runData = {
         type: 'run_stats',
@@ -100,7 +100,7 @@ const WorkoutHome = () => {
       
       setPastWorkouts(prev => [data, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setShowRunModal(false);
-      setRunStats({ name: '', distance: '', elevation: '', paceMin: '', paceSec: '', durationMin: '', durationSec: '' });
+      setRunStats({ name: '', distance: '', elevation: '', paceMin: '', paceSec: '', durationHour: '', durationMin: '', durationSec: '' });
       setLastEditedFields([]);
       
       // Dispatch custom window event to trigger root-level brand ribbon explosion + premium receipt
@@ -133,11 +133,29 @@ const WorkoutHome = () => {
     if (field === 'distance') {
       newStats.distance = val;
     } else if (field === 'duration') {
-      newStats.durationMin = val.min;
-      newStats.durationSec = val.sec;
+      let h = parseInt(val.hour) || 0;
+      let m = parseInt(val.min) || 0;
+      let s = parseInt(val.sec) || 0;
+      if (s >= 60) {
+        m += Math.floor(s / 60);
+        s = s % 60;
+      }
+      if (m >= 60) {
+        h += Math.floor(m / 60);
+        m = m % 60;
+      }
+      newStats.durationHour = h > 0 ? h.toString() : '';
+      newStats.durationMin = m.toString();
+      newStats.durationSec = s.toString();
     } else if (field === 'pace') {
-      newStats.paceMin = val.min;
-      newStats.paceSec = val.sec;
+      let min = parseInt(val.min) || 0;
+      let sec = parseInt(val.sec) || 0;
+      if (sec >= 60) {
+        min += Math.floor(sec / 60);
+        sec = sec % 60;
+      }
+      newStats.paceMin = min.toString();
+      newStats.paceSec = sec.toString();
     }
 
     // Keep track of the order of edited fields (only distance, duration, pace)
@@ -149,9 +167,10 @@ const WorkoutHome = () => {
       const targetField = ['distance', 'duration', 'pace'].find(f => !lastTwo.includes(f));
 
       const distVal = parseFloat(newStats.distance);
+      const durHourVal = parseInt(newStats.durationHour) || 0;
       const durMinVal = parseInt(newStats.durationMin) || 0;
       const durSecVal = parseInt(newStats.durationSec) || 0;
-      const totalDurSec = durMinVal * 60 + durSecVal;
+      const totalDurSec = durHourVal * 3600 + durMinVal * 60 + durSecVal;
 
       const paceMinVal = parseInt(newStats.paceMin) || 0;
       const paceSecVal = parseInt(newStats.paceSec) || 0;
@@ -173,17 +192,14 @@ const WorkoutHome = () => {
         }
       } else if (targetField === 'duration') {
         if (!isNaN(distVal) && totalPaceSec > 0) {
-          const calculatedDurSec = distVal * totalPaceSec;
-          const mins = Math.floor(calculatedDurSec / 60);
-          const secs = Math.round(calculatedDurSec % 60);
+          const calculatedDurSec = Math.round(distVal * totalPaceSec);
+          const hours = Math.floor(calculatedDurSec / 3600);
+          const mins = Math.floor((calculatedDurSec % 3600) / 60);
+          const secs = calculatedDurSec % 60;
           
-          if (secs === 60) {
-            newStats.durationMin = (mins + 1).toString();
-            newStats.durationSec = '0';
-          } else {
-            newStats.durationMin = mins.toString();
-            newStats.durationSec = secs.toString();
-          }
+          newStats.durationHour = hours > 0 ? hours.toString() : '';
+          newStats.durationMin = mins.toString();
+          newStats.durationSec = secs.toString();
         }
       } else if (targetField === 'distance') {
         if (totalDurSec > 0 && totalPaceSec > 0) {
@@ -553,8 +569,15 @@ const WorkoutHome = () => {
   };
 
   const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    return `${m}m`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.round(seconds % 60);
+    
+    let parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 || h > 0) parts.push(`${m}m`);
+    if (s > 0) parts.push(`${s}s`);
+    return parts.join(' ') || '0m';
   };
 
   const isTodayCompleted = pastWorkouts.some(w => w.date === getLocalDateString() && w.day_type === dayType);
@@ -583,6 +606,12 @@ const WorkoutHome = () => {
       </div>
     );
   }
+
+  const durationHourInt = parseInt(runStats.durationHour) || 0;
+  const durationMinInt = parseInt(runStats.durationMin) || 0;
+  const durationSecInt = parseInt(runStats.durationSec) || 0;
+  const totalDurationSeconds = durationHourInt * 3600 + durationMinInt * 60 + durationSecInt;
+  const showHoursField = totalDurationSeconds >= 3600;
 
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full pb-28 max-w-lg mx-auto w-full overflow-x-hidden">
@@ -975,29 +1004,53 @@ const WorkoutHome = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1 block">Duration (Min:Sec)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    type="number" 
-                    required
-                    value={runStats.durationMin}
-                    onChange={e => handleFieldChange('duration', { min: e.target.value, sec: runStats.durationSec })}
-                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
-                    placeholder="Min"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                  <input 
-                    type="number" 
-                    required
-                    value={runStats.durationSec}
-                    onChange={e => handleFieldChange('duration', { min: runStats.durationMin, sec: e.target.value })}
-                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
-                    placeholder="Sec"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
+              <div className="grid grid-cols-1 gap-1">
+                <label className="text-xs font-bold text-gray-400 mb-1 block">Duration</label>
+                <div className="flex gap-2">
+                  <AnimatePresence initial={false}>
+                    {showHoursField && (
+                      <motion.div
+                        initial={{ width: 0, opacity: 0, marginRight: 0 }}
+                        animate={{ width: '33.33%', opacity: 1, marginRight: 8 }}
+                        exit={{ width: 0, opacity: 0, marginRight: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                        className="overflow-hidden shrink-0"
+                      >
+                        <input 
+                          type="number" 
+                          value={runStats.durationHour}
+                          onChange={e => handleFieldChange('duration', { hour: e.target.value, min: runStats.durationMin, sec: runStats.durationSec })}
+                          className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                          placeholder="H"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <input 
+                      type="number" 
+                      required
+                      value={runStats.durationMin}
+                      onChange={e => handleFieldChange('duration', { hour: runStats.durationHour, min: e.target.value, sec: runStats.durationSec })}
+                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                      placeholder="Min"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                    <input 
+                      type="number" 
+                      required
+                      value={runStats.durationSec}
+                      onChange={e => handleFieldChange('duration', { hour: runStats.durationHour, min: runStats.durationMin, sec: e.target.value })}
+                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                      placeholder="Sec"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -1036,23 +1089,39 @@ const WorkoutHome = () => {
             <p className="text-xs text-gray-400 mb-6 font-medium leading-relaxed">Select one of your saved workout splits to begin another training session for today.</p>
 
             <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto no-scrollbar mb-6">
-              {savedTemplates
-                .filter(t => {
-                  const typeUpper = t.plan_type.toUpperCase();
-                  return typeUpper !== 'REST' && typeUpper !== 'RUN + GYM';
-                })
-                .map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => handleStartWorkoutForSplit(template.plan_type)}
-                    className="w-full p-4 rounded-2xl bg-slate-900/50 hover:bg-[#1d4ed8]/20 border border-gray-800 hover:border-blue-500/30 text-white font-black text-sm text-left transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between"
-                  >
-                    <span>{template.plan_type} Split</span>
-                    <span className="text-[10px] bg-blue-950 text-blue-400 px-2.5 py-1 rounded-lg border border-blue-900/40 uppercase font-extrabold tracking-wider">Start</span>
-                  </button>
-                ))}
-              {savedTemplates.length === 0 && (
-                <p className="text-center text-xs text-gray-550 italic py-4">No split templates found. Create some in templates tab!</p>
+              {effectiveLoading ? (
+                <div className="flex flex-col gap-3 py-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="w-full p-4 rounded-2xl bg-slate-900/30 border border-gray-850/40 animate-pulse flex items-center justify-between">
+                      <div className="h-4 bg-gray-800 rounded w-2/3" />
+                      <div className="h-6 bg-gray-800 rounded-lg w-12" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {savedTemplates
+                    .filter(t => {
+                      const typeUpper = t.plan_type.toUpperCase();
+                      return typeUpper !== 'REST' && typeUpper !== 'RUN + GYM';
+                    })
+                    .map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => handleStartWorkoutForSplit(template.plan_type)}
+                        className="w-full p-4 rounded-2xl bg-slate-900/50 hover:bg-[#1d4ed8]/20 border border-gray-800 hover:border-blue-500/30 text-white font-black text-sm text-left transition-all active:scale-[0.98] cursor-pointer flex items-center justify-between"
+                      >
+                        <span>{template.plan_type} Split</span>
+                        <span className="text-[10px] bg-blue-950 text-blue-400 px-2.5 py-1 rounded-lg border border-blue-900/40 uppercase font-extrabold tracking-wider">Start</span>
+                      </button>
+                    ))}
+                  {savedTemplates.filter(t => {
+                    const typeUpper = t.plan_type.toUpperCase();
+                    return typeUpper !== 'REST' && typeUpper !== 'RUN + GYM';
+                  }).length === 0 && (
+                    <p className="text-center text-xs text-gray-555 italic py-4">No split templates found. Create some in templates tab!</p>
+                  )}
+                </>
               )}
             </div>
 

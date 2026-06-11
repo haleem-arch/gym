@@ -187,10 +187,15 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
   })();
 
   const formatSecondsToMinSec = (totalSeconds: number) => {
-    const m = Math.floor(totalSeconds / 60);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
     const s = Math.round(totalSeconds % 60);
-    if (s > 0) return `${m}m ${s}s`;
-    return `${m}m`;
+    
+    let parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 || h > 0) parts.push(`${m}m`);
+    if (s > 0) parts.push(`${s}s`);
+    return parts.join(' ') || '0m';
   };
 
   // Display Date

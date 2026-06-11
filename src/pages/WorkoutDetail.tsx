@@ -87,12 +87,15 @@ const WorkoutDetail = () => {
   };
 
   const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
     const s = Math.round(seconds % 60);
-    if (s > 0) {
-      return `${m}m ${s}s`;
-    }
-    return `${m}m`;
+    
+    let parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0 || h > 0) parts.push(`${m}m`);
+    if (s > 0) parts.push(`${s}s`);
+    return parts.join(' ') || '0m';
   };
 
   const getTierColor = (tier: string) => {
