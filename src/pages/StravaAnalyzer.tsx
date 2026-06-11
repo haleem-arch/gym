@@ -1138,7 +1138,7 @@ FORMAT EXACTLY LIKE THIS:
   return (
     <div className="flex flex-col h-full bg-background relative" style={{ minHeight: '100dvh' }}>
       {/* Header */}
-      <div className="bg-surface/90 backdrop-blur-md px-5 py-3 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-lg flex-shrink-0">
+      <div className="bg-[#07080e]/90 backdrop-blur-md px-5 pb-3 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-lg flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
             <Activity size={16} className="text-primary" />

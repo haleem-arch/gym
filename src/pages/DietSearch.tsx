@@ -225,7 +225,7 @@ const DietSearch = () => {
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background relative">
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-gray-800 p-4 flex flex-col gap-4">
+      <div className="sticky top-0 z-20 bg-[#07080e]/90 backdrop-blur-md border-b border-gray-800 px-4 pb-4 flex flex-col gap-4" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center">
             <ChevronLeft size={16} className="text-gray-400" />

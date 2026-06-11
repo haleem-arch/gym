@@ -236,7 +236,7 @@ const WorkoutDetail = () => {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background relative pb-28 overflow-x-hidden">
       {/* Header */}
-      <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-md">
+      <div className="bg-[#07080e]/95 backdrop-blur-md px-4 pb-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
         <button onClick={() => navigate(-1)} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center">
           <ChevronLeft size={16} className="text-gray-400" />
         </button>

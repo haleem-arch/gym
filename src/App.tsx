@@ -83,6 +83,17 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
     })
   };
 
+  const location = useLocation();
+  const path = location.pathname;
+  const hasStickyHeader = 
+    path.startsWith('/workout/active') ||
+    path.startsWith('/diet/meal/') ||
+    path.startsWith('/diet/search') ||
+    path.startsWith('/diet/food/new') ||
+    path.startsWith('/diet/inventory') ||
+    path.startsWith('/strava') ||
+    (/^\/workout\/[^/]+$/.test(path) && !path.endsWith('/builder') && !path.startsWith('/workout/active'));
+
   return (
     <motion.div
       custom={direction}
@@ -92,7 +103,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
       exit="exit"
       transition={{ duration: 0.25, ease: "easeInOut" }}
       className="w-full h-full absolute top-0 left-0 overflow-y-auto pb-8 no-scrollbar bg-background"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      style={hasStickyHeader ? {} : { paddingTop: 'env(safe-area-inset-top)' }}
     >
       {children}
     </motion.div>

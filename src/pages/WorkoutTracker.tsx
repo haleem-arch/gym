@@ -184,8 +184,6 @@ const WorkoutTracker = () => {
       });
       const prExercise = bestExercise ? `${bestExercise}: ${maxWeight}kg x ${bestReps} reps` : undefined;
 
-      endWorkout();
-
       // Dispatch custom window event to trigger root-level barbell plate stacker + premium receipt
       window.dispatchEvent(new CustomEvent('trigger-gym-saved', {
         detail: {
@@ -200,6 +198,11 @@ const WorkoutTracker = () => {
 
       // Navigate back to history list (covered seamlessly by the root splash overlay)
       navigate('/workout', { replace: true });
+
+      // Delay clearing active workout state so the page transition can start smoothly without flashing the 'No Active Workout' fallback screen
+      setTimeout(() => {
+        endWorkout();
+      }, 350);
     } catch (e: any) {
       alert("Error saving workout: " + e.message);
     } finally {
@@ -227,7 +230,7 @@ const WorkoutTracker = () => {
 
   return (
     <div className="flex flex-col min-h-full bg-background relative pb-28">
-      <div className="bg-surface px-4 py-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between">
+      <div className="bg-[#07080e]/95 backdrop-blur-md px-4 pb-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
         <button onClick={() => navigate(-1)} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center">
           <ChevronLeft size={16} className="text-gray-400" />
         </button>
@@ -288,8 +291,10 @@ const WorkoutTracker = () => {
                 // Delete ALL in_progress sessions for this user to completely clear ghost sessions
                 await supabase.from('workouts').delete().eq('user_id', session.user.id).eq('status', 'in_progress');
               }
-              endWorkout();
               navigate('/workout', { replace: true });
+              setTimeout(() => {
+                endWorkout();
+              }, 350);
             }
           }}
           className="w-full mt-4 text-gray-500 font-semibold py-3 text-sm flex items-center justify-center transition-colors hover:text-danger active:scale-[0.98]"
