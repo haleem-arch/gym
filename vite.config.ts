@@ -29,8 +29,8 @@ export default defineConfig({
         short_name: 'Haleem',
         description: 'Personal Athlete Dashboard',
         display: 'standalone',
-        background_color: '#0f0f0f',
-        theme_color: '#0f0f0f',
+        background_color: '#05060f',
+        theme_color: '#05060f',
         start_url: '/',
         orientation: 'portrait',
         icons: [

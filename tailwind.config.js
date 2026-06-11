@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0f0f0f',
-        surface: '#111827',
+        background: '#05060f',
+        surface: '#0c1020',
         primary: '#3b82f6',
         success: '#22c55e',
         danger: '#ef4444',

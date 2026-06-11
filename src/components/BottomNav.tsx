@@ -63,7 +63,7 @@ const BottomNav = () => {
 
   return (
     <nav 
-      className="flex-shrink-0 w-full bg-surface border-t border-gray-800 px-4 pt-3 pb-[env(safe-area-inset-bottom)] flex justify-between items-center z-50 overflow-x-auto no-scrollbar"
+      className="flex-shrink-0 w-full bg-[#0c1020]/65 backdrop-blur-md border-t border-blue-900/20 px-4 pt-3 pb-[env(safe-area-inset-bottom)] flex justify-between items-center z-50 overflow-x-auto no-scrollbar"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
     >
       {navItems.map((item) => (
@@ -72,7 +72,7 @@ const BottomNav = () => {
           to={item.to}
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 transition-colors flex-1 min-w-[50px] ${
-              isActive || (item.to === '/workout' && location.pathname.startsWith('/workout')) ? 'text-primary' : 'text-gray-500 hover:text-gray-300'
+              isActive || (item.to === '/workout' && location.pathname.startsWith('/workout')) ? 'text-primary' : 'text-zinc-500 hover:text-zinc-350'
             }`
           }
         >

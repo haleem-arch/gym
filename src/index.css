@@ -10,7 +10,7 @@
 html {
   height: 100vh;
   height: 100dvh;
-  background-color: #0f0f0f;
+  background-color: #05060f;
   /* Prevent iOS Safari bounce/overscroll */
   overscroll-behavior: none;
 }
@@ -23,7 +23,7 @@ body {
   padding: 0;
   height: 100vh;
   height: 100dvh;
-  background-color: #0f0f0f;
+  background-color: #05060f;
 }
 
 #root {
@@ -32,7 +32,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #0f0f0f;
+  background-color: #05060f;
   overflow: hidden;
   touch-action: none;
 }
