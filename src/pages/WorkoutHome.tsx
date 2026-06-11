@@ -1014,7 +1014,7 @@ const WorkoutHome = () => {
                         animate={{ width: '33.33%', opacity: 1, marginRight: 8 }}
                         exit={{ width: 0, opacity: 0, marginRight: 0 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                        className="overflow-hidden shrink-0"
+                        className="overflow-hidden shrink-0 flex flex-col items-center gap-1"
                       >
                         <input 
                           type="number" 
@@ -1025,31 +1025,38 @@ const WorkoutHome = () => {
                           inputMode="numeric"
                           pattern="[0-9]*"
                         />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">h</span>
                       </motion.div>
                     )}
                   </AnimatePresence>
                   
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <input 
-                      type="number" 
-                      required
-                      value={runStats.durationMin}
-                      onChange={e => handleFieldChange('duration', { hour: runStats.durationHour, min: e.target.value, sec: runStats.durationSec })}
-                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
-                      placeholder="Min"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                    />
-                    <input 
-                      type="number" 
-                      required
-                      value={runStats.durationSec}
-                      onChange={e => handleFieldChange('duration', { hour: runStats.durationHour, min: runStats.durationMin, sec: e.target.value })}
-                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
-                      placeholder="Sec"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                    />
+                  <div className="flex-1 flex gap-2">
+                    <div className="flex-1 flex flex-col items-center gap-1">
+                      <input 
+                        type="number" 
+                        required
+                        value={runStats.durationMin}
+                        onChange={e => handleFieldChange('duration', { hour: runStats.durationHour, min: e.target.value, sec: runStats.durationSec })}
+                        className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                        placeholder="Min"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                      />
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">m</span>
+                    </div>
+                    <div className="flex-1 flex flex-col items-center gap-1">
+                      <input 
+                        type="number" 
+                        required
+                        value={runStats.durationSec}
+                        onChange={e => handleFieldChange('duration', { hour: runStats.durationHour, min: runStats.durationMin, sec: e.target.value })}
+                        className="w-full bg-black/50 border border-gray-700 rounded-2xl p-3.5 text-white font-bold focus:border-primary outline-none text-center"
+                        placeholder="Sec"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                      />
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">s</span>
+                    </div>
                   </div>
                 </div>
               </div>

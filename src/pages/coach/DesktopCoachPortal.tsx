@@ -1997,6 +1997,14 @@ export default function DesktopCoachPortal() {
   const handleAddWater = async (amountOverride?: number) => {
     if (!selectedClientId) return;
     const amount = amountOverride !== undefined ? amountOverride : newWaterAmount;
+    
+    // Safety limit check: 10 Liters (10000 ml)
+    const currentTotalMl = clientWaterLogs.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0);
+    if (currentTotalMl + amount > 10000) {
+      toast.error("Water intake cannot exceed 10 liters per day!");
+      return;
+    }
+
     if (selectedClientId.startsWith('fake_')) {
       const now = new Date();
       const newEntry = {
@@ -7375,7 +7383,7 @@ export default function DesktopCoachPortal() {
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Client Code (Optional)</label>
                             <input 
-                              type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value.trim() })}
+                              type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value.replace(/\D/g, '') })}
                               placeholder="e.g. 101"
                               className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
@@ -7387,7 +7395,7 @@ export default function DesktopCoachPortal() {
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Phone Number</label>
                             <input 
-                              type="text" required value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                              type="text" required value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value.replace(/[^\d+]/g, '') })}
                               placeholder="e.g. +20 123 456789"
                               className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.phoneNumber.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
@@ -7405,7 +7413,7 @@ export default function DesktopCoachPortal() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black uppercase text-gray-500 block mb-1">Sex</label>
+                            <label className="text-[9px] font-black uppercase text-gray-500 block mb-1">Gender</label>
                             <div className={`grid grid-cols-2 p-1 bg-[#121624]/60 border rounded-xl relative transition-all ${
                               attemptedStep1Submit && deployGender === null ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
                             }`}>
@@ -7444,7 +7452,7 @@ export default function DesktopCoachPortal() {
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Age</label>
                             <input 
-                              type="number" required value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} 
+                              type="text" required value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value.replace(/\D/g, '') })} 
                               placeholder="Years" 
                               className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
@@ -7454,14 +7462,14 @@ export default function DesktopCoachPortal() {
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Height (cm)</label>
                             <input 
-                              type="number" required value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} 
+                              type="text" required value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value.replace(/\D/g, '') })} 
                               placeholder="Centimeters" 
                               className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.height.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`} 
                             />
                           </div>
-                          <div className="space-y-1 col-span-2">
+                          <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Onboarding Experience Level</label>
                             <select value={formData.experience_level} onChange={e => setFormData({ ...formData, experience_level: e.target.value })} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none">
                               <option value="beginner">Beginner (Under 1 Year)</option>
@@ -7489,11 +7497,19 @@ export default function DesktopCoachPortal() {
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Subscription Start Delay (Days)</label>
                             <input 
-                              type="number" 
-                              min="0"
+                              type="text" 
                               required
-                              value={formData.subscriptionStartDelay} 
-                              onChange={e => setFormData({ ...formData, subscriptionStartDelay: e.target.value })} 
+                              value={formData.subscriptionStartDelay === '0' ? 'Now' : formData.subscriptionStartDelay} 
+                              onChange={e => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  setFormData({ ...formData, subscriptionStartDelay: '' });
+                                } else if (val === '0' || val.toLowerCase() === 'now') {
+                                  setFormData({ ...formData, subscriptionStartDelay: '0' });
+                                } else {
+                                  setFormData({ ...formData, subscriptionStartDelay: val.replace(/\D/g, '') });
+                                }
+                              }} 
                               placeholder="e.g. 3 days" 
                               className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.subscriptionStartDelay.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'

@@ -108,6 +108,15 @@ const TodayView = () => {
   const { dayType, setDayType, loading: scheduleLoadingRaw } = useSchedule(activeDateStr);
   const scheduleLoading = debugLoading || scheduleLoadingRaw;
   const [showTargetsModal, setShowTargetsModal] = useState(false);
+  const [showCustomWater, setShowCustomWater] = useState(false);
+  const [customWaterMl, setCustomWaterMl] = useState('');
+  const handleLogCustomWater = async () => {
+    const ml = parseInt(customWaterMl);
+    if (!ml || isNaN(ml) || ml <= 0) return;
+    await logWater(ml / 1000);
+    setShowCustomWater(false);
+    setCustomWaterMl('');
+  };
   const isToday = activeDate.toDateString() === new Date().toDateString();
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -734,31 +743,73 @@ const TodayView = () => {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="bg-surface rounded-2xl border border-gray-800 flex flex-col overflow-hidden justify-between w-full"
               >
-                 <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
-                   <div className="p-4 flex flex-col justify-between h-full bg-surface">
-                     <div className="flex items-center justify-between text-gray-400 mb-2">
-                       <div className="flex items-center gap-2">
-                         <Droplets size={16} />
-                         <span className="text-sm font-bold uppercase tracking-wider">Hydration</span>
-                       </div>
-                     </div>
-                     <div className="my-auto flex items-center justify-center py-3">
-                       <span className="text-2xl font-black text-white">{waterCurrent.toFixed(1)}<span className="text-sm text-gray-500 font-normal">/{waterTarget}L</span></span>
-                     </div>
-                     <div className="w-full flex flex-col items-center">
-                        <RippleButton 
-                          onClick={() => logWater(0.25)} 
-                          className="w-full bg-primary hover:bg-blue-600 active:scale-95 text-white text-xs font-bold py-3.5 rounded-xl transition-all shadow-md mt-1 flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          Log 250ml Water
-                        </RippleButton>
-                       <span className="text-xs font-semibold text-gray-500 mt-2 block text-center leading-none">
-                         {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
-                       </span>
-                     </div>
-                   </div>
-                 </SwipeToDeleteRow>
-                </motion.div>
+                <SwipeToDeleteRow onDelete={resetWater} threshold={60} backgroundRounded="rounded-2xl">
+                  <div className="p-4 flex flex-col justify-between h-full bg-surface">
+                    <div className="flex items-center justify-between text-gray-400 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Droplets size={16} />
+                        <span className="text-sm font-bold uppercase tracking-wider">Hydration</span>
+                      </div>
+                    </div>
+                    <div className="my-auto flex items-center justify-center py-3">
+                      <span className="text-2xl font-black text-white">{parseFloat(waterCurrent.toFixed(2))}<span className="text-sm text-gray-500 font-normal">/{parseFloat(waterTarget.toFixed(2))}L</span></span>
+                    </div>
+                    <div className="w-full flex flex-col items-center">
+                      {showCustomWater ? (
+                        <div className="flex gap-2 items-center w-full mt-1">
+                          <input 
+                            type="number"
+                            value={customWaterMl}
+                            onChange={e => setCustomWaterMl(e.target.value.replace(/\D/g, ''))}
+                            placeholder="e.g. 350 ml"
+                            className="flex-1 bg-black/50 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-primary text-center font-bold"
+                            inputMode="numeric"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleLogCustomWater();
+                            }}
+                          />
+                          <button 
+                            onClick={handleLogCustomWater}
+                            className="bg-primary hover:bg-blue-600 px-3.5 py-2.5 rounded-xl text-white font-bold transition-all text-xs cursor-pointer active:scale-95"
+                          >
+                            Log
+                          </button>
+                          <button 
+                            onClick={() => { setShowCustomWater(false); setCustomWaterMl(''); }}
+                            className="bg-gray-800 hover:bg-gray-700 px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-white transition-all text-xs cursor-pointer active:scale-95"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 w-full mt-1">
+                          <RippleButton 
+                            onClick={() => logWater(0.25)} 
+                            className="bg-primary/15 hover:bg-primary/25 border border-primary/20 text-primary text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-95"
+                          >
+                            +250ml
+                          </RippleButton>
+                          <RippleButton 
+                            onClick={() => logWater(0.50)} 
+                            className="bg-primary/15 hover:bg-primary/25 border border-primary/20 text-primary text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-95"
+                          >
+                            +500ml
+                          </RippleButton>
+                          <RippleButton 
+                            onClick={() => setShowCustomWater(true)} 
+                            className="bg-[#1e293b] hover:bg-[#334155] border border-gray-855 text-gray-300 text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-95"
+                          >
+                            +Custom
+                          </RippleButton>
+                        </div>
+                      )}
+                      <span className="text-xs font-semibold text-gray-500 mt-2.5 block text-center leading-none">
+                        {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
+                      </span>
+                    </div>
+                  </div>
+                </SwipeToDeleteRow>
+              </motion.div>
             )}
           </ErrorBoundary>
 
@@ -1021,7 +1072,7 @@ const TodayView = () => {
                     <div className="flex flex-col gap-1.5">
                       <div className="flex justify-between font-bold leading-none text-xs text-gray-400">
                         <span>Water Consumed</span>
-                        <span className="text-white font-black">{(waterTotalMl / 1000).toFixed(1)} / {waterTarget} L</span>
+                        <span className="text-white font-black">{parseFloat((waterTotalMl / 1000).toFixed(2))} / {parseFloat(waterTarget.toFixed(2))} L</span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
                         <div className="bg-[#475569] h-2 rounded-full" style={{ width: `${Math.min((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100, 100)}%` }}></div>

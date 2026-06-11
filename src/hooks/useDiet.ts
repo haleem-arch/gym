@@ -334,13 +334,52 @@ export const useDiet = () => {
   };
 
   const logWater = async (amountLiters: number) => {
-    if (!log) return;
+    let currentLog = log;
+    
+    if (!currentLog) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      setLoading(true);
+      const { data: newLog, error: insertError } = await supabase
+        .from('diet_logs')
+        .insert({
+          user_id: session.user.id,
+          date: activeDateStr,
+          daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error("Error starting day on water log:", insertError);
+        setLoading(false);
+        return;
+      }
+      
+      if (newLog) {
+        setLog(newLog);
+        setMeals([]);
+        setWaterLogs([]);
+        currentLog = newLog;
+      }
+      setLoading(false);
+    }
+    
+    if (!currentLog) return;
     
     const amountMl = Math.round(amountLiters * 1000);
+    
+    const currentTotalMl = waterLogs.reduce((sum, entry) => sum + (entry.amount_ml || 0), 0);
+    if (currentTotalMl + amountMl > 10000) {
+      toast.error("Water intake cannot exceed 10 liters per day!");
+      return;
+    }
+    
     const d = new Date();
     
     const newLog = {
-      user_id: log.user_id,
+      user_id: currentLog.user_id,
       date: activeDateStr,
       time: d.toISOString(),
       amount_ml: amountMl
