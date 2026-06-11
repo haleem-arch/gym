@@ -109,8 +109,50 @@ const WorkoutTracker = () => {
       // For resumed workouts, clear old sets before inserting new ones
       await supabase.from('workout_exercises').delete().eq('workout_id', workout.id);
 
+      // Resolve custom/temporary exercise IDs
+      const resolvedExercises = await Promise.all(
+        workout.exercises.map(async (ex) => {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(ex.id)) {
+            return ex;
+          }
+
+          // Check if an exercise with this name already exists
+          const { data: existingEx, error: findError } = await supabase
+            .from('exercises')
+            .select('id')
+            .eq('name', ex.name)
+            .maybeSingle();
+
+          if (!findError && existingEx) {
+            return { ...ex, id: existingEx.id };
+          }
+
+          // Create new exercise in database
+          const { data: newEx, error: insertError } = await supabase
+            .from('exercises')
+            .insert({
+              name: ex.name,
+              muscle_group: ex.muscle_group || 'Custom',
+              tier: ex.tier || 'A',
+              cue: ex.cue || '',
+              rationale: ex.rationale || '',
+              equipment: ex.equipment || ''
+            })
+            .select('id')
+            .single();
+
+          if (insertError || !newEx) {
+            console.error('Failed to create custom exercise:', insertError);
+            throw new Error(`Failed to save custom exercise "${ex.name}"`);
+          }
+
+          return { ...ex, id: newEx.id };
+        })
+      );
+
       const baseTime = new Date();
-      const exerciseInserts = workout.exercises.map((ex, index) => ({
+      const exerciseInserts = resolvedExercises.map((ex, index) => ({
         workout_id: workoutData.id,
         exercise_id: ex.id, 
         sets: ex.sets,
