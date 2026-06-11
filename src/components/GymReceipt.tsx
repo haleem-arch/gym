@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Clock, Trophy, Flame } from 'lucide-react';
+import { Dumbbell, Clock, Trophy, Flame, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface GymReceiptProps {
@@ -292,6 +292,13 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
       color: '#fb923c',
     },
     {
+      icon: <TrendingUp size={18} className="text-emerald-400" />,
+      label: 'Elevation',
+      value: `${runStats?.elevation_m || 0}`,
+      unit: 'm',
+      color: '#34d399',
+    },
+    {
       icon: <Clock size={18} className="text-purple-400" />,
       label: 'Duration',
       value: formatSecondsToMinSec(durationSec),
@@ -429,7 +436,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
               </div>
 
               {/* Stats Columns */}
-              <div className={`grid gap-3 mb-5 ${dayType === 'RUN' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
+              <div className={`grid gap-3 mb-5 ${dayType === 'RUN' ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-1 sm:grid-cols-3'}`}>
                 {statCards.map((card, i) => (
                   <motion.div
                     key={card.label}
@@ -488,26 +495,7 @@ export function GymReceipt({ stats, onClose }: GymReceiptProps) {
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Loading logs...</span>
                 </div>
               ) : dayType === 'RUN' ? (
-                runStats ? (
-                  <div className="space-y-3 mb-5">
-                    <div style={{ borderTop: '1px dashed rgba(255,255,255,0.08)', margin: '12px 0' }} />
-                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Run Performance</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-center">
-                        <span className="text-[9px] text-gray-500 uppercase font-bold block mb-0.5">Distance</span>
-                        <span className="text-xs font-black text-white">{runStats.distance_km} km</span>
-                      </div>
-                      <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-center">
-                        <span className="text-[9px] text-gray-500 uppercase font-bold block mb-0.5">Pace</span>
-                        <span className="text-xs font-black text-white">{runStats.pace} /km</span>
-                      </div>
-                      <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-center">
-                        <span className="text-[9px] text-gray-500 uppercase font-bold block mb-0.5">Elevation</span>
-                        <span className="text-xs font-black text-white">{runStats.elevation_m}m</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : stats.notes ? (
+                stats.notes ? (
                   <div className="space-y-3 mb-5">
                     <div style={{ borderTop: '1px dashed rgba(255,255,255,0.08)', margin: '12px 0' }} />
                     <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Workout Notes</h3>

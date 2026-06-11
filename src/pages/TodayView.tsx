@@ -13,43 +13,6 @@ import { BioStatusRing } from '../components/BioStatusRing';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PlanCardSkeleton, NutritionCardSkeleton, HydrationCardSkeleton, InBodyCardSkeleton } from '../components/SkeletonLoaders';
 
-const RippleButton = ({ onClick, className, children }: { onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, className?: string, children: React.ReactNode }) => {
-  const [ripples, setRipples] = useState<{x: number, y: number, id: number}[]>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const newRipple = { x, y, id: Date.now() };
-    
-    setRipples(prev => [...prev, newRipple]);
-    if (onClick) onClick(e);
-
-    setTimeout(() => {
-      setRipples(prev => prev.filter(r => r.id !== newRipple.id));
-    }, 600);
-  };
-
-  return (
-    <button onClick={handleClick} className={`relative overflow-hidden ${className}`}>
-      {ripples.map(ripple => (
-        <span
-          key={ripple.id}
-          className="absolute bg-white/40 rounded-full ripple-anim pointer-events-none"
-          style={{
-            left: ripple.x,
-            top: ripple.y,
-            width: 100,
-            height: 100,
-            marginTop: -50,
-            marginLeft: -50,
-          }}
-        />
-      ))}
-      {children}
-    </button>
-  );
-};
 
 const TodayView = () => {
   const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
@@ -72,6 +35,8 @@ const TodayView = () => {
   const navigate = useNavigate();
   const [userDisplayName, setUserDisplayName] = useState('');
   const [isHaleem, setIsHaleem] = useState(false);
+  const [disableNutritionTargets, setDisableNutritionTargets] = useState(true);
+  const [showWaterModal, setShowWaterModal] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -79,15 +44,29 @@ const TodayView = () => {
       if (session?.user) {
         let isUserHaleem = session.user.email?.toLowerCase().startsWith('haleem') || false;
         if (!isUserHaleem) {
-          const { data: profile } = await supabase.from('profiles').select('role, display_name').eq('id', session.user.id).maybeSingle();
+          const { data: profile } = await supabase.from('profiles').select('role, display_name, targets').eq('id', session.user.id).maybeSingle();
           if (profile?.role === 'coach') {
             isUserHaleem = true;
           }
           if (profile?.display_name) {
             setUserDisplayName(profile.display_name);
           }
+          
+          // Read target locks
+          const userTargets = profile?.targets || {};
+          const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+          const ownerTargets = ownerProfile?.targets || {};
+          
+          let disableNutrition = true;
+          if (userTargets.disable_nutrition_targets !== undefined) {
+            disableNutrition = !!userTargets.disable_nutrition_targets;
+          } else if (ownerTargets.disable_nutrition_targets !== undefined) {
+            disableNutrition = !!ownerTargets.disable_nutrition_targets;
+          }
+          setDisableNutritionTargets(disableNutrition);
         } else {
           setUserDisplayName('Haleem');
+          setDisableNutritionTargets(false);
         }
         setIsHaleem(isUserHaleem);
       }
@@ -108,13 +87,12 @@ const TodayView = () => {
   const { dayType, setDayType, loading: scheduleLoadingRaw } = useSchedule(activeDateStr);
   const scheduleLoading = debugLoading || scheduleLoadingRaw;
   const [showTargetsModal, setShowTargetsModal] = useState(false);
-  const [showCustomWater, setShowCustomWater] = useState(false);
   const [customWaterMl, setCustomWaterMl] = useState('');
   const handleLogCustomWater = async () => {
     const ml = parseInt(customWaterMl);
     if (!ml || isNaN(ml) || ml <= 0) return;
     await logWater(ml / 1000);
-    setShowCustomWater(false);
+    setShowWaterModal(false);
     setCustomWaterMl('');
   };
   const isToday = activeDate.toDateString() === new Date().toDateString();
@@ -747,7 +725,7 @@ const TodayView = () => {
                   <div className="p-4 flex flex-col justify-between h-full bg-surface">
                     <div className="flex items-center justify-between text-gray-400 mb-2">
                       <div className="flex items-center gap-2">
-                        <Droplets size={16} />
+                        <Droplets size={16} className="text-blue-400 animate-pulse" />
                         <span className="text-sm font-bold uppercase tracking-wider">Hydration</span>
                       </div>
                     </div>
@@ -755,55 +733,13 @@ const TodayView = () => {
                       <span className="text-2xl font-black text-white">{parseFloat(waterCurrent.toFixed(2))}<span className="text-sm text-gray-500 font-normal">/{parseFloat(waterTarget.toFixed(2))}L</span></span>
                     </div>
                     <div className="w-full flex flex-col items-center">
-                      {showCustomWater ? (
-                        <div className="flex gap-2 items-center w-full mt-1">
-                          <input 
-                            type="number"
-                            value={customWaterMl}
-                            onChange={e => setCustomWaterMl(e.target.value.replace(/\D/g, ''))}
-                            placeholder="e.g. 350 ml"
-                            className="flex-1 bg-black/50 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-primary text-center font-bold"
-                            inputMode="numeric"
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') handleLogCustomWater();
-                            }}
-                          />
-                          <button 
-                            onClick={handleLogCustomWater}
-                            className="bg-primary hover:bg-blue-600 px-3.5 py-2.5 rounded-xl text-white font-bold transition-all text-xs cursor-pointer active:scale-95"
-                          >
-                            Log
-                          </button>
-                          <button 
-                            onClick={() => { setShowCustomWater(false); setCustomWaterMl(''); }}
-                            className="bg-gray-800 hover:bg-gray-700 px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-white transition-all text-xs cursor-pointer active:scale-95"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2 w-full mt-1">
-                          <RippleButton 
-                            onClick={() => logWater(0.25)} 
-                            className="bg-primary/15 hover:bg-primary/25 border border-primary/20 text-primary text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            +250ml
-                          </RippleButton>
-                          <RippleButton 
-                            onClick={() => logWater(0.50)} 
-                            className="bg-primary/15 hover:bg-primary/25 border border-primary/20 text-primary text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            +500ml
-                          </RippleButton>
-                          <RippleButton 
-                            onClick={() => setShowCustomWater(true)} 
-                            className="bg-[#1e293b] hover:bg-[#334155] border border-gray-855 text-gray-300 text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            +Custom
-                          </RippleButton>
-                        </div>
-                      )}
-                      <span className="text-xs font-semibold text-gray-500 mt-2.5 block text-center leading-none">
+                      <button 
+                        onClick={() => setShowWaterModal(true)}
+                        className="w-full bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 text-xs font-black py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 mt-1"
+                      >
+                        Log Water 💧
+                      </button>
+                      <span className="text-[10px] font-bold text-gray-500 mt-2 block text-center leading-none uppercase tracking-wider">
                         {lastLoggedTime ? `Last logged: ${lastLoggedTime}` : 'No logs today'}
                       </span>
                     </div>
@@ -868,7 +804,7 @@ const TodayView = () => {
             workoutStatus={workoutStatus}
             isRestDay={dayType === 'REST'}
             compact={false}
-            onClick={() => setShowTargetsModal(true)}
+            onClick={disableNutritionTargets ? undefined : () => setShowTargetsModal(true)}
           />
         </div>
       </ErrorBoundary>
@@ -1106,6 +1042,100 @@ const TodayView = () => {
                   className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg"
                 >
                   Close Details
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+
+        {showWaterModal && (
+          <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm" onClick={() => setShowWaterModal(false)} />
+            
+            {/* Modal Container */}
+            <div className="fixed inset-0 z-[101] overflow-y-auto flex justify-center items-start p-4 py-8 pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative w-full max-w-sm my-auto mb-16 pointer-events-auto"
+              >
+                {/* Close Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowWaterModal(false)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+
+                {/* Title */}
+                <div className="flex items-center gap-2.5 mb-6">
+                  <div className="text-blue-400">
+                    <Droplets size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Log Hydration</h3>
+                    <p className="text-[9px] text-gray-550 font-bold uppercase tracking-widest leading-none mt-0.5">Track Water Intake</p>
+                  </div>
+                </div>
+
+                {/* Presets Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {[
+                    { amount: 250, label: 'Cup', desc: '250 ml', icon: '💧' },
+                    { amount: 500, label: 'Small Bottle', desc: '500 ml', icon: '💧💧' },
+                    { amount: 750, label: 'Large Bottle', desc: '750 ml', icon: '🥤' },
+                    { amount: 1000, label: 'Flask', desc: '1.0 L', icon: '🧪' }
+                  ].map((preset) => (
+                    <button
+                      key={preset.amount}
+                      onClick={async () => {
+                        await logWater(preset.amount / 1000);
+                        setShowWaterModal(false);
+                      }}
+                      className="bg-slate-950/40 hover:bg-slate-950/80 border border-slate-800 hover:border-blue-500/30 p-4 rounded-2xl flex flex-col items-center justify-center text-center transition-all cursor-pointer active:scale-95 group"
+                    >
+                      <span className="text-xl mb-1 group-hover:scale-110 transition-transform">{preset.icon}</span>
+                      <span className="text-xs font-bold text-white block">{preset.label}</span>
+                      <span className="text-[9px] text-gray-500 font-bold uppercase block mt-0.5">{preset.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Input */}
+                <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl mb-6 space-y-3">
+                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Custom Amount (ml)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={customWaterMl}
+                      onChange={e => setCustomWaterMl(e.target.value.replace(/\D/g, ''))}
+                      placeholder="e.g. 350 ml"
+                      className="flex-1 bg-slate-950 border border-slate-850 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-blue-500/50 font-bold"
+                      inputMode="numeric"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleLogCustomWater();
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={handleLogCustomWater}
+                      className="bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-xl text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer active:scale-95"
+                    >
+                      Log
+                    </button>
+                  </div>
+                </div>
+
+                {/* Cancel Button */}
+                <button 
+                  onClick={() => setShowWaterModal(false)}
+                  className="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-gray-300 font-black text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shadow-lg border border-slate-750"
+                >
+                  Cancel
                 </button>
               </motion.div>
             </div>

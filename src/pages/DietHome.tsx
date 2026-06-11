@@ -37,7 +37,7 @@ const DietHome = () => {
       const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       const ownerTargets = ownerProfile?.targets;
 
-      let shouldDisable = false;
+      let shouldDisable = true;
       if (myTargets && myTargets.disable_nutrition_targets !== undefined) {
         shouldDisable = !!myTargets.disable_nutrition_targets;
       } else if (ownerTargets && ownerTargets.disable_nutrition_targets !== undefined) {

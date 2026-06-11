@@ -1343,7 +1343,7 @@ export default function DesktopCoachPortal() {
 
       let workoutsQuery = supabase
         .from('workouts')
-        .select('id, user_id, date, day_type, total_volume, duration, notes')
+        .select('id, user_id, date, day_type, total_volume, duration, name, notes')
         .eq('status', 'completed')
         .order('date', { ascending: false });
 
@@ -3661,6 +3661,8 @@ export default function DesktopCoachPortal() {
         subscription_delay_days: delayDays,
         subscription_start_date,
         subscription_end_date,
+        disable_workout_templates: true,
+        disable_nutrition_targets: true,
         subscription_history: [
           {
             timestamp: new Date().toISOString(),
@@ -7353,7 +7355,7 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })}
                               placeholder="e.g. Captain Ahmed"
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
@@ -7363,7 +7365,7 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.username} onChange={e => setFormData({ ...formData, username: cleanUsername(e.target.value) })}
                               placeholder="e.g. ahmedfit"
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 (attemptedStep1Submit && !formData.username.trim()) || isUsernameTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
@@ -7375,7 +7377,7 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })}
                               placeholder="e.g. 123456"
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.password.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
@@ -7385,7 +7387,7 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" value={formData.clientCode} onChange={e => setFormData({ ...formData, clientCode: e.target.value.replace(/\D/g, '') })}
                               placeholder="e.g. 101"
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 isClientCodeTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
@@ -7397,7 +7399,7 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value.replace(/[^\d+]/g, '') })}
                               placeholder="e.g. +20 123 456789"
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.phoneNumber.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
@@ -7407,19 +7409,19 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="email" required value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value.trim() })}
                               placeholder="e.g. athlete@gmail.com"
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && (!formData.contactEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`}
                             />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500 block mb-1">Gender</label>
-                            <div className={`grid grid-cols-2 p-1 bg-[#121624]/60 border rounded-xl relative transition-all ${
+                            <div className={`grid grid-cols-2 p-1 bg-[#121624]/60 border rounded-xl relative transition-all h-12 items-center ${
                               attemptedStep1Submit && deployGender === null ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
                             }`}>
                               <button
                                 type="button" onClick={() => setDeployGender('male')}
-                                className={`py-2 text-xs font-bold rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${
+                                className={`h-full text-xs font-bold rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${
                                   deployGender === 'male' ? 'text-white' : 'text-gray-500'
                                 }`}
                               >
@@ -7434,7 +7436,7 @@ export default function DesktopCoachPortal() {
                               </button>
                               <button
                                 type="button" onClick={() => setDeployGender('female')}
-                                className={`py-2 text-xs font-bold rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${
+                                className={`h-full text-xs font-bold rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${
                                   deployGender === 'female' ? 'text-white' : 'text-gray-550'
                                 }`}
                               >
@@ -7454,7 +7456,7 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value.replace(/\D/g, '') })} 
                               placeholder="Years" 
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.age.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`} 
                             />
@@ -7464,14 +7466,14 @@ export default function DesktopCoachPortal() {
                             <input 
                               type="text" required value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value.replace(/\D/g, '') })} 
                               placeholder="Centimeters" 
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.height.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`} 
                             />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[9px] font-black uppercase text-gray-500">Onboarding Experience Level</label>
-                            <select value={formData.experience_level} onChange={e => setFormData({ ...formData, experience_level: e.target.value })} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none">
+                            <select value={formData.experience_level} onChange={e => setFormData({ ...formData, experience_level: e.target.value })} className="w-full h-12 bg-[#121624] border border-gray-800 rounded-xl px-3 text-xs text-white outline-none">
                               <option value="beginner">Beginner (Under 1 Year)</option>
                               <option value="intermediate">Intermediate (1-3 Years)</option>
                               <option value="advanced">Advanced (3+ Years)</option>
@@ -7482,7 +7484,7 @@ export default function DesktopCoachPortal() {
                             <select 
                               value={formData.subscriptionPeriod} 
                               onChange={e => setFormData({ ...formData, subscriptionPeriod: e.target.value })} 
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-3 text-xs text-white outline-none font-sans"
+                              className="w-full h-12 bg-[#121624] border border-gray-800 rounded-xl px-3 text-xs text-white outline-none font-sans"
                             >
                               <option value="none">No Expiry (Always Active)</option>
                               <option value="2 weeks">2 Weeks (14 Days)</option>
@@ -7511,7 +7513,7 @@ export default function DesktopCoachPortal() {
                                 }
                               }} 
                               placeholder="e.g. 3 days" 
-                              className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                              className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                 attemptedStep1Submit && !formData.subscriptionStartDelay.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                               }`} 
                             />
@@ -7526,7 +7528,7 @@ export default function DesktopCoachPortal() {
                                 required
                                 value={formData.customSubscriptionEnd} 
                                 onChange={e => setFormData({ ...formData, customSubscriptionEnd: e.target.value })} 
-                                className={`w-full bg-[#121624] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                className={`w-full h-12 bg-[#121624] border rounded-xl px-3 text-xs text-white outline-none focus:outline-none transition-all ${
                                   attemptedStep1Submit && !formData.customSubscriptionEnd.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-indigo-500/30 focus:border-indigo-500'
                                 }`} 
                               />

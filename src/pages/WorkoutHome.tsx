@@ -240,7 +240,7 @@ const WorkoutHome = () => {
       // Load Haleem's toggles
       const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       
-      let shouldDisableWorkout = false;
+      let shouldDisableWorkout = true;
       if (myProfile?.targets && myProfile.targets.disable_workout_templates !== undefined) {
         shouldDisableWorkout = !!myProfile.targets.disable_workout_templates;
       } else if (ownerProfile?.targets && ownerProfile.targets.disable_workout_templates !== undefined) {
