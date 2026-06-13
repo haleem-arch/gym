@@ -3683,7 +3683,8 @@ export default function DesktopCoachPortal() {
           gender: deployGender,
           role: 'client',
           targets: {
-            contact_email: formData.contactEmail.trim().toLowerCase()
+            contact_email: formData.contactEmail.trim().toLowerCase(),
+            phone_number: formData.phoneNumber.trim()
           }
         })
       });

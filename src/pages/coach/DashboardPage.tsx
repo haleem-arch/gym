@@ -1007,7 +1007,11 @@ export default function DashboardPage() {
           email: emailAddress,
           password: deployFormData.password,
           display_name: deployFormData.displayName,
-          gender: deployGender
+          gender: deployGender,
+          role: 'client',
+          targets: {
+            phone_number: deployFormData.phoneNumber.trim()
+          }
         })
       });
 
