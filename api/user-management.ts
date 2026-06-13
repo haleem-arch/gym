@@ -958,6 +958,50 @@ ${origin}/client-login
         console.error('Test WhatsApp error:', err);
         return res.status(500).json({ error: err.message || 'Internal Server Error' });
       }
+    } else if (action === 'get-whatsapp-status') {
+      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+      if (!isOwner) {
+        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      }
+
+      // Fetch owner targets to get settings
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+        .maybeSingle();
+
+      const ownerTargets = ownerProfile?.targets || {};
+      const gatewayUrl = ownerTargets.whatsapp_gateway_url;
+      if (!gatewayUrl) {
+        return res.status(400).json({ error: 'WhatsApp gateway URL is not configured' });
+      }
+
+      const cleanGatewayUrl = gatewayUrl.trim().replace(/\/$/, '');
+      const waEndpoint = `${cleanGatewayUrl}/status`;
+
+      const headers: Record<string, string> = {};
+      if (ownerTargets.whatsapp_gateway_token) {
+        headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+      }
+
+      try {
+        const waRes = await fetch(waEndpoint, {
+          method: 'GET',
+          headers
+        });
+
+        if (!waRes.ok) {
+          const responseText = await waRes.text();
+          return res.status(waRes.status).json({ error: `Gateway error: ${responseText}` });
+        }
+
+        const data = await waRes.json();
+        return res.status(200).json(data);
+      } catch (err: any) {
+        console.error('Get WhatsApp status error:', err);
+        return res.status(500).json({ error: err.message || 'Internal Server Error' });
+      }
     } else if (action === 'whatsapp-event') {
       if (req.method !== 'POST') {
         return res.status(450).json({ error: 'Method not allowed' });
