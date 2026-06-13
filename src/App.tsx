@@ -532,7 +532,46 @@ function App() {
 
   return (
     <Router>
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        toastOptions={{
+          style: {
+            background: '#0a0d1e',
+            color: '#fff',
+            border: '1px solid rgba(59, 130, 246, 0.15)',
+            borderRadius: '14px',
+            fontSize: '11px',
+            fontWeight: '700',
+            fontFamily: 'Outfit, sans-serif',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5)',
+            padding: '10px 16px',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#0a0d1e',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#0a0d1e',
+            },
+          },
+          loading: {
+            style: {
+              border: '1px solid rgba(245, 158, 11, 0.2)',
+            },
+            iconTheme: {
+              primary: '#f59e0b',
+              secondary: '#0a0d1e',
+            }
+          }
+        }}
+      />
       {showWelcomeSplash && (
         <SplashOverlay
           show={showWelcomeSplash}
