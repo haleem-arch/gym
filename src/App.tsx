@@ -37,6 +37,7 @@ import CookieConsent from './components/CookieConsent';
 import CoachLandingPage from './pages/coach/CoachLandingPage';
 import DownloadBlueprintPage from './pages/coach/DownloadBlueprintPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import WaPilotTestConsole from './pages/WaPilotTestConsole';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -242,6 +243,10 @@ const AppContent = () => {
 };
 
 function App() {
+  if (typeof window !== 'undefined' && window.location.pathname === '/secret-wapilot-test-8f3a9d') {
+    return <WaPilotTestConsole />;
+  }
+
   const [session, setSession] = useState<any>(undefined);
   const [signupInProgress, setSignupInProgress] = useState(() => localStorage.getItem('signup_in_progress') === 'true');
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | undefined>(undefined);
