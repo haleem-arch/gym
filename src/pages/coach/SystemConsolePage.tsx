@@ -6,7 +6,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import {
   Lock, ArrowLeft, RefreshCw, ShieldAlert, UserCheck, UserX,
   Search, Shield, Key, Plus, Activity, CheckCircle, Database,
-  Copy, Check, Mail, Server
+  Copy, Check, Mail, Server, MessageSquare, Eye, EyeOff
 } from 'lucide-react';
 
 function formatDayTypeLabel(dayType: string, totalVolume: number) {
@@ -216,6 +216,15 @@ export default function SystemConsolePage() {
   const [savingSMTP, setSavingSMTP] = useState(false);
   const [testingSMTP, setTestingSMTP] = useState(false);
 
+  // WhatsApp Settings
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappToken, setWhatsappToken] = useState('');
+  const [whatsappInstance, setWhatsappInstance] = useState('');
+  const [showWhatsappToken, setShowWhatsappToken] = useState(false);
+  const [waTestPhone, setWaTestPhone] = useState('');
+  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
+  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
+
   const fetchBaseData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -230,6 +239,9 @@ export default function SystemConsolePage() {
       if (ownerProfile?.targets) {
         setDisableWorkoutTemplatesToggle(!!ownerProfile.targets.disable_workout_templates);
         setDisableNutritionTargetsToggle(!!ownerProfile.targets.disable_nutrition_targets);
+        setWhatsappEnabled(!!ownerProfile.targets.whatsapp_enabled);
+        setWhatsappToken(ownerProfile.targets.whatsapp_token || '');
+        setWhatsappInstance(ownerProfile.targets.whatsapp_instance || '');
       }
 
       // Fetch SMTP Configuration
@@ -442,6 +454,69 @@ export default function SystemConsolePage() {
       toast.error(err.message || 'SMTP Connection failed. Check host, email, and password.', { id: toastId });
     } finally {
       setTestingSMTP(false);
+    }
+  };
+
+  const handleSaveWhatsApp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (whatsappEnabled && (!whatsappToken.trim() || !whatsappInstance.trim())) {
+      toast.error('Token and Instance Name are required when WhatsApp notifications are enabled.');
+      return;
+    }
+    setSavingWhatsApp(true);
+    try {
+      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
+      const updatedTargets = {
+        ...(ownerProfile?.targets || {}),
+        whatsapp_enabled: whatsappEnabled,
+        whatsapp_token: whatsappToken.trim(),
+        whatsapp_instance: whatsappInstance.trim()
+      };
+      const { error } = await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+      if (error) throw error;
+      toast.success('WhatsApp Configuration saved successfully! 👑');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to save WhatsApp settings.');
+    } finally {
+      setSavingWhatsApp(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!whatsappToken.trim() || !whatsappInstance.trim()) {
+      toast.error('Please configure WhatsApp token and instance name before testing.');
+      return;
+    }
+    if (!waTestPhone.trim()) {
+      toast.error('Please enter a test phone number.');
+      return;
+    }
+    setTestingWhatsApp(true);
+    const toastId = toast.loading(`Sending test WhatsApp message to ${waTestPhone}...`);
+    try {
+      const res = await fetch(`/api/user-management?action=test-whatsapp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({
+          token: whatsappToken.trim(),
+          instance: whatsappInstance.trim(),
+          phone: waTestPhone.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to dispatch test WhatsApp message.');
+      }
+      toast.success('Test WhatsApp message sent successfully!', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'WhatsApp Test failed. Check token, instance, or phone number.', { id: toastId });
+    } finally {
+      setTestingWhatsApp(false);
     }
   };
 
@@ -1026,6 +1101,98 @@ export default function SystemConsolePage() {
               {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
             </button>
           </div>
+        </form>
+      </div>
+
+      {/* WaPilot WhatsApp Configuration */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+          <MessageSquare size={14} /> WaPilot WhatsApp Configuration
+        </h3>
+        
+        <form onSubmit={handleSaveWhatsApp} className="space-y-4">
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-4">
+            
+            <div className="flex items-center justify-between py-1 px-1">
+              <div>
+                <p className="text-xs font-bold text-white">Enable WhatsApp Welcome Messages</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">Sends automated plain-text messages to newly onboarding clients</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWhatsappEnabled(!whatsappEnabled)}
+                className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${whatsappEnabled ? 'bg-emerald-500 justify-end' : 'bg-gray-800 justify-start'}`}
+              >
+                <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+              </button>
+            </div>
+
+            <div className="border-t border-white/[0.03] my-2" />
+
+            <div>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID</label>
+              <input
+                type="text"
+                required={whatsappEnabled}
+                value={whatsappInstance}
+                onChange={e => setWhatsappInstance(e.target.value.trim())}
+                placeholder="e.g. instance4351"
+                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none transition-all mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token</label>
+              <div className="relative mt-1">
+                <input
+                  type={showWhatsappToken ? 'text' : 'password'}
+                  required={whatsappEnabled}
+                  value={whatsappToken}
+                  onChange={e => setWhatsappToken(e.target.value.trim())}
+                  placeholder="e.g. wrsDfDhpmEsiPXBc..."
+                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 pl-3 pr-10 text-white text-xs outline-none transition-all font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowWhatsappToken(!showWhatsappToken)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-550 hover:text-white transition-colors cursor-pointer"
+                >
+                  {showWhatsappToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+            
+          </div>
+
+          {/* Test WhatsApp block */}
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Test Integration</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={waTestPhone}
+                onChange={e => setWaTestPhone(e.target.value)}
+                placeholder="Recipient Phone (e.g. 01128828954)"
+                className="flex-1 bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none transition-all"
+              />
+              <button
+                type="button"
+                disabled={testingWhatsApp}
+                onClick={handleTestWhatsApp}
+                className="bg-[#161f38] hover:bg-[#1f2b4e] text-emerald-400 font-bold px-4 rounded-xl text-xs transition-colors outline-none cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+              >
+                {testingWhatsApp ? 'Sending...' : 'Send Test'}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={savingWhatsApp}
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            {savingWhatsApp ? 'Saving Settings...' : 'Save WhatsApp Settings'}
+          </button>
         </form>
       </div>
 

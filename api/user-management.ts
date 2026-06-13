@@ -2,6 +2,23 @@ import { createClient } from '@supabase/supabase-js'
 import { validateEmailAddress, sendBulkEmails } from './helpers/email.js'
 import { waitUntil } from '@vercel/functions'
 
+function formatWhatsAppPhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  } else if (cleaned.startsWith('+')) {
+    cleaned = cleaned.substring(1);
+  }
+  
+  // If it is an Egyptian number starting with 01 (e.g. 010..., 011..., 012..., 015...)
+  if (cleaned.startsWith('01') && cleaned.length === 11) {
+    cleaned = '20' + cleaned.substring(1);
+  } else if (cleaned.startsWith('1') && cleaned.length === 10) {
+    cleaned = '20' + cleaned;
+  }
+  return cleaned;
+}
+
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co'
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjAwMjYsImV4cCI6MjA5NDE5NjAyNn0.BO_dTDWp2-vV_JUUYsxVl2TaLFUdX2LsuA_8o8DYOkg'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
@@ -255,10 +272,51 @@ ${origin}/client-login
         }
       })();
 
+      const sendWhatsAppPromise = (async () => {
+        if (userRole === 'client' && targets?.phone_number) {
+          // Fetch owner targets to check settings
+          const { data: ownerProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('targets')
+            .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+            .maybeSingle();
+
+          const ownerTargets = ownerProfile?.targets || {};
+          if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_token && ownerTargets.whatsapp_instance) {
+            const cleanedPhone = formatWhatsAppPhone(targets.phone_number);
+            const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance}/send-message`;
+            
+            const waText = `*LIFE GYM - Athlete Portal Activated* 🏋️\n\nWelcome, *${display_name?.trim() || 'Athlete'}*!\n\nCoach *${coachName}* has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and track progress.\n\n*Your Login Credentials:*\n• *Portal Link:* ${origin}/client-login\n• *Username:* ${cleanEmail.split('@')[0]}\n• *Password:* ${password}\n\n*Access Athlete Portal:*\n${origin}/client-login\n\n© 2026 Life Gym.`.trim();
+
+            const waRes = await fetch(waEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'token': ownerTargets.whatsapp_token.trim()
+              },
+              body: JSON.stringify({
+                chat_id: cleanedPhone,
+                text: waText
+              })
+            });
+
+            if (!waRes.ok) {
+              const errText = await waRes.text();
+              console.error(`WaPilot WhatsApp Welcome API error: ${waRes.status}`, errText);
+            }
+          }
+        }
+      })();
+
       waitUntil(
-        sendEmailPromise.catch(emailErr => {
-          console.error('Failed to send onboarding email notification:', emailErr);
-        })
+        Promise.all([
+          sendEmailPromise.catch(emailErr => {
+            console.error('Failed to send onboarding email notification:', emailErr);
+          }),
+          sendWhatsAppPromise.catch(waErr => {
+            console.error('Failed to send onboarding WhatsApp notification:', waErr);
+          })
+        ])
       );
 
       return res.status(200).json({ user: authData.user });
@@ -691,6 +749,53 @@ ${origin}/client-login
 
       return res.status(200).json({ success: true });
 
+    } else if (action === 'test-whatsapp') {
+      if (req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+      if (!isOwner) {
+        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      }
+
+      const { token: waToken, instance: waInstance, phone: waPhone } = req.body;
+      if (!waToken || !waInstance || !waPhone) {
+        return res.status(400).json({ error: 'Missing token, instance, or phone parameter' });
+      }
+
+      const cleanedPhone = formatWhatsAppPhone(waPhone);
+      const waEndpoint = `https://api.wapilot.net/api/v2/${waInstance}/send-message`;
+      
+      const waText = `*Stride Rite / Life Gym - WaPilot WhatsApp Connection Verified!* 👑\n\nThis is a plain-text message confirming your WaPilot V2 settings are correctly configured.\n\n• *Instance ID:* ${waInstance}\n• *Recipient:* ${cleanedPhone}\n• *Sender:* System Console`.trim();
+
+      try {
+        const waRes = await fetch(waEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': waToken.trim()
+          },
+          body: JSON.stringify({
+            chat_id: cleanedPhone,
+            text: waText
+          })
+        });
+
+        const responseText = await waRes.text();
+        if (!waRes.ok) {
+          return res.status(waRes.status).json({ error: `WaPilot error: ${responseText}` });
+        }
+
+        let responseJson = {};
+        try {
+          responseJson = JSON.parse(responseText);
+        } catch (e) {}
+
+        return res.status(200).json({ success: true, response: responseJson });
+      } catch (err: any) {
+        console.error('Test WhatsApp error:', err);
+        return res.status(500).json({ error: err.message || 'Internal Server Error' });
+      }
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }
