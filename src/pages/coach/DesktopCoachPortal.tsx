@@ -508,12 +508,13 @@ export default function DesktopCoachPortal() {
 
   // Owner WhatsApp Configuration states (for WaPilot welcoming)
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const [whatsappToken, setWhatsappToken] = useState('');
-  const [whatsappInstance, setWhatsappInstance] = useState('');
+  const [whatsappToken, setWhatsappToken] = useState('wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+  const [whatsappInstance, setWhatsappInstance] = useState('instance4351');
   const [showWhatsappToken, setShowWhatsappToken] = useState(false);
-  const [waTestPhone, setWaTestPhone] = useState('');
+  const [waTestPhone, setWaTestPhone] = useState('01128828954');
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
   const [savingWhatsApp, setSavingWhatsApp] = useState(false);
+  const [hasPrefilledSettings, setHasPrefilledSettings] = useState(false);
 
   // Coach Subscription Renewal Flow states
   const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
@@ -1040,18 +1041,23 @@ export default function DesktopCoachPortal() {
 
   // Prefill Owner Telegram ID, own WhatsApp number, and WaPilot Settings
   useEffect(() => {
-    if (myCoachProfile?.targets?.telegram_chat_id) {
-      setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
-    }
-    if (myCoachProfile?.targets?.phone_number) {
-      setOwnWhatsAppNumber(String(myCoachProfile.targets.phone_number));
-    }
-    if (myCoachProfile?.targets) {
+    if (myCoachProfile && !hasPrefilledSettings) {
+      if (myCoachProfile.targets?.telegram_chat_id) {
+        setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
+      }
+      if (myCoachProfile.targets?.phone_number) {
+        setOwnWhatsAppNumber(String(myCoachProfile.targets.phone_number));
+      }
       setWhatsappEnabled(!!myCoachProfile.targets.whatsapp_enabled);
-      setWhatsappToken(myCoachProfile.targets.whatsapp_token || '');
-      setWhatsappInstance(myCoachProfile.targets.whatsapp_instance || '');
+      if (myCoachProfile.targets.whatsapp_token) {
+        setWhatsappToken(myCoachProfile.targets.whatsapp_token);
+      }
+      if (myCoachProfile.targets.whatsapp_instance) {
+        setWhatsappInstance(myCoachProfile.targets.whatsapp_instance);
+      }
+      setHasPrefilledSettings(true);
     }
-  }, [myCoachProfile]);
+  }, [myCoachProfile, hasPrefilledSettings]);
 
   const handleSaveTelegramChatId = async () => {
     if (!coachUserId) return;
@@ -8953,31 +8959,31 @@ export default function DesktopCoachPortal() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot V2 Instance ID</label>
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot V2 Instance ID (Read-only)</label>
                           <input
                             type="text"
+                            readOnly
                             required={whatsappEnabled}
                             value={whatsappInstance}
-                            onChange={e => setWhatsappInstance(e.target.value.trim())}
                             placeholder="e.g. instance4351"
-                            className="w-full bg-[#05050b]/80 border border-gray-855 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700"
+                            className="w-full bg-[#05050b]/40 border border-gray-855/30 rounded-2xl px-4 py-3.5 text-xs text-gray-400 outline-none transition-all placeholder-gray-700 cursor-not-allowed select-none"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot API Token</label>
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot API Token (Read-only)</label>
                           <div className="relative">
                             <input
                               type={showWhatsappToken ? 'text' : 'password'}
+                              readOnly
                               required={whatsappEnabled}
                               value={whatsappToken}
-                              onChange={e => setWhatsappToken(e.target.value.trim())}
                               placeholder="e.g. wrsDfDhpmEsiPXBcydPDql..."
-                              className="w-full bg-[#05050b]/80 border border-gray-855 focus:border-blue-500 rounded-2xl pl-4 pr-10 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700 font-mono"
+                              className="w-full bg-[#05050b]/40 border border-gray-855/30 rounded-2xl pl-4 pr-10 py-3.5 text-xs text-gray-450 outline-none transition-all placeholder-gray-700 font-mono cursor-not-allowed select-none"
                             />
                             <button
                               type="button"
                               onClick={() => setShowWhatsappToken(!showWhatsappToken)}
-                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-550 hover:text-white transition-colors cursor-pointer"
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
                             >
                               {showWhatsappToken ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>

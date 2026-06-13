@@ -218,10 +218,10 @@ export default function SystemConsolePage() {
 
   // WhatsApp Settings
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const [whatsappToken, setWhatsappToken] = useState('');
-  const [whatsappInstance, setWhatsappInstance] = useState('');
+  const [whatsappToken, setWhatsappToken] = useState('wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+  const [whatsappInstance, setWhatsappInstance] = useState('instance4351');
   const [showWhatsappToken, setShowWhatsappToken] = useState(false);
-  const [waTestPhone, setWaTestPhone] = useState('');
+  const [waTestPhone, setWaTestPhone] = useState('01128828954');
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
   const [savingWhatsApp, setSavingWhatsApp] = useState(false);
 
@@ -1130,32 +1130,32 @@ export default function SystemConsolePage() {
             <div className="border-t border-white/[0.03] my-2" />
 
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID (Read-only)</label>
               <input
                 type="text"
+                readOnly
                 required={whatsappEnabled}
                 value={whatsappInstance}
-                onChange={e => setWhatsappInstance(e.target.value.trim())}
                 placeholder="e.g. instance4351"
-                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none transition-all mt-1"
+                className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-gray-400 outline-none transition-all mt-1 cursor-not-allowed select-none"
               />
             </div>
 
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token (Read-only)</label>
               <div className="relative mt-1">
                 <input
                   type={showWhatsappToken ? 'text' : 'password'}
+                  readOnly
                   required={whatsappEnabled}
                   value={whatsappToken}
-                  onChange={e => setWhatsappToken(e.target.value.trim())}
                   placeholder="e.g. wrsDfDhpmEsiPXBc..."
-                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 pl-3 pr-10 text-white text-xs outline-none transition-all font-mono"
+                  className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 pl-3 pr-10 text-gray-450 outline-none transition-all font-mono cursor-not-allowed select-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowWhatsappToken(!showWhatsappToken)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-550 hover:text-white transition-colors cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
                 >
                   {showWhatsappToken ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
