@@ -32,6 +32,7 @@ import AddClientPage from './pages/coach/AddClientPage';
 import ClientManagementPage from './pages/coach/ClientManagementPage';
 import OwnerDashboardPage from './pages/coach/OwnerDashboardPage';
 import SystemConsolePage from './pages/coach/SystemConsolePage';
+import WhatsAppManagerPage from './pages/coach/WhatsAppManagerPage';
 import DesktopCoachPortal from './pages/coach/DesktopCoachPortal';
 import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
@@ -197,6 +198,7 @@ const AppContent = () => {
               <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
               <Route path="/coach/owner" element={<PageTransition direction={direction}><OwnerDashboardPage /></PageTransition>} />
               <Route path="/coach/system" element={<PageTransition direction={direction}><SystemConsolePage /></PageTransition>} />
+              <Route path="/coach/whatsapp-manager" element={<PageTransition direction={direction}><WhatsAppManagerPage /></PageTransition>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -6,7 +6,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import {
   Lock, ArrowLeft, RefreshCw, ShieldAlert, UserCheck, UserX,
   Search, Shield, Key, Plus, Activity, CheckCircle, Database,
-  Copy, Check, Mail, Server, MessageSquare, Eye, EyeOff
+  Copy, Check, Mail, Server, MessageSquare
 } from 'lucide-react';
 
 function formatDayTypeLabel(dayType: string, totalVolume: number) {
@@ -216,24 +216,6 @@ export default function SystemConsolePage() {
   const [smtpSecure, setSmtpSecure] = useState(false);
   const [savingSMTP, setSavingSMTP] = useState(false);
 
-  // WhatsApp Settings
-  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const [whatsappToken, setWhatsappToken] = useState('wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
-  const [whatsappInstance, setWhatsappInstance] = useState('instance4351');
-  const [showWhatsappToken, setShowWhatsappToken] = useState(false);
-  const [waTestPhone, setWaTestPhone] = useState('01128828954');
-  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
-  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
-
-  // WhatsApp Broadcast States
-  const [waBroadcastTemplate, setWaBroadcastTemplate] = useState('');
-  const [targetAudience, setTargetAudience] = useState<'everyone' | 'coaches' | 'clients' | 'custom'>('everyone');
-  const [customList, setCustomList] = useState('');
-  const [broadcastRunning, setBroadcastRunning] = useState(false);
-  const [broadcastProgress, setBroadcastProgress] = useState<any>(null);
-  const [broadcastLogs, setBroadcastLogs] = useState<string[]>([]);
-  const cancelBroadcastRef = useRef(false);
-
   const fetchBaseData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -248,9 +230,6 @@ export default function SystemConsolePage() {
       if (ownerProfile?.targets) {
         setDisableWorkoutTemplatesToggle(!!ownerProfile.targets.disable_workout_templates);
         setDisableNutritionTargetsToggle(!!ownerProfile.targets.disable_nutrition_targets);
-        setWhatsappEnabled(!!ownerProfile.targets.whatsapp_enabled);
-        setWhatsappToken(ownerProfile.targets.whatsapp_token || '');
-        setWhatsappInstance(ownerProfile.targets.whatsapp_instance || '');
       }
 
       // Fetch SMTP Configuration
@@ -414,254 +393,6 @@ export default function SystemConsolePage() {
       toast.error(err.message || 'Failed to save SMTP settings.');
     } finally {
       setSavingSMTP(false);
-    }
-  };
-
-  const insertTagAtCursor = (tag: string) => {
-    const textarea = document.getElementById('whatsapp-tpl-textarea') as HTMLTextAreaElement;
-    if (!textarea) {
-      setWaBroadcastTemplate(prev => prev + tag);
-      return;
-    }
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = waBroadcastTemplate;
-    const before = text.substring(0, start);
-    const after = text.substring(end, text.length);
-    setWaBroadcastTemplate(before + tag + after);
-    setTimeout(() => {
-      textarea.focus();
-      textarea.selectionStart = textarea.selectionEnd = start + tag.length;
-    }, 0);
-  };
-
-  const formatWhatsAppPhone = (phone: string) => {
-    let cleaned = phone.replace(/\D/g, '');
-    if (cleaned.startsWith('00')) {
-      cleaned = cleaned.substring(2);
-    }
-    if (cleaned.startsWith('0') && cleaned.length === 11) {
-      cleaned = '2' + cleaned;
-    }
-    if (!cleaned.endsWith('@c.us')) {
-      cleaned = cleaned + '@c.us';
-    }
-    return cleaned;
-  };
-
-  const runWhatsAppBroadcast = async () => {
-    if (!waBroadcastTemplate) {
-      toast.error('Please fill out the WhatsApp message template.');
-      return;
-    }
-    if (!whatsappToken.trim() || !whatsappInstance.trim()) {
-      toast.error('Please configure WhatsApp token and instance name first.');
-      return;
-    }
-
-    setBroadcastLogs([]);
-    setBroadcastRunning(true);
-    cancelBroadcastRef.current = false;
-    setBroadcastProgress({
-      currentEmail: 'Starting...',
-      index: 0,
-      total: 0,
-      successCount: 0,
-      failCount: 0,
-      status: 'idle'
-    });
-
-    try {
-      let recipients: any[] = [];
-      if (targetAudience === 'everyone') {
-        const { data } = await supabase.from('profiles').select('display_name, email, role, targets');
-        recipients = data || [];
-      } else if (targetAudience === 'coaches') {
-        const { data } = await supabase.from('profiles').select('display_name, email, role, targets').eq('role', 'coach');
-        recipients = data || [];
-      } else if (targetAudience === 'clients') {
-        const { data } = await supabase.from('profiles').select('display_name, email, role, targets').eq('role', 'client');
-        recipients = data || [];
-      } else if (targetAudience === 'custom') {
-        const rawItems = customList.split(',').map(item => item.trim()).filter(Boolean);
-        const resolvedList: any[] = [];
-        for (const item of rawItems) {
-          if (cancelBroadcastRef.current) break;
-          if (item.includes('@')) {
-            const { data } = await supabase.from('profiles').select('display_name, email, role, targets').eq('email', item).maybeSingle();
-            if (data) {
-              resolvedList.push(data);
-            } else {
-              setBroadcastLogs(prev => [...prev, `[WARNING] Could not find profile for email: ${item}`]);
-            }
-          } else {
-            resolvedList.push({
-              display_name: 'Recipient',
-              email: 'custom-phone',
-              role: 'custom',
-              targets: { phone_number: item }
-            });
-          }
-        }
-        recipients = resolvedList;
-      }
-
-      if (cancelBroadcastRef.current) {
-        throw new Error('Broadcast cancelled by user.');
-      }
-
-      const resolvedRecipients = recipients.filter((r: any) => r.targets?.phone_number);
-
-      if (resolvedRecipients.length === 0) {
-        throw new Error('No valid recipients with phone numbers found.');
-      }
-
-      setBroadcastLogs([`[INFO] Found ${resolvedRecipients.length} recipients. Starting WhatsApp broadcast queue...`]);
-      setBroadcastProgress((prev: any) => ({
-        ...prev,
-        currentEmail: 'Sending...',
-        total: resolvedRecipients.length
-      }));
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (let i = 0; i < resolvedRecipients.length; i++) {
-        if (cancelBroadcastRef.current) {
-          setBroadcastLogs(prev => [...prev, `[CANCELLED] Broadcast stopped at ${i}/${resolvedRecipients.length}`]);
-          break;
-        }
-
-        const recipient = resolvedRecipients[i];
-        const rawPhone = recipient.targets.phone_number;
-        const cleanedPhone = formatWhatsAppPhone(rawPhone);
-        const displayName = recipient.display_name || 'Recipient';
-
-        let formattedMessage = waBroadcastTemplate
-          .replace(/{{display_name}}/g, displayName)
-          .replace(/{{phone}}/g, rawPhone)
-          .replace(/{{role}}/g, recipient.role || 'client');
-
-        setBroadcastProgress((prev: any) => ({
-          ...prev,
-          currentEmail: `${displayName} (${rawPhone})`,
-          index: i + 1
-        }));
-
-        try {
-          const waEndpoint = `https://api.wapilot.net/api/v2/${whatsappInstance.trim()}/send-message`;
-          const res = await fetch(waEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'token': whatsappToken.trim()
-            },
-            body: JSON.stringify({
-              chat_id: cleanedPhone,
-              text: formattedMessage.trim()
-            })
-          });
-
-          if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(`WaPilot returned status ${res.status}: ${errText}`);
-          }
-
-          successCount++;
-          setBroadcastLogs(prev => [
-            ...prev,
-            `[SUCCESS] (${i + 1}/${resolvedRecipients.length}) Sent to ${displayName} (${rawPhone})`
-          ]);
-        } catch (err: any) {
-          failCount++;
-          setBroadcastLogs(prev => [
-            ...prev,
-            `[FAILED] (${i + 1}/${resolvedRecipients.length}) Sent to ${displayName} (${rawPhone}) - Error: ${err.message}`
-          ]);
-        }
-
-        setBroadcastProgress((prev: any) => ({
-          ...prev,
-          successCount,
-          failCount
-        }));
-
-        if (i < resolvedRecipients.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-
-      setBroadcastLogs(prev => [
-        ...prev,
-        `[COMPLETE] WhatsApp Broadcast finished. Success: ${successCount}, Failed: ${failCount}`
-      ]);
-      setBroadcastRunning(false);
-    } catch (e: any) {
-      setBroadcastLogs(prev => [...prev, `[ERROR] WhatsApp Broadcast aborted: ${e.message}`]);
-      setBroadcastRunning(false);
-    }
-  };
-
-  const handleSaveWhatsApp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (whatsappEnabled && (!whatsappToken.trim() || !whatsappInstance.trim())) {
-      toast.error('Token and Instance Name are required when WhatsApp notifications are enabled.');
-      return;
-    }
-    setSavingWhatsApp(true);
-    try {
-      const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
-      const updatedTargets = {
-        ...(ownerProfile?.targets || {}),
-        whatsapp_enabled: whatsappEnabled,
-        whatsapp_token: whatsappToken.trim(),
-        whatsapp_instance: whatsappInstance.trim()
-      };
-      const { error } = await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
-      if (error) throw error;
-      toast.success('WhatsApp Configuration saved successfully! 👑');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to save WhatsApp settings.');
-    } finally {
-      setSavingWhatsApp(false);
-    }
-  };
-
-  const handleTestWhatsApp = async () => {
-    if (!whatsappToken.trim() || !whatsappInstance.trim()) {
-      toast.error('Please configure WhatsApp token and instance name before testing.');
-      return;
-    }
-    if (!waTestPhone.trim()) {
-      toast.error('Please enter a test phone number.');
-      return;
-    }
-    setTestingWhatsApp(true);
-    const toastId = toast.loading(`Sending test WhatsApp message to ${waTestPhone}...`);
-    try {
-      const res = await fetch(`/api/user-management?action=test-whatsapp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
-        },
-        body: JSON.stringify({
-          token: whatsappToken.trim(),
-          instance: whatsappInstance.trim(),
-          phone: waTestPhone.trim()
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to dispatch test WhatsApp message.');
-      }
-      toast.success('Test WhatsApp message sent successfully!', { id: toastId });
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'WhatsApp Test failed. Check token, instance, or phone number.', { id: toastId });
-    } finally {
-      setTestingWhatsApp(false);
     }
   };
 
@@ -1242,233 +973,37 @@ export default function SystemConsolePage() {
         </div>
       </form>
 
-      {/* WaPilot WhatsApp Configuration */}
-      <form onSubmit={handleSaveWhatsApp} className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
-        <div className="flex items-center gap-2.5 pb-2 border-b border-gray-800/80">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <MessageSquare size={15} />
-          </div>
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400">WaPilot WhatsApp Configuration</h3>
-            <p className="text-[9px] text-gray-550 mt-0.5">Configure API settings for automated onboarding welcomer</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 bg-[#11162a]/95 border border-gray-800/80 px-3.5 rounded-xl">
-            <div>
-              <p className="text-xs font-bold text-white">Enable Automated Welcomer Messages</p>
-              <p className="text-[9px] text-gray-550 mt-0.5">Automatically dispatches onboarding message to athletes on create</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setWhatsappEnabled(!whatsappEnabled)}
-              className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${whatsappEnabled ? 'bg-emerald-500 justify-end' : 'bg-gray-800 justify-start'}`}
-            >
-              <span className="w-4 h-4 bg-white rounded-full shadow-md" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID</label>
-              <input
-                type="text"
-                required={whatsappEnabled}
-                value={whatsappInstance}
-                onChange={e => setWhatsappInstance(e.target.value)}
-                placeholder="instance4351"
-                className="w-full bg-[#11162a] border border-gray-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token</label>
-              <div className="relative mt-1">
-                <input
-                  type={showWhatsappToken ? 'text' : 'password'}
-                  required={whatsappEnabled}
-                  value={whatsappToken}
-                  onChange={e => setWhatsappToken(e.target.value)}
-                  placeholder="API Token"
-                  className="w-full bg-[#11162a] border border-gray-800 focus:border-emerald-500 rounded-xl pl-3 pr-9 py-2.5 text-xs text-white outline-none transition-all font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowWhatsappToken(!showWhatsappToken)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
-                >
-                  {showWhatsappToken ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#11162a]/95 border border-gray-800/80 p-3.5 rounded-xl space-y-2">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Test Integration Connection</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={waTestPhone}
-                onChange={e => setWaTestPhone(e.target.value)}
-                placeholder="Phone (e.g. 01128828954)"
-                className="flex-1 bg-[#11162a]/80 border border-gray-800 focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all placeholder-gray-700"
-              />
-              <button
-                type="button"
-                disabled={testingWhatsApp}
-                onClick={handleTestWhatsApp}
-                className="bg-[#161f38] hover:bg-[#1f2b4e] text-emerald-400 font-bold px-4 py-2.5 rounded-xl text-xs uppercase transition-colors outline-none cursor-pointer flex items-center justify-center gap-1 shrink-0"
-              >
-                {testingWhatsApp ? 'Sending...' : 'Test'}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={savingWhatsApp}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg active:scale-98 cursor-pointer flex items-center justify-center gap-1.5 mt-2"
-          >
-            {savingWhatsApp ? 'Saving Settings...' : 'Save WhatsApp Settings'}
-          </button>
-        </div>
-      </form>
-
-      {/* WhatsApp Broadcast Campaign */}
+      {/* WhatsApp Gateway Management Card */}
       <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
-        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-          <MessageSquare size={14} /> WhatsApp Broadcast Campaign
-        </h3>
-        
-        <div className="space-y-4">
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-4">
-            
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-end flex-wrap gap-2">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Message Template (Plain Text)</label>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[8px] text-gray-600 font-bold uppercase mr-1">Insert Tag:</span>
-                  <button
-                    type="button"
-                    onClick={() => insertTagAtCursor('{{display_name}}')}
-                    className="px-2 py-1 bg-gray-900 hover:bg-gray-805 border border-gray-850 hover:border-gray-800 rounded-lg text-[9px] font-black text-emerald-400 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-                  >
-                    Name
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTagAtCursor('{{phone}}')}
-                    className="px-2 py-1 bg-gray-900 hover:bg-gray-805 border border-gray-850 hover:border-gray-800 rounded-lg text-[9px] font-black text-emerald-400 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-                  >
-                    Phone
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTagAtCursor('{{role}}')}
-                    className="px-2 py-1 bg-gray-900 hover:bg-gray-805 border border-gray-850 hover:border-gray-800 rounded-lg text-[9px] font-black text-emerald-400 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-                  >
-                    Role
-                  </button>
-                </div>
-              </div>
-              <textarea
-                id="whatsapp-tpl-textarea"
-                value={waBroadcastTemplate}
-                onChange={e => setWaBroadcastTemplate(e.target.value)}
-                placeholder="Hello {{display_name}}! This is an announcement from Life Gym..."
-                rows={5}
-                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none transition-all resize-none mt-1 font-sans"
-              />
+        <div className="flex items-center justify-between pb-2 border-b border-gray-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <MessageSquare size={15} />
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Target Cohort</label>
-              <div className="grid grid-cols-4 gap-1 p-1 bg-[#121624]/60 border border-gray-800 rounded-xl mt-1">
-                {[
-                  { id: 'everyone', label: 'Everyone' },
-                  { id: 'coaches', label: 'Coaches' },
-                  { id: 'clients', label: 'Athletes' },
-                  { id: 'custom', label: 'Manual' }
-                ].map(cohort => (
-                  <button
-                    key={cohort.id}
-                    type="button"
-                    onClick={() => setTargetAudience(cohort.id as any)}
-                    className={`py-2 text-[9px] font-black rounded-lg transition-all text-center uppercase tracking-wider cursor-pointer ${
-                      targetAudience === cohort.id ? 'bg-[#1e293b] text-white' : 'text-gray-500 hover:text-gray-300'
-                    }`}
-                  >
-                    {cohort.label}
-                  </button>
-                ))}
-              </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400">WhatsApp Gateway Console</h3>
+              <p className="text-[9px] text-gray-550 mt-0.5">Manage self-hosted gateway, anti-ban logic, and auto-replies</p>
             </div>
-
-            {targetAudience === 'custom' && (
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Emails or Phone Numbers (Comma Separated)</label>
-                <textarea
-                  value={customList}
-                  onChange={e => setCustomList(e.target.value)}
-                  placeholder="01128828954, coach@example.com"
-                  rows={2}
-                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none placeholder-gray-700 transition-all resize-none"
-                />
-              </div>
-            )}
-
-          </div>
-
-          {/* Broadcast Progress and Console */}
-          {broadcastProgress && (
-            <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-2.5">
-              <div className="flex justify-between items-center text-[9px] font-black text-gray-400 font-sans leading-none">
-                <span>Sending: {broadcastProgress.currentEmail}</span>
-                <span>{broadcastProgress.index}/{broadcastProgress.total}</span>
-              </div>
-              <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${(broadcastProgress.index / broadcastProgress.total) * 100}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[9px] font-black">
-                <span className="text-emerald-400">Sent: {broadcastProgress.successCount}</span>
-                <span className="text-red-400">Failed: {broadcastProgress.failCount}</span>
-              </div>
-            </div>
-          )}
-
-          {broadcastLogs.length > 0 && (
-            <div className="bg-zinc-950 border border-gray-800/80 rounded-2xl p-4 font-mono text-[9px] text-gray-400 max-h-40 overflow-y-auto space-y-1">
-              {broadcastLogs.map((log, idx) => (
-                <div key={idx} className="leading-relaxed break-all">{log}</div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3">
-            {broadcastRunning ? (
-              <button
-                type="button"
-                onClick={() => {
-                  cancelBroadcastRef.current = true;
-                }}
-                className="w-full bg-red-600 hover:bg-red-500 text-white font-extrabold text-[10px] py-3 px-4 uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-              >
-                Stop Broadcast
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={runWhatsAppBroadcast}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                Dispatch Campaign
-              </button>
-            )}
           </div>
         </div>
+
+        <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 flex flex-col gap-3">
+          <p className="text-xs text-gray-300 leading-relaxed font-medium">
+            Configure your custom self-hosted WhatsApp API Gateway, set up anti-ban dispatch delays, register auto-reply keyword rules, and launch marketing broadcast campaigns.
+          </p>
+          <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono">
+            <span>Status: <span className="text-emerald-400 font-bold">ACTIVE</span></span>
+            <span>Gateway: <span className="text-blue-400">Self-Hosted</span></span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigate('/coach/whatsapp-manager')}
+          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/10 cursor-pointer flex items-center justify-center gap-1.5"
+        >
+          Open WhatsApp Console →
+        </button>
       </div>
 
       {/* Create New Coach Account */}

@@ -23,6 +23,99 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL ||
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcHp4cHBzc21oaGFlZndxZmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjAwMjYsImV4cCI6MjA5NDE5NjAyNn0.BO_dTDWp2-vV_JUUYsxVl2TaLFUdX2LsuA_8o8DYOkg'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 
+async function sendWhatsAppMessageHelper({
+  to,
+  text,
+  ownerTargets,
+  supabaseAdmin
+}: {
+  to: string;
+  text: string;
+  ownerTargets: any;
+  supabaseAdmin: any;
+}) {
+  if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_gateway_url) {
+    return { success: false, error: 'WhatsApp integration is not enabled or configured' };
+  }
+
+  const cleanedPhone = formatWhatsAppPhone(to);
+  const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
+  const waEndpoint = `${gatewayUrl}/send-text`;
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (ownerTargets.whatsapp_gateway_token) {
+    headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+  }
+
+  // Anti-ban delay throttle
+  const delayMin = ownerTargets.whatsapp_delay_min !== undefined ? Number(ownerTargets.whatsapp_delay_min) : 5;
+  const delayMax = ownerTargets.whatsapp_delay_max !== undefined ? Number(ownerTargets.whatsapp_delay_max) : 15;
+  const randomDelay = Math.floor(Math.random() * (delayMax - delayMin + 1) + delayMin);
+  await new Promise(resolve => setTimeout(resolve, randomDelay * 1000));
+
+  try {
+    const res = await fetch(waEndpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        to: cleanedPhone,
+        text: text.trim()
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return { success: false, error: `Gateway returned status ${res.status}: ${errText}` };
+    }
+
+    // State-based Warm-up message check
+    const nextCount = (ownerTargets.whatsapp_sent_count || 0) + 1;
+    const warmupInterval = ownerTargets.whatsapp_warmup_interval !== undefined ? Number(ownerTargets.whatsapp_warmup_interval) : 10;
+    const warmupPhone = ownerTargets.whatsapp_warmup_phone;
+
+    // Fetch latest profile targets first
+    const { data: latestOwnerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('targets')
+      .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+      .maybeSingle();
+
+    const latestTargets = {
+      ...(latestOwnerProfile?.targets || ownerTargets),
+      whatsapp_sent_count: nextCount
+    };
+
+    await supabaseAdmin
+      .from('profiles')
+      .update({ targets: latestTargets })
+      .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+
+    // Mutate the parameter so the calling context is aware of the new count
+    ownerTargets.whatsapp_sent_count = nextCount;
+
+    if (warmupPhone && nextCount % warmupInterval === 0) {
+      const WARMUP_MESSAGES = [
+        "Hey! Just checking in, hope you're having an awesome day! 💪",
+        "Keep up the great work, consistency is key! 🔥",
+        "Quick question, did you get a chance to look at the new templates? 👑",
+        "Hope your training is going strong this week! Let's crush it! 🏋️",
+        "All set for the next workout session! Let me know if you need anything. 👍"
+      ];
+      const randomText = WARMUP_MESSAGES[Math.floor(Math.random() * WARMUP_MESSAGES.length)];
+      await fetch(waEndpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ to: formatWhatsAppPhone(warmupPhone), text: randomText })
+      }).catch(() => {});
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('sendWhatsAppMessageHelper error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -42,38 +135,51 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Action parameter is required' });
   }
 
-  // 1. Authorize Token
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: Missing token' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
-  if (authError || !user) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
-  }
-
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 
-  // Fetch coach/caller profile
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('role, display_name')
-    .eq('id', user.id)
-    .maybeSingle();
+  let user: any = null;
+  let profile: any = null;
+  let isCoach = false;
 
-  const userEmail = user.email || '';
-  const isStrideFitEmail = userEmail.toLowerCase().endsWith('@stride.fit');
-  const isCoach = profile?.role === 'coach' || 
-                  profile?.role === 'owner' || 
-                  profile?.role === 'admin' || 
-                  profile?.role === 'superadmin' || 
-                  user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' ||
-                  isStrideFitEmail;
+  // Only authenticate JWT token if action is not 'whatsapp-incoming'
+  if (action !== 'whatsapp-incoming') {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing token' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (supabaseServiceKey && token === supabaseServiceKey) {
+      user = { id: 'ef685819-cdb3-4cd7-811d-4e6f7fff423c', email: 'owner@stride.fit' };
+      isCoach = true;
+    } else {
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser(token);
+      if (authError || !authUser) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+      }
+      user = authUser;
+
+      // Fetch coach/caller profile
+      const { data: prof } = await supabaseAdmin
+        .from('profiles')
+        .select('role, display_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      profile = prof;
+
+      const userEmail = user.email || '';
+      const isStrideFitEmail = userEmail.toLowerCase().endsWith('@stride.fit');
+      isCoach = profile?.role === 'coach' || 
+                profile?.role === 'owner' || 
+                profile?.role === 'admin' || 
+                profile?.role === 'superadmin' || 
+                user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' ||
+                isStrideFitEmail;
+    }
+  }
 
   try {
     if (action === 'create') {
@@ -285,13 +391,11 @@ ${origin}/client-login
           .maybeSingle();
 
         const ownerTargets = ownerProfile?.targets || {};
-        if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_token || !ownerTargets.whatsapp_instance) {
+        if (!ownerTargets.whatsapp_enabled) {
           return;
         }
 
         const cleanedPhone = formatWhatsAppPhone(phoneNumber);
-        const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance.trim()}/send-message`;
-
         const DEFAULT_TPL_ATHLETE = `*LIFE GYM - Athlete Portal Activated* 🏋️\n\nWelcome, *{display_name}*!\n\nCoach *{coach_name}* has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and track progress.\n\n*Your Login Credentials:*\n• *Portal Link:* {link}\n• *Username:* {username}\n• *Password:* {password}\n\n*Access Athlete Portal:*\n{link}\n\n© 2026 Life Gym.`;
         const DEFAULT_TPL_COACH = `*LIFE GYM - Coach Portal Activated* 👑\n\nWelcome, *{display_name}*!\n\nYour administrative account has been provisioned. You can now log in to manage your clients, build workout templates, track diet logs, and approve memberships.\n\n*Your Login Credentials:*\n• *Portal Link:* {link}\n• *Username:* {username}\n• *Password:* {password}\n\n© 2026 Life Gym.`;
 
@@ -308,22 +412,12 @@ ${origin}/client-login
             .replace(/{password}/g, password)
             .replace(/{link}/g, `${origin}/client-login`);
 
-          const waRes = await fetch(waEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'token': ownerTargets.whatsapp_token.trim()
-            },
-            body: JSON.stringify({
-              chat_id: cleanedPhone,
-              text: formattedMessage.trim()
-            })
+          await sendWhatsAppMessageHelper({
+            to: cleanedPhone,
+            text: formattedMessage,
+            ownerTargets,
+            supabaseAdmin
           });
-
-          if (!waRes.ok) {
-            const errText = await waRes.text();
-            console.error(`WaPilot WhatsApp Client Welcome error: ${waRes.status}`, errText);
-          }
         } else if (userRole === 'coach') {
           // Check if triggered
           const isTriggered = ownerTargets.whatsapp_trigger_coach_onboarding !== false;
@@ -336,22 +430,12 @@ ${origin}/client-login
             .replace(/{password}/g, password)
             .replace(/{link}/g, `${origin}/login`);
 
-          const waRes = await fetch(waEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'token': ownerTargets.whatsapp_token.trim()
-            },
-            body: JSON.stringify({
-              chat_id: cleanedPhone,
-              text: formattedMessage.trim()
-            })
+          await sendWhatsAppMessageHelper({
+            to: cleanedPhone,
+            text: formattedMessage,
+            ownerTargets,
+            supabaseAdmin
           });
-
-          if (!waRes.ok) {
-            const errText = await waRes.text();
-            console.error(`WaPilot WhatsApp Coach Welcome error: ${waRes.status}`, errText);
-          }
         }
       })();
 
@@ -796,6 +880,39 @@ ${origin}/client-login
 
       return res.status(200).json({ success: true });
 
+    } else if (action === 'send-whatsapp') {
+      if (req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+      if (!isCoach) {
+        return res.status(403).json({ error: 'Forbidden: Requires Coach role' });
+      }
+
+      const { to, text } = req.body;
+      if (!to || !text) {
+        return res.status(400).json({ error: 'Missing to or text parameter' });
+      }
+
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+        .maybeSingle();
+
+      const ownerTargets = ownerProfile?.targets || {};
+      const sendRes = await sendWhatsAppMessageHelper({
+        to,
+        text,
+        ownerTargets,
+        supabaseAdmin
+      });
+
+      if (!sendRes.success) {
+        return res.status(500).json({ error: sendRes.error });
+      }
+
+      return res.status(200).json({ success: true });
+
     } else if (action === 'test-whatsapp') {
       if (req.method !== 'POST') {
         return res.status(450).json({ error: 'Method not allowed' });
@@ -805,40 +922,38 @@ ${origin}/client-login
         return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
       }
 
-      const { token: waToken, instance: waInstance, phone: waPhone } = req.body;
-      if (!waToken || !waInstance || !waPhone) {
-        return res.status(400).json({ error: 'Missing token, instance, or phone parameter' });
+      const { gatewayUrl, token, phone, text } = req.body;
+      if (!gatewayUrl || !phone) {
+        return res.status(400).json({ error: 'Missing gatewayUrl or phone parameter' });
       }
 
-      const cleanedPhone = formatWhatsAppPhone(waPhone);
-      const waEndpoint = `https://api.wapilot.net/api/v2/${waInstance}/send-message`;
-      
-      const waText = `*Stride Rite / Life Gym - WaPilot WhatsApp Connection Verified!* 👑\n\nThis is a plain-text message confirming your WaPilot V2 settings are correctly configured.\n\n• *Instance ID:* ${waInstance}\n• *Recipient:* ${cleanedPhone}\n• *Sender:* System Console`.trim();
+      const cleanedPhone = formatWhatsAppPhone(phone);
+      const cleanGatewayUrl = gatewayUrl.trim().replace(/\/$/, '');
+      const waEndpoint = `${cleanGatewayUrl}/send-text`;
+       // Wait, let's keep it clean
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token.trim()}`;
+      }
 
       try {
         const waRes = await fetch(waEndpoint, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'token': waToken.trim()
-          },
+          headers,
           body: JSON.stringify({
-            chat_id: cleanedPhone,
-            text: waText
+            to: cleanedPhone,
+            text: text || 'Connection Test'
           })
         });
 
         const responseText = await waRes.text();
         if (!waRes.ok) {
-          return res.status(waRes.status).json({ error: `WaPilot error: ${responseText}` });
+          return res.status(waRes.status).json({ error: `Gateway error: ${responseText}` });
         }
 
-        let responseJson = {};
-        try {
-          responseJson = JSON.parse(responseText);
-        } catch (e) {}
-
-        return res.status(200).json({ success: true, response: responseJson });
+        return res.status(200).json({ success: true });
       } catch (err: any) {
         console.error('Test WhatsApp error:', err);
         return res.status(500).json({ error: err.message || 'Internal Server Error' });
@@ -865,7 +980,7 @@ ${origin}/client-login
         .maybeSingle();
 
       const ownerTargets = ownerProfile?.targets || {};
-      if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_token || !ownerTargets.whatsapp_instance) {
+      if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_gateway_url) {
         return res.status(400).json({ error: 'WhatsApp integration is not enabled or configured' });
       }
 
@@ -921,31 +1036,141 @@ ${origin}/client-login
       }
 
       const cleanedPhone = formatWhatsAppPhone(phone);
-      const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance.trim()}/send-message`;
+      const sendRes = await sendWhatsAppMessageHelper({
+        to: cleanedPhone,
+        text: formattedMessage,
+        ownerTargets,
+        supabaseAdmin
+      });
 
-      try {
-        const waRes = await fetch(waEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'token': ownerTargets.whatsapp_token.trim()
-          },
-          body: JSON.stringify({
-            chat_id: cleanedPhone,
-            text: formattedMessage.trim()
-          })
-        });
+      if (!sendRes.success) {
+        return res.status(500).json({ error: sendRes.error });
+      }
 
-        const textResponse = await waRes.text();
-        if (!waRes.ok) {
-          return res.status(waRes.status).json({ error: `WaPilot error: ${textResponse}` });
+      return res.status(200).json({ success: true });
+
+    } else if (action === 'whatsapp-incoming') {
+      if (req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+        .maybeSingle();
+
+      const ownerTargets = ownerProfile?.targets || {};
+      if (!ownerTargets.whatsapp_enabled) {
+        return res.status(200).json({ success: true, message: 'WhatsApp integration is disabled' });
+      }
+
+      // Secure webhook: verify Authorization token if configured
+      if (ownerTargets.whatsapp_gateway_token) {
+        const incomingAuth = req.headers.authorization;
+        const expectedAuth = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+        if (!incomingAuth || incomingAuth.trim() !== expectedAuth) {
+          const rawToken = incomingAuth?.replace(/^Bearer\s+/i, '')?.trim();
+          if (rawToken !== ownerTargets.whatsapp_gateway_token.trim()) {
+            return res.status(401).json({ error: 'Unauthorized: Invalid gateway token' });
+          }
+        }
+      }
+
+      const { from, phone, sender, text, message, body } = req.body;
+      const rawSender = phone || from || sender;
+      const rawText = text || message || body || '';
+
+      if (!rawSender) {
+        return res.status(400).json({ error: 'Missing phone/from/sender parameter' });
+      }
+
+      const senderPhone = formatWhatsAppPhone(String(rawSender));
+      const messageText = String(rawText).trim();
+
+      // Check if the sender is our own trusted warmup phone, or owner's number, to prevent loops
+      const warmupPhone = ownerTargets.whatsapp_warmup_phone ? formatWhatsAppPhone(ownerTargets.whatsapp_warmup_phone) : '';
+      if (senderPhone === warmupPhone) {
+        return res.status(200).json({ success: true, message: 'Ignored message from warm-up phone to prevent loops' });
+      }
+
+      // Check greeting message logic first
+      let sentGreeting = false;
+      if (ownerTargets.whatsapp_greeting_enabled && ownerTargets.whatsapp_greeting_message) {
+        const greetedList = ownerTargets.whatsapp_greeted_numbers || [];
+        if (!greetedList.includes(senderPhone)) {
+          const greetingText = ownerTargets.whatsapp_greeting_message;
+          const sendRes = await sendWhatsAppMessageHelper({
+            to: senderPhone,
+            text: greetingText,
+            ownerTargets,
+            supabaseAdmin
+          });
+
+          if (sendRes.success) {
+            sentGreeting = true;
+            const updatedGreetedList = [...greetedList, senderPhone];
+            if (updatedGreetedList.length > 500) {
+              updatedGreetedList.shift();
+            }
+
+            const { data: latestProfile } = await supabaseAdmin
+              .from('profiles')
+              .select('targets')
+              .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+              .maybeSingle();
+
+            const updatedTargets = {
+              ...(latestProfile?.targets || ownerTargets),
+              whatsapp_greeted_numbers: updatedGreetedList
+            };
+
+            await supabaseAdmin
+              .from('profiles')
+              .update({ targets: updatedTargets })
+              .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c');
+
+            ownerTargets.whatsapp_greeted_numbers = updatedGreetedList;
+          }
+        }
+      }
+
+      // Check auto-reply rules
+      let sentAutoReply = false;
+      const rules = ownerTargets.whatsapp_autoreply_rules || [];
+      const lowerText = messageText.toLowerCase();
+
+      for (const rule of rules) {
+        let isMatch = false;
+        const kw = String(rule.keyword).toLowerCase().trim();
+        if (!kw) continue;
+
+        if (rule.matchType === 'exact') {
+          isMatch = lowerText === kw;
+        } else {
+          isMatch = lowerText.includes(kw);
         }
 
-        return res.status(200).json({ success: true });
-      } catch (err: any) {
-        console.error('WhatsApp Event dispatch error:', err);
-        return res.status(500).json({ error: err.message || 'Internal Server Error' });
+        if (isMatch) {
+          const sendRes = await sendWhatsAppMessageHelper({
+            to: senderPhone,
+            text: rule.response,
+            ownerTargets,
+            supabaseAdmin
+          });
+          if (sendRes.success) {
+            sentAutoReply = true;
+          }
+          break; // Stop at first match
+        }
       }
+
+      return res.status(200).json({
+        success: true,
+        greeted: sentGreeting,
+        autoReplied: sentAutoReply
+      });
+
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }
