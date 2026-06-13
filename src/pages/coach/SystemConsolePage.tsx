@@ -144,6 +144,7 @@ export default function SystemConsolePage() {
   const [coachName, setCoachName] = useState('');
   const [coachEmail, setCoachEmail] = useState('');
   const [coachPassword, setCoachPassword] = useState('');
+  const [coachPhone, setCoachPhone] = useState('');
   const [isCreatingCoach, setIsCreatingCoach] = useState(false);
   const [createdCoachCredentials, setCreatedCoachCredentials] = useState<any | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -548,7 +549,10 @@ export default function SystemConsolePage() {
           password: coachPassword,
           display_name: coachName,
           gender: 'male',
-          role: 'coach'
+          role: 'coach',
+          targets: {
+            phone_number: coachPhone.trim()
+          }
         })
       });
 
@@ -568,6 +572,7 @@ export default function SystemConsolePage() {
       setCoachName('');
       setCoachEmail('');
       setCoachPassword('');
+      setCoachPhone('');
 
       // Refresh list
       fetchBaseData();
@@ -1233,6 +1238,14 @@ export default function SystemConsolePage() {
               className={`w-full bg-[#11162a] border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1 ${
                 attemptedCoachSubmit && !coachPassword.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
               }`}
+            />
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Phone Number (Optional)</label>
+            <input
+              type="text" value={coachPhone} onChange={e => setCoachPhone(e.target.value)}
+              placeholder="e.g. 01128828954"
+              className="w-full bg-[#11162a] border border-gray-800 focus:border-blue-500 rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1"
             />
           </div>
 
