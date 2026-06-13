@@ -8933,20 +8933,7 @@ export default function DesktopCoachPortal() {
                     ))}
                   </div>
 
-                  {/* Telegram Bot Config Card */}
-                  <div className="relative overflow-hidden rounded-3xl border border-blue-500/10 bg-gradient-to-br from-[#0b0c16]/95 via-[#0d1022]/95 to-[#05060b]/98 p-6 md:p-8 shadow-2xl backdrop-blur-md">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-indigo-500/[0.03] rounded-full blur-2xl pointer-events-none" />
-                    
-                    <div className="flex items-center gap-4 border-b border-gray-850/80 pb-5 mb-6">
-                      <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
-                        <Send size={20} className="animate-pulse" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Telegram Bot Integration</h3>
-                        <p className="text-xs text-gray-400 mt-0.5 font-medium">Link your account to receive instant notifications for coach registrations and subscription updates.</p>
-                      </div>
-                    </div>
+                  {/* WhatsApp Welcome Config Card */}
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch text-xs text-gray-300 font-bold">
                       {/* Left side: Guide (col-span-7) */}
@@ -9149,26 +9136,26 @@ export default function DesktopCoachPortal() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot V2 Instance ID (Read-only)</label>
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot V2 Instance ID</label>
                           <input
                             type="text"
-                            readOnly
                             required={whatsappEnabled}
                             value={whatsappInstance}
+                            onChange={e => setWhatsappInstance(e.target.value)}
                             placeholder="e.g. instance4351"
-                            className="w-full bg-[#05050b]/40 border border-gray-855/30 rounded-2xl px-4 py-3.5 text-xs text-gray-400 outline-none transition-all placeholder-gray-700 cursor-not-allowed select-none"
+                            className="w-full bg-[#05050b]/40 border border-gray-855 focus:border-emerald-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot API Token (Read-only)</label>
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot API Token</label>
                           <div className="relative">
                             <input
                               type={showWhatsappToken ? 'text' : 'password'}
-                              readOnly
                               required={whatsappEnabled}
                               value={whatsappToken}
+                              onChange={e => setWhatsappToken(e.target.value)}
                               placeholder="e.g. wrsDfDhpmEsiPXBcydPDql..."
-                              className="w-full bg-[#05050b]/40 border border-gray-855/30 rounded-2xl pl-4 pr-10 py-3.5 text-xs text-gray-450 outline-none transition-all placeholder-gray-700 font-mono cursor-not-allowed select-none"
+                              className="w-full bg-[#05050b]/40 border border-gray-855 focus:border-emerald-500 rounded-2xl pl-4 pr-10 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700 font-mono"
                             />
                             <button
                               type="button"

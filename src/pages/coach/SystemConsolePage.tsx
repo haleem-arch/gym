@@ -1271,27 +1271,27 @@ export default function SystemConsolePage() {
             <div className="border-t border-white/[0.03] my-2" />
 
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID (Read-only)</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID</label>
               <input
                 type="text"
-                readOnly
                 required={whatsappEnabled}
                 value={whatsappInstance}
+                onChange={e => setWhatsappInstance(e.target.value)}
                 placeholder="e.g. instance4351"
-                className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-gray-400 outline-none transition-all mt-1 cursor-not-allowed select-none"
+                className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white outline-none transition-all mt-1"
               />
             </div>
 
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token (Read-only)</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token</label>
               <div className="relative mt-1">
                 <input
                   type={showWhatsappToken ? 'text' : 'password'}
-                  readOnly
                   required={whatsappEnabled}
                   value={whatsappToken}
+                  onChange={e => setWhatsappToken(e.target.value)}
                   placeholder="e.g. wrsDfDhpmEsiPXBc..."
-                  className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 pl-3 pr-10 text-gray-450 outline-none transition-all font-mono cursor-not-allowed select-none"
+                  className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 pl-3 pr-10 text-white outline-none transition-all font-mono"
                 />
                 <button
                   type="button"
@@ -1302,7 +1302,6 @@ export default function SystemConsolePage() {
                 </button>
               </div>
             </div>
-            
           </div>
 
           {/* Test WhatsApp block */}

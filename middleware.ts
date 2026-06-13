@@ -108,7 +108,7 @@ export default async function middleware(request: Request) {
       if (request.method === 'POST' && passwordResetEmailLimit) {
         try {
           const clonedReq = request.clone();
-          const body = await clonedReq.json();
+          const body = await clonedReq.json() as any;
           const email = body?.email;
           if (email && typeof email === 'string') {
             const cleanEmail = email.trim().toLowerCase();
