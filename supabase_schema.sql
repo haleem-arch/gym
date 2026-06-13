@@ -224,3 +224,14 @@ create policy "All workout exercises." on public.workout_exercises for all using
 create policy "All diet meals." on public.diet_meals for all using (
   exists (select 1 from public.diet_logs where id = diet_meals.diet_log_id and user_id = auth.uid())
 );
+
+-- Recommended Foreign Key Indexes for Scaled Performance
+create index if not exists idx_profiles_coach_id on public.profiles(coach_id);
+create index if not exists idx_client_profiles_coach_id on public.client_profiles(coach_id);
+create index if not exists idx_schedules_user_id on public.schedules(user_id);
+create index if not exists idx_workouts_user_id on public.workouts(user_id);
+create index if not exists idx_diet_logs_user_id on public.diet_logs(user_id);
+create index if not exists idx_inbody_scans_user_id on public.inbody_scans(user_id);
+create index if not exists idx_water_logs_user_id on public.water_logs(user_id);
+create index if not exists idx_progress_notes_user_id on public.progress_notes(user_id);
+
