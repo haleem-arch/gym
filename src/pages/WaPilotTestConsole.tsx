@@ -1,20 +1,65 @@
 import { useState } from 'react';
 import { toast, Toaster } from 'react-hot-toast';
-import { MessageSquare, Play, Terminal, HelpCircle } from 'lucide-react';
+import { MessageSquare, Play, Terminal, HelpCircle, RefreshCw } from 'lucide-react';
 
 export default function WaPilotTestConsole() {
-  const [endpoint, setEndpoint] = useState('https://api.wapilot.net/api/v2/send-message');
-  const [token, setToken] = useState('Bearer wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+  const [waToken, setWaToken] = useState('wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+  const [authHeaderKey, setAuthHeaderKey] = useState('token'); // 'token' or 'Authorization'
+  const [endpoint, setEndpoint] = useState('https://api.wapilot.net/api/v2/instance4351/send-message');
   const [method, setMethod] = useState('POST');
   const [payload, setPayload] = useState(JSON.stringify({
-    to: "201012345678",
-    body: "Hello from Life Gym! This is a test message."
+    chat_id: "201128828954",
+    text: "Hello from Life Gym! Testing WaPilot V2 API."
   }, null, 2));
 
+  const [instances, setInstances] = useState<any[]>([]);
+  const [fetchingInstances, setFetchingInstances] = useState(false);
   const [sending, setSending] = useState(false);
   const [responseStatus, setResponseStatus] = useState<string | null>(null);
   const [responseHeaders, setResponseHeaders] = useState<string | null>(null);
   const [responseBody, setResponseBody] = useState<string | null>(null);
+
+  const handleFetchInstances = async () => {
+    if (!waToken.trim()) {
+      toast.error('Please enter your API Token first');
+      return;
+    }
+
+    setFetchingInstances(true);
+    const toastId = toast.loading('Fetching instances from WaPilot...');
+    try {
+      const response = await fetch('https://api.wapilot.net/api/v2/instances', {
+        method: 'GET',
+        headers: {
+          'token': waToken.trim()
+        }
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setInstances(data.instances || []);
+        toast.success(`Found ${data.instances?.length || 0} instances!`, { id: toastId });
+        
+        // Auto-select first instance if available
+        if (data.instances && data.instances.length > 0) {
+          const firstInstance = data.instances[0].instance_uniquename;
+          setEndpoint(`https://api.wapilot.net/api/v2/${firstInstance}/send-message`);
+          setAuthHeaderKey('token');
+          setPayload(JSON.stringify({
+            chat_id: "201128828954",
+            text: "Hello from Life Gym! Testing WaPilot V2 API."
+          }, null, 2));
+        }
+      } else {
+        throw new Error(data.message || 'Failed to fetch instances');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Error fetching instances. Verify token.', { id: toastId });
+    } finally {
+      setFetchingInstances(false);
+    }
+  };
 
   const handleSendTest = async () => {
     if (!endpoint.trim()) {
@@ -44,11 +89,13 @@ export default function WaPilotTestConsole() {
         'Content-Type': 'application/json'
       };
 
-      if (token.trim()) {
-        if (token.toLowerCase().startsWith('bearer ') || token.toLowerCase().startsWith('basic ')) {
-          headers['Authorization'] = token.trim();
+      if (waToken.trim()) {
+        if (authHeaderKey === 'token') {
+          headers['token'] = waToken.trim();
         } else {
-          headers['Authorization'] = `Bearer ${token.trim()}`;
+          headers['Authorization'] = waToken.trim().startsWith('Bearer ') || waToken.trim().startsWith('bearer ')
+            ? waToken.trim()
+            : `Bearer ${waToken.trim()}`;
         }
       }
 
@@ -90,26 +137,134 @@ export default function WaPilotTestConsole() {
   };
 
   const handleSelectTemplate = (type: string) => {
+    const activeInstance = instances.length > 0 ? instances[0].instance_uniquename : 'instance4351';
+    
     if (type === 'whapi') {
       setEndpoint('https://gate.whapi.cloud/messages/text');
-      setToken('Bearer wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+      setAuthHeaderKey('Authorization');
       setPayload(JSON.stringify({
-        to: "201012345678",
+        to: "201128828954",
         body: "Hello from Life Gym! Testing Whapi."
       }, null, 2));
-    } else if (type === 'wapilot_phone') {
-      setEndpoint('https://api.wapilot.net/api/v2/send-message');
-      setToken('Bearer wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+    } else if (type === 'wapilot_v2') {
+      setEndpoint(`https://api.wapilot.net/api/v2/${activeInstance}/send-message`);
+      setAuthHeaderKey('token');
       setPayload(JSON.stringify({
-        phone: "201012345678",
-        message: "Hello from Life Gym! Testing WaPilot."
+        chat_id: "201128828954",
+        text: "Hello from Life Gym! Testing WaPilot V2."
       }, null, 2));
-    } else if (type === 'wapilot_to') {
-      setEndpoint('https://api.wapilot.net/api/v2/send');
-      setToken('Bearer wrsDfDhpmEsiPXBcydPDqlzvEDS5tUjOBMAUOz5ubm');
+    } else if (type === 'wapilot_v2_buttons_meta') {
+      // Standard Meta WhatsApp Cloud API Interactive Buttons
+      setEndpoint(`https://api.wapilot.net/api/v2/${activeInstance}/send-message`);
+      setAuthHeaderKey('token');
       setPayload(JSON.stringify({
-        to: "201012345678",
-        body: "Hello from Life Gym! Testing WaPilot."
+        chat_id: "201128828954",
+        text: "Please verify your subscription",
+        type: "interactive",
+        interactive: {
+          type: "button",
+          header: {
+            type: "text",
+            text: "Life Gym Os 🏋️‍♂️"
+          },
+          body: {
+            text: "Your membership payment was successfully verified! Click below to confirm activation."
+          },
+          footer: {
+            text: "Life Gym Automation"
+          },
+          action: {
+            buttons: [
+              {
+                type: "reply",
+                reply: {
+                  id: "confirm_activation",
+                  title: "Activate ✅"
+                }
+              },
+              {
+                type: "reply",
+                reply: {
+                  id: "report_issue",
+                  title: "Report Issue ⚠️"
+                }
+              }
+            ]
+          }
+        }
+      }, null, 2));
+    } else if (type === 'wapilot_v2_buttons_simple') {
+      // Simplified button structure used by some gateways
+      setEndpoint(`https://api.wapilot.net/api/v2/${activeInstance}/send-message`);
+      setAuthHeaderKey('token');
+      setPayload(JSON.stringify({
+        chat_id: "201128828954",
+        text: "Your payment of 3500 EGP is verified!",
+        buttons: [
+          { id: "confirm", text: "Confirm ✅" },
+          { id: "cancel", text: "Cancel ❌" }
+        ]
+      }, null, 2));
+    } else if (type === 'wapilot_v2_list_meta') {
+      // Standard Meta WhatsApp Cloud API Interactive Lists
+      setEndpoint(`https://api.wapilot.net/api/v2/${activeInstance}/send-message`);
+      setAuthHeaderKey('token');
+      setPayload(JSON.stringify({
+        chat_id: "201128828954",
+        text: "Please select your training split:",
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: {
+            type: "text",
+            text: "Choose your Workout Split"
+          },
+          body: {
+            text: "Please select one of the active training splits below:"
+          },
+          footer: {
+            text: "Life Gym Facility OS"
+          },
+          action: {
+            button: "Select Split",
+            sections: [
+              {
+                title: "Strength Splits",
+                rows: [
+                  { id: "split_push", title: "Push split 🔴", description: "Chest, shoulders, triceps" },
+                  { id: "split_pull", title: "Pull split 🔵", description: "Back, rear delts, biceps" },
+                  { id: "split_legs", title: "Legs split 🟡", description: "Quads, hamstrings, glutes" }
+                ]
+              }
+            ]
+          }
+        }
+      }, null, 2));
+    } else if (type === 'wapilot_v2_template') {
+      // WaPilot/Meta Approved Template schema
+      setEndpoint(`https://api.wapilot.net/api/v2/${activeInstance}/send-message`);
+      setAuthHeaderKey('token');
+      setPayload(JSON.stringify({
+        chat_id: "201128828954",
+        text: "Welcome to Life Gym!",
+        type: "template",
+        template: {
+          name: "life_gym_welcome",
+          language: {
+            code: "en_US"
+          },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                {
+                  type: "text",
+                  text: "Captain Alberto"
+                }
+              ]
+            }
+          ]
+        }
       }, null, 2));
     }
   };
@@ -127,25 +282,19 @@ export default function WaPilotTestConsole() {
             </h1>
             <p className="text-[10px] text-gray-500 font-mono">Execute and debug HTTP requests to your WhatsApp gateways</p>
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => handleSelectTemplate('whapi')}
-              className="px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-emerald-500 rounded-xl text-[10px] font-bold uppercase transition-all"
+          <div className="flex flex-wrap gap-2">
+            <select
+              onChange={(e) => handleSelectTemplate(e.target.value)}
+              className="px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-emerald-500 rounded-xl text-[10px] font-bold uppercase transition-all outline-none cursor-pointer"
             >
-              Whapi Template
-            </button>
-            <button 
-              onClick={() => handleSelectTemplate('wapilot_phone')}
-              className="px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-emerald-500 rounded-xl text-[10px] font-bold uppercase transition-all"
-            >
-              WaPilot (phone/message)
-            </button>
-            <button 
-              onClick={() => handleSelectTemplate('wapilot_to')}
-              className="px-3 py-1.5 bg-gray-900 border border-gray-800 hover:border-emerald-500 rounded-xl text-[10px] font-bold uppercase transition-all"
-            >
-              WaPilot (to/body)
-            </button>
+              <option value="">-- Choose Preset --</option>
+              <option value="wapilot_v2">WaPilot V2 (Plain Text)</option>
+              <option value="wapilot_v2_buttons_meta">WaPilot V2 (Buttons - Meta Spec)</option>
+              <option value="wapilot_v2_buttons_simple">WaPilot V2 (Buttons - Simple Spec)</option>
+              <option value="wapilot_v2_list_meta">WaPilot V2 (List Menu - Meta Spec)</option>
+              <option value="wapilot_v2_template">WaPilot V2 (Template Message)</option>
+              <option value="whapi">Whapi Preset</option>
+            </select>
           </div>
         </div>
 
@@ -158,6 +307,65 @@ export default function WaPilotTestConsole() {
             </h3>
 
             <div className="space-y-4">
+              
+              {/* Token and Header Configuration */}
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">API Token</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={waToken}
+                    onChange={e => setWaToken(e.target.value)}
+                    placeholder="WhatsApp API Token"
+                    className="flex-1 bg-[#11162a]/95 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all font-mono"
+                  />
+                  <button
+                    onClick={handleFetchInstances}
+                    disabled={fetchingInstances}
+                    className="px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw size={10} className={fetchingInstances ? 'animate-spin' : ''} />
+                    Fetch Instances
+                  </button>
+                </div>
+              </div>
+
+              {/* Instances List (if fetched) */}
+              {instances.length > 0 && (
+                <div className="bg-gray-950/45 p-3 rounded-2xl border border-gray-850 space-y-1.5">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">Active Instances found on WaPilot:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {instances.map((inst, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setEndpoint(`https://api.wapilot.net/api/v2/${inst.instance_uniquename}/send-message`);
+                          setAuthHeaderKey('token');
+                          toast.success(`Selected instance: ${inst.instance_uniquename}`);
+                        }}
+                        className="px-2 py-1 bg-blue-950/40 border border-blue-900/30 hover:border-emerald-500 rounded-lg text-[9px] font-mono text-blue-300"
+                      >
+                        {inst.instance_uniquename} ({inst.instance_name})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Header Selector */}
+              <div>
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1 font-mono">Authentication Header Key</label>
+                <select
+                  value={authHeaderKey}
+                  onChange={e => setAuthHeaderKey(e.target.value)}
+                  className="w-full bg-[#11162a]/95 border border-gray-800 rounded-xl p-3 text-xs text-white outline-none focus:border-emerald-500 transition-all mt-1 cursor-pointer"
+                >
+                  <option value="token">token (Required by WaPilot V2)</option>
+                  <option value="Authorization">Authorization (Bearer Token, e.g. Whapi / Meta)</option>
+                </select>
+              </div>
+
+              {/* Endpoint Path */}
               <div className="flex gap-2">
                 <div className="w-1/4">
                   <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Method</label>
@@ -177,21 +385,10 @@ export default function WaPilotTestConsole() {
                     type="text"
                     value={endpoint}
                     onChange={e => setEndpoint(e.target.value)}
-                    placeholder="https://api.wapilot.net/api/v2/send-message"
+                    placeholder="https://api.wapilot.net/api/v2/{instance_id}/send-message"
                     className="w-full bg-[#11162a]/95 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Authorization Header</label>
-                <input
-                  type="text"
-                  value={token}
-                  onChange={e => setToken(e.target.value)}
-                  placeholder="Bearer YOUR_TOKEN"
-                  className="w-full bg-[#11162a]/95 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all mt-1 font-mono"
-                />
               </div>
 
               {method !== 'GET' && (
