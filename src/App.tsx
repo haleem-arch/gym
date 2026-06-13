@@ -1,44 +1,46 @@
 // Rollback v0.0.9 - standard gym version
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import { Toaster, toast } from 'react-hot-toast';
-import HRDashboard from './pages/HRDashboard';
-import TodayView from './pages/TodayView';
-import WorkoutHome from './pages/WorkoutHome';
-import WorkoutBuilder from './pages/WorkoutBuilder';
-import WorkoutTracker from './pages/WorkoutTracker';
-import WorkoutDetail from './pages/WorkoutDetail';
 import BottomNav from './components/BottomNav';
 import { OpeningAnimation } from './components/OpeningAnimation';
 import { DumbbellLoader } from './components/DumbbellLoader';
 import { SplashOverlay } from './components/SplashOverlay';
 import { GymSplashOverlay } from './components/GymSplashOverlay';
-
-import DietHome from './pages/DietHome';
-import DietMealBuilder from './pages/DietMealBuilder';
-import DietSearch from './pages/DietSearch';
-import FoodCreator from './pages/FoodCreator';
-import FoodInventory from './pages/FoodInventory';
-
-import InBodyView from './pages/InBodyView';
-import ProfileView from './pages/ProfileView';
-
-// Coach Pages
-import DashboardPage from './pages/coach/DashboardPage';
-import ClientsListPage from './pages/coach/ClientsListPage';
-import AddClientPage from './pages/coach/AddClientPage';
-import ClientManagementPage from './pages/coach/ClientManagementPage';
-import OwnerDashboardPage from './pages/coach/OwnerDashboardPage';
-import SystemConsolePage from './pages/coach/SystemConsolePage';
-import DesktopCoachPortal from './pages/coach/DesktopCoachPortal';
 import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
-import CoachLandingPage from './pages/coach/CoachLandingPage';
-import DownloadBlueprintPage from './pages/coach/DownloadBlueprintPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import WaPilotTestConsole from './pages/WaPilotTestConsole';
+
+const HRDashboard = lazy(() => import('./pages/HRDashboard'));
+const TodayView = lazy(() => import('./pages/TodayView'));
+const WorkoutHome = lazy(() => import('./pages/WorkoutHome'));
+const WorkoutBuilder = lazy(() => import('./pages/WorkoutBuilder'));
+const WorkoutTracker = lazy(() => import('./pages/WorkoutTracker'));
+const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'));
+
+const DietHome = lazy(() => import('./pages/DietHome'));
+const DietMealBuilder = lazy(() => import('./pages/DietMealBuilder'));
+const DietSearch = lazy(() => import('./pages/DietSearch'));
+const FoodCreator = lazy(() => import('./pages/FoodCreator'));
+const FoodInventory = lazy(() => import('./pages/FoodInventory'));
+
+const InBodyView = lazy(() => import('./pages/InBodyView'));
+const ProfileView = lazy(() => import('./pages/ProfileView'));
+
+// Coach Pages
+const DashboardPage = lazy(() => import('./pages/coach/DashboardPage'));
+const ClientsListPage = lazy(() => import('./pages/coach/ClientsListPage'));
+const AddClientPage = lazy(() => import('./pages/coach/AddClientPage'));
+const ClientManagementPage = lazy(() => import('./pages/coach/ClientManagementPage'));
+const OwnerDashboardPage = lazy(() => import('./pages/coach/OwnerDashboardPage'));
+const SystemConsolePage = lazy(() => import('./pages/coach/SystemConsolePage'));
+const WhatsAppManagerPage = lazy(() => import('./pages/coach/WhatsAppManagerPage'));
+const DesktopCoachPortal = lazy(() => import('./pages/coach/DesktopCoachPortal'));
+const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
+const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const WaPilotTestConsole = lazy(() => import('./pages/WaPilotTestConsole'));
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -197,6 +199,7 @@ const AppContent = () => {
               <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
               <Route path="/coach/owner" element={<PageTransition direction={direction}><OwnerDashboardPage /></PageTransition>} />
               <Route path="/coach/system" element={<PageTransition direction={direction}><SystemConsolePage /></PageTransition>} />
+              <Route path="/coach/whatsapp-manager" element={<PageTransition direction={direction}><WhatsAppManagerPage /></PageTransition>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

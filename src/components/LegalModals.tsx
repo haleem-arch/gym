@@ -273,7 +273,8 @@ We reserve the right to modify these Terms of Use at any time. Changes will be e
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
+            aria-label="Close modal"
+            className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all cursor-pointer"
           >
             <X size={18} />
           </button>

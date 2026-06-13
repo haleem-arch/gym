@@ -43,7 +43,7 @@ export default function CookieConsent() {
           <h2 className="text-xl font-black text-white tracking-tight uppercase">
             Data Consent &amp; Privacy
           </h2>
-          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+          <p className="text-xs text-gray-300 mt-2 leading-relaxed">
             Welcome to <strong className="text-gray-200">Life Gym</strong>. To provide a personalized performance tracking experience, we use secure storage and artificial intelligence.
           </p>
 
@@ -53,7 +53,7 @@ export default function CookieConsent() {
               <Cookie size={16} className="text-blue-400 mt-0.5 shrink-0" />
               <div>
                 <h3 className="text-xs font-bold text-gray-200 uppercase tracking-wider">Cookies &amp; LocalStorage</h3>
-                <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">
                   We cache your auth token and workout/diet targets locally so the app runs instantly and offline.
                 </p>
               </div>
@@ -63,7 +63,7 @@ export default function CookieConsent() {
               <ShieldCheck size={16} className="text-purple-400 mt-0.5 shrink-0" />
               <div>
                 <h3 className="text-xs font-bold text-gray-200 uppercase tracking-wider">Secure Supabase Storage</h3>
-                <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">
                   Your composition scans (weight, fat, muscle) and training logs are saved securely.
                 </p>
               </div>
@@ -73,7 +73,7 @@ export default function CookieConsent() {
               <FileText size={16} className="text-amber-400 mt-0.5 shrink-0" />
               <div>
                 <h3 className="text-xs font-bold text-gray-200 uppercase tracking-wider">Gemini AI Coach</h3>
-                <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">
                   We utilize Gemini to analyze logs and reply in the Coach chat (no credentials shared).
                 </p>
               </div>
@@ -81,7 +81,7 @@ export default function CookieConsent() {
           </div>
 
           {/* Footer Agreement Text */}
-          <p className="text-[10px] text-gray-500 leading-normal mb-5 px-1">
+          <p className="text-[10px] text-gray-400 leading-normal mb-5 px-1">
             By clicking accept below, you consent to our{' '}
             <button
               onClick={() => setModalType('terms')}
