@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post 12 - Automatic account suspension.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060713;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+    .card {
+      width: 1080px;
+      height: 1080px;
+      background-color: #060713;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 90px;
+    }
+    .glow-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 7, 19, 0) 70%);
+      filter: blur(60px);
+      pointer-events: none;
+    }
+    .glow-top { top: -200px; right: -200px; }
+    .glow-bottom { bottom: -250px; left: -200px; }
+    .header { display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .logo-icon { width: 45px; height: 45px; }
+    .brand-name { font-weight: 900; font-size: 2.2rem; letter-spacing: 0.08em; color: #ffffff; text-transform: uppercase; }
+    .brand-name span { color: #3b82f6; }
+    .badge {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 8px 18px;
+      border-radius: 30px;
+      background: rgba(59, 130, 246, 0.05);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .content { z-index: 10; margin: auto 0; max-width: 850px; }
+    .content h2 { font-size: 4.6rem; font-weight: 900; line-height: 1.15; color: #ffffff; margin-bottom: 35px; letter-spacing: -0.02em; }
+    .content h2 span { background: linear-gradient(90deg, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .content p { font-size: 1.8rem; color: #9ca3af; line-height: 1.6; font-weight: 400; }
+    .footer { display: flex; justify-content: space-between; align-items: center; z-index: 10; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 45px; }
+    .handle { font-size: 1.5rem; color: #9ca3af; font-weight: 600; letter-spacing: 0.05em; }
+    .cta { font-size: 1.5rem; font-weight: 700; color: #ffffff; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px; }
+    .cta span { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow-bg glow-top"></div>
+    <div class="glow-bg glow-bottom"></div>
+    <div class="header">
+      <div class="brand">
+        <svg class="logo-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#4b5563" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <div class="brand-name">Life<span>Gym</span></div>
+      </div>
+      <div class="badge">Scale Gate</div>
+    </div>
+    <div class="content">
+      <h2>Automatic account <span>suspension</span>.</h2>
+      <p>Expired coach or athlete accounts are instantly locked out by a daily midnight cron job. Keep revenue secure.</p>
+    </div>
+    <div class="footer">
+      <div class="handle">@lifegym.io</div>
+      <div class="cta">Link in Bio <span>→</span></div>
+    </div>
+  </div>
+</body>
+</html>

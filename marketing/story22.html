@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Story 22 - Map runs with Strava.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060713;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+    .card {
+      width: 1080px;
+      height: 1920px;
+      background-color: #060713;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 120px 90px;
+    }
+    .glow-bg {
+      position: absolute;
+      width: 800px;
+      height: 800px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, rgba(6, 7, 19, 0) 70%);
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .glow-top { top: -200px; right: -200px; }
+    .glow-bottom { bottom: -200px; left: -200px; }
+    .header { display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .logo-icon { width: 50px; height: 50px; }
+    .brand-name { font-weight: 900; font-size: 2.5rem; letter-spacing: 0.08em; color: #ffffff; text-transform: uppercase; }
+    .brand-name span { color: #3b82f6; }
+    .badge {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 10px 24px;
+      border-radius: 30px;
+      background: rgba(59, 130, 246, 0.05);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .content { z-index: 10; margin: auto 0; max-width: 850px; }
+    .content h2 { font-size: 5.6rem; font-weight: 900; line-height: 1.15; color: #ffffff; margin-bottom: 45px; letter-spacing: -0.02em; }
+    .content h2 span { background: linear-gradient(90deg, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .content p { font-size: 2.2rem; color: #9ca3af; line-height: 1.6; font-weight: 400; }
+    .footer { display: flex; flex-direction: column; gap: 30px; align-items: center; z-index: 10; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 60px; }
+    .handle { font-size: 1.8rem; color: #9ca3af; font-weight: 600; letter-spacing: 0.05em; }
+    .cta {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #ffffff;
+      background: #3b82f6;
+      padding: 18px 45px;
+      border-radius: 40px;
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-transform: uppercase;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow-bg glow-top"></div>
+    <div class="glow-bg glow-bottom"></div>
+    <div class="header">
+      <div class="brand">
+        <svg class="logo-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#4b5563" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <div class="brand-name">Life<span>Gym</span></div>
+      </div>
+      <div class="badge">Endurance</div>
+    </div>
+    <div class="content">
+      <h2>Map runs with <span>Strava</span>.</h2>
+      <p>Combine physical gym lifts with GPS outdoor running stats.</p>
+    </div>
+    <div class="footer">
+      <div class="handle">@lifegym.io</div>
+      <div class="cta">Tap Link in Bio <span>→</span></div>
+    </div>
+  </div>
+</body>
+</html>
