@@ -848,9 +848,8 @@ ${origin}/client-login
         return res.status(450).json({ error: 'Method not allowed' });
       }
       
-      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-      if (!isOwner) {
-        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      if (!isCoach) {
+        return res.status(403).json({ error: 'Forbidden: Requires Coach or Owner role' });
       }
 
       const { event, phone, variables } = req.body;
@@ -878,6 +877,11 @@ ${origin}/client-login
       const DEFAULT_TPL_SUB_REJECTED = `*LIFE GYM - Subscription Payment Refused* ❌\n\nHello, Coach *{display_name}*!\n\nYour subscription renewal request of *{amount}* for the *{plan}* plan has been rejected.\n\n*Reason for rejection:*\n{reason}\n\nPlease check your receipt and resubmit your payment verification request in your profile settings.`;
       const DEFAULT_TPL_SUB_EXPIRING = `*LIFE GYM - Subscription Expiration Alert* ⚠️\n\nHello, Coach *{display_name}*!\n\nThis is a reminder that your active coaching license on Life Gym will expire in *{days_remaining}* days. \n\nTo prevent interruption of service for you and your athletes, please renew your subscription in your profile settings.`;
 
+      const DEFAULT_TPL_COACH_SUSPENDED = `*LIFE GYM* 👑\n\nHello, Coach *{display_name}*!\n\nYour account has been suspended due to your subscription ending. Please log in to the desktop portal to renew your subscription.`;
+      const DEFAULT_TPL_CLIENT_SUSPENDED = `*LIFE GYM* 🏋️\n\nHello, *{display_name}*!\n\nYour account has been suspended due to your subscription ending. Please contact your coach *{coach_name}* ({coach_phone}) to reactivate your account.`;
+      const DEFAULT_TPL_CLIENT_REACTIVATED = `*LIFE GYM* 🏋️\n\nHello, *{display_name}*!\n\nYour account has been reactivated! Go crush weights! 💪🔥`;
+      const DEFAULT_TPL_COACH_REACTIVATED = `*LIFE GYM - Subscription Reactivated* 👑\n\nHello, Coach *{display_name}*!\n\nYour coaching account has been reactivated. \n\n*Receipt Details:*\n• *Plan Period:* {plan}\n• *Start Date:* {start_date}\n• *End Date:* {end_date}\n\nTime to get back to work! 🚀`;
+
       if (event === 'sub_approved') {
         isTriggered = ownerTargets.whatsapp_trigger_sub_approved !== false;
         rawTemplate = ownerTargets.whatsapp_tpl_sub_approved || DEFAULT_TPL_SUB_APPROVED;
@@ -887,6 +891,18 @@ ${origin}/client-login
       } else if (event === 'sub_expiring') {
         isTriggered = ownerTargets.whatsapp_trigger_sub_expiring !== false;
         rawTemplate = ownerTargets.whatsapp_tpl_sub_expiring || DEFAULT_TPL_SUB_EXPIRING;
+      } else if (event === 'coach_suspended') {
+        isTriggered = ownerTargets.whatsapp_trigger_coach_suspended !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_coach_suspended || DEFAULT_TPL_COACH_SUSPENDED;
+      } else if (event === 'client_suspended') {
+        isTriggered = ownerTargets.whatsapp_trigger_client_suspended !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_client_suspended || DEFAULT_TPL_CLIENT_SUSPENDED;
+      } else if (event === 'client_reactivated') {
+        isTriggered = ownerTargets.whatsapp_trigger_client_reactivated !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_client_reactivated || DEFAULT_TPL_CLIENT_REACTIVATED;
+      } else if (event === 'coach_reactivated') {
+        isTriggered = ownerTargets.whatsapp_trigger_coach_reactivated !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_coach_reactivated || DEFAULT_TPL_COACH_REACTIVATED;
       } else {
         return res.status(400).json({ error: 'Invalid event type' });
       }

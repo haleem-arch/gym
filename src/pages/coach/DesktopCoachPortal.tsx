@@ -2715,6 +2715,23 @@ export default function DesktopCoachPortal() {
         user: { ...prev.user, targets: updatedTargets }
       }));
       fetchBaseData();
+
+      // Trigger WhatsApp notifications
+      if (currentTargets.phone_number) {
+        if (!isSuspended) {
+          // Suspend
+          triggerWhatsAppEvent('client_suspended', currentTargets.phone_number, {
+            display_name: managementClientProfile.user?.display_name || 'Athlete',
+            coach_name: myCoachProfile?.display_name || 'your coach',
+            coach_phone: myCoachProfile?.targets?.phone_number || ''
+          });
+        } else {
+          // Reactivate
+          triggerWhatsAppEvent('client_reactivated', currentTargets.phone_number, {
+            display_name: managementClientProfile.user?.display_name || 'Athlete'
+          });
+        }
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to update suspension status.');
@@ -2816,6 +2833,13 @@ export default function DesktopCoachPortal() {
       }));
       
       fetchBaseData();
+
+      // Trigger WhatsApp reactivation if now active
+      if (updatedTargets.phone_number && !isDeactivated) {
+        triggerWhatsAppEvent('client_reactivated', updatedTargets.phone_number, {
+          display_name: managementClientProfile.user?.display_name || 'Athlete'
+        });
+      }
     } catch (err: any) {
       console.error(err);
       toast.error('Failed to update subscription: ' + err.message);
@@ -2917,6 +2941,13 @@ export default function DesktopCoachPortal() {
       
       // Refresh the client lists
       fetchBaseData(true);
+
+      // Trigger WhatsApp reactivation if now active
+      if (updatedTargets.phone_number && !isDeactivated) {
+        triggerWhatsAppEvent('client_reactivated', updatedTargets.phone_number, {
+          display_name: reactivateClientName
+        });
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to reactivate subscription.');
@@ -2995,6 +3026,16 @@ export default function DesktopCoachPortal() {
       toast.success(`${coachReactivateName} reactivated successfully!`);
       setCoachReactivateModalOpen(false);
       setProfiles(prev => prev.map(p => p.id === coachReactivateId ? { ...p, targets: updatedTargets } : p));
+
+      // Trigger WhatsApp coach reactivated receipt
+      if (updatedTargets.phone_number && !isDeactivated) {
+        triggerWhatsAppEvent('coach_reactivated', updatedTargets.phone_number, {
+          display_name: coachReactivateName,
+          plan: coachReactivatePeriod,
+          start_date: startDate.toLocaleDateString(),
+          end_date: endDate ? endDate.toLocaleDateString() : 'Lifetime'
+        });
+      }
     } catch (err: any) {
       console.error(err);
       toast.error("Failed to reactivate coach.");
@@ -3303,6 +3344,24 @@ export default function DesktopCoachPortal() {
       if (error) throw error;
       toast.success(currentDeactivated ? "Coach reactivated!" : "Coach suspended!");
       setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
+
+      // Trigger WhatsApp notifications
+      if (currentTargets.phone_number) {
+        if (!currentDeactivated) {
+          // Suspend
+          triggerWhatsAppEvent('coach_suspended', currentTargets.phone_number, {
+            display_name: coachProfile?.display_name || 'Coach'
+          });
+        } else {
+          // Reactivate
+          triggerWhatsAppEvent('coach_reactivated', currentTargets.phone_number, {
+            display_name: coachProfile?.display_name || 'Coach',
+            plan: currentTargets.subscription_duration || 'Active',
+            start_date: currentTargets.subscription_start_date ? new Date(currentTargets.subscription_start_date).toLocaleDateString() : 'N/A',
+            end_date: currentTargets.subscription_end_date ? new Date(currentTargets.subscription_end_date).toLocaleDateString() : 'Lifetime'
+          });
+        }
+      }
     } catch (err: any) {
       console.error(err);
       toast.error("Failed to update coach suspension status.");
@@ -3377,6 +3436,16 @@ export default function DesktopCoachPortal() {
       if (error) throw error;
       toast.success("Coach subscription updated successfully!");
       setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
+
+      // Trigger WhatsApp coach reactivated receipt
+      if (updatedTargets.phone_number) {
+        triggerWhatsAppEvent('coach_reactivated', updatedTargets.phone_number, {
+          display_name: coachProfile?.display_name || 'Coach',
+          plan: coachSubPeriod,
+          start_date: startDate.toLocaleDateString(),
+          end_date: endDate ? endDate.toLocaleDateString() : 'Lifetime'
+        });
+      }
     } catch (err: any) {
       console.error(err);
       toast.error("Failed to update coach subscription.");
@@ -5030,6 +5099,24 @@ export default function DesktopCoachPortal() {
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to send WhatsApp reminder.', { id: toastId });
+    }
+  };
+
+  const triggerWhatsAppEvent = async (event: string, phone: string, variables: Record<string, string>) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      await fetch(`/api/user-management?action=whatsapp-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ event, phone, variables })
+      });
+    } catch (err) {
+      console.error(`Failed to trigger WhatsApp event ${event}:`, err);
     }
   };
 
