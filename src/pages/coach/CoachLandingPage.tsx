@@ -20,7 +20,9 @@ import {
   Phone,
   Calendar,
   Dumbbell,
-  Download
+  Download,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const FAQ_CATEGORIES = [
@@ -180,6 +182,7 @@ export default function CoachLandingPage() {
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
@@ -1235,10 +1238,19 @@ export default function CoachLandingPage() {
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Password</label>
-                        <input 
-                          type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
-                          className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl p-3 text-xs text-white outline-none" 
-                        />
+                        <div className="relative">
+                          <input 
+                            type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
+                            className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl pl-3 pr-10 py-3 text-xs text-white outline-none" 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
+                          >
+                            {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
                         <div className="text-right pt-1 select-none">
                           <button 
                             type="button" 
@@ -1404,12 +1416,21 @@ export default function CoachLandingPage() {
                             </div>
                             <div className="space-y-1.5">
                               <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Secure Password</label>
-                              <input 
-                                type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters"
-                                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                                  attemptedStep1Submit && password.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
-                                }`} 
-                              />
+                              <div className="relative">
+                                <input 
+                                  type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters"
+                                  className={`w-full bg-zinc-900/60 border rounded-xl pl-3 pr-10 py-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                                    attemptedStep1Submit && password.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+                                  }`} 
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
+                                >
+                                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                              </div>
                             </div>
                             <button
                               type="button"
