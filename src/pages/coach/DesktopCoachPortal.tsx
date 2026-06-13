@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { 
-  Users, User, UserPlus, UserX, Database, ShieldAlert, Activity, Search, Filter, 
+  Users, User, UserPlus, UserX, Database, ShieldAlert, Activity, Search, Filter, Bell,
   Trash2, Shield, ChevronRight, Scale, Ruler, Calendar, 
   Dumbbell, Save, UserCheck, Apple, CheckCircle, RefreshCw,
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
@@ -4883,6 +4883,36 @@ export default function DesktopCoachPortal() {
       
       setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
       toast.success(`Approved plan for ${coach.display_name || 'Coach'}`);
+
+      // Trigger WhatsApp approved notification (non-blocking background fetch)
+      if (updatedTargets.phone_number) {
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            
+            await fetch(`/api/user-management?action=whatsapp-event`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                event: 'sub_approved',
+                phone: updatedTargets.phone_number,
+                variables: {
+                  display_name: coach.display_name || 'Coach',
+                  plan: duration,
+                  amount: amount,
+                  end_date: endDate.toLocaleDateString()
+                }
+              })
+            });
+          } catch (waErr) {
+            console.error('Failed to trigger WhatsApp sub_approved event:', waErr);
+          }
+        })();
+      }
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to approve payment");
@@ -4922,11 +4952,83 @@ export default function DesktopCoachPortal() {
       
       setProfiles(prev => prev.map(p => p.id === coachId ? { ...p, targets: updatedTargets } : p));
       toast.success(`Rejected plan for ${coach.display_name || 'Coach'}`);
+
+      // Trigger WhatsApp rejected notification (non-blocking background fetch)
+      if (tg.phone_number) {
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            
+            await fetch(`/api/user-management?action=whatsapp-event`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                event: 'sub_rejected',
+                phone: tg.phone_number,
+                variables: {
+                  display_name: coach.display_name || 'Coach',
+                  plan: pending.duration,
+                  amount: pending.amount,
+                  reason: reason
+                }
+              })
+            });
+          } catch (waErr) {
+            console.error('Failed to trigger WhatsApp sub_rejected event:', waErr);
+          }
+        })();
+      }
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to reject payment");
     } finally {
       setProcessingPaymentId(null);
+    }
+  };
+
+  const handleSendWhatsAppReminder = async (phone: string, displayName: string, daysRemainingLabel: string) => {
+    let daysStr = 'few';
+    const match = daysRemainingLabel.match(/(\d+)\s+days?/i);
+    if (match) {
+      daysStr = match[1];
+    } else if (daysRemainingLabel.includes('today')) {
+      daysStr = '0';
+    }
+    
+    const toastId = toast.loading(`Sending expiration alert to ${displayName}...`);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const res = await fetch(`/api/user-management?action=whatsapp-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          event: 'sub_expiring',
+          phone,
+          variables: {
+            display_name: displayName,
+            days_remaining: daysStr
+          }
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send WhatsApp reminder.');
+      }
+      
+      toast.success(`Expiration reminder sent successfully to ${displayName}!`, { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to send WhatsApp reminder.', { id: toastId });
     }
   };
 
@@ -9202,7 +9304,19 @@ export default function DesktopCoachPortal() {
                                     </div>
                                   )}
                                 </td>
-                                <td className="py-4 px-5 text-right">
+                                <td className="py-4 px-5 text-right flex items-center justify-end gap-2">
+                                  {tg.phone_number && !isSelf && tg.subscription_end_date && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSendWhatsAppReminder(tg.phone_number, coach.display_name, daysRemainingLabel);
+                                      }}
+                                      className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/30 text-amber-400 text-[10px] font-black uppercase px-2.5 py-2 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                                    >
+                                      <Bell size={10} /> Remind
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     className="bg-[#121624]/60 group-hover:bg-blue-600 border border-gray-800 group-hover:border-blue-500 text-gray-400 group-hover:text-white text-[10px] font-black uppercase px-3.5 py-2 rounded-xl transition-all shadow-inner active:scale-95 cursor-pointer"

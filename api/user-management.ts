@@ -273,37 +273,84 @@ ${origin}/client-login
       })();
 
       const sendWhatsAppPromise = (async () => {
-        if (userRole === 'client' && targets?.phone_number) {
-          // Fetch owner targets to check settings
-          const { data: ownerProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('targets')
-            .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
-            .maybeSingle();
+        // Find if we have a phone number
+        const phoneNumber = targets?.phone_number;
+        if (!phoneNumber) return;
 
-          const ownerTargets = ownerProfile?.targets || {};
-          if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_token && ownerTargets.whatsapp_instance) {
-            const cleanedPhone = formatWhatsAppPhone(targets.phone_number);
-            const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance}/send-message`;
-            
-            const waText = `*LIFE GYM - Athlete Portal Activated* 🏋️\n\nWelcome, *${display_name?.trim() || 'Athlete'}*!\n\nCoach *${coachName}* has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and track progress.\n\n*Your Login Credentials:*\n• *Portal Link:* ${origin}/client-login\n• *Username:* ${cleanEmail.split('@')[0]}\n• *Password:* ${password}\n\n*Access Athlete Portal:*\n${origin}/client-login\n\n© 2026 Life Gym.`.trim();
+        // Fetch owner targets to check settings
+        const { data: ownerProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('targets')
+          .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+          .maybeSingle();
 
-            const waRes = await fetch(waEndpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'token': ownerTargets.whatsapp_token.trim()
-              },
-              body: JSON.stringify({
-                chat_id: cleanedPhone,
-                text: waText
-              })
-            });
+        const ownerTargets = ownerProfile?.targets || {};
+        if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_token || !ownerTargets.whatsapp_instance) {
+          return;
+        }
 
-            if (!waRes.ok) {
-              const errText = await waRes.text();
-              console.error(`WaPilot WhatsApp Welcome API error: ${waRes.status}`, errText);
-            }
+        const cleanedPhone = formatWhatsAppPhone(phoneNumber);
+        const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance.trim()}/send-message`;
+
+        const DEFAULT_TPL_ATHLETE = `*LIFE GYM - Athlete Portal Activated* 🏋️\n\nWelcome, *{display_name}*!\n\nCoach *{coach_name}* has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and track progress.\n\n*Your Login Credentials:*\n• *Portal Link:* {link}\n• *Username:* {username}\n• *Password:* {password}\n\n*Access Athlete Portal:*\n{link}\n\n© 2026 Life Gym.`;
+        const DEFAULT_TPL_COACH = `*LIFE GYM - Coach Portal Activated* 👑\n\nWelcome, *{display_name}*!\n\nYour administrative account has been provisioned. You can now log in to manage your clients, build workout templates, track diet logs, and approve memberships.\n\n*Your Login Credentials:*\n• *Portal Link:* {link}\n• *Username:* {username}\n• *Password:* {password}\n\n© 2026 Life Gym.`;
+
+        if (userRole === 'client') {
+          // Check if triggered
+          const isTriggered = ownerTargets.whatsapp_trigger_athlete_onboarding !== false;
+          if (!isTriggered) return;
+
+          const rawTemplate = ownerTargets.whatsapp_tpl_athlete_onboarding || DEFAULT_TPL_ATHLETE;
+          const formattedMessage = rawTemplate
+            .replace(/{display_name}/g, display_name?.trim() || 'Athlete')
+            .replace(/{coach_name}/g, coachName)
+            .replace(/{username}/g, cleanEmail.split('@')[0])
+            .replace(/{password}/g, password)
+            .replace(/{link}/g, `${origin}/client-login`);
+
+          const waRes = await fetch(waEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'token': ownerTargets.whatsapp_token.trim()
+            },
+            body: JSON.stringify({
+              chat_id: cleanedPhone,
+              text: formattedMessage.trim()
+            })
+          });
+
+          if (!waRes.ok) {
+            const errText = await waRes.text();
+            console.error(`WaPilot WhatsApp Client Welcome error: ${waRes.status}`, errText);
+          }
+        } else if (userRole === 'coach') {
+          // Check if triggered
+          const isTriggered = ownerTargets.whatsapp_trigger_coach_onboarding !== false;
+          if (!isTriggered) return;
+
+          const rawTemplate = ownerTargets.whatsapp_tpl_coach_onboarding || DEFAULT_TPL_COACH;
+          const formattedMessage = rawTemplate
+            .replace(/{display_name}/g, display_name?.trim() || 'Coach')
+            .replace(/{username}/g, cleanEmail)
+            .replace(/{password}/g, password)
+            .replace(/{link}/g, `${origin}/login`);
+
+          const waRes = await fetch(waEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'token': ownerTargets.whatsapp_token.trim()
+            },
+            body: JSON.stringify({
+              chat_id: cleanedPhone,
+              text: formattedMessage.trim()
+            })
+          });
+
+          if (!waRes.ok) {
+            const errText = await waRes.text();
+            console.error(`WaPilot WhatsApp Coach Welcome error: ${waRes.status}`, errText);
           }
         }
       })();
@@ -794,6 +841,93 @@ ${origin}/client-login
         return res.status(200).json({ success: true, response: responseJson });
       } catch (err: any) {
         console.error('Test WhatsApp error:', err);
+        return res.status(500).json({ error: err.message || 'Internal Server Error' });
+      }
+    } else if (action === 'whatsapp-event') {
+      if (req.method !== 'POST') {
+        return res.status(450).json({ error: 'Method not allowed' });
+      }
+      
+      const isOwner = user.id === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+      if (!isOwner) {
+        return res.status(403).json({ error: 'Forbidden: Requires System Owner role' });
+      }
+
+      const { event, phone, variables } = req.body;
+      if (!event || !phone) {
+        return res.status(400).json({ error: 'Missing event or phone parameter' });
+      }
+
+      // Fetch owner targets to check settings
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+        .maybeSingle();
+
+      const ownerTargets = ownerProfile?.targets || {};
+      if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_token || !ownerTargets.whatsapp_instance) {
+        return res.status(400).json({ error: 'WhatsApp integration is not enabled or configured' });
+      }
+
+      // Check toggles and choose templates
+      let isTriggered = false;
+      let rawTemplate = '';
+
+      const DEFAULT_TPL_SUB_APPROVED = `*LIFE GYM - Subscription Approved* ✅\n\nHello, Coach *{display_name}*!\n\nWe have verified your payment of *{amount}* for the *{plan}* plan. Your subscription has been approved and extended until *{end_date}*.\n\nThank you for choosing Life Gym!`;
+      const DEFAULT_TPL_SUB_REJECTED = `*LIFE GYM - Subscription Payment Refused* ❌\n\nHello, Coach *{display_name}*!\n\nYour subscription renewal request of *{amount}* for the *{plan}* plan has been rejected.\n\n*Reason for rejection:*\n{reason}\n\nPlease check your receipt and resubmit your payment verification request in your profile settings.`;
+      const DEFAULT_TPL_SUB_EXPIRING = `*LIFE GYM - Subscription Expiration Alert* ⚠️\n\nHello, Coach *{display_name}*!\n\nThis is a reminder that your active coaching license on Life Gym will expire in *{days_remaining}* days. \n\nTo prevent interruption of service for you and your athletes, please renew your subscription in your profile settings.`;
+
+      if (event === 'sub_approved') {
+        isTriggered = ownerTargets.whatsapp_trigger_sub_approved !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_sub_approved || DEFAULT_TPL_SUB_APPROVED;
+      } else if (event === 'sub_rejected') {
+        isTriggered = ownerTargets.whatsapp_trigger_sub_rejected !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_sub_rejected || DEFAULT_TPL_SUB_REJECTED;
+      } else if (event === 'sub_expiring') {
+        isTriggered = ownerTargets.whatsapp_trigger_sub_expiring !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_sub_expiring || DEFAULT_TPL_SUB_EXPIRING;
+      } else {
+        return res.status(400).json({ error: 'Invalid event type' });
+      }
+
+      if (!isTriggered) {
+        return res.status(200).json({ success: true, message: 'Event is disabled in settings' });
+      }
+
+      // Substitution variables
+      let formattedMessage = rawTemplate;
+      if (variables && typeof variables === 'object') {
+        Object.entries(variables).forEach(([k, v]) => {
+          const regex = new RegExp(`{${k}}`, 'g');
+          formattedMessage = formattedMessage.replace(regex, String(v));
+        });
+      }
+
+      const cleanedPhone = formatWhatsAppPhone(phone);
+      const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance.trim()}/send-message`;
+
+      try {
+        const waRes = await fetch(waEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': ownerTargets.whatsapp_token.trim()
+          },
+          body: JSON.stringify({
+            chat_id: cleanedPhone,
+            text: formattedMessage.trim()
+          })
+        });
+
+        const textResponse = await waRes.text();
+        if (!waRes.ok) {
+          return res.status(waRes.status).json({ error: `WaPilot error: ${textResponse}` });
+        }
+
+        return res.status(200).json({ success: true });
+      } catch (err: any) {
+        console.error('WhatsApp Event dispatch error:', err);
         return res.status(500).json({ error: err.message || 'Internal Server Error' });
       }
     } else {
