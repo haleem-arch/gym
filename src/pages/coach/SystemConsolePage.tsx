@@ -1140,136 +1140,136 @@ export default function SystemConsolePage() {
       </div>
 
       {/* Owner SMTP Configuration */}
-      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
-        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
-          <Mail size={14} /> Owner SMTP Configuration
-        </h3>
-        
-        <form onSubmit={handleSaveSMTP} className="space-y-4">
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-3">
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Host (e.g. smtp.gmail.com)</label>
-                <div className="relative mt-1">
-                  <Server className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <input
-                    type="text"
-                    value={smtpHost}
-                    onChange={e => setSmtpHost(e.target.value)}
-                    placeholder="Gmail (leave blank) or custom SMTP host"
-                    className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none transition-all"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Port</label>
+      <form onSubmit={handleSaveSMTP} className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <div className="flex items-center gap-2.5 pb-2 border-b border-gray-800/80">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <Mail size={15} />
+          </div>
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Owner SMTP Configuration</h3>
+            <p className="text-[9px] text-gray-500 mt-0.5">Custom SMTP server or Gmail setup for system emails</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Host</label>
+              <div className="relative mt-1">
+                <Server className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
                 <input
                   type="text"
-                  value={smtpPort}
-                  onChange={e => setSmtpPort(e.target.value)}
-                  placeholder="587 or 465"
-                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl p-3 text-white text-xs outline-none transition-all mt-1"
+                  value={smtpHost}
+                  onChange={e => setSmtpHost(e.target.value)}
+                  placeholder="Gmail (leave blank) or custom SMTP host"
+                  className="w-full bg-[#11162a] border border-gray-800 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white outline-none transition-all"
                 />
               </div>
             </div>
-
-            <div className="flex items-center justify-between py-1 px-1">
-              <div>
-                <p className="text-xs font-bold text-white">SSL/TLS Connection</p>
-                <p className="text-[9px] text-gray-500 mt-0.5">Use SSL (typically port 465) instead of STARTTLS (587)</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSmtpSecure(!smtpSecure)}
-                className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${smtpSecure ? 'bg-blue-500 justify-end' : 'bg-gray-800 justify-start'}`}
-              >
-                <span className="w-4 h-4 bg-white rounded-full shadow-md" />
-              </button>
-            </div>
-
-            <div className="border-t border-white/[0.03] my-2" />
-
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Sender Email / Username</label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                <input
-                  type="email"
-                  required
-                  value={smtpEmail}
-                  onChange={e => setSmtpEmail(e.target.value)}
-                  placeholder="e.g. tsmhaleem@gmail.com"
-                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none transition-all"
-                />
-              </div>
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Port</label>
+              <input
+                type="text"
+                value={smtpPort}
+                onChange={e => setSmtpPort(e.target.value)}
+                placeholder="587 or 465"
+                className="w-full bg-[#11162a] border border-gray-800 focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all mt-1"
+              />
             </div>
-
-            <div>
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500">SMTP Password / App Password</label>
-                <a 
-                  href="https://myaccount.google.com/apppasswords" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[8.5px] text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-wider font-extrabold"
-                >
-                  Get Gmail App Password ↗
-                </a>
-              </div>
-              <div className="relative mt-1">
-                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                <input
-                  type="password"
-                  required
-                  value={smtpPassword}
-                  onChange={e => setSmtpPassword(e.target.value)}
-                  placeholder="••••••••••••••••"
-                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-white text-xs outline-none transition-all"
-                />
-              </div>
-            </div>
-            
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex items-center justify-between py-2 bg-[#11162a]/95 border border-gray-800/80 px-3.5 rounded-xl">
+            <div>
+              <p className="text-xs font-bold text-white">SSL/TLS Connection</p>
+              <p className="text-[9px] text-gray-550 mt-0.5">Use SSL (port 465) instead of STARTTLS (587)</p>
+            </div>
             <button
-              type="submit"
-              disabled={savingSMTP}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer"
+              type="button"
+              onClick={() => setSmtpSecure(!smtpSecure)}
+              className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${smtpSecure ? 'bg-blue-500 justify-end' : 'bg-gray-800 justify-start'}`}
             >
-              {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
+              <span className="w-4 h-4 bg-white rounded-full shadow-md" />
             </button>
           </div>
-        </form>
-      </div>
+
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">SMTP Username / Sender Email</label>
+            <div className="relative mt-1">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+              <input
+                type="email"
+                required
+                value={smtpEmail}
+                onChange={e => setSmtpEmail(e.target.value)}
+                placeholder="e.g. tsmhaleem@gmail.com"
+                className="w-full bg-[#11162a] border border-gray-800 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center ml-1">
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500">SMTP Password / App Password</label>
+              <a 
+                href="https://myaccount.google.com/apppasswords" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[8px] text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-wider font-black"
+              >
+                Get Gmail App Password ↗
+              </a>
+            </div>
+            <div className="relative mt-1">
+              <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3.5 h-3.5" />
+              <input
+                type="password"
+                required
+                value={smtpPassword}
+                onChange={e => setSmtpPassword(e.target.value)}
+                placeholder="••••••••••••••••"
+                className="w-full bg-[#11162a] border border-gray-800 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={savingSMTP}
+            className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/10 mt-2"
+          >
+            {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
+          </button>
+        </div>
+      </form>
 
       {/* WaPilot WhatsApp Configuration */}
-      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
-        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-          <MessageSquare size={14} /> WaPilot WhatsApp Configuration
-        </h3>
-        
-        <form onSubmit={handleSaveWhatsApp} className="space-y-4">
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-4">
-            
-            <div className="flex items-center justify-between py-1 px-1">
-              <div>
-                <p className="text-xs font-bold text-white">Enable WhatsApp Welcome Messages</p>
-                <p className="text-[9px] text-gray-500 mt-0.5">Sends automated plain-text messages to newly onboarding clients</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setWhatsappEnabled(!whatsappEnabled)}
-                className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${whatsappEnabled ? 'bg-emerald-500 justify-end' : 'bg-gray-800 justify-start'}`}
-              >
-                <span className="w-4 h-4 bg-white rounded-full shadow-md" />
-              </button>
+      <form onSubmit={handleSaveWhatsApp} className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <div className="flex items-center gap-2.5 pb-2 border-b border-gray-800/80">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <MessageSquare size={15} />
+          </div>
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400">WaPilot WhatsApp Configuration</h3>
+            <p className="text-[9px] text-gray-550 mt-0.5">Configure API settings for automated onboarding welcomer</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between py-2 bg-[#11162a]/95 border border-gray-800/80 px-3.5 rounded-xl">
+            <div>
+              <p className="text-xs font-bold text-white">Enable Automated Welcomer Messages</p>
+              <p className="text-[9px] text-gray-550 mt-0.5">Automatically dispatches onboarding message to athletes on create</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setWhatsappEnabled(!whatsappEnabled)}
+              className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${whatsappEnabled ? 'bg-emerald-500 justify-end' : 'bg-gray-800 justify-start'}`}
+            >
+              <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+            </button>
+          </div>
 
-            <div className="border-t border-white/[0.03] my-2" />
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot V2 Instance ID</label>
               <input
@@ -1277,11 +1277,10 @@ export default function SystemConsolePage() {
                 required={whatsappEnabled}
                 value={whatsappInstance}
                 onChange={e => setWhatsappInstance(e.target.value)}
-                placeholder="e.g. instance4351"
-                className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white outline-none transition-all mt-1"
+                placeholder="instance4351"
+                className="w-full bg-[#11162a] border border-gray-800 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all mt-1"
               />
             </div>
-
             <div>
               <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">WaPilot API Token</label>
               <div className="relative mt-1">
@@ -1290,8 +1289,8 @@ export default function SystemConsolePage() {
                   required={whatsappEnabled}
                   value={whatsappToken}
                   onChange={e => setWhatsappToken(e.target.value)}
-                  placeholder="e.g. wrsDfDhpmEsiPXBc..."
-                  className="w-full bg-[#121624]/30 border border-gray-800 focus:border-emerald-500 rounded-xl py-3 pl-3 pr-10 text-white outline-none transition-all font-mono"
+                  placeholder="API Token"
+                  className="w-full bg-[#11162a] border border-gray-800 focus:border-emerald-500 rounded-xl pl-3 pr-9 py-2.5 text-xs text-white outline-none transition-all font-mono"
                 />
                 <button
                   type="button"
@@ -1304,24 +1303,23 @@ export default function SystemConsolePage() {
             </div>
           </div>
 
-          {/* Test WhatsApp block */}
-          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-3">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Test Integration</p>
+          <div className="bg-[#11162a]/95 border border-gray-800/80 p-3.5 rounded-xl space-y-2">
+            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Test Integration Connection</p>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={waTestPhone}
                 onChange={e => setWaTestPhone(e.target.value)}
-                placeholder="Recipient Phone (e.g. 01128828954)"
-                className="flex-1 bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none transition-all"
+                placeholder="Phone (e.g. 01128828954)"
+                className="flex-1 bg-[#11162a]/80 border border-gray-800 focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all placeholder-gray-700"
               />
               <button
                 type="button"
                 disabled={testingWhatsApp}
                 onClick={handleTestWhatsApp}
-                className="bg-[#161f38] hover:bg-[#1f2b4e] text-emerald-400 font-bold px-4 rounded-xl text-xs transition-colors outline-none cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                className="bg-[#161f38] hover:bg-[#1f2b4e] text-emerald-400 font-bold px-4 py-2.5 rounded-xl text-xs uppercase transition-colors outline-none cursor-pointer flex items-center justify-center gap-1 shrink-0"
               >
-                {testingWhatsApp ? 'Sending...' : 'Send Test'}
+                {testingWhatsApp ? 'Sending...' : 'Test'}
               </button>
             </div>
           </div>
@@ -1329,12 +1327,12 @@ export default function SystemConsolePage() {
           <button
             type="submit"
             disabled={savingWhatsApp}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer flex items-center justify-center gap-1.5"
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg active:scale-98 cursor-pointer flex items-center justify-center gap-1.5 mt-2"
           >
             {savingWhatsApp ? 'Saving Settings...' : 'Save WhatsApp Settings'}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
 
       {/* WhatsApp Broadcast Campaign */}
       <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
