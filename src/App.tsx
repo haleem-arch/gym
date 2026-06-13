@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
+import { Toaster, toast } from 'react-hot-toast';
 import HRDashboard from './pages/HRDashboard';
 import TodayView from './pages/TodayView';
 import WorkoutHome from './pages/WorkoutHome';
@@ -327,7 +328,7 @@ function App() {
         }
 
         if (profile.role === 'client' && isElectron) {
-          alert('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.');
+          toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
           await supabase.auth.signOut();
           setSession(null);
           setNeedsOnboarding(undefined);
@@ -454,7 +455,7 @@ function App() {
           setClientProfile(payload.new);
         }
         if (payload.new?.role === 'client' && isElectron) {
-          alert('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.');
+          toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
           supabase.auth.signOut();
           setSession(null);
           return;
@@ -507,7 +508,7 @@ function App() {
   const handleRenewSubscription = () => {
     const rawPhone = coachProfile?.targets?.phone_number;
     if (!rawPhone) {
-      alert('Your coach has not set up their contact phone number yet.');
+      toast.error('Your coach has not set up their contact phone number yet.');
       return;
     }
     let cleanPhone = rawPhone.replace(/\D/g, '');
@@ -531,6 +532,7 @@ function App() {
 
   return (
     <Router>
+      <Toaster position="top-center" reverseOrder={false} />
       {showWelcomeSplash && (
         <SplashOverlay
           show={showWelcomeSplash}
