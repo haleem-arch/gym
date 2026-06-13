@@ -9,7 +9,7 @@ import {
   ChevronLeft, Plus, X, Edit3, Droplets, Clock, Droplet, Flame, 
   ChevronDown, ChevronUp, FileText, Settings, Sparkles, LogOut, Crown, ArrowUpCircle,
   CreditCard, AlertTriangle, History, Key, Eye, EyeOff, Copy, Check, Send,
-  DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck,
+  DollarSign, TrendingUp, PieChart, Lock, Phone, Mail, ShieldCheck, MessageSquare,
   ArrowRight, Server, Maximize, Minimize, WifiOff
 } from 'lucide-react';
 import { Card } from '../../components/Card';
@@ -505,6 +505,15 @@ export default function DesktopCoachPortal() {
   // Coach WhatsApp Phone Number states
   const [ownWhatsAppNumber, setOwnWhatsAppNumber] = useState('');
   const [savingWhatsAppNumber, setSavingWhatsAppNumber] = useState(false);
+
+  // Owner WhatsApp Configuration states (for WaPilot welcoming)
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappToken, setWhatsappToken] = useState('');
+  const [whatsappInstance, setWhatsappInstance] = useState('');
+  const [showWhatsappToken, setShowWhatsappToken] = useState(false);
+  const [waTestPhone, setWaTestPhone] = useState('');
+  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
+  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
 
   // Coach Subscription Renewal Flow states
   const [showSubscriptionOverlay, setShowSubscriptionOverlay] = useState(false);
@@ -1029,13 +1038,18 @@ export default function DesktopCoachPortal() {
     return () => clearInterval(interval);
   }, [myCoachProfile, coachUserId]);
 
-  // Prefill Owner Telegram ID & own WhatsApp number
+  // Prefill Owner Telegram ID, own WhatsApp number, and WaPilot Settings
   useEffect(() => {
     if (myCoachProfile?.targets?.telegram_chat_id) {
       setOwnerTelegramChatId(String(myCoachProfile.targets.telegram_chat_id));
     }
     if (myCoachProfile?.targets?.phone_number) {
       setOwnWhatsAppNumber(String(myCoachProfile.targets.phone_number));
+    }
+    if (myCoachProfile?.targets) {
+      setWhatsappEnabled(!!myCoachProfile.targets.whatsapp_enabled);
+      setWhatsappToken(myCoachProfile.targets.whatsapp_token || '');
+      setWhatsappInstance(myCoachProfile.targets.whatsapp_instance || '');
     }
   }, [myCoachProfile]);
 
@@ -1165,11 +1179,84 @@ export default function DesktopCoachPortal() {
         throw new Error(data.error || 'Failed to dispatch test email.');
       }
       toast.success('Test email sent successfully! Check tsmhaleem@gmail.com.', { id: toastId });
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'SMTP Connection failed. Check host, email, and password.', { id: toastId });
     } finally {
       setTestingSMTP(false);
+    }
+  };
+
+  const handleSaveWhatsApp = async () => {
+    if (coachUserId !== OWNER_ID) return;
+    if (whatsappEnabled && (!whatsappToken.trim() || !whatsappInstance.trim())) {
+      toast.error('Token and Instance Name are required when WhatsApp notifications are enabled.');
+      return;
+    }
+    setSavingWhatsApp(true);
+    try {
+      const currentTargets = myCoachProfile?.targets || {};
+      const updatedTargets = {
+        ...currentTargets,
+        whatsapp_enabled: whatsappEnabled,
+        whatsapp_token: whatsappToken.trim(),
+        whatsapp_instance: whatsappInstance.trim()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ targets: updatedTargets })
+        .eq('id', coachUserId);
+
+      if (error) throw error;
+      toast.success('WhatsApp Configuration saved successfully! 👑');
+      // Refresh local profile
+      setMyCoachProfile((prev: any) => ({
+        ...prev,
+        targets: updatedTargets
+      }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to save WhatsApp settings: ' + err.message);
+    } finally {
+      setSavingWhatsApp(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!whatsappToken.trim() || !whatsappInstance.trim()) {
+      toast.error('Please configure WhatsApp token and instance name before testing.');
+      return;
+    }
+    if (!waTestPhone.trim()) {
+      toast.error('Please enter a test phone number.');
+      return;
+    }
+    setTestingWhatsApp(true);
+    const toastId = toast.loading(`Sending test WhatsApp message to ${waTestPhone}...`);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const res = await fetch(`/api/user-management?action=test-whatsapp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          token: whatsappToken.trim(),
+          instance: whatsappInstance.trim(),
+          phone: waTestPhone.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to dispatch test WhatsApp message.');
+      }
+      toast.success('Test WhatsApp message sent successfully!', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'WhatsApp Test failed. Check token, instance, or phone number.', { id: toastId });
+    } finally {
+      setTestingWhatsApp(false);
     }
   };
 
@@ -8831,6 +8918,111 @@ export default function DesktopCoachPortal() {
                           {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
                         </button>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* WaPilot WhatsApp Configuration */}
+                  <div className="relative overflow-hidden rounded-3xl border border-blue-500/10 bg-gradient-to-br from-[#0b0c16]/95 via-[#0d1022]/95 to-[#05060b]/98 p-6 md:p-8 shadow-2xl backdrop-blur-md">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-teal-500/[0.03] rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex items-center gap-4 border-b border-gray-850/80 pb-5 mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-inner flex-shrink-0">
+                        <MessageSquare size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider">WaPilot WhatsApp Configuration</h3>
+                        <p className="text-xs text-gray-400 mt-0.5 font-medium">Configure WaPilot V2 connection parameters to automatically send plain-text welcome notifications to newly created athletes.</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 text-xs font-bold text-gray-300">
+                      <div className="flex items-center justify-between py-1 bg-gray-900/10 border border-gray-850/40 px-4 rounded-2xl">
+                        <div>
+                          <p className="text-xs font-bold text-white">Enable Automated Welcomer Messages</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">Dispatches plain-text credentials and portal links automatically upon client onboarding</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setWhatsappEnabled(!whatsappEnabled)}
+                          className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer flex ${whatsappEnabled ? 'bg-emerald-500 justify-end' : 'bg-gray-800 justify-start'}`}
+                        >
+                          <span className="w-4 h-4 bg-white rounded-full shadow-md" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot V2 Instance ID</label>
+                          <input
+                            type="text"
+                            required={whatsappEnabled}
+                            value={whatsappInstance}
+                            onChange={e => setWhatsappInstance(e.target.value.trim())}
+                            placeholder="e.g. instance4351"
+                            className="w-full bg-[#05050b]/80 border border-gray-855 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-widest text-gray-500 block">WaPilot API Token</label>
+                          <div className="relative">
+                            <input
+                              type={showWhatsappToken ? 'text' : 'password'}
+                              required={whatsappEnabled}
+                              value={whatsappToken}
+                              onChange={e => setWhatsappToken(e.target.value.trim())}
+                              placeholder="e.g. wrsDfDhpmEsiPXBcydPDql..."
+                              className="w-full bg-[#05050b]/80 border border-gray-855 focus:border-blue-500 rounded-2xl pl-4 pr-10 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700 font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowWhatsappToken(!showWhatsappToken)}
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-550 hover:text-white transition-colors cursor-pointer"
+                            >
+                              {showWhatsappToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-900/10 border border-gray-850/40 p-4 rounded-2xl space-y-2">
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500">Test Integration Connection</p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <input
+                            type="text"
+                            value={waTestPhone}
+                            onChange={e => setWaTestPhone(e.target.value)}
+                            placeholder="Recipient Phone Number (e.g. 01128828954)"
+                            className="flex-1 bg-[#05050b]/80 border border-gray-855 focus:border-blue-500 rounded-2xl px-4 py-3.5 text-xs text-white outline-none transition-all placeholder-gray-700"
+                          />
+                          <button
+                            type="button"
+                            disabled={testingWhatsApp}
+                            onClick={handleTestWhatsApp}
+                            className="bg-[#161f38] hover:bg-[#1f2b4e] text-emerald-400 font-black py-3.5 px-6 rounded-2xl text-xs uppercase tracking-wider transition-colors outline-none cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                          >
+                            {testingWhatsApp ? 'Sending...' : 'Send Test WhatsApp'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={savingWhatsApp}
+                        onClick={handleSaveWhatsApp}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        {savingWhatsApp ? (
+                          <span className="flex items-center gap-1.5">
+                            <div className="w-3.5 h-3.5 rounded-full border border-white/20 border-t-white animate-spin" />
+                            Saving Settings...
+                          </span>
+                        ) : (
+                          <>
+                            <Save size={13} /> Save WhatsApp Settings
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 
