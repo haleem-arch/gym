@@ -4,8 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import {
   ArrowLeft, RefreshCw, MessageSquare,
-  Save, Play, Settings, Plus, Trash2, Eye, EyeOff,
-  QrCode, AlertTriangle
+  Save, Play, Settings, Plus, Trash2, Eye, EyeOff
 } from 'lucide-react';
 
 export default function WhatsAppManagerPage() {
@@ -21,11 +20,6 @@ export default function WhatsAppManagerPage() {
   const [showToken, setShowToken] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'CONNECTED' | 'DISCONNECTED' | 'INITIALIZING' | 'UNKNOWN'>('UNKNOWN');
   const [checkingStatus, setCheckingStatus] = useState(false);
-  
-  // WhatsApp QR Pairing States
-  const [waQrLoading, setWaQrLoading] = useState(false);
-  const [waQrImageUrl, setWaQrImageUrl] = useState('');
-  const [waQrError, setWaQrError] = useState('');
 
   // Anti-Ban Safeguards States
   const [delayMin, setDelayMin] = useState(5);
@@ -93,7 +87,7 @@ export default function WhatsAppManagerPage() {
     fetchSettings();
   }, []);
 
-  // Check Gateway Connection Status & Fetch QR
+  // Check Gateway Connection Status
   const checkGatewayStatus = async () => {
     if (!gatewayUrl.trim()) {
       setConnectionStatus('UNKNOWN');
@@ -101,56 +95,26 @@ export default function WhatsAppManagerPage() {
     }
     try {
       setCheckingStatus(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        throw new Error('User session expired. Please log in again.');
-      }
-
-      const res = await fetch('/api/user-management?action=get-whatsapp-status', {
+      const res = await fetch(`${gatewayUrl.trim().replace(/\/$/, '')}/status`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: gatewayToken.trim() ? { 'Authorization': `Bearer ${gatewayToken.trim()}` } : {}
       });
       if (res.ok) {
         const data = await res.json();
         setConnectionStatus(data.status || 'CONNECTED');
-        if (data.status === 'CONNECTED') {
-          setWaQrError('CONNECTED');
-          setWaQrImageUrl('');
-        } else if (data.qr) {
-          setWaQrImageUrl(data.qr);
-          setWaQrError('');
-        } else {
-          setWaQrError(data.error || 'Gateway is active but no QR code was returned.');
-          setWaQrImageUrl('');
-        }
       } else {
         setConnectionStatus('DISCONNECTED');
-        setWaQrError('Gateway is currently offline or returned an error.');
-        setWaQrImageUrl('');
       }
-    } catch (e: any) {
+    } catch (e) {
       setConnectionStatus('DISCONNECTED');
-      setWaQrError(e.message || 'Failed to fetch gateway status.');
-      setWaQrImageUrl('');
     } finally {
       setCheckingStatus(false);
     }
   };
 
-  const fetchWaQrCode = async () => {
-    setWaQrLoading(true);
-    setWaQrError('');
-    setWaQrImageUrl('');
-    await checkGatewayStatus();
-    setWaQrLoading(false);
-  };
-
   useEffect(() => {
     if (gatewayUrl) {
-      fetchWaQrCode();
+      checkGatewayStatus();
     }
   }, [gatewayUrl]);
 
@@ -598,75 +562,6 @@ export default function WhatsAppManagerPage() {
 
         {/* Connection Test & Auto-Replies */}
         <div className="space-y-5">
-          {/* WhatsApp QR Pairing Card */}
-          <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-800/80 pb-2">
-              <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                <QrCode size={14} /> WhatsApp QR Pairing
-              </h3>
-              <button
-                type="button"
-                onClick={fetchWaQrCode}
-                disabled={waQrLoading}
-                className="p-1 bg-[#11162a] hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                title="Refresh QR Code"
-              >
-                <RefreshCw size={12} className={waQrLoading ? "animate-spin" : ""} />
-              </button>
-            </div>
-
-            {waQrLoading ? (
-              <div className="flex flex-col items-center justify-center py-8 space-y-2">
-                <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-[10px] text-gray-500 font-mono font-bold">Fetching QR Code...</span>
-              </div>
-            ) : waQrError === 'CONNECTED' ? (
-              <div className="flex flex-col items-center justify-center py-6 text-center space-y-2">
-                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400">
-                  <QrCode size={24} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white">Device Connected</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Your gateway is already paired & active!</p>
-                </div>
-              </div>
-            ) : waQrImageUrl ? (
-              <div className="flex flex-col items-center justify-center py-4 space-y-3">
-                <div className="p-3 bg-white rounded-2xl shadow-xl border border-zinc-205">
-                  <img
-                    src={waQrImageUrl}
-                    alt="WhatsApp QR Code"
-                    className="w-48 h-48 block object-contain"
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 text-center font-bold px-4 leading-normal">
-                  Scan this QR code with WhatsApp on your phone to link your account.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-center space-y-2">
-                <div className="p-2.5 bg-[#11162a] border border-gray-800 rounded-full text-gray-500">
-                  <AlertTriangle size={20} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white">No QR Code Available</p>
-                  <p className="text-[10px] text-gray-500 mt-1 max-w-[240px] leading-normal">
-                    {waQrError || 'Make sure your gateway is running and needs pairing.'}
-                  </p>
-                </div>
-                {gatewayUrl && (
-                  <button
-                    type="button"
-                    onClick={fetchWaQrCode}
-                    className="mt-2 px-3 py-1 bg-[#11162a] hover:bg-gray-800 border border-gray-850 text-gray-300 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
-                  >
-                    Try Again
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Connection Test */}
           <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
             <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
