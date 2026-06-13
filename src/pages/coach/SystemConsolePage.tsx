@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -215,7 +215,6 @@ export default function SystemConsolePage() {
   const [smtpPort, setSmtpPort] = useState('587');
   const [smtpSecure, setSmtpSecure] = useState(false);
   const [savingSMTP, setSavingSMTP] = useState(false);
-  const [testingSMTP, setTestingSMTP] = useState(false);
 
   // WhatsApp Settings
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -225,6 +224,15 @@ export default function SystemConsolePage() {
   const [waTestPhone, setWaTestPhone] = useState('01128828954');
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
   const [savingWhatsApp, setSavingWhatsApp] = useState(false);
+
+  // WhatsApp Broadcast States
+  const [waBroadcastTemplate, setWaBroadcastTemplate] = useState('');
+  const [targetAudience, setTargetAudience] = useState<'everyone' | 'coaches' | 'clients' | 'custom'>('everyone');
+  const [customList, setCustomList] = useState('');
+  const [broadcastRunning, setBroadcastRunning] = useState(false);
+  const [broadcastProgress, setBroadcastProgress] = useState<any>(null);
+  const [broadcastLogs, setBroadcastLogs] = useState<string[]>([]);
+  const cancelBroadcastRef = useRef(false);
 
   const fetchBaseData = async () => {
     try {
@@ -409,52 +417,188 @@ export default function SystemConsolePage() {
     }
   };
 
-  const handleTestSMTP = async () => {
-    if (!smtpEmail.trim() || !smtpPassword.trim()) {
-      toast.error('Please configure SMTP email and password before testing.');
+  const insertTagAtCursor = (tag: string) => {
+    const textarea = document.getElementById('whatsapp-tpl-textarea') as HTMLTextAreaElement;
+    if (!textarea) {
+      setWaBroadcastTemplate(prev => prev + tag);
       return;
     }
-    setTestingSMTP(true);
-    const toastId = toast.loading('Sending test email to tsmhaleem@gmail.com...');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = waBroadcastTemplate;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    setWaBroadcastTemplate(before + tag + after);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+    }, 0);
+  };
+
+  const formatWhatsAppPhone = (phone: string) => {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('00')) {
+      cleaned = cleaned.substring(2);
+    }
+    if (cleaned.startsWith('0') && cleaned.length === 11) {
+      cleaned = '2' + cleaned;
+    }
+    if (!cleaned.endsWith('@c.us')) {
+      cleaned = cleaned + '@c.us';
+    }
+    return cleaned;
+  };
+
+  const runWhatsAppBroadcast = async () => {
+    if (!waBroadcastTemplate) {
+      toast.error('Please fill out the WhatsApp message template.');
+      return;
+    }
+    if (!whatsappToken.trim() || !whatsappInstance.trim()) {
+      toast.error('Please configure WhatsApp token and instance name first.');
+      return;
+    }
+
+    setBroadcastLogs([]);
+    setBroadcastRunning(true);
+    cancelBroadcastRef.current = false;
+    setBroadcastProgress({
+      currentEmail: 'Starting...',
+      index: 0,
+      total: 0,
+      successCount: 0,
+      failCount: 0,
+      status: 'idle'
+    });
+
     try {
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: 'tsmhaleem@gmail.com',
-          subject: 'Stride Rite/Life Gym - SMTP Connection Test 👑',
-          html: `
-            <div style="font-family: sans-serif; background-color: #060713; color: #f3f4f6; padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.06); max-width: 500px; margin: 20px auto;">
-              <h2 style="color: #10b981; font-weight: 800; font-size: 18px; margin-top:0;">SMTP Connection Verified!</h2>
-              <p style="font-size: 13px; line-height: 1.6; color: #9ca3af;">
-                This email confirms that your custom SMTP server settings are correctly configured and authenticated.
-              </p>
-              <div style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; font-size: 12px; font-family: monospace;">
-                <strong>Host:</strong> ${smtpHost.trim() || 'Gmail (Fallback)'}<br/>
-                <strong>Port:</strong> ${smtpPort.trim() || '587'}<br/>
-                <strong>Secure (SSL/TLS):</strong> ${smtpSecure ? 'Enabled (Port 465)' : 'Disabled (STARTTLS)'}<br/>
-                <strong>Sender:</strong> ${smtpEmail.trim()}
-              </div>
-              <p style="font-size: 10px; color: #4b5563; margin-top:20px;">Sent via Life Gym Admin Panel Console.</p>
-            </div>
-          `,
-          smtpUser: smtpEmail.trim(),
-          smtpPass: smtpPassword.trim(),
-          smtpHost: smtpHost.trim() || undefined,
-          smtpPort: smtpPort.trim() ? parseInt(smtpPort.trim()) : undefined,
-          smtpSecure: smtpSecure
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to dispatch test email.');
+      let recipients: any[] = [];
+      if (targetAudience === 'everyone') {
+        const { data } = await supabase.from('profiles').select('display_name, email, role, targets');
+        recipients = data || [];
+      } else if (targetAudience === 'coaches') {
+        const { data } = await supabase.from('profiles').select('display_name, email, role, targets').eq('role', 'coach');
+        recipients = data || [];
+      } else if (targetAudience === 'clients') {
+        const { data } = await supabase.from('profiles').select('display_name, email, role, targets').eq('role', 'client');
+        recipients = data || [];
+      } else if (targetAudience === 'custom') {
+        const rawItems = customList.split(',').map(item => item.trim()).filter(Boolean);
+        const resolvedList: any[] = [];
+        for (const item of rawItems) {
+          if (cancelBroadcastRef.current) break;
+          if (item.includes('@')) {
+            const { data } = await supabase.from('profiles').select('display_name, email, role, targets').eq('email', item).maybeSingle();
+            if (data) {
+              resolvedList.push(data);
+            } else {
+              setBroadcastLogs(prev => [...prev, `[WARNING] Could not find profile for email: ${item}`]);
+            }
+          } else {
+            resolvedList.push({
+              display_name: 'Recipient',
+              email: 'custom-phone',
+              role: 'custom',
+              targets: { phone_number: item }
+            });
+          }
+        }
+        recipients = resolvedList;
       }
-      toast.success('Test email sent successfully! Check tsmhaleem@gmail.com.', { id: toastId });
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'SMTP Connection failed. Check host, email, and password.', { id: toastId });
-    } finally {
-      setTestingSMTP(false);
+
+      if (cancelBroadcastRef.current) {
+        throw new Error('Broadcast cancelled by user.');
+      }
+
+      const resolvedRecipients = recipients.filter((r: any) => r.targets?.phone_number);
+
+      if (resolvedRecipients.length === 0) {
+        throw new Error('No valid recipients with phone numbers found.');
+      }
+
+      setBroadcastLogs([`[INFO] Found ${resolvedRecipients.length} recipients. Starting WhatsApp broadcast queue...`]);
+      setBroadcastProgress((prev: any) => ({
+        ...prev,
+        currentEmail: 'Sending...',
+        total: resolvedRecipients.length
+      }));
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < resolvedRecipients.length; i++) {
+        if (cancelBroadcastRef.current) {
+          setBroadcastLogs(prev => [...prev, `[CANCELLED] Broadcast stopped at ${i}/${resolvedRecipients.length}`]);
+          break;
+        }
+
+        const recipient = resolvedRecipients[i];
+        const rawPhone = recipient.targets.phone_number;
+        const cleanedPhone = formatWhatsAppPhone(rawPhone);
+        const displayName = recipient.display_name || 'Recipient';
+
+        let formattedMessage = waBroadcastTemplate
+          .replace(/{{display_name}}/g, displayName)
+          .replace(/{{phone}}/g, rawPhone)
+          .replace(/{{role}}/g, recipient.role || 'client');
+
+        setBroadcastProgress((prev: any) => ({
+          ...prev,
+          currentEmail: `${displayName} (${rawPhone})`,
+          index: i + 1
+        }));
+
+        try {
+          const waEndpoint = `https://api.wapilot.net/api/v2/${whatsappInstance.trim()}/send-message`;
+          const res = await fetch(waEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'token': whatsappToken.trim()
+            },
+            body: JSON.stringify({
+              chat_id: cleanedPhone,
+              text: formattedMessage.trim()
+            })
+          });
+
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`WaPilot returned status ${res.status}: ${errText}`);
+          }
+
+          successCount++;
+          setBroadcastLogs(prev => [
+            ...prev,
+            `[SUCCESS] (${i + 1}/${resolvedRecipients.length}) Sent to ${displayName} (${rawPhone})`
+          ]);
+        } catch (err: any) {
+          failCount++;
+          setBroadcastLogs(prev => [
+            ...prev,
+            `[FAILED] (${i + 1}/${resolvedRecipients.length}) Sent to ${displayName} (${rawPhone}) - Error: ${err.message}`
+          ]);
+        }
+
+        setBroadcastProgress((prev: any) => ({
+          ...prev,
+          successCount,
+          failCount
+        }));
+
+        if (i < resolvedRecipients.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+
+      setBroadcastLogs(prev => [
+        ...prev,
+        `[COMPLETE] WhatsApp Broadcast finished. Success: ${successCount}, Failed: ${failCount}`
+      ]);
+      setBroadcastRunning(false);
+    } catch (e: any) {
+      setBroadcastLogs(prev => [...prev, `[ERROR] WhatsApp Broadcast aborted: ${e.message}`]);
+      setBroadcastRunning(false);
     }
   };
 
@@ -1091,17 +1235,9 @@ export default function SystemConsolePage() {
 
           <div className="flex gap-3">
             <button
-              type="button"
-              disabled={testingSMTP}
-              onClick={handleTestSMTP}
-              className="flex-1 bg-[#161f38] hover:bg-[#1f2b4e] text-blue-400 font-bold py-3 px-4 rounded-xl text-xs transition-colors outline-none cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              {testingSMTP ? 'Testing Connection...' : 'Test SMTP Settings'}
-            </button>
-            <button
               type="submit"
               disabled={savingSMTP}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer"
             >
               {savingSMTP ? 'Saving Settings...' : 'Save SMTP Settings'}
             </button>
@@ -1199,6 +1335,143 @@ export default function SystemConsolePage() {
             {savingWhatsApp ? 'Saving Settings...' : 'Save WhatsApp Settings'}
           </button>
         </form>
+      </div>
+
+      {/* WhatsApp Broadcast Campaign */}
+      <div className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">
+        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+          <MessageSquare size={14} /> WhatsApp Broadcast Campaign
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-4">
+            
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-end flex-wrap gap-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Message Template (Plain Text)</label>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[8px] text-gray-600 font-bold uppercase mr-1">Insert Tag:</span>
+                  <button
+                    type="button"
+                    onClick={() => insertTagAtCursor('{{display_name}}')}
+                    className="px-2 py-1 bg-gray-900 hover:bg-gray-805 border border-gray-850 hover:border-gray-800 rounded-lg text-[9px] font-black text-emerald-400 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+                  >
+                    Name
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTagAtCursor('{{phone}}')}
+                    className="px-2 py-1 bg-gray-900 hover:bg-gray-805 border border-gray-850 hover:border-gray-800 rounded-lg text-[9px] font-black text-emerald-400 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+                  >
+                    Phone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTagAtCursor('{{role}}')}
+                    className="px-2 py-1 bg-gray-900 hover:bg-gray-805 border border-gray-850 hover:border-gray-800 rounded-lg text-[9px] font-black text-emerald-400 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+                  >
+                    Role
+                  </button>
+                </div>
+              </div>
+              <textarea
+                id="whatsapp-tpl-textarea"
+                value={waBroadcastTemplate}
+                onChange={e => setWaBroadcastTemplate(e.target.value)}
+                placeholder="Hello {{display_name}}! This is an announcement from Life Gym..."
+                rows={5}
+                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none transition-all resize-none mt-1 font-sans"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Target Cohort</label>
+              <div className="grid grid-cols-4 gap-1 p-1 bg-[#121624]/60 border border-gray-800 rounded-xl mt-1">
+                {[
+                  { id: 'everyone', label: 'Everyone' },
+                  { id: 'coaches', label: 'Coaches' },
+                  { id: 'clients', label: 'Athletes' },
+                  { id: 'custom', label: 'Manual' }
+                ].map(cohort => (
+                  <button
+                    key={cohort.id}
+                    type="button"
+                    onClick={() => setTargetAudience(cohort.id as any)}
+                    className={`py-2 text-[9px] font-black rounded-lg transition-all text-center uppercase tracking-wider cursor-pointer ${
+                      targetAudience === cohort.id ? 'bg-[#1e293b] text-white' : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    {cohort.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {targetAudience === 'custom' && (
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Emails or Phone Numbers (Comma Separated)</label>
+                <textarea
+                  value={customList}
+                  onChange={e => setCustomList(e.target.value)}
+                  placeholder="01128828954, coach@example.com"
+                  rows={2}
+                  className="w-full bg-[#121624]/60 border border-gray-800 focus:border-emerald-500 rounded-xl p-3 text-white text-xs outline-none placeholder-gray-700 transition-all resize-none"
+                />
+              </div>
+            )}
+
+          </div>
+
+          {/* Broadcast Progress and Console */}
+          {broadcastProgress && (
+            <div className="bg-[#11162a]/95 border border-gray-800/80 rounded-2xl p-4 space-y-2.5">
+              <div className="flex justify-between items-center text-[9px] font-black text-gray-400 font-sans leading-none">
+                <span>Sending: {broadcastProgress.currentEmail}</span>
+                <span>{broadcastProgress.index}/{broadcastProgress.total}</span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${(broadcastProgress.index / broadcastProgress.total) * 100}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[9px] font-black">
+                <span className="text-emerald-400">Sent: {broadcastProgress.successCount}</span>
+                <span className="text-red-400">Failed: {broadcastProgress.failCount}</span>
+              </div>
+            </div>
+          )}
+
+          {broadcastLogs.length > 0 && (
+            <div className="bg-zinc-950 border border-gray-800/80 rounded-2xl p-4 font-mono text-[9px] text-gray-400 max-h-40 overflow-y-auto space-y-1">
+              {broadcastLogs.map((log, idx) => (
+                <div key={idx} className="leading-relaxed break-all">{log}</div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3">
+            {broadcastRunning ? (
+              <button
+                type="button"
+                onClick={() => {
+                  cancelBroadcastRef.current = true;
+                }}
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-extrabold text-[10px] py-3 px-4 uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+              >
+                Stop Broadcast
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={runWhatsAppBroadcast}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg outline-none cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                Dispatch Campaign
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Create New Coach Account */}
