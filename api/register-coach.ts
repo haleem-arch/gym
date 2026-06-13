@@ -5,6 +5,23 @@ import { waitUntil } from '@vercel/functions';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
+function formatWhatsAppPhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  } else if (cleaned.startsWith('+')) {
+    cleaned = cleaned.substring(1);
+  }
+  
+  // If it is an Egyptian number starting with 01 (e.g. 010..., 011..., 012..., 015...)
+  if (cleaned.startsWith('01') && cleaned.length === 11) {
+    cleaned = '20' + cleaned.substring(1);
+  } else if (cleaned.startsWith('1') && cleaned.length === 10) {
+    cleaned = '20' + cleaned;
+  }
+  return cleaned;
+}
+
 export default async function handler(req: any, res: any) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -139,23 +156,77 @@ ${origin}/login
       </div>
     `;
 
+    const sendWhatsAppPromise = (async () => {
+      if (!phone) return;
+
+      // Fetch owner targets to check settings
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+        .maybeSingle();
+
+      const ownerTargets = ownerProfile?.targets || {};
+      if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_token || !ownerTargets.whatsapp_instance) {
+        return;
+      }
+
+      // Check if triggered
+      const isTriggered = ownerTargets.whatsapp_trigger_coach_onboarding !== false;
+      if (!isTriggered) return;
+
+      const cleanedPhone = formatWhatsAppPhone(phone);
+      const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance.trim()}/send-message`;
+
+      const DEFAULT_TPL_COACH = `*LIFE GYM - Coach Portal Activated* 👑\n\nWelcome, *{display_name}*!\n\nYour administrative account has been provisioned. You can now log in to manage your clients, build workout templates, track diet logs, and approve memberships.\n\n*Your Login Credentials:*\n• *Portal Link:* {link}\n• *Username:* {username}\n• *Password:* {password}\n\n© 2026 Life Gym.`;
+
+      const rawTemplate = ownerTargets.whatsapp_tpl_coach_onboarding || DEFAULT_TPL_COACH;
+      const formattedMessage = rawTemplate
+        .replace(/{display_name}/g, displayName.trim())
+        .replace(/{username}/g, cleanEmail)
+        .replace(/{password}/g, password)
+        .replace(/{link}/g, `${origin}/login`);
+
+      const waRes = await fetch(waEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': ownerTargets.whatsapp_token.trim()
+        },
+        body: JSON.stringify({
+          chat_id: cleanedPhone,
+          text: formattedMessage.trim()
+        })
+      });
+
+      if (!waRes.ok) {
+        const errText = await waRes.text();
+        console.error(`WaPilot WhatsApp Public Coach Welcome error: ${waRes.status}`, errText);
+      }
+    })();
+
     waitUntil(
-      sendBulkEmails({
-        to: cleanEmail,
-        subject: 'Welcome to Life Gym! 👑 Your Coach Account is Ready',
-        text: textWelcome,
-        html: htmlWelcome,
-        fromName: 'Life Gym Team',
-        templateId: 'coach_signup',
-        templateVariables: {
-          display_name: displayName.trim(),
-          email: cleanEmail,
-          password: password,
-          origin: origin
-        }
-      }).catch(emailErr => {
-        console.error('Failed to send coach welcome email:', emailErr);
-      })
+      Promise.all([
+        sendBulkEmails({
+          to: cleanEmail,
+          subject: 'Welcome to Life Gym! 👑 Your Coach Account is Ready',
+          text: textWelcome,
+          html: htmlWelcome,
+          fromName: 'Life Gym Team',
+          templateId: 'coach_signup',
+          templateVariables: {
+            display_name: displayName.trim(),
+            email: cleanEmail,
+            password: password,
+            origin: origin
+          }
+        }).catch(emailErr => {
+          console.error('Failed to send coach welcome email:', emailErr);
+        }),
+        sendWhatsAppPromise.catch(waErr => {
+          console.error('Failed to send coach onboarding WhatsApp:', waErr);
+        })
+      ])
     );
 
     return res.status(200).json({ success: true, user: authData.user });
