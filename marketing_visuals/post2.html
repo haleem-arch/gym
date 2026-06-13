@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 2 - Comparison</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+    
+    .header { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-size:1.8rem; font-weight:900; color:#fff; text-transform:uppercase; }
+    .logo span { color:#3b82f6; }
+    
+    .comparison-grid { display:grid; grid-template-columns: 1fr 1fr; gap:40px; margin:auto 0; }
+    
+    .panel { border-radius:24px; padding:40px; position:relative; overflow:hidden; }
+    .panel.left { background:rgba(239,68,68,0.02); border:1px solid rgba(239,68,68,0.15); }
+    .panel.right { background:rgba(16,185,129,0.02); border:1px solid rgba(16,185,129,0.15); }
+    
+    .panel h3 { font-size:2rem; font-weight:900; margin-bottom:25px; }
+    .panel.left h3 { color:#ef4444; }
+    .panel.right h3 { color:#10b981; }
+    
+    .item { display:flex; align-items:center; gap:15px; margin-bottom:15px; font-size:1.2rem; color:#d1d5db; }
+    .icon-fail { color:#ef4444; font-weight:bold; }
+    .icon-success { color:#10b981; font-weight:bold; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="logo">Life<span>Gym</span></div>
+      <div style="font-weight:700; color:#9ca3af; font-size:1.2rem;">Upgrade Your Workflow</div>
+    </div>
+    
+    <div class="comparison-grid">
+      <div class="panel left">
+        <h3>WhatsApp Chaos ❌</h3>
+        <div class="item"><span class="icon-fail">✕</span> Lost PDF workout plans</div>
+        <div class="item"><span class="icon-fail">✕</span> Endless receipt screenshots</div>
+        <div class="item"><span class="icon-fail">✕</span> Manual habit nudges</div>
+        <div class="item"><span class="icon-fail">✕</span> Client tracking sheets</div>
+      </div>
+      <div class="panel right">
+        <h3>Life Gym SaaS ✅</h3>
+        <div class="item"><span class="icon-success">✓</span> Direct client database</div>
+        <div class="item"><span class="icon-success">✓</span> One-click payment logs</div>
+        <div class="item"><span class="icon-success">✓</span> Automated WaPilot alerts</div>
+        <div class="item"><span class="icon-success">✓</span> Live progress charts</div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

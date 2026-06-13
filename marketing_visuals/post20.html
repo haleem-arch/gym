@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 20 - Account Locked</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info { max-width:800px; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:15px; }
+    .info h1 span { color:#ef4444; }
+    
+    /* Lock Mockup */
+    .lock-popup { border-radius:24px; border:1px solid rgba(239,68,68,0.15); background:#111827; padding:40px; max-width:550px; margin:auto; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.5); }
+    .lock-icon { width:55px; height:55px; margin:0 auto 20px; fill:#ef4444; }
+    .lock-title { color:#fff; font-weight:900; font-size:1.4rem; margin-bottom:12px; }
+    .lock-desc { color:#9ca3af; font-size:1rem; line-height:1.5; margin-bottom:25px; }
+    .btn { background:#ef4444; color:#fff; font-weight:700; padding:12px 30px; border-radius:12px; border:none; cursor:pointer; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Protect revenues with <span>auto-suspensions.</span></h1>
+    </div>
+    
+    <div class="lock-popup">
+      <svg class="lock-icon" viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="#ef4444" stroke-width="2" />
+      </svg>
+      <div class="lock-title">Subscription Expired</div>
+      <div class="lock-desc">Your membership has reached its end date. Please contact your coach to renew your plan and reactivate access.</div>
+      <button class="btn">Renew Subscription</button>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

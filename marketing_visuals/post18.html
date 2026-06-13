@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 18 - Daily Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info { max-width:800px; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:15px; }
+    .info h1 span { color:#3b82f6; }
+    
+    /* Schedule UI Mockup */
+    .schedule-mockup { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:25px; margin:auto 0; width:100%; max-width:850px; }
+    .day-box { border-radius:20px; border:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); padding:25px; }
+    .day-box.active { border-color:#3b82f6; background:rgba(59,130,246,0.02); }
+    .day-name { font-weight:700; color:#3b82f6; font-size:1.1rem; margin-bottom:15px; }
+    .day-task { color:#fff; font-weight:700; font-size:1.2rem; margin-bottom:8px; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Weekly training <span>split calendars.</span></h1>
+    </div>
+    
+    <div class="schedule-mockup">
+      <div class="day-box active">
+        <div class="day-name">MON</div>
+        <div class="day-task">PUSH Day</div>
+        <div style="color:#9ca3af; font-size:0.85rem;">Volume: 5,200kg</div>
+      </div>
+      <div class="day-box">
+        <div class="day-name">TUE</div>
+        <div class="day-task">REST Day</div>
+        <div style="color:#9ca3af; font-size:0.85rem;">Active Recovery</div>
+      </div>
+      <div class="day-box active">
+        <div class="day-name">WED</div>
+        <div class="day-task">PULL Day</div>
+        <div style="color:#9ca3af; font-size:0.85rem;">Volume: 4,800kg</div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

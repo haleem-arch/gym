@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 10 - Gym Receipt</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
+    
+    .info { max-width: 440px; z-index:10; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
+    .info h1 span { color:#3b82f6; }
+    .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
+
+    /* Receipt Mockup */
+    .receipt { z-index:10; width: 400px; background: #f9fafb; border-radius: 4px; padding: 35px 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); color: #111827; font-family: 'Courier Prime', monospace; border-bottom: 8px dashed #d1d5db; }
+    .receipt-header { text-align:center; border-bottom:1px dashed #d1d5db; padding-bottom:15px; margin-bottom:15px; }
+    .receipt-title { font-weight:700; font-size:1.3rem; letter-spacing:0.05em; }
+    .receipt-item { display:flex; justify-content:space-between; font-size:0.95rem; margin-bottom:8px; }
+    .receipt-total { border-top:1px dashed #d1d5db; padding-top:15px; font-weight:700; font-size:1.1rem; display:flex; justify-content:space-between; margin-top:15px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Printable workout <span>receipt logs.</span></h1>
+      <p>Let athletes export their daily lifting volume and PR accomplishments as retro-themed digital paper receipts.</p>
+    </div>
+    
+    <div class="receipt">
+      <div class="receipt-header">
+        <div class="receipt-title">LIFE GYM LOG</div>
+        <div style="font-size:0.8rem; margin-top:5px;">DATE: 2026-06-14</div>
+      </div>
+      <div class="receipt-item"><span>Bench Press</span> <span>4 x 10</span></div>
+      <div class="receipt-item"><span>Squat</span> <span>3 x 8</span></div>
+      <div class="receipt-item"><span>Deadlift</span> <span>3 x 5</span></div>
+      <div class="receipt-item"><span>Rest Duration</span> <span>90s</span></div>
+      <div class="receipt-total">
+        <span>TOTAL VOLUME:</span>
+        <span>4,820 kg</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

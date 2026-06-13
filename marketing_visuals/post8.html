@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 8 - WhatsApp Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info { max-width:800px; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:15px; }
+    .info h1 span { color:#10b981; }
+    
+    /* WhatsApp Chat Mockup */
+    .wa-chat { border-radius:24px; border:1px solid rgba(16,185,129,0.15); background:#075e54; width:550px; margin:auto; box-shadow:0 20px 40px rgba(0,0,0,0.5); overflow:hidden; }
+    .wa-header { background:#128c7e; padding:15px 25px; color:#fff; font-weight:700; font-size:1.1rem; display:flex; align-items:center; gap:10px; }
+    .wa-avatar { width:35px; height:35px; border-radius:50%; background:rgba(255,255,255,0.2); }
+    .wa-body { background:#ece5dd; padding:25px; display:flex; flex-direction:column; gap:15px; }
+    .wa-bubble { max-width:75%; padding:12px 16px; border-radius:12px; font-size:0.95rem; line-height:1.4; color:#333; }
+    .wa-bubble.received { background:#fff; align-self:flex-start; border-top-left-radius:0; }
+    .wa-bubble.sent { background:#dcf8c6; align-self:flex-end; border-top-right-radius:0; }
+    .wa-btn { border:1px solid #128c7e; background:#fff; color:#128c7e; font-weight:700; text-align:center; padding:10px; border-radius:8px; margin-top:5px; font-size:0.85rem; cursor:pointer; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Automate reminders on <span>WhatsApp.</span></h1>
+    </div>
+    
+    <div class="wa-chat">
+      <div class="wa-header">
+        <div class="wa-avatar"></div>
+        <div>Life Gym Notifications</div>
+      </div>
+      <div class="wa-body">
+        <div class="wa-bubble received">
+          Hi Ahmed! Your coach just updated your split. Please log your workout status for today.
+          <div class="wa-btn">Go to Dashboard ⚡</div>
+        </div>
+        <div class="wa-bubble sent">
+          Just completed Push Day! Logs updated! ✅
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

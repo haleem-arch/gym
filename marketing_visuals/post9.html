@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 9 - PR Celebration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
+    .glow { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle, rgba(16,185,129,0.18) 0%, rgba(6,7,19,0) 70%); filter:blur(40px); }
+    .glow-right { top:-100px; right:-100px; }
+    
+    .info { max-width: 440px; z-index:10; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
+    .info h1 span { color:#10b981; }
+    .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
+
+    /* PR card Mockup */
+    .pr-card { z-index:10; width: 400px; height: 400px; border-radius: 24px; border: 1px solid rgba(16,185,129,0.3); background:rgba(16,185,129,0.02); display:flex; flex-direction:column; justify-content:space-between; padding:40px; text-align:center; }
+    .pr-title { font-size:1.1rem; font-weight:900; color:#10b981; letter-spacing:0.1em; text-transform:uppercase; }
+    .pr-val { font-size:5rem; font-weight:900; color:#fff; line-height:1; }
+    .pr-sub { font-size:1.3rem; color:#fff; font-weight:700; }
+    .pr-trophy { width:60px; height:60px; margin:0 auto; fill:#10b981; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow glow-right"></div>
+    <div class="info">
+      <h1>Gamify milestones. <br>Track <span>PR Achievements.</span></h1>
+      <p>Celebrate Personal Records (PRs) with physics-based dumbbell animations and digital awards that clients love sharing on social media.</p>
+    </div>
+    
+    <div class="pr-card">
+      <div class="pr-title">Personal Record</div>
+      <svg class="pr-trophy" viewBox="0 0 24 24">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+      <div>
+        <div class="pr-val">220kg</div>
+        <div class="pr-sub">Deadlift</div>
+      </div>
+      <div style="color:#10b981; font-weight:700; font-size:0.9rem;">+15kg PR Alert!</div>
+    </div>
+  </div>
+</body>
+</html>

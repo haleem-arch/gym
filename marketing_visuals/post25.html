@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 25 - Profit Margins</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info { max-width:800px; text-align:center; margin:0 auto; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; }
+    .info h1 span { color:#10b981; }
+    
+    .margin-panel { display:flex; justify-content:center; align-items:flex-end; gap:50px; height:350px; margin:auto 0; }
+    .margin-bar-box { text-align:center; width:220px; }
+    .margin-bar { width:100%; border-radius:16px 16px 0 0; background:rgba(255,255,255,0.02); display:flex; align-items:flex-end; justify-content:center; padding-bottom:20px; color:#fff; font-weight:900; font-size:1.8rem; }
+    .margin-bar.agency { height:190px; border:1px solid rgba(239,68,68,0.3); background:linear-gradient(to top, rgba(239,68,68,0.1), rgba(239,68,68,0.01)); }
+    .margin-bar.saas { height:320px; border:1px solid rgba(16,185,129,0.3); background:linear-gradient(to top, rgba(16,185,129,0.1), rgba(16,185,129,0.01)); }
+    
+    .bar-title { color:#fff; font-weight:700; font-size:1.2rem; margin-top:15px; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Sell software. Scale your <span>profit margins.</span></h1>
+    </div>
+    
+    <div class="margin-panel">
+      <div class="margin-bar-box">
+        <div class="margin-bar agency">54%</div>
+        <div class="bar-title">Coaching Agency</div>
+      </div>
+      <div class="margin-bar-box">
+        <div class="margin-bar saas" style="color:#10b981;">98%</div>
+        <div class="bar-title" style="color:#10b981;">B2B SaaS Portal</div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

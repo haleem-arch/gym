@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 11 - Compliance Checklist</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
+    
+    .info { max-width: 440px; z-index:10; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
+    .info h1 span { color:#10b981; }
+    .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
+
+    /* Checklist Mockup */
+    .checklist { z-index:10; width: 420px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:24px; padding:35px; }
+    .check-title { color:#fff; font-weight:900; font-size:1.3rem; margin-bottom:25px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px; }
+    .check-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .check-label { color:#fff; font-size:1.1rem; }
+    .check-indicator { width:24px; height:24px; border-radius:50%; background:#10b981; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:0.8rem; }
+    .check-row.fail .check-indicator { background:rgba(255,255,255,0.05); color:#6b7280; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Weekly athlete <span>compliance sheets.</span></h1>
+      <p>Assess daily compliance scores dynamically to identify exactly who needs a nudge.</p>
+    </div>
+    
+    <div class="checklist">
+      <div class="check-title">Client: Ahmed Samir</div>
+      <div class="check-row">
+        <span class="check-label">Monday: PUSH Day</span>
+        <span class="check-indicator">✓</span>
+      </div>
+      <div class="check-row">
+        <span class="check-label">Tuesday: Hydration Target</span>
+        <span class="check-indicator">✓</span>
+      </div>
+      <div class="check-row fail">
+        <span class="check-label">Wednesday: Diet Target</span>
+        <span class="check-indicator">✕</span>
+      </div>
+      <div class="check-row">
+        <span class="check-label">Thursday: PULL Day</span>
+        <span class="check-indicator">✓</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

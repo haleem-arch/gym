@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Visual Mockups Marketing Kit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #05060f;
+      --card-bg: rgba(17, 19, 30, 0.75);
+      --border-color: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-blue: #60a5fa;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .brand-pill {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 6px 18px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent-blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .main-layout {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 30px;
+      align-items: start;
+    }
+
+    /* Left Sidebar: Navigation List */
+    .sidebar {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 24px;
+      max-height: 850px;
+      overflow-y: auto;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .sidebar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 3px;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(59, 130, 246, 0.3);
+      border-radius: 3px;
+    }
+
+    .sidebar h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .post-nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      border: 1px solid transparent;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .post-nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.05);
+      transform: translateX(4px);
+    }
+
+    .post-nav-item.active {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.08) 100%);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 20px -6px rgba(59, 130, 246, 0.2);
+    }
+
+    .post-nav-item .tag {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+      display: inline-block;
+      color: var(--accent-blue);
+    }
+
+    .post-nav-item .title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Right Preview Container */
+    .preview-container {
+      display: grid;
+      grid-template-columns: 540px 1fr;
+      gap: 30px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 32px;
+      padding: 30px;
+      align-items: start;
+    }
+
+    /* Instagram Live Post Preview Frame */
+    .instagram-frame {
+      width: 540px;
+      height: 540px;
+      background: #060713;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .instagram-frame iframe {
+      width: 1080px;
+      height: 1080px;
+      border: none;
+      transform: scale(0.5);
+      transform-origin: top left;
+      pointer-events: auto;
+    }
+
+    /* Details Panel */
+    .details-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      min-height: 540px;
+    }
+
+    .details-header h3 {
+      font-size: 1.8rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #ffffff, var(--accent-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .mockup-desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .caption-box-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .caption-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-blue);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .caption-box {
+      background: rgba(5, 6, 15, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 16px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      height: 250px;
+      font-family: inherit;
+    }
+
+    .copy-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    @media (max-width: 1200px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        max-height: 400px;
+      }
+      .preview-container {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+      .instagram-frame {
+        width: 100%;
+        max-width: 540px;
+        height: auto;
+        aspect-ratio: 1;
+      }
+      .instagram-frame iframe {
+        /* Need dynamic responsive scale on smaller screens */
+      }
+      .details-panel {
+        width: 100%;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-pill">Life Gym Marketing Kit</div>
+    <h1>Premium Visual Mockups</h1>
+    <p>25 highly optimized, visually distinct, and professionally styled marketing graphics for B2B fitness coaches. Each card features unique interactive components, biometrics, charts, or alerts to drive conversions.</p>
+  </header>
+
+  <div class="main-layout">
+    <!-- Left Navigation Sidebar -->
+    <div class="sidebar">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-blue)"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+        Mockups List
+      </h2>
+      <div id="nav-list"></div>
+    </div>
+
+    <!-- Right Preview Layout -->
+    <div class="preview-container">
+      <!-- Simulated Live Canvas Iframe -->
+      <div class="instagram-frame">
+        <iframe id="preview-iframe" src=""></iframe>
+      </div>
+
+      <!-- Text / Caption Details -->
+      <div class="details-panel">
+        <div>
+          <h3 id="mockup-title">Loading Mockup...</h3>
+          <div id="mockup-desc" class="mockup-desc">Loading description...</div>
+        </div>
+
+        <div class="caption-box-container">
+          <div class="caption-label">
+            <span>Instagram Caption</span>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">Link in bio automatically attached</span>
+          </div>
+          <div id="caption-text" class="caption-box">Loading caption text...</div>
+        </div>
+
+        <button class="copy-btn" onclick="copyCaption()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy Instagram Caption
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mockups = [
+      { id: 1, title: "iPhone App Mockup", desc: "Give your athletes a high-end mobile tracking portal. Renders concentric daily goal rings showing water progress and macronutrient checkmarks.", text: "Give your athletes a high-end mobile tracking portal. Link in bio @lifegym.io" },
+      { id: 2, title: "Comparison Chart (WhatsApp vs Life Gym)", desc: "A side-by-side layout contrasting manual PDF tracking chaos with automated sync databases, payment alerts, and live charts.", text: "Ditch the WhatsApp spreadsheet chaos. Professionalize your operations." },
+      { id: 3, title: "Desktop Coach Workspace Mockup", desc: "A heavy-duty 3-pane coach dashboard visualization displaying biometrics, muscle charts, and real-time client volume metrics.", text: "Build workout splits and check biometrics on a heavy-duty 3-pane console." },
+      { id: 4, title: "SaaS Pricing Matrix", desc: "Clean tier layout detailing subscription passes built to scale from 2 weeks to 3 months with customized pricing.", text: "Subscription passes built to scale your business. Start your 14-day free trial." },
+      { id: 5, title: "Water Compliance Status Ring", desc: "A dark dashboard showcasing concentric SVG fluid status rings mapping daily hydration status.", text: "Fluid concentric SVG progress indicators keep your athletes consistent." },
+      { id: 6, title: "Telegram Receipt Webhook Popup", desc: "A receipt validation simulator with inline verification webhook checkmarks and transfer metadata.", text: "Verify cash transfers in 1 click using inline webhook approval buttons." },
+      { id: 7, title: "Segmental Body Composition silhouette map", desc: "Highlight target muscle groups and fat distribution with a sleek anatomical silhouette SVG chart.", text: "Highlight target muscle segments using visual body maps." },
+      { id: 8, title: "WhatsApp Chat Notifications mockup", desc: "Simulated iPhone lockscreeen detailing automated daily client nudge dispatches powered by WaPilot API.", text: "Automate reminders and credentials text dispatches using WaPilot webhooks." },
+      { id: 9, title: "PR Deadlift Trophy Card", desc: "A celebration card showcasing a personalized record trophy with lifting details and compliance checkouts.", text: "Celebrate Personal Records (PR) with reward checkouts and digital trophies." },
+      { id: 10, title: "Lifting Volume Receipt Print Mockup", desc: "A retro-themed thermal receipt mockup showing exercise logs, sets, reps, and cumulative weight lifted.", text: "Export clean thermal-paper style receipts of client workout volumes." },
+      { id: 11, title: "Athlete Weekly Compliance Checklist", desc: "A frosted glass UI checklist with real-time checkboxes tracking weekly check-ins, hydration, and nutrition goals.", text: "Frosted-glass checklist details exactly who is doing their work." },
+      { id: 12, title: "Database Sync flow illustration", desc: "A clean architectural node-to-node layout showing real-time client sync with the coach dashboard.", text: "Coaches write splits, athletes log habits. Data is synced in real-time." },
+      { id: 13, title: "Coach testimonial speech bubble", desc: "A client testimonial speech bubble highlighted in gradients with coach profile details and high-end styling.", text: "See why premium trainers are switching from spreadsheets to B2B portals." },
+      { id: 14, title: "Admin time reduction bar chart", desc: "A clean progress chart illustrating how automation slashes coach admin workload from 15 hours to just 2 hours.", text: "Slash weekly busywork by 80%. Reclaim your time to train." },
+      { id: 15, title: "Onboarding stepper timeline", desc: "A 3-step onboarding pipeline detailing passcode creation and onboarding flow in 60 seconds.", text: "Onboard new clients with a 6-digit passcode in 60 seconds." },
+      { id: 16, title: "Custom domain address bar mockup", desc: "A clean browser URL address bar mockup showing white-label domains built directly on coach business profiles.", text: "Configure custom white-label addresses to match your brand name." },
+      { id: 17, title: "Egyptian food macros log details", desc: "Categorized Egyptian and Middle Eastern local foods with caloric breakdowns for custom meal templates.", text: "1,000+ local Middle East foods categorized and searchable in Arabic." },
+      { id: 18, title: "Weekly split calendar agenda", text: "Structure custom training splits and track daily lifting volume trends." },
+      { id: 19, title: "WhatsApp anti-ban queue sliders", desc: "A control panel demonstrating anti-ban delays, queue throttling, and automated WhatsApp protection.", text: "Delay throttles and warm-ups protect your gateway dispatch number." },
+      { id: 20, title: "Suspension checkout screen mockup", desc: "An automated warning layout notifying athletes of expired memberships and one-click reactivation.", text: "Cron jobs automatically suspend expired memberships to protect revenues." },
+      { id: 21, title: "Strava outdoor activity GPS track", desc: "A sleek GPS route trace card containing outdoor runs, cycling paces, and elevation syncing.", text: "Sync elevation, runs, and GPS metrics alongside heavy gym sessions." },
+      { id: 22, title: "Sleep quality wave chart", desc: "A beautiful wave chart mapping sleep cycles (Deep, REM, Light) to optimize daily athlete recovery.", text: "Track sleep cycles (deep, REM) to monitor athlete recovery readiness." },
+      { id: 23, title: "Gym community leaderboard", desc: "A competitive ranking layout for gym challenges showing top performers and kg lifted totals.", text: "Gamify progress with community leaderboards and active challenges." },
+      { id: 24, title: "Barbell plate configuration guide", desc: "A barbell loader mockup showing exact plate colors and counts needed to match target weights.", text: "Visual bumper plate stacking guide removes plate loading math." },
+      { id: 25, title: "SaaS vs Agency profit bar graph", desc: "A bar graph visualizing B2B SaaS coaching portal 98% net profit margins vs traditional high-overhead agency margins.", text: "Scale your revenue with 98% net margins. Sell software, not hours." }
+    ];
+
+    // Populate missing description fallbacks
+    mockups.forEach(m => {
+      if (!m.desc) {
+        m.desc = `A specialized visual card emphasizing the '${m.title}' feature, complete with dark-themed dashboard elements.`;
+      }
+    });
+
+    const navContainer = document.getElementById("nav-list");
+    const previewIframe = document.getElementById("preview-iframe");
+    const mockupTitle = document.getElementById("mockup-title");
+    const mockupDesc = document.getElementById("mockup-desc");
+    const captionText = document.getElementById("caption-text");
+
+    function initGallery() {
+      mockups.forEach((mockup, index) => {
+        const item = document.createElement("div");
+        item.className = `post-nav-item ${index === 0 ? 'active' : ''}`;
+        item.onclick = () => selectMockup(index);
+        item.innerHTML = `
+          <span class="tag">Post ${mockup.id}</span>
+          <span class="title">${mockup.title}</span>
+        `;
+        navContainer.appendChild(item);
+      });
+
+      // Load first mockup
+      selectMockup(0);
+    }
+
+    function selectMockup(index) {
+      const items = document.querySelectorAll(".post-nav-item");
+      items.forEach((item, idx) => {
+        if (idx === index) item.classList.add("active");
+        else item.classList.remove("active");
+      });
+
+      const mockup = mockups[index];
+      
+      // Update iframe source
+      previewIframe.src = `post${mockup.id}.html`;
+      
+      // Update details panel
+      mockupTitle.innerText = `Post ${mockup.id}: ${mockup.title}`;
+      mockupDesc.innerText = mockup.desc;
+      
+      // Build Instagram caption
+      let caption = `==================================================\n`;
+      caption += `POST ${mockup.id}: ${mockup.title.toUpperCase()}\n`;
+      caption += `==================================================\n`;
+      caption += `Visual Mockup: ${mockup.text}\n\n`;
+      caption += `Coaches, if your coaching business is still running on Google Drive folders and WhatsApp groups, you are capping your scaling potential.\n\n`;
+      caption += `Life Gym provides a complete B2B software ecosystem that professionalizes your business, automates client compliance tracking, and streamlines billing.\n\n`;
+      caption += `👉 Join premium coaches today. Click the link in our bio to start your 14-day free trial! @lifegym.io\n\n`;
+      caption += `#coachinglife #onlinecoach #gymowners #fitnesstech #egyptfitness #cairocoaches #athleteportal #gymmarketing #scaleup`;
+      
+      captionText.innerText = caption;
+    }
+
+    function copyCaption() {
+      const text = captionText.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Instagram caption copied to clipboard!");
+      }).catch(err => {
+        console.error("Failed to copy caption: ", err);
+      });
+    }
+
+    initGallery();
+  </script>
+</body>
+</html>

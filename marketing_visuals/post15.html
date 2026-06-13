@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 15 - Onboarding Timeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info { max-width:800px; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:15px; }
+    .info h1 span { color:#3b82f6; }
+    
+    /* Stepper Mockup */
+    .stepper { display:flex; flex-direction:column; gap:40px; margin:auto 0; max-width:700px; padding-left:30px; border-left:3px solid #1e293b; position:relative; }
+    .step { position:relative; }
+    .step-circle { position:absolute; left:-43px; top:0; width:24px; height:24px; border-radius:50%; background:#060713; border:4px solid #3b82f6; }
+    .step.active .step-circle { background:#3b82f6; }
+    .step-title { color:#fff; font-weight:700; font-size:1.4rem; margin-bottom:8px; }
+    .step-desc { color:#9ca3af; font-size:1.05rem; line-height:1.4; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Onboard athletes in <span>60 seconds.</span></h1>
+    </div>
+    
+    <div class="stepper">
+      <div class="step active">
+        <div class="step-circle"></div>
+        <div class="step-title">1. Create Profile</div>
+        <div class="step-desc">Input biometrics, goals, and macro limits on your coach panel.</div>
+      </div>
+      <div class="step active">
+        <div class="step-circle"></div>
+        <div class="step-title">2. Text Onboarding Passcode</div>
+        <div class="step-desc">The system auto-generates a unique 6-digit invitation code.</div>
+      </div>
+      <div class="step">
+        <div class="step-circle"></div>
+        <div class="step-title">3. Athlete Connects</div>
+        <div class="step-desc">The client signs up on their phone, inputs the code, and syncs.</div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

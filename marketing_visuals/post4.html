@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 4 - Pricing Plans</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .header { text-align:center; }
+    .header h2 { font-size:3rem; font-weight:900; color:#fff; }
+    .header h2 span { color:#3b82f6; }
+    
+    .plans-grid { display:grid; grid-template-columns: 1fr 1.1fr 1fr; gap:25px; margin:auto 0; align-items:stretch; }
+    
+    .plan-card { border:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); border-radius:24px; padding:35px 25px; text-align:center; display:flex; flex-direction:column; justify-content:space-between; }
+    .plan-card.premium { border-color:#3b82f6; background:rgba(59,130,246,0.02); transform: scale(1.05); }
+    
+    .plan-card h3 { font-size:1.5rem; font-weight:700; color:#9ca3af; margin-bottom:15px; }
+    .plan-card.premium h3 { color:#3b82f6; }
+    
+    .price { font-size:2.8rem; font-weight:900; color:#fff; margin-bottom:20px; }
+    .price span { font-size:1.1rem; color:#9ca3af; }
+    
+    .features { text-align:left; font-size:0.95rem; color:#d1d5db; line-height:1.8; margin-bottom:30px; }
+    .features div { display:flex; align-items:center; gap:8px; }
+    .features span { color:#10b981; font-weight:bold; }
+    
+    .btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-weight:700; padding:12px 0; border-radius:12px; cursor:pointer; }
+    .plan-card.premium .btn { background:#3b82f6; border:none; }
+    
+    .footer { display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h2>SaaS Pricing built to <span>scale.</span></h2>
+    </div>
+    
+    <div class="plans-grid">
+      <div class="plan-card">
+        <h3>2 Weeks</h3>
+        <div class="price">2.2k <span>EGP</span></div>
+        <div class="features">
+          <div><span>✓</span> Max 50 Clients</div>
+          <div><span>✓</span> 3-Pane Console</div>
+          <div><span>✓</span> Standard Support</div>
+        </div>
+        <button class="btn">Start Trial</button>
+      </div>
+      
+      <div class="plan-card premium">
+        <h3 style="letter-spacing:0.05em;">1 Month</h3>
+        <div class="price">3.5k <span>EGP</span></div>
+        <div class="features">
+          <div><span>✓</span> Max 50 Clients</div>
+          <div><span>✓</span> 3-Pane Console</div>
+          <div><span>✓</span> WaPilot Gateway</div>
+          <div><span>✓</span> VIP Support</div>
+        </div>
+        <button class="btn">Get Started</button>
+      </div>
+      
+      <div class="plan-card">
+        <h3>3 Months</h3>
+        <div class="price">8.5k <span>EGP</span></div>
+        <div class="features">
+          <div><span>✓</span> Max 50 Clients</div>
+          <div><span>✓</span> 3-Pane Console</div>
+          <div><span>✓</span> WaPilot Gateway</div>
+        </div>
+        <button class="btn">Select Plan</button>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>
