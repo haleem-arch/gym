@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Carousel Marketing Kit V8</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #05060f;
+      --card-bg: #0c1020;
+      --border-color: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-blue: #60a5fa;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    header { margin-bottom: 40px; }
+    .brand-pill { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-blue); display: inline-block; margin-bottom: 16px; }
+    header h1 { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #ffffff 40%, var(--accent-blue) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .carousel-section {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: rgba(12, 16, 32, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 40px;
+      text-align: left;
+    }
+    .carousel-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .carousel-title-row h2 {
+      font-size: 1.6rem;
+      font-weight: 900;
+    }
+    .carousel-container {
+      display: grid;
+      grid-template-columns: 540px 1fr;
+      gap: 40px;
+      align-items: flex-start;
+    }
+    .swipe-view-wrapper {
+      width: 540px;
+      height: 540px;
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #05060f;
+    }
+    .swipe-slides-container {
+      display: flex;
+      width: 2700px; /* 5 slides * 540px */
+      height: 540px;
+      transition: transform 0.4s ease-in-out;
+    }
+    .swipe-slide {
+      width: 540px;
+      height: 540px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .swipe-slide iframe {
+      width: 1080px;
+      height: 1080px;
+      border: none;
+      transform: scale(0.5);
+      transform-origin: top left;
+    }
+    .carousel-nav-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+      width: 540px;
+      align-items: center;
+    }
+    .nav-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .slide-dots {
+      display: flex;
+      gap: 8px;
+    }
+    .slide-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: all 0.2s;
+    }
+    .slide-dot.active {
+      background: var(--accent-blue);
+      width: 20px;
+      border-radius: 4px;
+    }
+    .details-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 540px;
+    }
+    .caption-box {
+      background: rgba(5, 6, 15, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 16px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      height: 340px;
+    }
+    .copy-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+      margin-top: 15px;
+    }
+    .copy-btn:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+      <svg style="width: 60px; height: 60px;" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(256 256) rotate(-45)">
+          <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+          <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+          <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+          <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+          <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+          <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+        </g>
+      </svg>
+      <span style="font-size: 2.2rem; font-weight: 900; letter-spacing: 0.25em; text-transform: uppercase; color: #ffffff; text-shadow: 0 0 25px rgba(59, 130, 246, 0.5);">Life Gym</span>
+    </div>
+    <div class="brand-pill">Coach Marketing Kit v8</div>
+    <h1 style="margin-top: 10px;">Swipeable Carousel Posts</h1>
+  </header>
+
+  <!-- CAROUSEL 1 -->
+  <section class="carousel-section">
+    <div class="carousel-title-row">
+      <h2>Post 1: The Frictionless Client Journey</h2>
+      <span style="color:var(--accent-blue); font-weight:bold; font-size:0.9rem;">5 Slides</span>
+    </div>
+    <div class="carousel-container">
+      <div>
+        <div class="swipe-view-wrapper">
+          <div class="swipe-slides-container" id="slides-1">
+            <div class="swipe-slide"><iframe src="slide1.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide2.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide3.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide4.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide5.html"></iframe></div>
+          </div>
+        </div>
+        <div class="carousel-nav-controls">
+          <button class="nav-btn" onclick="prevSlide(1)">←</button>
+          <div class="slide-dots" id="dots-1">
+            <span class="slide-dot active"></span>
+            <span class="slide-dot"></span>
+            <span class="slide-dot"></span>
+            <span class="slide-dot"></span>
+            <span class="slide-dot"></span>
+          </div>
+          <button class="nav-btn" onclick="nextSlide(1)">→</button>
+        </div>
+      </div>
+      <div class="details-panel">
+        <div>
+          <h3 style="font-size:1.3rem; margin-bottom:10px; color:#fff;">Slide Journey Walkthrough</h3>
+          <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:15px;">Swipe through the slides on the left to review the continuous visual flow. Each slide fits into a unified, branded customer story.</p>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column;">
+          <div style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--accent-blue); margin-bottom:8px;">Instagram Post Caption</div>
+          <div class="caption-box" id="caption-1"></div>
+        </div>
+        <button class="copy-btn" onclick="copyCaption(1)">Copy Carousel Caption</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAROUSEL 2 -->
+  <section class="carousel-section">
+    <div class="carousel-title-row">
+      <h2>Post 2: The 94% Compliance Engine</h2>
+      <span style="color:var(--accent-blue); font-weight:bold; font-size:0.9rem;">5 Slides</span>
+    </div>
+    <div class="carousel-container">
+      <div>
+        <div class="swipe-view-wrapper">
+          <div class="swipe-slides-container" id="slides-2">
+            <div class="swipe-slide"><iframe src="slide6.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide7.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide8.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide9.html"></iframe></div>
+            <div class="swipe-slide"><iframe src="slide10.html"></iframe></div>
+          </div>
+        </div>
+        <div class="carousel-nav-controls">
+          <button class="nav-btn" onclick="prevSlide(2)">←</button>
+          <div class="slide-dots" id="dots-2">
+            <span class="slide-dot active"></span>
+            <span class="slide-dot"></span>
+            <span class="slide-dot"></span>
+            <span class="slide-dot"></span>
+            <span class="slide-dot"></span>
+          </div>
+          <button class="nav-btn" onclick="nextSlide(2)">→</button>
+        </div>
+      </div>
+      <div class="details-panel">
+        <div>
+          <h3 style="font-size:1.3rem; margin-bottom:10px; color:#fff;">Accountability Science Flow</h3>
+          <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:15px;">This carousel highlights the psychology of micro-inputs and coach dashboards. Slide swiping reveals continuous glow paths.</p>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column;">
+          <div style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--accent-blue); margin-bottom:8px;">Instagram Post Caption</div>
+          <div class="caption-box" id="caption-2"></div>
+        </div>
+        <button class="copy-btn" onclick="copyCaption(2)">Copy Carousel Caption</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const currentSlides = { 1: 0, 2: 0 };
+    const maxSlides = 5;
+    
+    const captions = [
+      `Coaches: What happens when you onboard a client on your team? 🚀\\n\\nMost coaches send messy spreadsheets or endless copy-paste texts. This friction kills client compliance before they even start.\\n\\nHere is how Life Gym automates the entire experience:\\n1. Automated WhatsApp invite with unique credentials\\n2. Zero App Store downloads - installs as PWA in 2 seconds\\n3. Sleek home dashboard waiting for them every morning\\n4. 10-second compound logging splits with tap presets\\n5. Real-time compliance updates sent straight to your dashboard\\n\\n👉 Stop wasting time on admin chaos. Give your athletes a premium portal. Tap the link in bio to start your 14-day free trial! @lifegym.io\\n\\n#onlinecoach #gymcoaching #fitnesstech #athleteportal #gymmarketing #gymsoftware #pplsplit #consistency #saas`,
+      `Why do 80% of online fitness clients quit in their first month? ✖\\n\\nIt is not a lack of drive. It is spreadsheet fatigue. If client logging takes more than 10 seconds, consistency crashes.\\n\\nIn this carousel, we break down the accountability mechanics of Life Gym:\\n- Spreadsheet logging drop-off curves vs Life Gym's 94% compliance\\n- Quick preset micro-logging (tap logs for water, weights, and macros)\\n- Color-coded coach dashboard streak matrix (green, orange, red)\\n- Spotting warning accounts instantly before they drop off\\n\\n👉 Retain your clients 3x longer. Reclaim your admin hours. Tap the link in bio to register for free! @lifegym.io\\n\\n#onlinecoaches #gymcoaching #personaltrainers #coachingdashboard #gymsoftware #consistencytracker #fitnesstech #retention`
+    ];
+
+    function init() {
+      document.getElementById('caption-1').innerText = captions[0];
+      document.getElementById('caption-2').innerText = captions[1];
+    }
+
+    function showSlide(carouselId, index) {
+      if (index < 0) index = 0;
+      if (index >= maxSlides) index = maxSlides - 1;
+      
+      currentSlides[carouselId] = index;
+      const offset = -index * 540;
+      document.getElementById('slides-' + carouselId).style.transform = 'translateX(' + offset + 'px)';
+      
+      const dots = document.getElementById('dots-' + carouselId).querySelectorAll('.slide-dot');
+      dots.forEach((dot, idx) => {
+        if (idx === index) dot.classList.add('active');
+        else dot.classList.remove('active');
+      });
+    }
+
+    function nextSlide(carouselId) {
+      showSlide(carouselId, currentSlides[carouselId] + 1);
+    }
+
+    function prevSlide(carouselId) {
+      showSlide(carouselId, currentSlides[carouselId] - 1);
+    }
+
+    function copyCaption(id) {
+      const capText = captions[id - 1];
+      navigator.clipboard.writeText(capText).then(() => {
+        alert("Carousel caption copied to clipboard!");
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
