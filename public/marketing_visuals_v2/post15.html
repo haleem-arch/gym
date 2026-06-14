@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 15 - Customize Your Branding</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
+    .glow { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(6,7,19,0) 70%); filter:blur(40px); }
+    .glow-right { top:-100px; right:-100px; }
+    
+    .info { max-width: 440px; z-index:10; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
+    .info h1 span { color:#3b82f6; }
+    .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
+
+    /* Custom UI Panel Mockup */
+    .branding-box { z-index:10; width: 420px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); padding:35px; }
+    .palette { display:flex; gap:15px; margin-top:20px; }
+    .color-dot { width:35px; height:35px; border-radius:50%; border:2px solid transparent; cursor:pointer; }
+    .color-dot.active { border-color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow glow-right"></div>
+    <div class="info">
+      <h1>Custom coach <span>app branding.</span></h1>
+      <p>Your portal, your rules. Choose custom color themes, upload your personal coaching brand logo, and configure settings to match your training business identity.</p>
+    </div>
+    
+    <div class="branding-box">
+      <div style="color:#fff; font-weight:700; font-size:1.25rem;">Portal Theme Settings</div>
+      <div style="color:#9ca3af; font-size:0.95rem; margin-top:8px;">Set client dashboard primary theme colors:</div>
+      <div class="palette">
+        <div class="color-dot active" style="background:#3b82f6;"></div>
+        <div class="color-dot" style="background:#10b981;"></div>
+        <div class="color-dot" style="background:#8b5cf6;"></div>
+        <div class="color-dot" style="background:#ec4899;"></div>
+      </div>
+      <div style="margin-top:25px; padding:15px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between;">
+        <span style="color:#fff; font-weight:700; font-size:0.95rem;">Upload Brand Logo</span>
+        <span style="color:#3b82f6; font-size:0.9rem; font-weight:700; cursor:pointer;">Select File →</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

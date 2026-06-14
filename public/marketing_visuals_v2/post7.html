@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 7 - Coaching Plans</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info { text-align:center; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; }
+    .info h1 span { color:#3b82f6; }
+    
+    /* Plans Layout */
+    .plans-grid { display:grid; grid-template-columns: 1fr 1fr; gap:40px; margin:auto 0; }
+    .plan-box { background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05); border-radius:24px; padding:40px; text-align:center; position:relative; }
+    .plan-box.featured { border-color:#3b82f6; background:rgba(59,130,246,0.02); }
+    .plan-box h3 { color:#9ca3af; font-size:1.3rem; font-weight:700; margin-bottom:15px; }
+    .plan-box.featured h3 { color:#3b82f6; }
+    .plan-price { font-size:3rem; font-weight:900; color:#fff; margin-bottom:20px; }
+    .plan-price span { font-size:1.2rem; color:#9ca3af; font-weight:400; }
+    .plan-perks { text-align:left; color:#d1d5db; font-size:1.1rem; line-height:1.8; margin-bottom:25px; display:inline-block; }
+    .plan-perks div { display:flex; align-items:center; gap:10px; }
+    .plan-perks span { color:#10b981; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Structure your <span>coaching plans.</span></h1>
+    </div>
+    
+    <div class="plans-grid">
+      <div class="plan-box">
+        <h3>Standard Support</h3>
+        <div class="plan-price">1,800 <span>EGP/mo</span></div>
+        <div class="plan-perks">
+          <div><span>✓</span> Custom Weekly Splits</div>
+          <div><span>✓</span> Basic Macro Goals</div>
+          <div><span>✓</span> Weekend Check-ins</div>
+        </div>
+      </div>
+      <div class="plan-box featured">
+        <h3>Premium Elite</h3>
+        <div class="plan-price">3,000 <span>EGP/mo</span></div>
+        <div class="plan-perks">
+          <div><span>✓</span> 1-on-1 Daily Audits</div>
+          <div><span>✓</span> Custom Meal Templates</div>
+          <div><span>✓</span> Automated Hydration Alerts</div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem;">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>

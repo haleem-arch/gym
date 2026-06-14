@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Coach Marketing Kit V2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #05060f;
+      --card-bg: rgba(17, 19, 30, 0.75);
+      --border-color: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-blue: #60a5fa;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    header { text-align: center; margin-bottom: 40px; }
+    .brand-pill { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-blue); display: inline-block; margin-bottom: 16px; }
+    header h1 { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #ffffff 40%, var(--accent-blue) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+    .main-layout { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 30px; }
+    .sidebar { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 24px; max-height: 850px; overflow-y: auto; }
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 3px; }
+    .post-nav-item { display: flex; flex-direction: column; padding: 14px 18px; border-radius: 14px; cursor: pointer; margin-bottom: 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid transparent; transition: all 0.2s ease; }
+    .post-nav-item.active { background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.08) 100%); border-color: rgba(59, 130, 246, 0.4); }
+    .post-nav-item .tag { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--accent-blue); margin-bottom: 4px; }
+    .post-nav-item .title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .preview-container { display: grid; grid-template-columns: 540px 1fr; gap: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 32px; padding: 30px; }
+    .instagram-frame { width: 540px; height: 540px; background: #060713; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); }
+    .instagram-frame iframe { width: 1080px; height: 1080px; border: none; transform: scale(0.5); transform-origin: top left; }
+    .details-panel { display: flex; flex-direction: column; justify-content: space-between; min-height: 540px; }
+    .caption-box { background: rgba(5, 6, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 16px; color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; overflow-y: auto; height: 320px; }
+    .copy-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease; font-size: 1rem; }
+    .copy-btn:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-pill">Life Gym Coach Marketing Kit v2</div>
+    <h1>Premium Coach Graphics</h1>
+  </header>
+  <div class="main-layout">
+    <div class="sidebar">
+      <h2 style="font-size:1.2rem; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">Mockups List</h2>
+      <div id="nav-list"></div>
+    </div>
+    <div class="preview-container">
+      <div class="instagram-frame">
+        <iframe id="preview-iframe" src=""></iframe>
+      </div>
+      <div class="details-panel">
+        <div>
+          <h3 id="mockup-title" style="font-size:1.6rem; font-weight:900; margin-bottom:10px;">Post Title</h3>
+          <p id="mockup-desc" style="color:var(--text-muted); font-size:1rem; line-height:1.5; margin-bottom:20px;">Post Description</p>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; margin-bottom:15px;">
+          <div style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--accent-blue); margin-bottom:8px;">Instagram Caption</div>
+          <div id="caption-text" class="caption-box"></div>
+        </div>
+        <button class="copy-btn" onclick="copyCaption()">Copy Caption</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const mockupsCount = 50;
+    const navList = document.getElementById('nav-list');
+    const iframe = document.getElementById('preview-iframe');
+    const title = document.getElementById('mockup-title');
+    const desc = document.getElementById('mockup-desc');
+    const captionText = document.getElementById('caption-text');
+    
+    const titles = {
+      1: "Client Onboarding Welcome",
+      2: "Daily Check-in Nudge",
+      3: "Coach Compliance Dashboard",
+      4: "Client Muscle Mass Progress",
+      5: "Daily Athlete Habit Tracker",
+      6: "Client Workout splits",
+      7: "Coaching Membership tiers",
+      8: "Spreadsheet vs Life Gym Portal",
+      9: "Client Daily Macronutrients",
+      10: "Weekly Water Logs Chart",
+      11: "Client Mobile Credentials Log",
+      12: "Automated Expired Suspension Alert",
+      13: "Weekly Admin Hours Reduction",
+      14: "Client Weight Trends Graph",
+      15: "Portal Brand Settings Palette",
+      16: "Egyptian Foods Macro Database",
+      17: "Coach Active Business Metrics",
+      18: "Workout Set Logger UI",
+      19: "Elite Coach Testimonial Bubble",
+      20: "Compliance Logs Consistency Heatmap",
+      21: "Custom Coaching Subdomain",
+      22: "Weekly Compliance Summaries",
+      23: "Client Macronutrient Balance",
+      24: "Daily Water Intake Alerts",
+      25: "Exercise Instruction Library",
+      26: "Secure Client Vaults",
+      27: "Intake Questionnaires",
+      28: "Custom Calorie Calculators",
+      29: "Client Sleep Analytics",
+      30: "Daily Step Tracking"
+    };
+
+    function init() {
+      for (let i = 1; i <= mockupsCount; i++) {
+        const item = document.createElement('div');
+        item.className = 'post-nav-item' + (i === 1 ? ' active' : '');
+        item.onclick = () => select(i);
+        const displayTitle = titles[i] || "Coach Tool Area " + i;
+        item.innerHTML = '<span class="tag">Post ' + i + '</span><span class="title">' + displayTitle + '</span>';
+        navList.appendChild(item);
+      }
+      select(1);
+    }
+    
+    function select(id) {
+      const items = document.querySelectorAll('.post-nav-item');
+      items.forEach((item, idx) => {
+        if (idx === (id - 1)) item.classList.add('active');
+        else item.classList.remove('active');
+      });
+      iframe.src = 'post' + id + '.html';
+      const displayTitle = titles[id] || "Coach Tool Area " + id;
+      title.innerText = 'Post ' + id + ': ' + displayTitle;
+      desc.innerText = 'Highly professional, B2B coach marketing visual card showing real features built inside Life Gym.';
+      
+      let cap = '==================================================\n';
+      cap += 'POST ' + id + ': ' + displayTitle.toUpperCase() + '\n';
+      cap += '==================================================\n';
+      cap += 'Coaches, running a premium coaching program should not mean wasting hours inside WhatsApp chats and manual sheets.\n\n';
+      cap += 'Provide your clients with a sleek custom branded portal, automated check-in reminder nudges straight to their WhatsApp, and simple logging metrics that track compliance in real-time.\n\n';
+      cap += '👉 Professionalize your business today. Tap the link in bio to start your 14-day free trial! @lifegym.io\n\n';
+      cap += '#onlinecoach #gymcoaching #coachinglife #fitnesstech #egyptfitness #cairocoaches #athleteportal #gymmarketing #scaleup';
+      captionText.innerText = cap;
+    }
+    
+    function copyCaption() {
+      navigator.clipboard.writeText(captionText.innerText).then(() => {
+        alert("Instagram caption copied to clipboard!");
+      });
+    }
+    
+    init();
+  </script>
+</body>
+</html>
