@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Coach Marketing Kit V5 (Branded Dashboard Widgets)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #05060f;
+      --card-bg: #0c1020;
+      --border-color: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-blue: #60a5fa;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    header { text-align: center; margin-bottom: 40px; }
+    .brand-pill { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-blue); display: inline-block; margin-bottom: 16px; }
+    header h1 { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #ffffff 40%, var(--accent-blue) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+    .main-layout { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 30px; }
+    .sidebar { background: rgba(12, 16, 32, 0.8); border: 1px solid var(--border-color); border-radius: 24px; padding: 24px; max-height: 850px; overflow-y: auto; }
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 3px; }
+    .post-nav-item { display: flex; flex-direction: column; padding: 14px 18px; border-radius: 14px; cursor: pointer; margin-bottom: 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid transparent; transition: all 0.2s ease; }
+    .post-nav-item.active { background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.08) 100%); border-color: rgba(59, 130, 246, 0.4); }
+    .post-nav-item .tag { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--accent-blue); margin-bottom: 4px; }
+    .post-nav-item .title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .preview-container { display: grid; grid-template-columns: 540px 1fr; gap: 30px; background: rgba(12, 16, 32, 0.8); border: 1px solid var(--border-color); border-radius: 32px; padding: 30px; }
+    .instagram-frame { width: 540px; height: 540px; background: #05060f; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); }
+    .instagram-frame iframe { width: 1080px; height: 1080px; border: none; transform: scale(0.5); transform-origin: top left; }
+    .details-panel { display: flex; flex-direction: column; justify-content: space-between; min-height: 540px; }
+    .caption-box { background: rgba(5, 6, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 16px; color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; overflow-y: auto; height: 320px; }
+    .copy-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease; font-size: 1rem; }
+    .copy-btn:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-pill">Life Gym Coach Marketing Kit v5</div>
+    <h1>Branded Dashboard Widgets</h1>
+  </header>
+  <div class="main-layout">
+    <div class="sidebar">
+      <h2 style="font-size:1.2rem; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">V5 Mockups</h2>
+      <div id="nav-list"></div>
+    </div>
+    <div class="preview-container">
+      <div class="instagram-frame">
+        <iframe id="preview-iframe" src=""></iframe>
+      </div>
+      <div class="details-panel">
+        <div>
+          <h3 id="mockup-title" style="font-size:1.6rem; font-weight:900; margin-bottom:10px;">Post Title</h3>
+          <p id="mockup-desc" style="color:var(--text-muted); font-size:1rem; line-height:1.5; margin-bottom:20px;">Premium dashboard widget mockup matching your site's styles.</p>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; margin-bottom:15px;">
+          <div style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--accent-blue); margin-bottom:8px;">Instagram Caption</div>
+          <div id="caption-text" class="caption-box"></div>
+        </div>
+        <button class="copy-btn" onclick="copyCaption()">Copy Caption</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const configs = [{"id":1,"title":"Client WhatsApp Credentials Onboarding","desc":"Instantly welcome new athletes with automated WhatsApp single-use passcodes."},{"id":2,"title":"Daily Check-in WhatsApp Alerts","desc":"Automate daily reminders to keep client diet and hydration compliance at 100%."},{"id":3,"title":"Client Compliance Tracker Widget","desc":"Monitor client adherence rates across custom training blocks."},{"id":4,"title":"Daily Nutrition Target Circles","desc":"Display macro balances and calorie budgets using high-fidelity circle rings."},{"id":5,"title":"Quick Hydration Tap Buttons","desc":"Single-tap volume presets to log hydration updates in seconds."},{"id":6,"title":"Skeletal Muscle Mass Gains","desc":"Graph muscular mass improvements plotted across training months."},{"id":7,"title":"Body Fat Percentage Progress","desc":"Monitor client body fat reductions with starting baseline indicators."},{"id":8,"title":"Active Workout Set & Rep Logger","desc":"Log completed repetitions, load weight, and target RPE metrics."},{"id":9,"title":"Exercise Safety Form Cues","desc":"Display safety form checklists to avoid compound lifting injuries."},{"id":10,"title":"Active Session Companion Timer","desc":"A focused interface to track elapsed session time and active lifts."},{"id":11,"title":"Onboarding Step 1: Client Identity","desc":"Configure name, access passcodes, and gender details."},{"id":12,"title":"Onboarding Step 2: Routine Split Assignment","desc":"Assign custom workout templates from your library directory."},{"id":13,"title":"Onboarding Step 3: Nutrition & Diet Targets","desc":"Specify target calories and active training day macro targets."},{"id":14,"title":"Onboarding Step 4: Baseline InBody Scan","desc":"Record baseline weight, skeletal muscle mass, and initial fat mass."},{"id":15,"title":"Client Portal Expiration Warning","desc":"Display package validity alerts and suspend expired client portals."},{"id":16,"title":"Weekly Compliance Heatmap Calendar","desc":"Compact calendar matrices chart athlete program adherence rates."},{"id":17,"title":"Egyptian Local Foods Macro Search","desc":"Query macronutrients of local Egyptian foods like Koshary or Ful."},{"id":18,"title":"Custom Food Recipe Calculator","desc":"Build custom recipes and calculate final macro targets."},{"id":19,"title":"Secure Private Coach Notes Vault","desc":"Log private coach comments regarding client injury checks or changes."},{"id":20,"title":"PWA Standalone App Frame Setup","desc":"Allow clients to install the portal directly to their mobile home screen."},{"id":21,"title":"Client Directory Filters","desc":"Select, filter, and audit active client program logs."},{"id":22,"title":"Coaching Membership Tiers","desc":"Build membership plan catalog tiers with custom package validity rules."},{"id":23,"title":"Weekly Hydration History Logs","desc":"Track liquid logs completed across calendar days of the week."},{"id":24,"title":"InBody Segment Analysis","desc":"Map localized muscle-to-fat distributions across the physique."},{"id":25,"title":"Target Weight Milestone Progress","desc":"Display fat-reduction trends compared to target milestones."},{"id":26,"title":"Rest Day Macro Configurator","desc":"Manage custom rest day scales to ensure proper client recovery."},{"id":27,"title":"Workout Set Rest Timer","desc":"Counting rest timers keep client training sessions intense and focused."},{"id":28,"title":"Daily Habit Checklist","desc":"Enforce healthy daily habits including step limits and sleep targets."},{"id":29,"title":"Client Action Timeline Feed","desc":"A daily timeline records check-ins and client program actions."},{"id":30,"title":"Macro Targets Ratio Breakdown","desc":"Present caloric limits and macro percentages using custom progress sliders."},{"id":31,"title":"InBody composition scan history","desc":"Maintain records of client weight and body composition scans."},{"id":32,"title":"Client Profile Settings","desc":"Toggle options for WhatsApp check-in rules and system alerts."},{"id":33,"title":"Meal Budgets Overview","desc":"Calorie budgets for breakfast, lunch, dinner, and snacks."},{"id":34,"title":"Branded PWA setup stand-alone","desc":"Install portal directly to mobile home screens for fast loading."},{"id":35,"title":"Client deactivation lockout screen","desc":"Lock portal screens automatically when subscriptions expire."},{"id":36,"title":"Weight Fluctuation Averaging","desc":"Rolling averages monitor fat loss trends against scale fluctuations."},{"id":37,"title":"Lifting Safety Technical Cues","desc":"Form checklist rules block poor reps during heavy routines."},{"id":38,"title":"WhatsApp Invite credentials details","desc":"Secure login credential templates automatically generated."},{"id":39,"title":"Coach Capacity Slot Counter","desc":"Verify active client counts and slots remaining."},{"id":40,"title":"Daily Habits Checklist","desc":"Check off daily steps, sleep, and hydration goals."},{"id":41,"title":"Fluid Intake tracker cup","desc":"Interactive water bottle display charts dynamic water updates."},{"id":42,"title":"Weekly Training Calendar","desc":"Schedules training splits across calendar days."},{"id":43,"title":"Macro Targets Summary Profile","desc":"Compact target calories and macronutrients on profile cards."},{"id":44,"title":"Egyptian Local Foods Database Search","desc":"Local food lookups support tracking Egyptian dishes."},{"id":45,"title":"Custom Recipe Macro Calculator","desc":"Combine multiple ingredient macros inside recipes."},{"id":46,"title":"Active coaching capacity counts","desc":"Verify active slots, suspended accounts, and pending invites."},{"id":47,"title":"Exercise cue checklists library","desc":"Safety instructions inside exercise movement libraries."},{"id":48,"title":"Secure private notes comments vault","desc":"Private remarks visible only to coach IDs."},{"id":49,"title":"PWA Standalone App Mobile Widget","desc":"Access private portals stand-alone from mobile home screens."},{"id":50,"title":"Coaching Slots Directory Stats","desc":"Track slots capacity metrics inside active directories."}];
+    const navList = document.getElementById('nav-list');
+    const iframe = document.getElementById('preview-iframe');
+    const title = document.getElementById('mockup-title');
+    const desc = document.getElementById('mockup-desc');
+    const captionText = document.getElementById('caption-text');
+    
+    function init() {
+      configs.forEach(config => {
+        const item = document.createElement('div');
+        item.className = 'post-nav-item' + (config.id === 1 ? ' active' : '');
+        item.onclick = () => select(config.id);
+        item.innerHTML = '<span class="tag">Post ' + config.id + '</span><span class="title">' + config.title + '</span>';
+        navList.appendChild(item);
+      });
+      select(1);
+    }
+    
+    function select(id) {
+      const items = document.querySelectorAll('.post-nav-item');
+      items.forEach((item, idx) => {
+        if ((idx + 1) === id) item.classList.add('active');
+        else item.classList.remove('active');
+      });
+      iframe.src = 'post' + id + '.html';
+      const config = configs.find(c => c.id === id);
+      title.innerText = 'Post ' + id + ': ' + config.title;
+      desc.innerText = config.desc;
+      
+      let cap = '==================================================\n';
+      cap += 'POST ' + id + ': ' + config.title.toUpperCase() + '\n';
+      cap += '==================================================\n';
+      cap += 'Coaches: ' + config.desc + '\n\n';
+      cap += 'Stop managing clients through messy sheets and chats. Give them a premium web-based tracking portal, custom dashboard metrics, and automated reminders straight to their WhatsApp.\n\n';
+      cap += '👉 Professionalize your business. Tap the link in bio to start your 14-day free trial! @lifegym.io';
+      captionText.innerText = cap;
+    }
+    
+    function copyCaption() {
+      navigator.clipboard.writeText(captionText.innerText).then(() => {
+        alert("Instagram caption copied to clipboard!");
+      });
+    }
+    
+    init();
+  </script>
+</body>
+</html>

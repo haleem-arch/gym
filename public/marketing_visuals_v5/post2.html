@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 2 - Daily Check-in WhatsApp Alerts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background:#05060f;
+      width:1080px;
+      height:1080px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-family:'Outfit', sans-serif;
+      overflow:hidden;
+    }
+    .card {
+      width:1080px;
+      height:1080px;
+      background:#05060f;
+      border:1px solid #0c1020;
+      padding:80px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      position:relative;
+      overflow:hidden;
+    }
+    .grid-bg {
+      position:absolute;
+      top:0; left:0; right:0; bottom:0;
+      background-image: 
+        linear-gradient(rgba(12, 16, 32, 0.15) 1px, transparent 1px), 
+        linear-gradient(90deg, rgba(12, 16, 32, 0.15) 1px, transparent 1px);
+      background-size: 54px 54px;
+      z-index: 1;
+    }
+    .glow-radial {
+      position:absolute;
+      width:800px;
+      height:800px;
+      border-radius:50%;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.15) 0%, rgba(5,6,15,0) 70%);
+      filter:blur(60px);
+      z-index: 2;
+    }
+    .glow-center { top:50%; left:50%; transform:translate(-50%, -50%); }
+    
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex-grow: 1;
+      z-index: 10;
+      position: relative;
+      width: 100%;
+    }
+    
+    .widget-container {
+      width: 580px;
+      z-index: 15;
+    }
+
+    .brand-pill {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #60a5fa;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    
+    .header-text {
+      z-index: 10;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .header-text h2 {
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .header-text h2 span {
+      background: linear-gradient(135deg, #fff 40%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #3b82f6;
+      opacity: 0.6;
+      font-size: 1.1rem;
+      font-weight: 700;
+      z-index: 10;
+      border-top: 1px solid rgba(12, 16, 32, 0.5);
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="grid-bg"></div>
+    <div class="glow-radial glow-center"></div>
+    
+    <div class="header-text">
+      <div class="brand-pill"> WhatsApp Nudges</div>
+      <h2><span>Daily Check-in WhatsApp Alerts</span></h2>
+    </div>
+    
+    <div class="content-area">
+      <div class="widget-container">
+        
+      <div style="background:#0b141a; border-radius:16px; padding:20px; border:1px solid rgba(255,255,255,0.05); box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:12px; margin-bottom:15px;">
+          <div style="width:36px; height:36px; border-radius:50%; background:#60a5fa; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">LG</div>
+          <div>
+            <div style="color:#fff; font-weight:700; font-size:0.9rem;">Life Gym Reminders</div>
+            <div style="font-size:0.7rem; color:#22c55e;">System bot</div>
+          </div>
+        </div>
+        <div style="background:#005c4b; color:#e9edef; padding:15px; border-radius: 0 16px 16px 16px; font-size:0.85rem; line-height:1.5;">
+          <p>Hey Ahmed! It's time for your daily check-in. ⏰</p>
+          <p style="margin-top:6px;">Tap the quick action link below to log your daily weight, macros, and hydration:</p>
+          <a href="#" style="display:block; text-align:center; background:rgba(255,255,255,0.1); color:#fff; text-decoration:none; padding:10px; border-radius:8px; margin-top:12px; font-weight:bold; border:1px solid rgba(255,255,255,0.05);">Log My Day 💧</a>
+        </div>
+      </div>
+    
+      </div>
+    </div>
+    
+    <div class="footer-bar">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>
