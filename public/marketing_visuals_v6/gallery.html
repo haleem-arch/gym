@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Coach Marketing Kit V6 (SaaS Marketing Posts)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #05060f;
+      --card-bg: #0c1020;
+      --border-color: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent-blue: #60a5fa;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(96, 165, 250, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    header { text-align: center; margin-bottom: 40px; }
+    .brand-pill { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 18px; border-radius: 100px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-blue); display: inline-block; margin-bottom: 16px; }
+    header h1 { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #ffffff 40%, var(--accent-blue) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+    .main-layout { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 30px; }
+    .sidebar { background: rgba(12, 16, 32, 0.8); border: 1px solid var(--border-color); border-radius: 24px; padding: 24px; max-height: 850px; overflow-y: auto; }
+    .sidebar::-webkit-scrollbar { width: 6px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 3px; }
+    .post-nav-item { display: flex; flex-direction: column; padding: 14px 18px; border-radius: 14px; cursor: pointer; margin-bottom: 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid transparent; transition: all 0.2s ease; }
+    .post-nav-item.active { background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(96, 165, 250, 0.08) 100%); border-color: rgba(59, 130, 246, 0.4); }
+    .post-nav-item .tag { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--accent-blue); margin-bottom: 4px; }
+    .post-nav-item .title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .preview-container { display: grid; grid-template-columns: 540px 1fr; gap: 30px; background: rgba(12, 16, 32, 0.8); border: 1px solid var(--border-color); border-radius: 32px; padding: 30px; }
+    .instagram-frame { width: 540px; height: 540px; background: #05060f; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); }
+    .instagram-frame iframe { width: 1080px; height: 1080px; border: none; transform: scale(0.5); transform-origin: top left; }
+    .details-panel { display: flex; flex-direction: column; justify-content: space-between; min-height: 540px; }
+    .caption-box { background: rgba(5, 6, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 16px; color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; overflow-y: auto; height: 320px; }
+    .copy-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease; font-size: 1rem; }
+    .copy-btn:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+      <svg style="width: 60px; height: 60px;" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(256 256) rotate(-45)">
+          <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+          <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+          <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+          <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+          <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+          <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+        </g>
+      </svg>
+      <span style="font-size: 2.2rem; font-weight: 900; letter-spacing: 0.25em; text-transform: uppercase; color: #ffffff; text-shadow: 0 0 25px rgba(59, 130, 246, 0.5);">Life Gym</span>
+    </div>
+    <div class="brand-pill">Coach Marketing Kit v6</div>
+    <h1 style="margin-top: 10px;">Branded SaaS Marketing Posts</h1>
+  </header>
+  <div class="main-layout">
+    <div class="sidebar">
+      <h2 style="font-size:1.2rem; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">V6 Mockups</h2>
+      <div id="nav-list"></div>
+    </div>
+    <div class="preview-container">
+      <div class="instagram-frame">
+        <iframe id="preview-iframe" src=""></iframe>
+      </div>
+      <div class="details-panel">
+        <div>
+          <h3 id="mockup-title" style="font-size:1.6rem; font-weight:900; margin-bottom:10px;">Post Title</h3>
+          <p id="mockup-desc" style="color:var(--text-muted); font-size:1rem; line-height:1.5; margin-bottom:20px;">Premium branded SaaS marketing post matching your branding identity.</p>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; margin-bottom:15px;">
+          <div style="font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--accent-blue); margin-bottom:8px;">Instagram Caption</div>
+          <div id="caption-text" class="caption-box"></div>
+        </div>
+        <button class="copy-btn" onclick="copyCaption()">Copy Caption</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const configs = [{"id":1,"title":"Onboard clients in 10 seconds flat.","desc":"Welcome new athletes instantly with automated login credentials sent via WhatsApp.","tag":"CLIENT AUTOMATION"},{"id":2,"title":"Automate check-in reminder nudges.","desc":"Ditch manual follow-ups. Stay on top of athlete compliance with scheduled WhatsApp prompts.","tag":"RETENTION BOOST"},{"id":3,"title":"Nutrition logs at a single glance.","desc":"Clients monitor calorie targets and core macronutrient ratios in real time.","tag":"DIET TRACKING"},{"id":4,"title":"Water tracking, simplified.","desc":"Ensure athletes hit fluid thresholds with quick-tap preset buttons and fill meters.","tag":"ATHLETE HYDRATION"},{"id":5,"title":"Track body fat reduction progress.","desc":"Maintain records of client fat loss scans and target milestones.","tag":"BIO-COMPOSITION"},{"id":6,"title":"Graph skeletal muscle gains.","desc":"Plot muscular tissue growth curves month-over-month via bio-scanner inputs.","tag":"BIO-COMPOSITION"},{"id":7,"title":"Ditch gym notebooks forever.","desc":"Configure working sets, repetition targets, and load metrics for daily client lifts.","tag":"TRAINING PLANS"},{"id":8,"title":"Focused active session timers.","desc":"Active companion screens keep clients focused with set tracking and elapsed timers.","tag":"TRAINING PLANS"},{"id":9,"title":"Keep your athletes injury-free.","desc":"Instruct clients with technical safety cues loaded inside compound lifting schedules.","tag":"INJURY DEFENSE"},{"id":10,"title":"Adherence ratings, calculated.","desc":"Identify off-plan clients instantly with automated compliance percentage indicators.","tag":"CLIENT COMPLIANCE"},{"id":11,"title":"Onboard step 1: Identity Profile","desc":"Create client credentials and onboarding codes inside your workspace.","tag":"ONBOARDING"},{"id":12,"title":"Onboard step 2: Assign routines.","desc":"Deploy custom training templates from your directory catalog.","tag":"ONBOARDING"},{"id":13,"title":"Onboard step 3: Diet targets.","desc":"Configure baseline calories and training vs rest day macronutrients.","tag":"ONBOARDING"},{"id":14,"title":"Onboard step 4: Baseline scan.","desc":"Input skeletal muscle mass and baseline weight composition scans.","tag":"ONBOARDING"},{"id":15,"title":"Automate package renewals.","desc":"Lock out expired coaching portals automatically when packages end.","tag":"PORTAL SUSPENSION"},{"id":16,"title":"Weekly adherence calendars.","desc":"Visualize client check-in streaks using color-coded heatmap matrices.","tag":"CONSISTENCY LOGS"},{"id":17,"title":"Egyptian local foods directory.","desc":"Audit macronutrients of regional dishes like Koshary or Ful in your database.","tag":"LOCAL DATABASE"},{"id":18,"title":"Combine custom macro recipes.","desc":"Permit clients to input ingredient grams to compile custom recipe macros.","tag":"RECIPE BUILDER"},{"id":19,"title":"Secure private notes comments.","desc":"Log private coach remarks regarding client injury scans or schedule tweaks.","tag":"COACH VAULT"},{"id":20,"title":"Bypass App Store delays.","desc":"Clients install their portal onto home screens instantly as a standalone web app.","tag":"PORTAL SETUP"},{"id":21,"title":"Filter and audit active clients.","desc":"Select client profiles and audit consistency levels in single keypresses.","tag":"COACH DASHBOARD"},{"id":22,"title":"Custom coaching package tiers.","desc":"Configure package duration configurations and start/end dates.","tag":"PACKAGE CONFIGURATION"},{"id":23,"title":"Weekly hydration maps.","desc":"Track client consistency with color-coded water check-in maps.","tag":"HYDRATION LOGS"},{"id":24,"title":"Muscle mass segmental mapping.","desc":"Compare muscular tissue across right arm, left arm, and core trunk segments.","tag":"BODY COMPOSITION"},{"id":25,"title":"Weight target milestones.","desc":"Compare actual client weight to baseline target milestones.","tag":"WEIGHT TARGETS"},{"id":26,"title":"Scale macros on active rest days.","desc":"Enable rest day configurations to drop carb totals automatically.","tag":"NUTRITION PROFILES"},{"id":27,"title":"Inter-set rest countdowns.","desc":"Provide clients with countdown rest timers to pace lifts correctly.","tag":"TRAINING COMPANION"},{"id":28,"title":"Daily healthy habit checklists.","desc":"Ensure clients log step counts, sleep duration, and active hydration daily.","tag":"HABIT LOGS"},{"id":29,"title":"Client activity log timelines.","desc":"Maintain running feeds of all client check-in times and program edits.","tag":"ACTIVITY FEED"},{"id":30,"title":"Configure macro ratios.","desc":"Enforce exact protein, carb, and fat ratios to optimize client body fat levels.","tag":"DIET BUDGETS"},{"id":31,"title":"Simplified client invitations.","desc":"Input starting details and tap once to dispatch private portal credential keys.","tag":"ONBOARDING"},{"id":32,"title":"Manage client limits.","desc":"Audit active, suspended, and pending slots inside single slots counters.","tag":"COACH SUITE"},{"id":33,"title":"Secure private notes comments.","desc":"Log client injury details, joint pain, or program adjustments securely.","tag":"COACH VAULT"},{"id":34,"title":"Schedule weekly splits.","desc":"Organize client training cycles across days of the calendar week.","tag":"TRAINING SPLITS"},{"id":35,"title":"Hydration logs history.","desc":"Monitor daily liquid log totals to optimize metabolic output.","tag":"ATHLETE HYDRATION"},{"id":36,"title":"Meal budgets layout.","desc":"Configure target calories for Breakfast, Lunch, Dinner, and Snacks.","tag":"DIET TRACKING"},{"id":37,"title":"Skeletal Muscle Mass logs.","desc":"Skeletal muscle mass (SMM) changes recorded systematically.","tag":"BIO-COMPOSITION"},{"id":38,"title":"Macro recipe calculators.","desc":"Calculate meal macros automatically based on ingredient weights.","tag":"RECIPE BUILDER"},{"id":39,"title":"Safety cues checklist.","desc":"Technical safety cues are loaded inside gym training screens.","tag":"INJURY DEFENSE"},{"id":40,"title":"Mobile standalone apps.","desc":"Clients install their private portal to mobile home screens for speed.","tag":"PORTAL SETUP"},{"id":41,"title":"Track body fat percentages.","desc":"Calculate body fat percentage changes month-over-month.","tag":"BIO-COMPOSITION"},{"id":42,"title":"Client status counts.","desc":"Manage slots totals, deactivations, and pendings in single slots views.","tag":"COACH SUITE"},{"id":43,"title":"Compliance rating checks.","desc":"Rate program consistency based on daily training logs.","tag":"CLIENT COMPLIANCE"},{"id":44,"title":"Active training timers.","desc":"Elapsed timers keep workout sessions moving on schedule.","tag":"TRAINING PLANS"},{"id":45,"title":"Safety cues checklist.","desc":"Safety instructions inside compound lifting logs prevent injury.","tag":"TRAINING PLANS"},{"id":46,"title":"Daily macro budgets.","desc":"Compare target calories and protein targets on dashboard cards.","tag":"DIET TRACKING"},{"id":47,"title":"Quick water logging presets.","desc":"Presets make fluid tracking logging fast and frictionless.","tag":"ATHLETE HYDRATION"},{"id":48,"title":"Client directory filters.","desc":"Search, filter, and audit client plans from directories.","tag":"COACH SUITE"},{"id":49,"title":"Auto-expired suspension deactivations.","desc":"Portal lockout screens activate on expired plans automatically.","tag":"PORTAL SUSPENSION"},{"id":50,"title":"Secure private notes COMMENTS.","desc":"Log client remarks visible only to coach IDs.","tag":"COACH SUITE"}];
+    const navList = document.getElementById('nav-list');
+    const iframe = document.getElementById('preview-iframe');
+    const title = document.getElementById('mockup-title');
+    const desc = document.getElementById('mockup-desc');
+    const captionText = document.getElementById('caption-text');
+    
+    function init() {
+      configs.forEach(config => {
+        const item = document.createElement('div');
+        item.className = 'post-nav-item' + (config.id === 1 ? ' active' : '');
+        item.onclick = () => select(config.id);
+        item.innerHTML = '<span class="tag">Post ' + config.id + ' • ' + config.tag + '</span><span class="title">' + config.title + '</span>';
+        navList.appendChild(item);
+      });
+      select(1);
+    }
+    
+    function select(id) {
+      const items = document.querySelectorAll('.post-nav-item');
+      items.forEach((item, idx) => {
+        if ((idx + 1) === id) item.classList.add('active');
+        else item.classList.remove('active');
+      });
+      iframe.src = 'post' + id + '.html';
+      const config = configs.find(c => c.id === id);
+      title.innerText = 'Post ' + id + ': ' + config.title;
+      desc.innerText = config.desc;
+      
+      let cap = '==================================================\n';
+      cap += 'POST ' + id + ': ' + config.title.toUpperCase() + '\n';
+      cap += '==================================================\n';
+      cap += 'Coaches: ' + config.desc + '\n\n';
+      cap += 'Stop managing clients through messy sheets and chats. Give them a premium web-based tracking experience, custom dashboard metrics, and automated reminders straight to their WhatsApp.\n\n';
+      cap += '👉 Professionalize your business. Tap the link in bio to start your 14-day free trial! @lifegym.io';
+      captionText.innerText = cap;
+    }
+    
+    function copyCaption() {
+      navigator.clipboard.writeText(captionText.innerText).then(() => {
+        alert("Instagram caption copied to clipboard!");
+      });
+    }
+    
+    init();
+  </script>
+</body>
+</html>
