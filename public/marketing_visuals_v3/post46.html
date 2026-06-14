@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mockup 46 - Coach Tool Area 46</title>
+  <title>Mockup 46 - Coach active client compliance indicator status</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -10,13 +10,10 @@
     .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
     .glow { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(6,7,19,0) 70%); filter:blur(40px); }
     .glow-right { top:-100px; right:-100px; }
-    
     .info { max-width: 440px; z-index:10; }
     .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
     .info h1 span { color:#3b82f6; }
     .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
-
-    /* Mockup Box */
     .mock-box { z-index:10; width: 420px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); padding:35px; }
   </style>
 </head>
@@ -24,17 +21,17 @@
   <div class="card">
     <div class="glow glow-right"></div>
     <div class="info">
-      <h1>Coach Tool Area <span>46</span></h1>
-      <p>Help your clients log macro targets and custom splits seamlessly with our optimized dashboard layout.</p>
+      <h1>Active client <span>compliance status.</span></h1>
+      <p>Audit athlete consistency levels with visual status pills inside the client list dashboard. Immediately flag unlogged routines.</p>
     </div>
-    
     <div class="mock-box">
-      
-      <div style="border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:20px; text-align:center;">
-        <div style="color:#fff; font-weight:700;">Dashboard Feature 46</div>
-        <div style="font-size:1.1rem; color:#3b82f6; margin-top:10px; font-weight:bold;">Optimized Client Portal</div>
+      <div style="color:#fff; font-weight:700; margin-bottom:12px;">Clients Active Status</div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:0.95rem;">
+        <span style="width:10px; height:10px; border-radius:50%; background:#10b981;"></span> Ahmed Samy: Active
       </div>
-    
+      <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+        <span style="width:10px; height:10px; border-radius:50%; background:#ef4444;"></span> Mohamed Ali: Off Plan
+      </div>
     </div>
   </div>
 </body>

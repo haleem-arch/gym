@@ -10,13 +10,10 @@
     .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
     .glow { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle, rgba(16,185,129,0.15) 0%, rgba(6,7,19,0) 70%); filter:blur(40px); }
     .glow-right { top:-100px; right:-100px; }
-    
     .info { max-width: 440px; z-index:10; }
     .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
     .info h1 span { color:#10b981; }
     .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
-
-    /* Heatmap Grid Widget */
     .heatmap-panel { z-index:10; width: 420px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); padding:35px; }
     .grid-container { display:grid; grid-template-columns: repeat(7, 1fr); gap:12px; margin-top:20px; }
     .grid-cell { aspect-ratio:1; border-radius:6px; background:#1e293b; }
@@ -32,13 +29,10 @@
       <h1>Weekly compliance <span>consistency.</span></h1>
       <p>Get a bird's eye view of client consistency. Identify compliance drop-offs instantly using a weekly habit-tracking heat map grid on your dashboard.</p>
     </div>
-    
     <div class="heatmap-panel">
       <div style="color:#fff; font-weight:700; font-size:1.2rem;">Client Compliance Heatmap</div>
       <div class="grid-container">
-        <!-- Week 1 -->
         <div class="grid-cell active3"></div><div class="grid-cell active2"></div><div class="grid-cell active3"></div><div class="grid-cell active3"></div><div class="grid-cell"></div><div class="grid-cell active1"></div><div class="grid-cell active3"></div>
-        <!-- Week 2 -->
         <div class="grid-cell active3"></div><div class="grid-cell active3"></div><div class="grid-cell active3"></div><div class="grid-cell active2"></div><div class="grid-cell active3"></div><div class="grid-cell active3"></div><div class="grid-cell active3"></div>
       </div>
     </div>
