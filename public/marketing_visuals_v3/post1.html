@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 1 - Welcome WhatsApp Credentials</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; position:relative; overflow:hidden; align-items:center; justify-content:space-between; }
+    .glow { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(6,7,19,0) 70%); filter:blur(40px); }
+    .glow-right { top:-100px; right:-100px; }
+    
+    .info { max-width: 440px; z-index:10; }
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; margin-bottom:25px; }
+    .info h1 span { color:#3b82f6; }
+    .info p { font-size:1.4rem; color:#9ca3af; line-height:1.6; }
+
+    /* WhatsApp UI Mockup */
+    .whatsapp-container { z-index:10; width: 420px; background:#0b141a; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+    .wa-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:12px; }
+    .wa-avatar { width:40px; height:40px; border-radius:50%; background:#3b82f6; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; }
+    .wa-name { color:#fff; font-weight:700; font-size:1.05rem; }
+    .wa-bubble { background:#005c4b; color:#e9edef; padding:15px; border-radius: 0 16px 16px 16px; font-size:0.95rem; line-height:1.5; max-width:320px; position:relative; }
+    .wa-time { font-size:0.75rem; color:#8696a0; text-align:right; margin-top:5px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow glow-right"></div>
+    <div class="info">
+      <h1>Automate your client <span>onboarding.</span></h1>
+      <p>Instantly send customized WhatsApp invitations with secure login credentials, dashboard links, and setup guides the moment a new client joins.</p>
+    </div>
+    <div class="whatsapp-container">
+      <div class="wa-header">
+        <div class="wa-avatar">LG</div>
+        <div>
+          <div class="wa-name">Life Gym Assistant</div>
+          <div style="font-size:0.75rem; color:#00a884;">Active Bot</div>
+        </div>
+      </div>
+      <div class="wa-bubble">
+        <p>Welcome to Life Gym! 🚀</p>
+        <p style="margin-top:10px;">Your coach just created your private portal. Here are your credentials:</p>
+        <p style="margin-top:10px; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px; font-family:monospace;">
+          Link: lifegym.io/portal<br>
+          User: ahmed.samy@mail.com<br>
+          Pass: LG-938210
+        </p>
+        <div class="wa-time">10:04 AM</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

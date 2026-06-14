@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mockup 17 - Coach Stats Summary</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#05060f; width:1080px; height:1080px; display:flex; justify-content:center; align-items:center; font-family:'Outfit', sans-serif; overflow:hidden; }
+    .card { width:1080px; height:1080px; background:#060713; border:1px solid #1a203c; padding:80px; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+    
+    .info h1 { font-size:3.5rem; font-weight:900; color:#fff; line-height:1.2; }
+    .info h1 span { color:#3b82f6; }
+    
+    /* Stats Layout */
+    .stats-container { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:25px; margin:auto 0; }
+    .stat-card { border:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); border-radius:20px; padding:30px; text-align:center; }
+    .stat-val { font-size:2.8rem; font-weight:900; color:#fff; margin-bottom:10px; }
+    .stat-val span { font-size:1.2rem; color:#3b82f6; }
+    .stat-label { font-size:0.95rem; color:#9ca3af; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <h1>Audit your entire <span>coaching business.</span></h1>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stat-card">
+        <div class="stat-val">34</div>
+        <div class="stat-label">Active Clients</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">94%</div>
+        <div class="stat-label">Compliance Rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">4</div>
+        <div class="stat-label">New Enrollees</div>
+      </div>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; color:#9ca3af; font-size:1.2rem;">
+      <div>@lifegym.io</div>
+      <div>Link in Bio →</div>
+    </div>
+  </div>
+</body>
+</html>
