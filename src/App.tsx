@@ -37,6 +37,7 @@ const OwnerDashboardPage = lazy(() => import('./pages/coach/OwnerDashboardPage')
 const SystemConsolePage = lazy(() => import('./pages/coach/SystemConsolePage'));
 const WhatsAppManagerPage = lazy(() => import('./pages/coach/WhatsAppManagerPage'));
 const DesktopCoachPortal = lazy(() => import('./pages/coach/DesktopCoachPortal'));
+const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const WaPilotTestConsole = lazy(() => import('./pages/WaPilotTestConsole'));
@@ -627,19 +628,7 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/" element={
-            isElectron ? (
-              <Navigate to="/coach-portal" replace />
-            ) : (
-              <>
-                <CookieConsent />
-                <OnboardingFlow 
-                  initialStep={1} 
-                  onSessionConfigured={setSession} 
-                />
-              </>
-            )
-          } />
+          <Route path="/" element={<CoachLandingPage />} />
           <Route path="/login" element={
             <>
               <CookieConsent />
