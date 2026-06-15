@@ -99,28 +99,7 @@
     </script>
   </head>
   <body style="background:#05060f;margin:0;padding:0">
-    <div id="root">
-      <!-- Loading layout on boot -->
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #05060f; color: #ffffff; font-family: sans-serif;">
-        <svg viewBox="0 0 512 512" style="width: 72px; height: 72px; animation: pulse-scale 1.8s ease-in-out infinite;">
-          <g transform="translate(256 256) rotate(-45)">
-            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
-            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
-            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
-            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
-            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
-            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
-          </g>
-        </svg>
-        <style>
-          @keyframes pulse-scale {
-            0%, 100% { transform: scale(0.9); opacity: 0.6; }
-            50% { transform: scale(1.05); opacity: 1; }
-          }
-        </style>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
