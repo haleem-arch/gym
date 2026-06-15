@@ -100,7 +100,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = ({ userRole }: { userRole: string | null }) => {
+const AppContent = () => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
 
@@ -147,12 +147,6 @@ const AppContent = ({ userRole }: { userRole: string | null }) => {
     prevIndex.current = currentIndex;
   }, [location.pathname]);
 
-  useEffect(() => {
-    const isCoachRole = ['coach', 'owner', 'admin', 'superadmin', 'gym_admin'].includes(userRole || '');
-    if (isCoachRole && location.pathname === '/') {
-      navigate('/coach/dashboard', { replace: true });
-    }
-  }, [userRole, location.pathname, navigate]);
 
   // Any active overlay = hide the bottom nav so it can't bleed through
   const anyOverlayActive = showSplash || showGymSplash;
@@ -691,7 +685,7 @@ function App() {
               {showWelcomeSplash ? (
                 <div className="w-full h-screen bg-[#060713]" />
               ) : (
-                <AppContent userRole={userRole} />
+                <AppContent />
               )}
             </>
           } />
