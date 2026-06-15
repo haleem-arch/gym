@@ -37,11 +37,9 @@ const OwnerDashboardPage = lazy(() => import('./pages/coach/OwnerDashboardPage')
 const SystemConsolePage = lazy(() => import('./pages/coach/SystemConsolePage'));
 const WhatsAppManagerPage = lazy(() => import('./pages/coach/WhatsAppManagerPage'));
 const DesktopCoachPortal = lazy(() => import('./pages/coach/DesktopCoachPortal'));
-const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const WaPilotTestConsole = lazy(() => import('./pages/WaPilotTestConsole'));
-const Feedback = lazy(() => import('./pages/Feedback'));
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -146,7 +144,6 @@ const AppContent = () => {
   useEffect(() => {
     prevIndex.current = currentIndex;
   }, [location.pathname]);
-
 
   // Any active overlay = hide the bottom nav so it can't bleed through
   const anyOverlayActive = showSplash || showGymSplash;
@@ -630,8 +627,19 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/feedback" element={<PageTransition direction={1}><Feedback /></PageTransition>} />
-          <Route path="/" element={<CoachLandingPage />} />
+          <Route path="/" element={
+            isElectron ? (
+              <Navigate to="/coach-portal" replace />
+            ) : (
+              <>
+                <CookieConsent />
+                <OnboardingFlow 
+                  initialStep={1} 
+                  onSessionConfigured={setSession} 
+                />
+              </>
+            )
+          } />
           <Route path="/login" element={
             <>
               <CookieConsent />
@@ -661,7 +669,6 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/feedback" element={<PageTransition direction={1}><Feedback /></PageTransition>} />
           <Route path="*" element={
             <>
               <CookieConsent />
@@ -678,7 +685,6 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/feedback" element={<PageTransition direction={1}><Feedback /></PageTransition>} />
           <Route path="*" element={
             <>
               <CookieConsent />
