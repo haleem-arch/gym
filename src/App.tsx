@@ -191,7 +191,6 @@ const AppContent = () => {
 
 
               <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
-              <Route path="/feedback" element={<PageTransition direction={direction}><Feedback /></PageTransition>} />
 
 
               {/* Coach Routes */}
@@ -678,6 +677,7 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/feedback" element={<PageTransition direction={1}><Feedback /></PageTransition>} />
           <Route path="*" element={
             <>
               <CookieConsent />
