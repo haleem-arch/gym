@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { MessageSquare, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle2, AlertCircle, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const EMOJIS = [
-  { value: 1, label: '😠', description: 'Bad' },
-  { value: 2, label: '🙁', description: 'Poor' },
-  { value: 3, label: '😐', description: 'OK' },
-  { value: 4, label: '🙂', description: 'Good' },
-  { value: 5, label: '😍', description: 'Great' }
+const RATING_DETAILS = [
+  { value: 1, label: 'Bad', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+  { value: 2, label: 'Poor', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  { value: 3, label: 'OK', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20' },
+  { value: 4, label: 'Good', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  { value: 5, label: 'Great', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
 ];
 
 export default function Feedback() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [rating, setRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -26,7 +27,6 @@ export default function Feedback() {
       if (session) {
         setUserId(session.user.id);
       } else {
-        // Redirect to Auth/Profile page if not logged in
         navigate('/client-login');
       }
     });
@@ -39,7 +39,7 @@ export default function Feedback() {
       return;
     }
     if (!rating) {
-      setErrorMsg('Please select a rating emoji.');
+      setErrorMsg('Please select a rating.');
       return;
     }
     if (!message.trim()) {
@@ -64,7 +64,6 @@ export default function Feedback() {
       if (error) throw error;
 
       setSubmitted(true);
-      // Redirect back to home after 2.5 seconds
       setTimeout(() => {
         navigate('/');
       }, 2500);
@@ -76,6 +75,9 @@ export default function Feedback() {
       setSubmitting(false);
     }
   };
+
+  const activeRating = hoverRating !== null ? hoverRating : rating;
+  const currentDetail = RATING_DETAILS.find(d => d.value === rating);
 
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full pb-28 text-gray-200">
@@ -106,37 +108,53 @@ export default function Feedback() {
             transition={{ duration: 0.2 }}
           >
             {/* Rating Selector */}
-            <div className="p-5 bg-surface border border-gray-800 rounded-3xl space-y-4 shadow-lg">
+            <div className="p-6 bg-surface border border-gray-800 rounded-3xl space-y-5 shadow-lg flex flex-col items-center">
               <label className="text-xs font-black uppercase tracking-wider text-gray-400 block text-center">
                 How is your overall experience?
               </label>
               
-              <div className="flex justify-between items-center max-w-xs mx-auto pt-2">
-                {EMOJIS.map((emoji) => {
-                  const isSelected = rating === emoji.value;
+              {/* Star Row */}
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((starValue) => {
+                  const isFilled = activeRating !== null && starValue <= activeRating;
                   return (
                     <button
-                      key={emoji.value}
+                      key={starValue}
                       type="button"
-                      onClick={() => setRating(emoji.value)}
-                      className={`relative flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all ${
-                        isSelected 
-                          ? 'bg-blue-600/10 border border-blue-500/30 scale-110 shadow-md shadow-blue-500/5' 
-                          : 'border border-transparent hover:bg-gray-900/40 active:scale-95'
-                      }`}
-                      style={{ transform: 'translateZ(0)' }} // Enable hardware acceleration
+                      onClick={() => setRating(starValue)}
+                      onMouseEnter={() => setHoverRating(starValue)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      className="p-1 rounded-full transition-transform active:scale-90 outline-none focus:ring-2 focus:ring-blue-500/20"
+                      style={{ transform: 'translateZ(0)' }}
                     >
-                      <span className="text-3xl filter drop-shadow select-none leading-none">
-                        {emoji.label}
-                      </span>
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${
-                        isSelected ? 'text-blue-400' : 'text-gray-500'
-                      }`}>
-                        {emoji.description}
-                      </span>
+                      <Star
+                        size={36}
+                        className={`transition-all duration-150 ${
+                          isFilled 
+                            ? 'text-amber-400 fill-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.3)] scale-110' 
+                            : 'text-gray-700 hover:text-gray-500'
+                        }`}
+                      />
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Dynamic Selected Rating Badge */}
+              <div className="h-6 flex items-center justify-center">
+                {currentDetail ? (
+                  <motion.span
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider ${currentDetail.color}`}
+                  >
+                    Rating: {currentDetail.label}
+                  </motion.span>
+                ) : (
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                    Select a rating above
+                  </span>
+                )}
               </div>
             </div>
 
@@ -172,7 +190,7 @@ export default function Feedback() {
               disabled={submitting}
               whileTap={{ scale: 0.98 }}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer border-0"
-              style={{ transform: 'translateZ(0)' }} // Enable hardware acceleration
+              style={{ transform: 'translateZ(0)' }}
             >
               {submitting ? (
                 <div className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin" />
