@@ -100,30 +100,26 @@
   </head>
   <body style="background:#05060f;margin:0;padding:0">
     <div id="root">
-      <!-- SEO Pre-render content (replaced by React on boot) -->
-      <header style="padding: 40px 20px; text-align: center;">
-        <h1 style="color: #00f2fe; font-family: sans-serif; font-size: 2.5rem; margin-bottom: 10px;">Life Gym</h1>
-        <p style="color: #ffffff; font-family: sans-serif; font-size: 1.2rem;">Premium Fitness Coaching & Client Management Portal</p>
-      </header>
-      <main style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: sans-serif; color: #a0aec0; line-height: 1.6;">
-        <section>
-          <h2 style="color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #1a203c; padding-bottom: 8px;">Automated Onboarding & Client Tracking</h2>
-          <p>Design custom workout splits, templates, and nutrition targets for your athletes with instant syncing.</p>
-        </section>
-        <section style="margin-top: 30px;">
-          <h2 style="color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #1a203c; padding-bottom: 8px;">Key Features</h2>
-          <ul style="padding-left: 20px; margin-top: 10px;">
-            <li style="margin-bottom: 8px;">Dynamic Workout Split Builders & Physical Sets Loggers</li>
-            <li style="margin-bottom: 8px;">Calorie & Macronutrient Deficit Trackers (1,000+ Egyptian Foods Database)</li>
-            <li style="margin-bottom: 8px;">Segmental Body Composition & InBody Analytics Charts</li>
-            <li style="margin-bottom: 8px;">Automated WaPilot V2 WhatsApp Gateway Alerts & Reminders</li>
-          </ul>
-        </section>
-        <section style="margin-top: 40px; text-align: center;">
-          <a href="/login" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; margin: 5px; font-weight: bold; font-size: 0.9rem;">Coach Portal Login</a>
-          <a href="/client-login" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; margin: 5px; font-weight: bold; font-size: 0.9rem;">Athlete Portal Login</a>
-        </section>
-      </main>
+      <!-- Loading layout on boot -->
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #05060f; color: #ffffff; font-family: sans-serif;">
+        <svg viewBox="0 0 512 512" style="width: 72px; height: 72px; animation: pulse-scale 1.8s ease-in-out infinite;">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <style>
+          @keyframes pulse-scale {
+            0%, 100% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 1; }
+          }
+        </style>
+      </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
