@@ -41,6 +41,7 @@ const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const WaPilotTestConsole = lazy(() => import('./pages/WaPilotTestConsole'));
+const Feedback = lazy(() => import('./pages/Feedback'));
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -190,6 +191,7 @@ const AppContent = () => {
 
 
               <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
+              <Route path="/feedback" element={<PageTransition direction={direction}><Feedback /></PageTransition>} />
 
 
               {/* Coach Routes */}

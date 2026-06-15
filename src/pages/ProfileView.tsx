@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield } from 'lucide-react';
+import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ProfileSkeleton } from '../components/SkeletonLoaders';
 
 export default function ProfileView() {
+  const navigate = useNavigate();
   const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
   const [profile, setProfile] = useState<any>(null);
   const [coachProfile, setCoachProfile] = useState<any>(null);
@@ -271,6 +273,30 @@ export default function ProfileView() {
             </button>
           </div>
         )}
+      </motion.div>
+
+      {/* Feedback & Suggestions CTA Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="bg-surface border border-gray-800 rounded-3xl p-6 shadow-lg space-y-4"
+      >
+        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2 border-b border-gray-800/80 pb-2">
+          <MessageSquare size={14} /> Send Feedback
+        </h3>
+        
+        <p className="text-xs text-gray-400 leading-normal font-medium">
+          Help us improve your coaching experience! Share your thoughts, report issues, or suggest new features.
+        </p>
+
+        <button
+          onClick={() => navigate('/feedback')}
+          className="w-full py-3.5 bg-[#121624] border border-gray-800 hover:bg-gray-900/60 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <MessageSquare size={13} className="text-blue-500" />
+          <span>Write Feedback & Review</span>
+        </button>
       </motion.div>
 
       {/* Change Password Security Card */}
