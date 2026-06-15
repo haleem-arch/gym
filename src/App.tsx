@@ -630,6 +630,7 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/feedback" element={<PageTransition direction={1}><Feedback /></PageTransition>} />
           <Route path="/" element={<CoachLandingPage />} />
           <Route path="/login" element={
             <>
@@ -660,6 +661,7 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/feedback" element={<PageTransition direction={1}><Feedback /></PageTransition>} />
           <Route path="*" element={
             <>
               <CookieConsent />

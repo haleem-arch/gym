@@ -27,7 +27,7 @@ export default function Feedback() {
         setUserId(session.user.id);
       } else {
         // Redirect to Auth/Profile page if not logged in
-        navigate('/profile');
+        navigate('/client-login');
       }
     });
   }, [navigate]);
