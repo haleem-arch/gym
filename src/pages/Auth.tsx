@@ -92,13 +92,13 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
         const startX = btnRect.left - cardRect.left + btnRect.width / 2;
         const startY = btnRect.top - cardRect.top + btnRect.height / 2;
 
-        // End at the checkbox relative to the card
+        // End at the checkbox relative to the card (pointed slightly higher)
         const endX = cbRect.left - cardRect.left + 8;
-        const endY = cbRect.top - cardRect.top + cbRect.height / 2;
+        const endY = cbRect.top - cardRect.top + cbRect.height / 2 - 8;
 
-        // Curved path swooping to the right
+        // Curved path swooping to the right (arched upwards, never goes below the button)
         const controlX = Math.max(startX, endX) + 110;
-        const controlY = (startY + endY) / 2 + 10;
+        const controlY = (startY + endY) / 2 - 25;
 
         setArrowPoints({ startX, startY, controlX, controlY, endX, endY });
         setShowArrow(true);
