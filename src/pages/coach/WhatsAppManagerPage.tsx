@@ -24,8 +24,8 @@ export default function WhatsAppManagerPage() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   // Anti-Ban Safeguards States
-  const [delayMin, setDelayMin] = useState(5);
-  const [delayMax, setDelayMax] = useState(15);
+  const [delayMin, setDelayMin] = useState(7);
+  const [delayMax, setDelayMax] = useState(7);
   const [warmupPhone, setWarmupPhone] = useState('');
   const [warmupInterval, setWarmupInterval] = useState(10);
 
@@ -423,9 +423,9 @@ export default function WhatsAppManagerPage() {
 
         // Apply delay interval throttle
         if (i < validRecipients.length - 1) {
-          const randomDelay = Math.floor(Math.random() * (delayMax - delayMin + 1) + delayMin);
-          setBroadcastLogs(prev => [...prev, `[THROTTLE] Waiting for ${randomDelay} seconds...`]);
-          await new Promise(resolve => setTimeout(resolve, randomDelay * 1000));
+          const broadcastDelay = 7;
+          setBroadcastLogs(prev => [...prev, `[THROTTLE] Waiting for ${broadcastDelay} seconds...`]);
+          await new Promise(resolve => setTimeout(resolve, broadcastDelay * 1000));
         }
       }
 
