@@ -273,10 +273,6 @@ export default function CoachLandingPage() {
 
 
   const openAuth = (mode: 'login' | 'register', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
-    if (isMobile) {
-      navigate('/coach-info');
-      return;
-    }
     setAuthMode(mode);
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
@@ -536,19 +532,6 @@ export default function CoachLandingPage() {
 
   return (
     <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 scroll-smooth no-scrollbar" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.015) 1px, transparent 0)', backgroundSize: '32px 32px' }}>
-      {isMobile && (
-        <div className="bg-blue-600/10 border-b border-blue-500/20 px-6 py-3.5 text-center flex items-center justify-center gap-3 relative z-20">
-          <span className="text-[11px] text-blue-450 font-black uppercase tracking-wider">
-            Are you a Coach? Standing standalone desktop app is recommended.
-          </span>
-          <button
-            onClick={() => navigate('/coach-info')}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[9px] uppercase tracking-wider rounded-lg transition-all active:scale-95 cursor-pointer"
-          >
-            Get App / View Info
-          </button>
-        </div>
-      )}
       
       {/* HEADER NAVBAR */}
       <header className="relative z-10 max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-zinc-900">
@@ -568,8 +551,14 @@ export default function CoachLandingPage() {
           <a href="#pricing" className="hover:text-white transition-colors">Pricing Plans</a>
           <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
-
         <div className="flex items-center gap-6">
+          {/* Mobile Athlete Login Button */}
+          <button
+            onClick={() => navigate('/client-login')}
+            className="flex md:hidden items-center justify-center px-4 py-2 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 hover:border-blue-500/40 text-blue-400 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+          >
+            Athlete Login
+          </button>
           {!isElectron && (
             <a
               href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
@@ -597,12 +586,12 @@ export default function CoachLandingPage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-20 text-center">
+      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-32 sm:pt-28 pb-24 sm:pb-20 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="space-y-8"
+          className="space-y-10 sm:space-y-8"
         >
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-950/30 border border-blue-900/40 text-[10px] font-black uppercase tracking-wider text-blue-400">
             Life Gym Desktop Portal
@@ -617,7 +606,7 @@ export default function CoachLandingPage() {
             Design training splits, build day-type nutrition targets, track segmental InBody scans, and sync metrics to the athlete portal in real-time.
           </p>
 
-          <div className="pt-4 flex flex-col items-center justify-center gap-4">
+          <div className="pt-4 flex flex-col items-center justify-center gap-6">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
               <button
                 onClick={() => {
@@ -630,17 +619,27 @@ export default function CoachLandingPage() {
                 <ArrowRight size={14} />
               </button>
               
-              {!isElectron && (
-                <a
-                  href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
-                  download
-                  className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
+              {isMobile ? (
+                <button
+                  onClick={() => navigate('/client-login')}
+                  className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
                 >
-                  <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
-                    <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
-                  </svg>
-                  <span>Download for Windows</span>
-                </a>
+                  <span>Log in as Athlete</span>
+                  <ArrowRight size={14} />
+                </button>
+              ) : (
+                !isElectron && (
+                  <a
+                    href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
+                    download
+                    className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
+                  >
+                    <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
+                      <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+                    </svg>
+                    <span>Download for Windows</span>
+                  </a>
+                )
               )}
             </div>
             <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-300 hover:text-white cursor-pointer underline font-extrabold">Log In</span> (Coaches Only)</p>
@@ -655,16 +654,16 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-28 sm:py-24 border-t border-zinc-900"
       >
-        <div className="text-center space-y-3 mb-20">
+        <div className="text-center space-y-4 mb-24 sm:mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Engineered for Peak Performance</h3>
           <p className="text-xs text-zinc-400 max-w-md mx-auto font-medium">Everything you need to deliver a premium service and keep your athletes accountable.</p>
         </div>
 
         <motion.div 
           variants={cardsContainerVariants}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-6"
         >
           {[
             {
@@ -719,9 +718,9 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900 text-center"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-28 sm:py-24 border-t border-zinc-900 text-center"
       >
-        <div className="text-center space-y-3 mb-16">
+        <div className="text-center space-y-4 mb-20 sm:mb-16">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">A Look Inside the Portal</h3>
           <p className="text-xs text-zinc-400 font-medium">Roster control panel, active check-in tracking logs, and athlete metrics compliance board.</p>
         </div>
@@ -760,9 +759,9 @@ export default function CoachLandingPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: false, amount: 0.12 }}
-        className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-zinc-900 scroll-mt-24"
+        className="relative z-10 max-w-7xl mx-auto px-6 py-28 sm:py-24 border-t border-zinc-900 scroll-mt-24"
       >
-        <div className="text-center space-y-3 mb-20">
+        <div className="text-center space-y-4 mb-24 sm:mb-20">
           <h3 className="text-2xl font-black text-white uppercase tracking-wider">Simple, Flexible Billing</h3>
           <p className="text-xs text-zinc-400 font-medium">Choose a package tailored to your coaching business goals. Swap tiers anytime.</p>
           <p className="text-[10px] text-blue-500 font-extrabold uppercase tracking-wider mt-1">No payment or credit card required to start your free trial</p>
@@ -786,7 +785,7 @@ export default function CoachLandingPage() {
         <motion.div 
           id="billing-plans"
           variants={cardsContainerVariants}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch scroll-mt-24"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-6 items-stretch scroll-mt-24"
         >
           {/* 2 Weeks Plan */}
           <motion.div 

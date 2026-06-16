@@ -34,7 +34,6 @@ const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const WaPilotTestConsole = lazy(() => import('./pages/WaPilotTestConsole'));
-const CoachMobileInfo = lazy(() => import('./pages/coach/CoachMobileInfo'));
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -734,7 +733,6 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="*" element={
             <div className="flex flex-col items-center justify-center p-6 min-h-[100dvh] bg-background text-center">
               <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
@@ -773,7 +771,6 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="/" element={<CoachLandingPage />} />
           <Route path="/login" element={
             <OnboardingFlow 
@@ -798,7 +795,6 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="*" element={
             <OnboardingFlow 
               initialStep={2} 
@@ -812,7 +808,6 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="*" element={
             <AppContent 
               userRole={userRole} 

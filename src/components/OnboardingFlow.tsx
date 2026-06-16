@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { 
@@ -114,7 +113,6 @@ export default function OnboardingFlow({
   onComplete 
 }: OnboardingFlowProps) {
   // Navigation states
-  const navigate = useNavigate();
   const [step, setStep] = useState(initialStep);
   const [direction, setDirection] = useState(1);
   const [showSplash, setShowSplash] = useState(false);
@@ -1073,16 +1071,6 @@ export default function OnboardingFlow({
                       <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                       Clear cache &amp; hard refresh
                     </button>
-                    {/* Link for coaches to open download page */}
-                    <div className="pt-2.5 border-t border-gray-800/40 mt-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => navigate('/coach-info')}
-                        className="text-[10px] text-blue-400 hover:text-blue-300 font-extrabold uppercase tracking-wider transition-colors cursor-pointer"
-                      >
-                        Are you a Coach? Get Desktop Console
-                      </button>
-                    </div>
                   </form>
                 )}
 
