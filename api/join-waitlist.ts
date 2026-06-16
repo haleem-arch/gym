@@ -78,30 +78,32 @@ export default async function handler(req: any, res: any) {
 
     const ownerTargets = ownerProfile?.targets || {};
 
-    // 3. Send WhatsApp confirmation in the background (non-blocking)
+    // 3. Send WhatsApp confirmation (Awaited to ensure completion on serverless)
     if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
-      const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
-      const waEndpoint = `${gatewayUrl}/send-text`;
+      try {
+        const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
+        const waEndpoint = `${gatewayUrl}/send-text`;
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (ownerTargets.whatsapp_gateway_token) {
-        headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
-      }
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (ownerTargets.whatsapp_gateway_token) {
+          headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+        }
 
-      const defaultTemplate = `*LIFE GYM* 🚀\n\nHello *{name}*!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist! 🏋️🔥\n\nWe are currently putting the final touches on the platform. As soon as the website goes live, you will be the first to receive your official credentials and early access link right here on WhatsApp!\n\nStay tuned, and let's get ready to crush those goals! 💪\n\nLife Gym Team 👑`;
-      const template = ownerTargets.whatsapp_tpl_waitlist || defaultTemplate;
-      const formattedMessage = template.replace(/{name}/g, name.trim());
+        const defaultTemplate = `*LIFE GYM* 🚀\n\nHello *{name}*!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist! 🏋️🔥\n\nWe are currently putting the final touches on the platform. As soon as the website goes live, you will be the first to receive your official credentials and early access link right here on WhatsApp!\n\nStay tuned, and let's get ready to crush those goals! 💪\n\nLife Gym Team 👑`;
+        const template = ownerTargets.whatsapp_tpl_waitlist || defaultTemplate;
+        const formattedMessage = template.replace(/{name}/g, name.trim());
 
-      const cleanedPhone = formatWhatsAppPhone(phone);
+        const cleanedPhone = formatWhatsAppPhone(phone);
 
-      fetch(waEndpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          to: cleanedPhone,
-          text: formattedMessage.trim()
-        })
-      }).then(async (waRes) => {
+        const waRes = await fetch(waEndpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            to: cleanedPhone,
+            text: formattedMessage.trim()
+          })
+        });
+
         if (waRes.ok) {
           // Increment sent count
           const nextCount = (ownerTargets.whatsapp_sent_count || 0) + 1;
@@ -118,13 +120,14 @@ export default async function handler(req: any, res: any) {
           const errTxt = await waRes.text();
           console.error('Failed to send waitlist WhatsApp message:', errTxt);
         }
-      }).catch((fetchErr) => {
-        console.error('WhatsApp gateway fetch error:', fetchErr);
-      });
+      } catch (waErr) {
+        console.error('WhatsApp gateway fetch error:', waErr);
+      }
     }
 
-    // 4. Send Email confirmation in the background (non-blocking)
-    const emailHtml = `<!DOCTYPE html>
+    // 4. Send Email confirmation (Awaited to ensure completion on serverless)
+    try {
+      const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
   <style>
@@ -191,16 +194,16 @@ export default async function handler(req: any, res: any) {
 </body>
 </html>`;
 
-    sendBulkEmails({
-      to: email.trim(),
-      subject: "You're on the list! 🚀 | Life Gym",
-      text: `Hello ${name.trim()}!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist!\n\nWe are putting the final touches on the platform. As soon as the website goes live, we will send your official credentials and early access link to your inbox and WhatsApp!\n\nBest,\nLife Gym Team`,
-      html: emailHtml
-    }).then((results) => {
-      console.log('Waitlist email send results:', results);
-    }).catch((err) => {
-      console.error('Waitlist email send failed:', err);
-    });
+      const emailResults = await sendBulkEmails({
+        to: email.trim(),
+        subject: "You're on the list! 🚀 | Life Gym",
+        text: `Hello ${name.trim()}!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist!\n\nWe are putting the final touches on the platform. As soon as the website goes live, we will send your official credentials and early access link to your inbox and WhatsApp!\n\nBest,\nLife Gym Team`,
+        html: emailHtml
+      });
+      console.log('Waitlist email send results:', emailResults);
+    } catch (emailErr) {
+      console.error('Waitlist email send failed:', emailErr);
+    }
 
     return res.status(200).json({ success: true });
   } catch (err: any) {
