@@ -21,6 +21,7 @@ export default function ProfileView() {
   // Feedback Form State
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackCategory, setFeedbackCategory] = useState<'feedback' | 'bug'>('feedback');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
@@ -138,13 +139,15 @@ export default function ProfileView() {
           message: feedbackMessage.trim(),
           name: profile?.display_name || null,
           email: profile?.email || null,
-          phone: profile?.targets?.phone_number || null
+          phone: profile?.targets?.phone_number || null,
+          category: feedbackCategory
         });
 
       if (error) throw error;
       setFeedbackSuccess(true);
       setFeedbackMessage('');
       setFeedbackRating(5);
+      setFeedbackCategory('feedback');
     } catch (err: any) {
       console.error(err);
       setFeedbackError(err.message || 'Failed to submit feedback.');
@@ -390,6 +393,34 @@ export default function ProfileView() {
         </h3>
 
         <form onSubmit={handleSubmitFeedback} className="space-y-4">
+          {/* Submission Category */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider ml-1">Submission Type</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFeedbackCategory('feedback')}
+                className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  feedbackCategory === 'feedback'
+                    ? 'bg-blue-600/15 border-blue-500 text-blue-400'
+                    : 'bg-transparent border-gray-800 text-gray-400 hover:border-gray-700'
+                }`}
+              >
+                💡 General Feedback
+              </button>
+              <button
+                type="button"
+                onClick={() => setFeedbackCategory('bug')}
+                className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  feedbackCategory === 'bug'
+                    ? 'bg-red-600/15 border-red-500 text-red-400'
+                    : 'bg-transparent border-gray-800 text-gray-400 hover:border-gray-700'
+                }`}
+              >
+                ⚠️ Report a Bug
+              </button>
+            </div>
+          </div>
           {/* Rating */}
           <div className="space-y-1.5">
             <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider ml-1">Rating (Optional)</label>

@@ -202,6 +202,7 @@ export default function DesktopCoachPortal() {
 
   // Feedback States
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackCategory, setFeedbackCategory] = useState<'feedback' | 'bug'>('feedback');
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
@@ -2918,11 +2919,13 @@ export default function DesktopCoachPortal() {
           message: feedbackMessage.trim(),
           name: myCoachProfile?.display_name || 'Coach',
           email: myCoachProfile?.email || '',
-          phone: myCoachProfile?.targets?.phone_number || ''
+          phone: myCoachProfile?.targets?.phone_number || '',
+          category: feedbackCategory
         });
       if (error) throw error;
       setFeedbackMessage('');
       setFeedbackRating(5);
+      setFeedbackCategory('feedback');
       toast.success('Feedback submitted successfully!');
     } catch (err: any) {
       console.error(err);
@@ -9313,6 +9316,35 @@ export default function DesktopCoachPortal() {
                 </div>
 
                 <form onSubmit={handleSubmitFeedback} className="space-y-5">
+                  {/* Submission Category */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">Submission Type</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setFeedbackCategory('feedback')}
+                        className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                          feedbackCategory === 'feedback'
+                            ? 'bg-blue-600/15 border-blue-500 text-blue-400'
+                            : 'bg-transparent border-gray-800 text-gray-400 hover:border-gray-700'
+                        }`}
+                      >
+                        💡 General Feedback
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFeedbackCategory('bug')}
+                        className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                          feedbackCategory === 'bug'
+                            ? 'bg-red-600/15 border-red-500 text-red-400'
+                            : 'bg-transparent border-gray-800 text-gray-400 hover:border-gray-700'
+                        }`}
+                      >
+                        ⚠️ Report a Bug
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">Rating (Optional)</label>
                     <div className="flex gap-1.5">
