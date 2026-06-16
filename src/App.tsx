@@ -583,7 +583,7 @@ function App() {
 
   const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
   let shouldShowLockScreen = false;
-  if (launchStatus !== 'live') {
+  if (launchStatus !== 'live' && !isElectron) {
     if (lockCoaches) {
       shouldShowLockScreen = !bypassActive;
     } else {
