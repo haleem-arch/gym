@@ -248,12 +248,13 @@ function App() {
   const [bypassPasscode, setBypassPasscode] = useState('haleem@425336');
   const [bypassActive, setBypassActive] = useState(false);
   const [checkingLaunch, setCheckingLaunch] = useState(true);
+  const [lockCoaches, setLockCoaches] = useState(false);
 
   const checkLaunchStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('launch_settings')
-        .select('status, launch_time, bypass_passcode')
+        .select('status, launch_time, bypass_passcode, lock_coaches')
         .eq('id', 'main')
         .maybeSingle();
 
@@ -261,6 +262,7 @@ function App() {
         setLaunchStatus(data.status);
         setLaunchTime(data.launch_time);
         setBypassPasscode(data.bypass_passcode);
+        setLockCoaches(!!data.lock_coaches);
         
         // Auto-launch check
         if (data.status !== 'live' && data.launch_time) {
@@ -569,7 +571,19 @@ function App() {
   }
 
   const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
-  const shouldShowLockScreen = launchStatus !== 'live' && !isCoachOrOwner && (!bypassActive || userRole === 'client');
+  let shouldShowLockScreen = false;
+  if (launchStatus !== 'live') {
+    if (lockCoaches) {
+      shouldShowLockScreen = !bypassActive;
+    } else {
+      const isClient = userRole === 'client';
+      if (isCoachOrOwner) {
+        shouldShowLockScreen = false;
+      } else {
+        shouldShowLockScreen = isClient || !bypassActive;
+      }
+    }
+  }
 
   if (shouldShowLockScreen) {
     return (
@@ -616,7 +630,7 @@ function App() {
             }}
           />
           <LaunchLockScreen 
-            status={launchStatus} 
+            status={launchStatus as 'coming_soon' | 'maintenance'} 
             launchTime={launchTime} 
             bypassPasscode={bypassPasscode} 
             onBypassSuccess={() => setBypassActive(true)} 
