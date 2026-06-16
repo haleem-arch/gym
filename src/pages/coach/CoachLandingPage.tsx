@@ -313,12 +313,7 @@ export default function CoachLandingPage() {
 
       if (profileError) throw profileError;
 
-      // Block coach/owner login on web PWA
-      if (profile && (profile.role === 'coach' || authData.user.id === OWNER_ID)) {
-        await supabase.auth.signOut();
-        setErrorMessage('coach_detected_web');
-        return;
-      }
+
 
       if (profile && profile.role !== 'coach' && authData.user.id !== OWNER_ID) {
         await supabase.auth.signOut();
@@ -489,7 +484,7 @@ export default function CoachLandingPage() {
       setShowCreationLoader(false);
 
       // Redirect to log them in automatically
-      navigate(window.innerWidth < 1024 ? '/coach/dashboard' : '/coach-portal');
+      navigate(window.innerWidth < 1024 ? '/' : '/coach-portal');
     } catch (err: any) {
       setShowCreationLoader(false);
       localStorage.removeItem('signup_in_progress');
