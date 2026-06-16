@@ -123,9 +123,7 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
     if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
       if (isElectron) {
         navigate('/coach-portal', { replace: true });
-      } else if (isMobile) {
-        navigate('/coach/dashboard', { replace: true });
-      } else {
+      } else if (!isMobile) {
         navigate('/coach-portal', { replace: true });
       }
     }
@@ -232,7 +230,7 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
         <div id="modal-portal" className="absolute inset-0 pointer-events-none z-[90]" />
 
         {/* Bottom nav — hidden while any full-screen overlay is active */}
-        {!anyOverlayActive && !isCoachOrOwner && <BottomNav />}
+        {!anyOverlayActive && (!isCoachOrOwner || (isMobile && !isElectron)) && <BottomNav />}
       </div>
 
       {/* ── Full-screen overlays rendered OUTSIDE the clipped shell ── */}
