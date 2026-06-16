@@ -552,12 +552,12 @@ export default function CoachLandingPage() {
           <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
         <div className="flex items-center gap-6">
-          {/* Mobile Athlete Login Button */}
+          {/* Mobile Login Button */}
           <button
             onClick={() => navigate('/client-login')}
-            className="flex md:hidden items-center justify-center px-4 py-2 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 hover:border-blue-500/40 text-blue-400 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+            className="flex md:hidden items-center justify-center px-5 py-2 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 hover:border-blue-500/40 text-blue-400 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
           >
-            Athlete Login
+            Login
           </button>
           {!isElectron && (
             <a
@@ -624,7 +624,7 @@ export default function CoachLandingPage() {
                   onClick={() => navigate('/client-login')}
                   className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
                 >
-                  <span>Log in as Athlete</span>
+                  <span>Login</span>
                   <ArrowRight size={14} />
                 </button>
               ) : (
@@ -642,7 +642,9 @@ export default function CoachLandingPage() {
                 )
               )}
             </div>
-            <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-300 hover:text-white cursor-pointer underline font-extrabold">Log In</span> (Coaches Only)</p>
+            {!isMobile && (
+              <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-300 hover:text-white cursor-pointer underline font-extrabold">Log In</span></p>
+            )}
           </div>
         </motion.div>
       </section>
@@ -663,7 +665,7 @@ export default function CoachLandingPage() {
 
         <motion.div 
           variants={cardsContainerVariants}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-6"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 -mx-6 px-6 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 sm:gap-6 md:overflow-x-visible md:px-0 md:mx-0 md:pb-0"
         >
           {[
             {
@@ -699,7 +701,7 @@ export default function CoachLandingPage() {
           ].map((feat, idx) => (
             <div 
               key={idx}
-              className="p-8 rounded-2xl bg-zinc-900/30 border border-zinc-900 hover:border-zinc-800/80 transition-colors flex flex-col text-left group"
+              className="w-[82vw] shrink-0 snap-center p-8 rounded-2xl bg-zinc-900/30 border border-zinc-900 hover:border-zinc-800/80 transition-all flex flex-col text-left group md:w-auto md:shrink"
             >
               <div className="w-10 h-10 rounded-xl bg-blue-950/20 border border-blue-900/30 flex items-center justify-center mb-6 text-blue-400 group-hover:text-blue-300 transition-colors">
                 {feat.icon}
