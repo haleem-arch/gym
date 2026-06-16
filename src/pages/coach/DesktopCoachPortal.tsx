@@ -17,6 +17,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
 import { GymReceipt } from '../../components/GymReceipt';
 import { FAKE_CLIENTS, getMockClientProfile, getMockClientData } from '../../utils/mockTutorialData';
+// import ConfirmationModal from '../../components/ConfirmationModal';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -554,6 +555,26 @@ export default function DesktopCoachPortal() {
     setCustomPromptCallback(() => callback);
     setCustomPromptOpen(true);
   };
+
+  // Custom styled confirm modal states
+  // const [customConfirmOpen, setCustomConfirmOpen] = useState(false);
+  // const [customConfirmTitle, setCustomConfirmTitle] = useState('');
+  // const [customConfirmMessage, setCustomConfirmMessage] = useState('');
+  // const [customConfirmVariant, setCustomConfirmVariant] = useState<'danger' | 'warning' | 'info' | 'success'>('info');
+  // const [customConfirmCallback, setCustomConfirmCallback] = useState<(() => void) | null>(null);
+  // 
+  // const showConfirm = (
+  //   title: string,
+  //   message: string,
+  //   variant: 'danger' | 'warning' | 'info' | 'success',
+  //   callback: () => void
+  // ) => {
+  //   setCustomConfirmTitle(title);
+  //   setCustomConfirmMessage(message);
+  //   setCustomConfirmVariant(variant);
+  //   setCustomConfirmCallback(() => callback);
+  //   setCustomConfirmOpen(true);
+  // };
 
   // Subscriptions Tab Reactivation Modal state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);

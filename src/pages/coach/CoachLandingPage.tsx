@@ -531,7 +531,7 @@ export default function CoachLandingPage() {
   ];
 
   return (
-    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 scroll-smooth no-scrollbar" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.015) 1px, transparent 0)', backgroundSize: '32px 32px' }}>
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 scroll-smooth no-scrollbar" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.015) 1px, transparent 0)', backgroundSize: '32px 32px' }}>
       
       {/* HEADER NAVBAR */}
       <header className="relative z-10 max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-zinc-900">
@@ -787,15 +787,15 @@ export default function CoachLandingPage() {
         <motion.div 
           id="billing-plans"
           variants={cardsContainerVariants}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-6 items-stretch scroll-mt-24"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 -mx-6 px-6 no-scrollbar sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 items-stretch scroll-mt-24 sm:overflow-x-visible sm:px-0 sm:mx-0 sm:pb-0"
         >
           {/* 2 Weeks Plan */}
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
+            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
           >
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">2 Weeks</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">2,200</span>
@@ -803,7 +803,7 @@ export default function CoachLandingPage() {
                 <span className="text-[10px] text-zinc-500 font-bold">/ 2 weeks</span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Perfect for testing the waters and experiencing the premium coaching tools.</p>
-              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
+              <ul className="space-y-2.5 sm:space-y-3.5 pt-4 sm:pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
                 {sharedFeaturesList.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5">
                     <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
@@ -812,7 +812,7 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-8 flex flex-col items-center gap-2 w-full">
+            <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '2_weeks')}
                 className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
@@ -827,12 +827,12 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-8 bg-zinc-900 border border-blue-500/40 rounded-[28px] flex flex-col justify-between relative shadow-xl scale-105 hover:border-blue-500 transition-all group"
+            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900 border border-blue-500/40 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-xl sm:scale-105 hover:border-blue-500 transition-all group sm:w-auto sm:shrink"
           >
             <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white font-black text-[8px] uppercase tracking-widest px-3 py-1 rounded-full shadow-lg z-10 border border-blue-500">
               Most Popular
             </div>
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-white uppercase tracking-widest bg-blue-950/40 border border-blue-900/60 px-3 py-1 rounded-lg">1 Month</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">3,500</span>
@@ -840,7 +840,7 @@ export default function CoachLandingPage() {
                 <span className="text-[10px] text-zinc-400 font-bold">/ month</span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Our standard monthly commitment, ideal for consistent training and tracking.</p>
-              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-800">
+              <ul className="space-y-2.5 sm:space-y-3.5 pt-4 sm:pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-800">
                 {sharedFeaturesList.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5">
                     <Check size={12} className="text-blue-500 shrink-0 mt-0.5" /> 
@@ -849,7 +849,7 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-8 flex flex-col items-center gap-2 w-full">
+            <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '1_month')}
                 className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer border border-blue-500/30"
@@ -864,9 +864,9 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
+            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
           >
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-850 border border-zinc-700/60 px-3 py-1 rounded-lg">3 Months</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">8,500</span>
@@ -874,7 +874,7 @@ export default function CoachLandingPage() {
                 <span className="text-[10px] text-zinc-500 font-bold">/ 3 months</span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">Accelerate your progress with a quarterly plan. Highly recommended for transformations.</p>
-              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
+              <ul className="space-y-2.5 sm:space-y-3.5 pt-4 sm:pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
                 {sharedFeaturesList.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5">
                     <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
@@ -883,7 +883,7 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-8 flex flex-col items-center gap-2 w-full">
+            <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '3_months')}
                 className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
@@ -898,9 +898,9 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="p-8 bg-zinc-900/30 border border-zinc-900 rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group"
+            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
           >
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">6 Months</span>
               <div className="flex items-baseline gap-1.5 pt-2">
                 <span className="text-2xl font-black text-white">14,000</span>
@@ -908,7 +908,7 @@ export default function CoachLandingPage() {
                 <span className="text-[10px] text-zinc-500 font-bold">/ 6 months</span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">The ultimate commitment to your goals. Best value for serious, long-term coaches.</p>
-              <ul className="space-y-3.5 pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
+              <ul className="space-y-2.5 sm:space-y-3.5 pt-4 sm:pt-5 text-[11px] font-medium text-zinc-350 border-t border-zinc-900">
                 {sharedFeaturesList.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5">
                     <Check size={12} className="text-zinc-400 shrink-0 mt-0.5" /> 
@@ -917,7 +917,7 @@ export default function CoachLandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-8 flex flex-col items-center gap-2 w-full">
+            <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
                 onClick={() => openAuth('register', '6_months')}
                 className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
@@ -1090,7 +1090,14 @@ export default function CoachLandingPage() {
           >
             Terms of Use
           </button>
-          <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+          <a 
+            href="https://wa.me/201128828954?text=Hello%20Life%20Gym%20Team%2C%20I%20need%20support%20with%20my%20account." 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-white transition-colors bg-transparent border-none p-0 cursor-pointer font-bold"
+          >
+            Contact Support
+          </a>
         </div>
       </footer>
 
