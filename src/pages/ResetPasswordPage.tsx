@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Lock, AlertCircle, CheckCircle2, Dumbbell, ArrowRight } from 'lucide-react';
+import { Lock, AlertCircle, CheckCircle2, Dumbbell, ArrowRight, Sparkles } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 
 export default function ResetPasswordPage() {
@@ -69,6 +69,7 @@ export default function ResetPasswordPage() {
     }
 
     setUpdating(true);
+
     try {
       const res = await fetch('/api/complete-password-reset', {
         method: 'POST',
@@ -79,6 +80,7 @@ export default function ResetPasswordPage() {
       });
 
       const data = await res.json();
+
       if (res.ok && data.success) {
         setSuccess(true);
         toast.success('Password updated successfully!');
@@ -95,8 +97,10 @@ export default function ResetPasswordPage() {
 
   if (verifying) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#060713] text-gray-200">
-        <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#090b11] text-gray-200 relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="flex flex-col items-center gap-4 z-10">
           <Dumbbell className="w-12 h-12 text-blue-500 animate-spin" />
           <p className="text-xs uppercase tracking-widest font-black text-gray-400">Verifying reset link...</p>
         </div>
@@ -105,68 +109,73 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#060713] text-gray-200 px-6 py-10 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#090b11] text-gray-200 px-6 py-10 relative overflow-hidden">
       <Toaster position="top-center" reverseOrder={false} />
       
       {/* Background decorations */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
       
-      <div className="w-full max-w-[400px] z-10 flex flex-col items-center">
+      <div className="w-full max-w-[390px] z-10 flex flex-col items-center">
         {/* Header Branding */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-xl border border-blue-500/25 mb-4">
-            <Dumbbell className="w-6 h-6 text-white" />
+        <div className="flex flex-col items-center mb-8 w-full">
+          <div className="relative bg-gradient-to-tr from-blue-600 to-purple-600 border border-white/10 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4 w-16 h-16 rounded-2xl">
+            <Dumbbell className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-xl font-black text-white tracking-widest uppercase font-mono">Life Gym</h1>
-          <p className="text-[10px] text-gray-550 font-bold uppercase tracking-widest mt-1">Peak Fitness & Nutrition</p>
+          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+            LIFE GYM
+          </h1>
+          <p className="text-sm text-gray-550 mt-1 font-semibold flex items-center gap-1">
+            <Sparkles size={12} className="text-blue-500" /> Peak Fitness & Nutrition
+          </p>
         </div>
 
         {success ? (
           /* SUCCESS SCREEN */
-          <div className="w-full bg-[#121620]/60 border border-gray-800 p-6 rounded-2xl shadow-xl text-center flex flex-col items-center">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
-              <CheckCircle2 className="w-6 h-6" />
+          <div className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-2xl shadow-2xl relative text-center flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 shadow-inner">
+              <CheckCircle2 className="w-7 h-7" />
             </div>
-            <h2 className="text-lg font-black text-white uppercase tracking-wider">Password Updated</h2>
-            <p className="text-gray-400 text-xs mt-3 leading-relaxed">
+            <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">Password Updated</h2>
+            <p className="text-gray-400 text-xs leading-relaxed mb-6">
               Your password has been successfully reset. You can now sign in to your portal using your new credentials.
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="mt-6 w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2"
             >
               <span>Go to Sign In</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         ) : !isValid ? (
           /* EXPIRED / INVALID SCREEN */
-          <div className="w-full bg-[#121620]/60 border border-gray-800 p-6 rounded-2xl shadow-xl text-center flex flex-col items-center">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-4">
-              <AlertCircle className="w-6 h-6" />
+          <div className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-2xl shadow-2xl relative text-center flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-6 shadow-inner">
+              <AlertCircle className="w-7 h-7" />
             </div>
-            <h2 className="text-lg font-black text-white uppercase tracking-wider">Link Expired</h2>
-            <p className="text-gray-400 text-xs mt-3 leading-relaxed">
+            <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">Link Expired</h2>
+            <p className="text-gray-400 text-xs leading-relaxed mb-6">
               {errorMsg}
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="mt-6 w-full py-3.5 bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 font-bold text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer"
+              className="w-full bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] cursor-pointer text-sm"
             >
               Return to Sign In
             </button>
           </div>
         ) : (
           /* RESET PASSWORD INPUT FORM */
-          <div className="w-full bg-[#121620]/60 border border-gray-800 p-6 rounded-2xl shadow-xl">
-            <h2 className="text-md font-black text-white uppercase tracking-wider mb-1">Create New Password</h2>
-            <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-6 flex items-center gap-1">
-              Resetting for: <span className="text-blue-400 font-mono tracking-normal">{email}</span>
+          <div className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-2xl shadow-2xl relative">
+            <h2 className="text-xl font-black text-white uppercase tracking-wider mb-1">Create New Password</h2>
+            <p className="text-gray-400 text-xs font-semibold mb-6">
+              Resetting for: <span className="text-blue-400 font-mono">{email}</span>
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider">New Password</label>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">New Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <input
@@ -175,13 +184,13 @@ export default function ResetPasswordPage() {
                     placeholder="Min 6 characters"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full bg-[#0d0e15] border border-gray-800 text-white pl-11 pr-4 py-3 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-500 transition-all"
+                    className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:outline-none focus:border-blue-500 text-sm transition-all"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-wider">Confirm New Password</label>
+              <div className="space-y-2">
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">Confirm New Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <input
@@ -190,7 +199,7 @@ export default function ResetPasswordPage() {
                     placeholder="Repeat password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-[#0d0e15] border border-gray-800 text-white pl-11 pr-4 py-3 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-500 transition-all"
+                    className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:outline-none focus:border-blue-500 text-sm transition-all"
                   />
                 </div>
               </div>
@@ -198,9 +207,16 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={updating}
-                className="mt-6 w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-6 text-sm flex items-center justify-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
               >
-                {updating ? 'Updating Password...' : 'Save and Update'}
+                {updating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Updating Password...
+                  </>
+                ) : (
+                  'Save and Update'
+                )}
               </button>
             </form>
           </div>
