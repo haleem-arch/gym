@@ -36,6 +36,37 @@ const getLocalDateTimeString = (d: Date = new Date()) => {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
+const calculateActiveDays = (targets: any): number => {
+  if (!targets) return 0;
+  
+  if (Array.isArray(targets.subscription_history) && targets.subscription_history.length > 0) {
+    let totalDays = 0;
+    targets.subscription_history.forEach((entry: any) => {
+      if (entry.start_date && entry.end_date) {
+        const start = new Date(entry.start_date);
+        const end = new Date(entry.end_date);
+        if (end > start) {
+          const diffTime = Math.abs(end.getTime() - start.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          totalDays += diffDays;
+        }
+      }
+    });
+    if (totalDays > 0) return totalDays;
+  }
+
+  if (targets.subscription_start_date && targets.subscription_end_date) {
+    const start = new Date(targets.subscription_start_date);
+    const end = new Date(targets.subscription_end_date);
+    if (end > start) {
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  return 0;
+};
+
 const getWeekStart = (dateStr: string) => {
   const d = new Date(dateStr);
   const day = d.getDay();
@@ -6371,6 +6402,14 @@ export default function DesktopCoachPortal() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {(() => {
+                          const activeDays = calculateActiveDays(selectedClientProfile.user?.targets);
+                          return activeDays > 0 ? (
+                            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                              {activeDays} Active Days
+                            </span>
+                          ) : null;
+                        })()}
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
                           selectedClientProfile.user?.targets?.is_deactivated === true 
                             ? 'bg-red-500/10 text-red-400 border-red-500/20' 
@@ -8076,6 +8115,14 @@ export default function DesktopCoachPortal() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {(() => {
+                        const activeDays = calculateActiveDays(managementClientProfile.user?.targets);
+                        return activeDays > 0 ? (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                            {activeDays} Active Days
+                          </span>
+                        ) : null;
+                      })()}
                       <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
                         managementClientProfile.user?.targets?.is_deactivated === true 
                           ? 'bg-red-500/10 text-red-400 border-red-500/20' 
@@ -8548,6 +8595,7 @@ export default function DesktopCoachPortal() {
                         <th className="pb-3.5">Subscription Tier</th>
                         <th className="pb-3.5">Started At</th>
                         <th className="pb-3.5">Expires At</th>
+                        <th className="pb-3.5">Active Days</th>
                         <th className="pb-3.5">Status</th>
                         <th className="pb-3.5 text-right pr-2">Actions</th>
                       </tr>
@@ -8555,7 +8603,7 @@ export default function DesktopCoachPortal() {
                     <tbody className="divide-y divide-gray-850/60 text-xs">
                       {activeClientsList.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-gray-550">
+                          <td colSpan={7} className="py-8 text-center text-gray-550">
                             No clients deployed under your account.
                           </td>
                         </tr>
@@ -8628,6 +8676,9 @@ export default function DesktopCoachPortal() {
                               </td>
                               <td className="py-4 text-gray-500">
                                 {targets.subscription_end_date ? new Date(targets.subscription_end_date).toLocaleDateString() : 'N/A'}
+                              </td>
+                              <td className="py-4 font-black font-mono text-blue-400">
+                                {calculateActiveDays(targets)}d
                               </td>
                               <td className="py-4">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${statusColor}`}>

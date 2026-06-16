@@ -1,9 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { sendBulkEmails } from './helpers/email.js';
+import { waitUntil } from '@vercel/functions';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+function formatWhatsAppPhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  } else if (cleaned.startsWith('+')) {
+    cleaned = cleaned.substring(1);
+  }
+  
+  if (cleaned.startsWith('01') && cleaned.length === 11) {
+    cleaned = '20' + cleaned.substring(1);
+  } else if (cleaned.startsWith('1') && cleaned.length === 10) {
+    cleaned = '20' + cleaned;
+  }
+  return cleaned;
+}
 
 export default async function handler(req: any, res: any) {
   // CORS Headers
@@ -111,22 +128,95 @@ export default async function handler(req: any, res: any) {
 
       const sendResults = await sendBulkEmails({
         to: cleanEmail,
-        subject: 'Reset Your Stride Fit Password',
-        html: `
-          <div style="background-color: #060713; color: #f3f4f6; font-family: sans-serif; padding: 40px; border-radius: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #1f2937;">
-            <h1 style="color: #ffffff; text-transform: uppercase; letter-spacing: 2px; font-weight: 900; margin-bottom: 24px;">Stride Fit Password Reset</h1>
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">Hello ${profile.display_name || 'there'},</p>
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">We received a request to reset the password for your Stride Fit account.</p>
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; font-weight: bold; color: #facc15;">Note: This link is only valid for 10 minutes.</p>
-            <div style="margin: 36px 0;">
-              <a href="${resetLink}" style="background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-size: 14px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">Reset Password</a>
-            </div>
-            <p style="color: #6b7280; font-size: 11px; line-height: 1.6; margin-top: 40px; border-top: 1px solid #1f2937; padding-top: 20px;">
-              If you did not request this reset, please ignore this email.
-            </p>
-          </div>
-        `,
-        fromName: 'Stride Fit Support'
+        subject: 'Reset Your Password | Life Gym 🔐',
+        html: `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background-color: #07080f;
+      color: #ffffff;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 40px 20px;
+      margin: 0;
+      text-align: center;
+    }
+    .card {
+      background: rgba(12, 16, 32, 0.82);
+      border: 1px solid rgba(59, 130, 246, 0.18);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 480px;
+      margin: 0 auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      color: #3b82f6;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      text-align: center;
+    }
+    p {
+      color: #8a99ad;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .btn-container {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .btn {
+      background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+    }
+    .footer {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">LIFE GYM</div>
+    <h1>Password Reset Request 🔐</h1>
+    <p>Hello ${profile.display_name || 'there'},<br><br>We received a request to reset the password for your Life Gym account.<br><br><strong style="color: #f59e0b;">Note: This reset link is only valid for 10 minutes.</strong></p>
+    <div class="btn-container">
+      <a href="${resetLink}" class="btn">Reset Password</a>
+    </div>
+    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+    <div class="footer">
+      © 2026 Life Gym. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>`,
+        fromName: 'Life Gym'
       });
 
       const failed = sendResults.some(r => !r.success);
@@ -238,7 +328,7 @@ export default async function handler(req: any, res: any) {
       // 3. Sync plaintext passcode in public tables
       const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
-        .select('targets, role')
+        .select('targets, role, email, display_name')
         .eq('id', userId)
         .maybeSingle();
 
@@ -272,6 +362,137 @@ export default async function handler(req: any, res: any) {
 
       if (tokenUpdateError) {
         console.error('Error updating token status:', tokenUpdateError);
+      }
+
+      // 5. Send Password Changed Notifications (Email & WhatsApp)
+      if (!profileError && profile) {
+        const userEmail = profile.email || tokenRecord.email;
+        const displayName = profile.display_name || userEmail.split('@')[0];
+        const currentTargets = profile.targets || {};
+        const phoneNumber = currentTargets.phone_number;
+
+        const sendNotificationsPromise = (async () => {
+          // A. Send Email Notification
+          try {
+            const emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background-color: #07080f;
+      color: #ffffff;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 40px 20px;
+      margin: 0;
+      text-align: center;
+    }
+    .card {
+      background: rgba(12, 16, 32, 0.82);
+      border: 1px solid rgba(16, 185, 129, 0.18);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 480px;
+      margin: 0 auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      color: #3b82f6;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      text-align: center;
+    }
+    p {
+      color: #8a99ad;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .footer {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">LIFE GYM</div>
+    <h1 style="color: #10b981;">Password Changed! 🔐</h1>
+    <p>Hello ${displayName},<br><br>This is a security confirmation that your Life Gym account password has been successfully updated.<br><br>If you did not initiate this change, please contact support immediately at <strong>life.gym.team@gmail.com</strong> to secure your account.<br><br>Stay strong,<br>Life Gym Team 👑</p>
+    <div class="footer">
+      © 2026 Life Gym. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>`;
+
+            await sendBulkEmails({
+              to: userEmail,
+              subject: "Your password has been changed 🔐 | Life Gym",
+              text: `Hello ${displayName},\n\nThis is a confirmation that your account password has been changed successfully.\n\nIf you did not request this change, please contact support immediately at life.gym.team@gmail.com.\n\nBest,\nLife Gym Team`,
+              html: emailHtml,
+              fromName: 'Life Gym'
+            });
+          } catch (emailErr) {
+            console.error('Password reset success email failed:', emailErr);
+          }
+
+          // B. Send WhatsApp Notification
+          if (phoneNumber) {
+            try {
+              // Fetch owner targets to check settings
+              const { data: ownerProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('targets')
+                .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+                .maybeSingle();
+
+              const ownerTargets = ownerProfile?.targets || {};
+              if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
+                const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
+                const waEndpoint = `${gatewayUrl}/send-text`;
+
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                if (ownerTargets.whatsapp_gateway_token) {
+                  headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+                }
+
+                const defaultTemplate = `*LIFE GYM - Password Changed* 🔐\n\nHello, *{display_name}*!\n\nThis is a confirmation that your account password has been changed successfully. \n\nIf you did not request this change, please contact support immediately at:\n📧 life.gym.team@gmail.com\n\nLife Gym Team 👑`;
+                const template = ownerTargets.whatsapp_tpl_password_changed || defaultTemplate;
+                const formattedMessage = template.replace(/{display_name}/g, displayName);
+
+                const cleanedPhone = formatWhatsAppPhone(phoneNumber);
+                await fetch(waEndpoint, {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify({
+                    to: cleanedPhone,
+                    text: formattedMessage.trim()
+                  })
+                });
+              }
+            } catch (waErr) {
+              console.error('Password reset success WhatsApp failed:', waErr);
+            }
+          }
+        })();
+
+        waitUntil(sendNotificationsPromise);
       }
 
       return res.status(200).json({ success: true });

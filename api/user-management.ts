@@ -734,6 +734,60 @@ ${origin}/client-login
         return res.status(400).json({ error: updateError.message });
       }
 
+      // Fetch client profile and owner configs to trigger WhatsApp notification
+      const { data: clientProfile, error: clientError } = await supabaseAdmin
+        .from('profiles')
+        .select('display_name, targets')
+        .eq('id', uid)
+        .maybeSingle();
+
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('targets')
+        .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+        .maybeSingle();
+
+      const ownerTargets = ownerProfile?.targets || {};
+
+      if (!clientError && clientProfile && clientProfile.targets?.phone_number) {
+        const clientPhone = clientProfile.targets.phone_number;
+        const clientName = clientProfile.display_name || 'Athlete';
+        const coachName = profile?.display_name || 'your coach';
+
+        const sendWhatsAppPromise = (async () => {
+          if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
+            const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
+            const waEndpoint = `${gatewayUrl}/send-text`;
+
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (ownerTargets.whatsapp_gateway_token) {
+              headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+            }
+
+            const defaultTemplate = `*LIFE GYM* 🏋️\n\nHello *{display_name}*!\n\nYour coach *{coach_name}* has updated your password to:\n👉 *{password}*\n\n© 2026 Life Gym.`;
+            const template = ownerTargets.whatsapp_tpl_coach_changed_password || defaultTemplate;
+            const formattedMessage = template
+              .replace(/{display_name}/g, clientName)
+              .replace(/{coach_name}/g, coachName)
+              .replace(/{password}/g, password);
+
+            const cleanedPhone = formatWhatsAppPhone(clientPhone);
+            await fetch(waEndpoint, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                to: cleanedPhone,
+                text: formattedMessage.trim()
+              })
+            });
+          }
+        })();
+
+        waitUntil(sendWhatsAppPromise.catch(err => {
+          console.error('Failed to send coach changed password WhatsApp alert:', err);
+        }));
+      }
+
       return res.status(200).json({ success: true });
 
     } else if (action === 'get-archived') {

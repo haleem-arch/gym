@@ -115,10 +115,10 @@ export default function ResetPasswordPage() {
         {/* Header Branding */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-xl border border-blue-500/25 mb-4">
-            <span className="font-black text-white text-xl tracking-tighter">SR</span>
+            <Dumbbell className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-black text-white tracking-widest uppercase font-mono">Stride Fit</h1>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Real-time Performance System</p>
+          <h1 className="text-xl font-black text-white tracking-widest uppercase font-mono">Life Gym</h1>
+          <p className="text-[10px] text-gray-550 font-bold uppercase tracking-widest mt-1">Peak Fitness & Nutrition</p>
         </div>
 
         {success ? (

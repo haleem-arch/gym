@@ -197,7 +197,8 @@ export default async function handler(req: any, res: any) {
         to: email.trim(),
         subject: "You're on the list! 🚀 | Life Gym",
         text: `Hello ${name.trim()}!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist!\n\nWe are putting the final touches on the platform. As soon as the website goes live, you will be the first to receive your official credentials and early access link to your inbox and WhatsApp!\n\nBest,\nLife Gym Team`,
-        html: emailHtml
+        html: emailHtml,
+        fromName: 'Life Gym'
       });
     })();
 
