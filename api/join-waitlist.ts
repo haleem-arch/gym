@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendBulkEmails } from './helpers/email.js'
 
 const globalProcess = (globalThis as any).process || { env: {} };
 
@@ -77,6 +78,7 @@ export default async function handler(req: any, res: any) {
 
     const ownerTargets = ownerProfile?.targets || {};
 
+    // 3. Send WhatsApp confirmation in the background (non-blocking)
     if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
       const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
       const waEndpoint = `${gatewayUrl}/send-text`;
@@ -86,14 +88,12 @@ export default async function handler(req: any, res: any) {
         headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
       }
 
-      // Compose the confirmation message
       const defaultTemplate = `*LIFE GYM* 🚀\n\nHello *{name}*!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist! 🏋️🔥\n\nWe are currently putting the final touches on the platform. As soon as the website goes live, you will be the first to receive your official credentials and early access link right here on WhatsApp!\n\nStay tuned, and let's get ready to crush those goals! 💪\n\nLife Gym Team 👑`;
       const template = ownerTargets.whatsapp_tpl_waitlist || defaultTemplate;
       const formattedMessage = template.replace(/{name}/g, name.trim());
 
       const cleanedPhone = formatWhatsAppPhone(phone);
 
-      // Perform background fetch to send the WhatsApp message
       fetch(waEndpoint, {
         method: 'POST',
         headers,
@@ -122,6 +122,85 @@ export default async function handler(req: any, res: any) {
         console.error('WhatsApp gateway fetch error:', fetchErr);
       });
     }
+
+    // 4. Send Email confirmation in the background (non-blocking)
+    const emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background-color: #07080f;
+      color: #ffffff;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 40px 20px;
+      margin: 0;
+      text-align: center;
+    }
+    .card {
+      background: rgba(12, 16, 32, 0.82);
+      border: 1px solid rgba(59, 130, 246, 0.18);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 480px;
+      margin: 0 auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      color: #3b82f6;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      text-align: center;
+    }
+    p {
+      color: #8a99ad;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .footer {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">LIFE GYM</div>
+    <h1>You're on the list! 🚀</h1>
+    <p>Hello ${name.trim()},<br><br>Thank you for requesting early access to Life Gym. We have successfully registered your spot on our launch waitlist.<br><br>We are working hard to put the final polish on the ecosystem. As soon as the platform goes live, we will send your official credentials and early access link straight to your inbox and WhatsApp!<br><br>Stay tuned, and let's get ready to crush those goals.</p>
+    <div class="footer">
+      © 2026 Life Gym. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>`;
+
+    sendBulkEmails({
+      to: email.trim(),
+      subject: "You're on the list! 🚀 | Life Gym",
+      text: `Hello ${name.trim()}!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist!\n\nWe are putting the final touches on the platform. As soon as the website goes live, we will send your official credentials and early access link to your inbox and WhatsApp!\n\nBest,\nLife Gym Team`,
+      html: emailHtml
+    }).then((results) => {
+      console.log('Waitlist email send results:', results);
+    }).catch((err) => {
+      console.error('Waitlist email send failed:', err);
+    });
 
     return res.status(200).json({ success: true });
   } catch (err: any) {
