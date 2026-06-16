@@ -166,6 +166,7 @@ export default function CoachLandingPage() {
 
   const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'cookies'>('privacy');
+  const [isMobile, setIsMobile] = useState(false);
 
   const openLegalModal = (type: 'privacy' | 'terms') => {
     setLegalModalType(type);
@@ -173,10 +174,7 @@ export default function CoachLandingPage() {
   };
 
   useEffect(() => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.replace('/client-login');
-    }
+    setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   }, []);
 
   // Form states
@@ -275,6 +273,10 @@ export default function CoachLandingPage() {
 
 
   const openAuth = (mode: 'login' | 'register', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
+    if (isMobile) {
+      navigate('/coach-info');
+      return;
+    }
     setAuthMode(mode);
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
@@ -534,6 +536,19 @@ export default function CoachLandingPage() {
 
   return (
     <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#09090b] text-zinc-100 font-sans selection:bg-zinc-800 scroll-smooth no-scrollbar" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.015) 1px, transparent 0)', backgroundSize: '32px 32px' }}>
+      {isMobile && (
+        <div className="bg-blue-600/10 border-b border-blue-500/20 px-6 py-3.5 text-center flex items-center justify-center gap-3 relative z-20">
+          <span className="text-[11px] text-blue-450 font-black uppercase tracking-wider">
+            Are you a Coach? Standing standalone desktop app is recommended.
+          </span>
+          <button
+            onClick={() => navigate('/coach-info')}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[9px] uppercase tracking-wider rounded-lg transition-all active:scale-95 cursor-pointer"
+          >
+            Get App / View Info
+          </button>
+        </div>
+      )}
       
       {/* HEADER NAVBAR */}
       <header className="relative z-10 max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-zinc-900">

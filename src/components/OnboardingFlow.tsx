@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { 
@@ -113,6 +114,7 @@ export default function OnboardingFlow({
   onComplete 
 }: OnboardingFlowProps) {
   // Navigation states
+  const navigate = useNavigate();
   const [step, setStep] = useState(initialStep);
   const [direction, setDirection] = useState(1);
   const [showSplash, setShowSplash] = useState(false);
@@ -175,19 +177,17 @@ export default function OnboardingFlow({
         const cbRect = cbEl.getBoundingClientRect();
         const cardRect = cardEl.getBoundingClientRect();
 
-        // Start: bottom-center of login button
+        // Start: center of login button relative to card
         const startX = btnRect.left - cardRect.left + btnRect.width / 2;
-        const startY = btnRect.bottom - cardRect.top;
+        const startY = btnRect.top - cardRect.top + btnRect.height / 2;
 
         // End: left edge of the checkbox
         const endX = cbRect.left - cardRect.left + 8;
         const endY = cbRect.top - cardRect.top + cbRect.height / 2;
 
-        // Loop around the button: go down-right from bottom of button,
-        // swing wide to the right, then come back up to the checkbox.
-        // Cubic bezier with two control points.
-        const controlX = btnRect.right - cardRect.left + 80;  // far right of button
-        const controlY = startY + 60;                          // below button
+        // Curved path swooping to the right (never goes below the button)
+        const controlX = Math.max(startX, endX) + 110;
+        const controlY = (startY + endY) / 2 + 10;
 
         setArrowPoints({ startX, startY, controlX, controlY, endX, endY });
         setShowArrow(true);
@@ -1073,6 +1073,16 @@ export default function OnboardingFlow({
                       <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                       Clear cache &amp; hard refresh
                     </button>
+                    {/* Link for coaches to open download page */}
+                    <div className="pt-2.5 border-t border-gray-800/40 mt-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/coach-info')}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 font-extrabold uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        Are you a Coach? Get Desktop Console
+                      </button>
+                    </div>
                   </form>
                 )}
 
@@ -1100,9 +1110,9 @@ export default function OnboardingFlow({
                         </marker>
                       </defs>
 
-                      {/* Cubic bezier: bottom-center of button → loops around right side → checkbox */}
+                      {/* Quadratic bezier: center of button → swoops right → checkbox */}
                       <motion.path
-                        d={`M ${arrowPoints.startX} ${arrowPoints.startY} C ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.controlX} ${arrowPoints.endY - 30} ${arrowPoints.endX} ${arrowPoints.endY}`}
+                        d={`M ${arrowPoints.startX} ${arrowPoints.startY} Q ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.endX} ${arrowPoints.endY}`}
                         fill="none"
                         stroke="url(#arrow-trail-grad)"
                         strokeWidth="3"

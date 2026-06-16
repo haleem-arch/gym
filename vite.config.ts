@@ -25,9 +25,9 @@ export default defineConfig({
         ]
       },
       manifest: {
-        name: 'Haleem',
-        short_name: 'Haleem',
-        description: 'Personal Athlete Dashboard',
+        name: 'Life Gym',
+        short_name: 'Life Gym',
+        description: 'Premium Fitness Coaching Platform',
         display: 'standalone',
         background_color: '#05060f',
         theme_color: '#05060f',

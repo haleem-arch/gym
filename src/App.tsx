@@ -10,7 +10,6 @@ import { DumbbellLoader } from './components/DumbbellLoader';
 import { SplashOverlay } from './components/SplashOverlay';
 import { GymSplashOverlay } from './components/GymSplashOverlay';
 import OnboardingFlow from './components/OnboardingFlow';
-import CookieConsent from './components/CookieConsent';
 import LaunchLockScreen from './pages/LaunchLockScreen';
 
 const HRDashboard = lazy(() => import('./pages/HRDashboard'));
@@ -35,6 +34,7 @@ const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const WaPilotTestConsole = lazy(() => import('./pages/WaPilotTestConsole'));
+const CoachMobileInfo = lazy(() => import('./pages/coach/CoachMobileInfo'));
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -679,6 +679,9 @@ function App() {
       <Toaster 
         position="top-center" 
         reverseOrder={false} 
+        containerStyle={{
+          top: 'calc(env(safe-area-inset-top, 16px) + 8px)',
+        }}
         toastOptions={{
           style: {
             background: '#0a0d1e',
@@ -731,6 +734,7 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="*" element={
             <div className="flex flex-col items-center justify-center p-6 min-h-[100dvh] bg-background text-center">
               <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
@@ -769,27 +773,22 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="/" element={<CoachLandingPage />} />
           <Route path="/login" element={
-            <>
-              <CookieConsent />
-              <OnboardingFlow 
-                initialStep={1} 
-                onSessionConfigured={setSession} 
-              />
-            </>
+            <OnboardingFlow 
+              initialStep={1} 
+              onSessionConfigured={setSession} 
+            />
           } />
           <Route path="/client-login" element={
             isElectron ? (
               <Navigate to="/" replace />
             ) : (
-              <>
-                <CookieConsent />
-                <OnboardingFlow 
-                  initialStep={1} 
-                  onSessionConfigured={setSession} 
-                />
-              </>
+              <OnboardingFlow 
+                initialStep={1} 
+                onSessionConfigured={setSession} 
+              />
             )
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -799,15 +798,13 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="*" element={
-            <>
-              <CookieConsent />
-              <OnboardingFlow 
-                initialStep={2} 
-                onSessionConfigured={setSession} 
-                onComplete={() => setNeedsOnboarding(false)} 
-              />
-            </>
+            <OnboardingFlow 
+              initialStep={2} 
+              onSessionConfigured={setSession} 
+              onComplete={() => setNeedsOnboarding(false)} 
+            />
           } />
         </Routes>
       ) : (
@@ -815,16 +812,14 @@ function App() {
           <Route path="/hr" element={<HRDashboard />} />
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/coach-info" element={<CoachMobileInfo />} />
           <Route path="*" element={
-            <>
-              <CookieConsent />
-              <AppContent 
-                userRole={userRole} 
-                session={session} 
-                onCheckLaunch={checkLaunchStatus} 
-                showWelcomeSplash={showWelcomeSplash}
-              />
-            </>
+            <AppContent 
+              userRole={userRole} 
+              session={session} 
+              onCheckLaunch={checkLaunchStatus} 
+              showWelcomeSplash={showWelcomeSplash}
+            />
           } />
         </Routes>
       )}
