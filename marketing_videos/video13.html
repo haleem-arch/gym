@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Life Gym - Full SaaS Loop (Premium Animated Reel)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+  <style>
+    :root {
+      --bg: #05060f;
+      --card: rgba(18, 22, 36, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.55);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.55);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.55);
+      --text: #f4f4f5;
+      --text-muted: #71717a;
+      --accent-purple: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+    body {
+      background: #000;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    #canvas {
+      width: 1080px;
+      height: 1920px;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* PREMIUM GRADIENT MESH BACKGROUND BLOBS */
+    .bg-dark {
+      background-color: #05060f;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    .bg-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(160px);
+      opacity: 0.18;
+      z-index: 2;
+      pointer-events: none;
+      transform: translate3d(0, 0, 0);
+    }
+    .bg-blob-1 {
+      width: 800px;
+      height: 800px;
+      background: var(--primary);
+      top: -150px;
+      left: -150px;
+      animation: float-blob-1 18s infinite alternate ease-in-out;
+    }
+    .bg-blob-2 {
+      width: 900px;
+      height: 900px;
+      background: var(--accent-purple);
+      bottom: -200px;
+      right: -200px;
+      animation: float-blob-2 22s infinite alternate ease-in-out;
+    }
+    .bg-blob-3 {
+      width: 600px;
+      height: 600px;
+      background: #14b8a6;
+      top: 35%;
+      left: 20%;
+      animation: float-blob-3 15s infinite alternate ease-in-out;
+    }
+
+    @keyframes float-blob-1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(120px, 80px) scale(1.15); }
+    }
+    @keyframes float-blob-2 {
+      0% { transform: translate(0, 0) scale(1.1); }
+      100% { transform: translate(-100px, -120px) scale(0.9); }
+    }
+    @keyframes float-blob-3 {
+      0% { transform: translate(0, 0) scale(0.9); }
+      100% { transform: translate(80px, -80px) scale(1.1); }
+    }
+
+    /* CUSTOM SPARK CURSOR */
+    #mouse-cursor {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      z-index: 999999;
+      pointer-events: none;
+      transform: translate(-10px, -6px);
+      top: 1500px;
+      left: 540px;
+    }
+    #mouse-halo {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.28);
+      filter: blur(8px);
+      z-index: 999998;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      top: 1500px;
+      left: 540px;
+    }
+    #click-ripple {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 4px solid var(--primary);
+      z-index: 999997;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      top: 0;
+      left: 0;
+    }
+    .cursor-trail {
+      position: absolute;
+      border-radius: 50%;
+      z-index: 999995;
+      pointer-events: none;
+      filter: blur(1px);
+    }
+
+    /* CONTINUOUS CARD FLOAT ANIMATIONS */
+    .floating-container {
+      animation: float-card 8s infinite ease-in-out;
+    }
+    @keyframes float-card {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-16px) rotate(0.4deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+
+    /* SCENES CONTAINER */
+    .scenes-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      perspective: 3000px;
+    }
+
+    .scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 96px 64px;
+      opacity: 0;
+      visibility: hidden;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+
+    /* Play Overlay */
+    #play-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1080px;
+      height: 1920px;
+      background: rgba(5, 6, 15, 0.96);
+      backdrop-filter: blur(25px);
+      z-index: 9999999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    .play-card {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      padding: 56px;
+      border-radius: 36px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+    }
+    .play-button-icon {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 0 50px rgba(59, 130, 246, 0.5);
+      animation: pulse-icon 2s infinite ease-in-out;
+    }
+    .play-button-icon svg {
+      width: 54px;
+      height: 54px;
+      margin-left: 10px;
+    }
+    @keyframes pulse-icon {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+    .play-card h2 {
+      font-size: 2.4rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .play-card p {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      max-width: 440px;
+      line-height: 1.6;
+    }
+
+    /* BRAND LOGO BAR */
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 24px;
+      width: 100%;
+    }
+    .brand-logo-icon {
+      width: 48px;
+      height: 48px;
+      background: #09090b;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .brand-logo-text {
+      font-size: 1.8rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      background: linear-gradient(135deg, #fff 50%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* SCENE 1: COACH LANDING PAGE */
+    .landing-hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 36px;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.28);
+      color: #60a5fa;
+      font-size: 0.85rem;
+      font-weight: 900;
+      padding: 8px 20px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+    }
+    .hero-h1 {
+      font-size: 4.8rem;
+      font-weight: 950;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      color: #fff;
+    }
+    .hero-h1 span.blue-highlight {
+      background: linear-gradient(135deg, #3b82f6 30%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: block;
+      margin-top: 12px;
+      font-size: 3.6rem;
+      letter-spacing: -0.02em;
+    }
+    .hero-desc {
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.65;
+      font-weight: 500;
+    }
+    .hero-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      font-weight: 950;
+      font-size: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 24px 56px;
+      border-radius: 18px;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      box-shadow: 0 16px 36px rgba(59, 130, 246, 0.35);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* SCENE 2: REGISTER FORM MODAL */
+    .register-modal {
+      width: 760px;
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 48px;
+      margin: auto;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+    }
+    .register-title {
+      font-size: 2rem;
+      font-weight: 950;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .form-label {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .form-input {
+      width: 100%;
+      height: 56px;
+      background: rgba(9, 9, 11, 0.85);
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 0 20px;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      transition: all 0.25s ease-in-out;
+    }
+    .form-input.active-focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px var(--primary-glow);
+      transform: scale(1.02);
+      background: #09090b;
+    }
+    .register-btn {
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+      color: #fff;
+      font-weight: 950;
+      font-size: 1.15rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: none;
+      border-radius: 14px;
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 28px rgba(59, 130, 246, 0.3);
+    }
+
+    /* SCENE 3 & 7: COACH PORTAL (DESKTOP MOCK) */
+    .portal-box {
+      width: 952px;
+      height: 1200px;
+      background: rgba(7, 7, 16, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 36px;
+      margin: auto;
+      box-shadow: 0 35px 80px rgba(0,0,0,0.65);
+      display: flex;
+      overflow: hidden;
+    }
+    .portal-sidebar {
+      width: 250px;
+      background: rgba(9, 10, 16, 0.55);
+      border-right: 1px solid var(--border);
+      padding: 36px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-left: 12px;
+    }
+    .sidebar-logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .sidebar-brand-title {
+      font-size: 1.15rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .sidebar-brand-subtitle {
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .sidebar-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .menu-item {
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+    .menu-item.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: 0 6px 18px var(--primary-glow);
+      font-weight: 900;
+    }
+    .portal-main {
+      flex: 1;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      background: rgba(6, 7, 11, 0.4);
+      position: relative;
+    }
+    .portal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .portal-title {
+      font-size: 1.8rem;
+      font-weight: 950;
+      letter-spacing: -0.01em;
+    }
+    .portal-title p {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+    .client-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .client-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 22, 36, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px 24px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    }
+    .client-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .client-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #fff;
+      font-size: 1rem;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .add-client-btn {
+      background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+      color: #fff;
+      font-weight: 950;
+      font-size: 0.8rem;
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+    }
+
+    /* ADD CLIENT MODAL IN COACH PORTAL */
+    .add-client-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 500px;
+      background: #0a0b12;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 28px;
+      padding: 36px;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+    }
+    .add-client-title {
+      font-size: 1.5rem;
+      font-weight: 950;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+    .submit-client-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--success);
+      color: #fff;
+      font-weight: 950;
+      border-radius: 12px;
+      border: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 10px;
+      box-shadow: 0 8px 22px rgba(16, 185, 129, 0.3);
+    }
+
+    /* SCENE 4, 5 & 6: CLIENT PWA MOBILE AD */
+    .phone-wrapper {
+      width: 620px;
+      height: 1100px;
+      background: var(--bg);
+      border: 12px solid #1c233a;
+      border-radius: 44px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.85);
+      margin: auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .phone-nav {
+      padding: 24px;
+      background: rgba(9, 10, 16, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .phone-nav-title {
+      font-size: 1.25rem;
+      font-weight: 950;
+    }
+    .phone-tabs {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(9, 10, 16, 0.9);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 18px 8px;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+    .phone-tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .phone-tab-item.active {
+      color: var(--primary);
+    }
+    .phone-scroll-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      padding-bottom: 130px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    /* ATHLETE BOX */
+    .athlete-box {
+      width: 100%;
+      height: 300px;
+      background: rgba(255,255,255,0.01);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    /* CLIENT CARD LOGGER */
+    .client-card {
+      background: rgba(18, 22, 36, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+    }
+    .logger-table {
+      width: 100%;
+      margin-top: 16px;
+      border-collapse: collapse;
+    }
+    .logger-table th {
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding-bottom: 10px;
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+    .logger-table td {
+      padding: 8px 4px;
+      text-align: center;
+    }
+    .logger-cell-input {
+      width: 84px;
+      height: 40px;
+      background: rgba(9, 10, 16, 0.9);
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #fff;
+      margin: 0 auto;
+      transition: all 0.2s ease-in-out;
+    }
+    .logger-cell-input.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 15px var(--primary-glow);
+      transform: scale(1.05);
+    }
+    .done-check-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #1c233a;
+      border: 1px solid #27272a;
+      color: var(--text-muted);
+      font-weight: 950;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .done-check-btn.checked {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+      box-shadow: 0 0 15px var(--success-glow);
+    }
+    .action-btn {
+      width: 100%;
+      background: var(--success);
+      color: #fff;
+      font-weight: 950;
+      font-size: 1.05rem;
+      padding: 18px;
+      border: none;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: auto;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      box-shadow: 0 8px 22px rgba(16, 185, 129, 0.3);
+    }
+
+    /* DIET & WATER CARD LOGGER (REAL CODE STYLE) */
+    .macro-ring-box {
+      display: grid;
+      grid-template-cols: 1fr;
+      gap: 14px;
+      background: rgba(18, 22, 36, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+    }
+    .diet-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .macro-bar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .macro-row {
+      margin-bottom: 6px;
+    }
+    .macro-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .macro-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .macro-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+    .water-tracker-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 20px;
+      background: rgba(18, 22, 36, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+    }
+    .water-ring {
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      border: 8px solid #1a233d;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+    @keyframes wave-wobble {
+      0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: rotate(0deg); }
+      33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: rotate(120deg); }
+      66% { border-radius: 40% 60% 30% 70% / 40% 60% 40% 60%; transform: rotate(240deg); }
+    }
+    .water-liquid-wave {
+      position: absolute;
+      bottom: -190px;
+      left: -25px;
+      width: 240px;
+      height: 240px;
+      border-radius: 45%;
+      background: linear-gradient(135deg, #3b82f6 30%, #1d4ed8 100%);
+      animation: wave-wobble 4s infinite linear;
+      transform-origin: center;
+      transition: bottom 0.5s ease-in-out;
+    }
+    .water-text {
+      position: relative;
+      font-size: 1.7rem;
+      font-weight: 950;
+      color: #fff;
+      z-index: 10;
+    }
+
+    /* BARCODE SCANNER OVERLAY */
+    .scanner-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+    }
+    .scanner-window {
+      width: 380px;
+      height: 380px;
+      border: 4px solid var(--primary);
+      border-radius: 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 40px var(--primary-glow);
+    }
+    @keyframes laser-scan {
+      0% { top: 0%; opacity: 0.3; }
+      50% { top: 100%; opacity: 1; }
+      100% { top: 0%; opacity: 0.3; }
+    }
+    .scanner-laser {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: #10b981;
+      box-shadow: 0 0 20px #10b981;
+      animation: laser-scan 2s infinite ease-in-out;
+    }
+    .scan-success-popup {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: var(--success);
+      color: #fff;
+      font-weight: 950;
+      padding: 14px 36px;
+      border-radius: 14px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      visibility: hidden;
+      z-index: 110;
+      box-shadow: 0 8px 25px var(--success-glow);
+    }
+
+    /* INBODY LOG REPORT */
+    .inbody-grid {
+      display: grid;
+      grid-template-cols: 1fr 1fr;
+      gap: 16px;
+    }
+    .inbody-card {
+      background: rgba(18, 22, 36, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    }
+    .inbody-score-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 6px dashed var(--success);
+      margin: 16px auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+    }
+
+    /* SCENE 8: CTA OUTRO */
+    .outro-scene {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 48px;
+      text-align: center;
+      height: 100%;
+    }
+    .outro-dumbbell {
+      width: 260px;
+      height: 260px;
+    }
+    .outro-h1 {
+      font-size: 7.6rem;
+      font-weight: 950;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 50%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      text-shadow: 0 0 40px rgba(59, 130, 246, 0.2);
+    }
+    .outro-p {
+      font-size: 1.8rem;
+      color: var(--text-muted);
+      font-weight: 800;
+      letter-spacing: 0.2em;
+    }
+    .outro-link {
+      font-size: 3.5rem;
+      color: var(--primary);
+      font-weight: 950;
+      text-shadow: 0 0 35px var(--primary-glow);
+    }
+
+    /* HIGH-PERFORMANCE CSS PARTICLE ANIMATIONS */
+    @keyframes trail-fade {
+      0% { transform: scale(1) translateY(0); opacity: 1; }
+      100% { transform: scale(0.1) translateY(25px); opacity: 0; }
+    }
+    .cursor-trail {
+      position: absolute;
+      border-radius: 50%;
+      z-index: 999995;
+      pointer-events: none;
+      filter: blur(1px);
+      animation: trail-fade 0.4s forwards ease-out;
+    }
+
+    @keyframes confetti-explode {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0.1) rotate(var(--rot)); opacity: 0; }
+    }
+    .confetti-particle {
+      position: absolute;
+      z-index: 999999;
+      pointer-events: none;
+      animation: confetti-explode var(--dur) forwards cubic-bezier(0.1, 0.8, 0.3, 1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Play Overlay (Fades out, never recorded) -->
+  <div id="play-overlay">
+    <div class="play-card">
+      <div class="play-button-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/>
+        </svg>
+      </div>
+      <h2>LIFE GYM AD PREVIEW</h2>
+      <p>Press SPACEBAR or CLICK to play from start to end with sound</p>
+    </div>
+  </div>
+
+  <!-- Animated custom cursor pointer + trails -->
+  <div id="click-ripple"></div>
+  <div id="mouse-halo"></div>
+  <div id="mouse-cursor">
+    <svg viewBox="0 0 24 24" width="44" height="44">
+      <path d="M4.5 3v15.25l3.8-3.8 2.5 5.8 2.3-1-2.5-5.8 4.7-.2z" fill="#fff" stroke="#000" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div id="canvas">
+    <!-- Clean Solid Dark Canvas Background -->
+    <div class="bg-dark"></div>
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+    <div class="bg-blob bg-blob-3"></div>
+
+    <div class="scenes-container">
+
+      <!-- SCENE 1: COACH LANDING PAGE -->
+      <div class="scene" id="scene-landing">
+        <div class="brand-bar">
+          <div class="brand-logo-icon">
+            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+              <g transform="translate(256 256) rotate(-45)">
+                <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+                <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+                <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+              </g>
+            </svg>
+          </div>
+          <span class="brand-logo-text">Life Gym</span>
+        </div>
+
+        <div class="landing-hero floating-container">
+          <span class="hero-badge">🔥 ALL-IN-ONE FITNESS PLATFORM</span>
+          <h1 class="hero-h1">
+            Professional Coaching Portal.
+            <span class="blue-highlight">Everything you need to manage your athletes.</span>
+          </h1>
+          <p class="hero-desc">Design training splits, build day-type nutrition targets, track segmental InBody scans, and sync metrics to the athlete portal in real-time.</p>
+          <button class="hero-btn" id="start-trial-btn">
+            <span>Start 14-Day Free Trial</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px; letter-spacing: 0.05em;">lifegym.io</div>
+      </div>
+
+      <!-- SCENE 2: REGISTER FORM MODAL -->
+      <div class="scene" id="scene-register">
+        <div class="brand-bar">
+          <div class="brand-logo-icon">
+            <svg viewBox="0 0 512 512" style="width:100%; height:100%;">
+              <g transform="translate(256 256) rotate(-45)"><rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" /><rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" /><rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" /><rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" /><rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" /></g>
+            </svg>
+          </div>
+          <span class="brand-logo-text">Life Gym</span>
+        </div>
+
+        <div class="register-modal floating-container">
+          <h2 class="register-title">Create your Coach Account</h2>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <div class="form-input" id="reg-name"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="form-input" id="reg-email"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="form-input" id="reg-password"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <div class="form-input" id="reg-phone"></div>
+          </div>
+          <button class="register-btn" id="reg-submit-btn">Create Account &amp; Start Trial</button>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px;">Step 2 of 8 • Auth Onboarding</div>
+      </div>
+
+      <!-- SCENE 3: COACH PORTAL - ADD CLIENT -->
+      <div class="scene" id="scene-portal-roster">
+        <div class="portal-box floating-container">
+          <div class="portal-sidebar">
+            <div class="sidebar-header">
+              <div class="sidebar-logo-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="3">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div>
+                <h1 class="sidebar-brand-title">Life Gym</h1>
+                <p class="sidebar-brand-subtitle">Athlete Manager</p>
+              </div>
+            </div>
+            <div class="sidebar-menu">
+              <div class="menu-item active" id="menu-overview">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                <span>Operational Overview</span>
+              </div>
+              <div class="menu-item" id="menu-clients">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span>Athlete Directory</span>
+              </div>
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                <span>Deploy New Athlete</span>
+              </div>
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span>Athlete Control</span>
+              </div>
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                <span>Subscriptions</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="portal-main">
+            <div class="portal-header">
+              <div class="portal-title">
+                <h2 id="portal-title-text">Coach Dashboard</h2>
+                <p>Overview of active gym clients</p>
+              </div>
+              <button class="add-client-btn" id="portal-add-client-btn">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Deploy Athlete</span>
+              </button>
+            </div>
+
+            <!-- Client List (Populates after adding) -->
+            <div class="client-list" id="portal-client-list">
+              <div style="text-align:center; color:var(--text-muted); margin-top:200px; font-weight:700; font-size:1.2rem;" id="no-clients-text">No active athletes. Add one to start tracking.</div>
+              
+              <div class="client-row" id="row-youssef" style="display:none; opacity:0;">
+                <div class="client-info">
+                  <div class="client-avatar">YA</div>
+                  <div>
+                    <h4 style="font-weight:900; font-size:1.15rem;">Youssef Ali</h4>
+                    <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Active Plan: 1 Month</span>
+                  </div>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                  <span style="font-size:0.8rem; font-weight:900; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); color:var(--success); padding:6px 14px; border-radius:8px; box-shadow:0 2px 10px rgba(16,185,129,0.15)">Synced</span>
+                  <button style="background:#1c233a; border:1px solid rgba(255,255,255,0.05); color:#fff; padding:10px 18px; border-radius:8px; font-size:0.75rem; font-weight:900; text-transform:uppercase; letter-spacing:0.05em;">Athlete Control</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add Client Form (Slides up/in) -->
+            <div class="add-client-modal" id="portal-client-modal">
+              <h3 class="add-client-title">Deploy New Athlete</h3>
+              <div class="form-group">
+                <label class="form-label">Athlete Name</label>
+                <div class="form-input" id="client-input-name"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <div class="form-input" id="client-input-phone"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Assigned Split</label>
+                <div class="form-input" style="color:var(--primary); font-weight: 800;">Chest Day (Active)</div>
+              </div>
+              <button class="submit-client-btn" id="client-submit-btn">Save &amp; Generate Invite</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px;">Coach Portal • Roster Management</div>
+      </div>
+
+      <!-- SCENE 4: CLIENT WORKOUT LOGGER (MOBILE PWA) -->
+      <div class="scene" id="scene-client-workout">
+        <div class="phone-wrapper floating-container">
+          <div class="phone-nav">
+            <span class="phone-nav-title">Today's Gym Session</span>
+            <span style="font-size:0.95rem; font-weight:900; color:var(--primary); background:rgba(59,130,246,0.1); padding:4px 10px; border-radius:6px;">00:00</span>
+          </div>
+
+          <div class="phone-scroll-content">
+            <!-- Animated SVG weightlifter -->
+            <div class="athlete-box">
+              <svg viewBox="0 0 1080 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="neon-glow-athlete" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="6" result="blur" />
+                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                </defs>
+                <rect x="390" y="210" width="300" height="20" rx="4" fill="#18181b" stroke="#27272a" stroke-width="3" />
+                <rect x="420" y="230" width="30" height="70" fill="#18181b" stroke="#27272a" stroke-width="3" />
+                <rect x="630" y="230" width="30" height="70" fill="#18181b" stroke="#27272a" stroke-width="3" />
+                <rect x="460" y="200" width="160" height="60" rx="15" fill="#09090b" stroke="#3b82f6" stroke-width="4" />
+                <circle cx="540" cy="170" r="24" fill="#09090b" stroke="#3b82f6" stroke-width="4" />
+                <path id="l-arm" d="" stroke="#3b82f6" stroke-width="8" fill="none" stroke-linecap="round" filter="url(#neon-glow-athlete)" />
+                <path id="r-arm" d="" stroke="#3b82f6" stroke-width="8" fill="none" stroke-linecap="round" filter="url(#neon-glow-athlete)" />
+                <g id="svg-bar">
+                  <line x1="200" y1="130" x2="880" y2="130" stroke="#e4e4e7" stroke-width="8" stroke-linecap="round" />
+                  <rect x="250" y="70" width="25" height="120" rx="6" fill="#18181b" stroke="#3b82f6" stroke-width="4" />
+                  <rect x="220" y="80" width="25" height="100" rx="6" fill="#18181b" stroke="#3b82f6" stroke-width="4" />
+                  <rect x="805" y="70" width="25" height="120" rx="6" fill="#18181b" stroke="#3b82f6" stroke-width="4" />
+                  <rect x="835" y="80" width="25" height="100" rx="6" fill="#18181b" stroke="#3b82f6" stroke-width="4" />
+                </g>
+              </svg>
+            </div>
+
+            <!-- Logger Card -->
+            <div class="client-card" id="workout-card-el">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:9px; font-weight:900; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); color:var(--primary); padding:3px 8px; border-radius:4px; text-transform:uppercase;">Tier A</span>
+                <span style="font-size:10px; font-weight:bold; color:var(--success);">Target: Incline Bench</span>
+              </div>
+              <h3 style="font-size:1.25rem; font-weight:900; color:#fff; margin-top:8px;">Incline Bench Press</h3>
+
+              <table class="logger-table">
+                <thead>
+                  <tr>
+                    <th>Set</th>
+                    <th>Weight</th>
+                    <th>Reps</th>
+                    <th>RPE</th>
+                    <th>Done</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr id="workout-set-row-1">
+                    <td style="font-weight:bold; color:var(--text-muted);">1</td>
+                    <td><div class="logger-cell-input" id="set1-w"></div></td>
+                    <td><div class="logger-cell-input" id="set1-r"></div></td>
+                    <td><div class="logger-cell-input" id="set1-rpe"></div></td>
+                    <td><button class="done-check-btn" id="check-btn-1"></button></td>
+                  </tr>
+                  <tr id="workout-set-row-2">
+                    <td style="font-weight:bold; color:var(--text-muted);">2</td>
+                    <td><div class="logger-cell-input" id="set2-w"></div></td>
+                    <td><div class="logger-cell-input" id="set2-r"></div></td>
+                    <td><div class="logger-cell-input" id="set2-rpe"></div></td>
+                    <td><button class="done-check-btn" id="check-btn-2"></button></td>
+                  </tr>
+                  <tr id="workout-set-row-3">
+                    <td style="font-weight:bold; color:var(--text-muted);">3</td>
+                    <td><div class="logger-cell-input" id="set3-w"></div></td>
+                    <td><div class="logger-cell-input" id="set3-r"></div></td>
+                    <td><div class="logger-cell-input" id="set3-rpe"></div></td>
+                    <td><button class="done-check-btn" id="check-btn-3"></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <button class="action-btn" id="workout-finish-btn">✓ Finish &amp; Save Workout</button>
+          </div>
+
+          <div class="phone-tabs">
+            <div class="phone-tab-item active">Today</div>
+            <div class="phone-tab-item">Diet</div>
+            <div class="phone-tab-item">InBody</div>
+            <div class="phone-tab-item">Profile</div>
+          </div>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px;">Client Mobile PWA • Gym Logging</div>
+      </div>
+
+      <!-- SCENE 5: CLIENT DIET & WATER -->
+      <div class="scene" id="scene-client-diet">
+        <div class="phone-wrapper floating-container">
+          <div class="phone-nav">
+            <span class="phone-nav-title">Nutrition &amp; Water</span>
+            <span style="font-size:0.95rem; font-weight:900; color:var(--success); background:rgba(16,185,129,0.1); padding:4px 10px; border-radius:6px;">Jun 14</span>
+          </div>
+
+          <div class="phone-scroll-content">
+            <!-- Macros Summary -->
+            <div class="macro-ring-box" id="diet-macro-card">
+              <div class="diet-header">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span style="font-size:0.75rem; font-weight:900; text-transform:uppercase; letter-spacing:0.08em;">Nutrition Snapshot</span>
+              </div>
+              <div class="macro-bar-container">
+                <!-- Calories -->
+                <div class="macro-row">
+                  <div class="macro-label-row">
+                    <span style="color:#d1d5db;">Calories</span>
+                    <span style="color:var(--text-muted);"><span id="macro-kcal" style="color:#fff; font-weight:900;">0</span> / 3200 kcal</span>
+                  </div>
+                  <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" id="macro-kcal-fill" style="background:#3b82f6;"></div>
+                  </div>
+                </div>
+                <!-- Protein -->
+                <div class="macro-row">
+                  <div class="macro-label-row">
+                    <span style="color:#d1d5db;">Protein</span>
+                    <span style="color:var(--text-muted);"><span id="macro-prot" style="color:#fff; font-weight:900;">0</span> / 180g</span>
+                  </div>
+                  <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" id="macro-prot-fill" style="background:#475569;"></div>
+                  </div>
+                </div>
+                <!-- Carbs -->
+                <div class="macro-row">
+                  <div class="macro-label-row">
+                    <span style="color:#d1d5db;">Carbs</span>
+                    <span style="color:var(--text-muted);"><span id="macro-carbs" style="color:#fff; font-weight:900;">0</span> / 350g</span>
+                  </div>
+                  <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" id="macro-carbs-fill" style="background:#64748b;"></div>
+                  </div>
+                </div>
+                <!-- Fat -->
+                <div class="macro-row">
+                  <div class="macro-label-row">
+                    <span style="color:#d1d5db;">Fat</span>
+                    <span style="color:var(--text-muted);"><span id="macro-fat" style="color:#fff; font-weight:900;">0</span> / 80g</span>
+                  </div>
+                  <div class="macro-bar-bg">
+                    <div class="macro-bar-fill" id="macro-fat-fill" style="background:#94a3b8;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Food list log -->
+            <div class="client-card" id="diet-log-card-el">
+              <h4 style="font-size:0.85rem; font-weight:900; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.05em;">Logged Meals</h4>
+              <div id="diet-food-items" style="display:flex; flex-direction:column; gap:8px;">
+                <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700; text-align:center; padding:16px 0;" id="empty-diet-text">No meals logged yet today.</div>
+              </div>
+              <button class="action-btn" style="background:#1d4ed8; padding:14px; font-size:0.9rem; margin-top:12px; box-shadow:0 6px 18px rgba(29, 78, 216, 0.3)" id="scan-barcode-btn">
+                📷 Scan Barcode
+              </button>
+            </div>
+
+            <!-- Water fluid wave ring -->
+            <div class="water-tracker-container" id="water-tracker-card-el">
+              <h4 style="font-size:0.85rem; font-weight:900; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.05em;">Hydration</h4>
+              <div class="water-ring" id="water-circle-el">
+                <div class="water-liquid-wave" id="water-wave"></div>
+                <div class="water-text"><span id="water-ml-text">0</span> / 3500 <span style="font-size:11px; color:rgba(255,255,255,0.7);">ml</span></div>
+              </div>
+              <button class="action-btn" style="background:#2563eb; padding:14px; font-size:0.9rem; box-shadow:0 6px 18px rgba(37, 99, 235, 0.3)" id="log-water-btn">
+                + Log 500ml Water
+              </button>
+            </div>
+          </div>
+
+          <!-- Barcode Camera Scanner Simulator Overlay -->
+          <div class="scanner-overlay" id="barcode-scanner">
+            <div class="scanner-window">
+              <div class="scanner-laser" id="laser-line"></div>
+            </div>
+            <p style="font-size:0.95rem; color:var(--text-muted); font-weight:800; margin-top:20px; text-transform:uppercase; letter-spacing:0.08em;">Scanning product barcode...</p>
+          </div>
+
+          <!-- Scan success popup notification -->
+          <div class="scan-success-popup" id="scan-popup-alert">Barcode Scanned Successfully!</div>
+
+          <div class="phone-tabs">
+            <div class="phone-tab-item">Today</div>
+            <div class="phone-tab-item active">Diet</div>
+            <div class="phone-tab-item">InBody</div>
+            <div class="phone-tab-item">Profile</div>
+          </div>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px;">Client Mobile PWA • Nutrition &amp; Water</div>
+      </div>
+
+      <!-- SCENE 6: CLIENT INBODY RESULTS -->
+      <div class="scene" id="scene-client-inbody">
+        <div class="phone-wrapper floating-container">
+          <div class="phone-nav">
+            <span class="phone-nav-title">InBody Scan Analysis</span>
+            <span style="font-size:0.85rem; font-weight:bold; color:var(--success); background:rgba(16,185,129,0.1); padding:4px 10px; border-radius:6px;">Score: <span id="inbody-score-top">75</span></span>
+          </div>
+
+          <div class="phone-scroll-content">
+            <!-- Overall Score Circle -->
+            <div class="inbody-score-circle" id="inbody-score-circle-el">
+              <span style="font-size:9px; font-weight:900; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Overall Score</span>
+              <div style="font-size:3.5rem; font-weight:950; color:#fff;" id="inbody-score-large">75</div>
+            </div>
+
+            <!-- Inbody Metrics -->
+            <div class="inbody-grid">
+              <div class="inbody-card" id="inbody-card-1">
+                <span style="font-size:9px; font-weight:900; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Weight (kg)</span>
+                <div style="font-size:1.5rem; font-weight:900; color:#fff; margin-top:6px;"><span id="inbody-weight">88.5</span></div>
+              </div>
+              <div class="inbody-card" id="inbody-card-2">
+                <span style="font-size:9px; font-weight:900; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Body Fat</span>
+                <div style="font-size:1.5rem; font-weight:900; color:var(--danger); margin-top:6px;"><span id="inbody-bf">24.2</span><span style="font-size:11px; color:var(--text-muted); font-weight:700;">%</span></div>
+              </div>
+              <div class="inbody-card" id="inbody-card-3" style="grid-column: span 2;">
+                <span style="font-size:9px; font-weight:900; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Skeletal Muscle Mass (kg)</span>
+                <div style="font-size:1.5rem; font-weight:900; color:var(--success); margin-top:6px;"><span id="inbody-muscle">38.4</span></div>
+              </div>
+            </div>
+
+            <div class="client-card" style="text-align:center; padding:20px;" id="inbody-card-4">
+              <span style="font-size:10px; font-weight:900; color:#fb923c; text-transform:uppercase; letter-spacing:0.12em; display:block; margin-bottom:4px;">📊 Segmental analysis</span>
+              <p style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">Lean balance is optimal. Muscle gain of +1.2kg detected.</p>
+            </div>
+          </div>
+
+          <div class="phone-tabs">
+            <div class="phone-tab-item">Today</div>
+            <div class="phone-tab-item">Diet</div>
+            <div class="phone-tab-item active">InBody</div>
+            <div class="phone-tab-item">Profile</div>
+          </div>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px;">Client Mobile PWA • InBody Scores</div>
+      </div>
+
+      <!-- SCENE 7: COACH PORTAL DASHBOARD SYNC -->
+      <div class="scene" id="scene-portal-sync">
+        <div class="portal-box floating-container">
+          <div class="portal-sidebar">
+            <div class="sidebar-header">
+              <div class="sidebar-logo-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="3">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div>
+                <h1 class="sidebar-brand-title">Life Gym</h1>
+                <p class="sidebar-brand-subtitle">Athlete Manager</p>
+              </div>
+            </div>
+            <div class="sidebar-menu">
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                <span>Operational Overview</span>
+              </div>
+              <div class="menu-item active">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span>Athlete Directory</span>
+              </div>
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                <span>Deploy New Athlete</span>
+              </div>
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span>Athlete Control</span>
+              </div>
+              <div class="menu-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                <span>Subscriptions</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="portal-main">
+            <!-- Header profile -->
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
+              <div class="client-info">
+                <div class="client-avatar">YA</div>
+                <div>
+                  <h3 style="font-size:1.35rem; font-weight:950;">Youssef Ali</h3>
+                  <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">WhatsApp Logged • Today split: Chest Day</span>
+                </div>
+              </div>
+              <div class="hero-badge" style="background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.2); color:var(--success);">Data Synced</div>
+            </div>
+
+            <!-- Profile detail sub-tabs -->
+            <div style="display:flex; gap:16px; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:12px; margin-bottom:16px;">
+              <div class="menu-item active" style="padding:6px 14px; font-size:0.75rem;" id="subtab-overview">Overview</div>
+              <div class="menu-item" style="padding:6px 14px; font-size:0.75rem;" id="subtab-workouts">Workouts</div>
+              <div class="menu-item" style="padding:6px 14px; font-size:0.75rem;" id="subtab-diet">Diet &amp; Water</div>
+              <div class="menu-item" style="padding:6px 14px; font-size:0.75rem;" id="subtab-inbody">InBody</div>
+            </div>
+
+            <!-- Subtab Display Content Box -->
+            <div id="subtab-content" style="flex:1; display:flex; flex-direction:column; gap:16px; perspective: 1000px;">
+              
+              <!-- Overview content (Defaults) -->
+              <div id="sync-overview-panel" style="display:flex; flex-direction:column; gap:16px; transform-style: preserve-3d;">
+                <div class="client-row" style="background:rgba(255,255,255,0.01);">
+                  <div>
+                    <h4 style="font-weight:900; font-size:0.95rem;">Recent Logs Summary</h4>
+                    <p style="font-size:0.8rem; color:var(--text-muted); font-weight:600; margin-top:4px;">Weight workouts completed. Macros and hydration limits active.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Workout Sync Panel (Hidden initially) -->
+              <div id="sync-workouts-panel" style="display:none; flex-direction:column; gap:12px; transform-style: preserve-3d;">
+                <div class="client-row">
+                  <div>
+                    <span style="font-size:9px; font-weight:bold; background:rgba(16,185,129,0.1); color:var(--success); border:1px solid rgba(16,185,129,0.2); padding:2px 8px; border-radius:4px;">Chest Day Completed</span>
+                    <h4 style="font-weight:900; font-size:1.1rem; margin-top:8px;">Incline Bench Press</h4>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; font-weight:600;">Logged: 3 sets (100kg × 10, 100kg × 8, 100kg × 6)</p>
+                  </div>
+                  <span style="font-weight:900; font-size:1.15rem; color:var(--success);">🏆 New PR Set</span>
+                </div>
+              </div>
+
+              <!-- Diet & Water Sync Panel (Hidden initially) -->
+              <div id="sync-diet-panel" style="display:none; flex-direction:column; gap:16px; transform-style: preserve-3d;">
+                <div style="display:grid; grid-template-cols:1fr 1fr; gap:16px;">
+                  <div class="inbody-card">
+                    <span style="font-size:8px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">Daily Target Macros</span>
+                    <div style="font-size:1.2rem; font-weight:900; color:#fff; margin-top:6px;">340 kcal / 32g P / 42g C / 6g F</div>
+                  </div>
+                  <div class="inbody-card">
+                    <span style="font-size:8px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">Daily Water Logs</span>
+                    <div style="font-size:1.2rem; font-weight:900; color:var(--primary); margin-top:6px;">500 ml logged</div>
+                  </div>
+                </div>
+                <div class="client-row">
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="client-avatar" style="background:var(--primary);">D</div>
+                    <div>
+                      <h4 style="font-weight:900; font-size:0.95rem;">Whey Protein Shake + Banana</h4>
+                      <p style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Logged via barcode scanner</p>
+                    </div>
+                  </div>
+                  <span style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">17:20 PM</span>
+                </div>
+              </div>
+
+              <!-- InBody Sync Panel (Hidden initially) -->
+              <div id="sync-inbody-panel" style="display:none; flex-direction:column; gap:16px; transform-style: preserve-3d;">
+                <div style="display:grid; grid-template-cols:repeat(3, 1fr); gap:12px;">
+                  <div class="inbody-card" style="border-color:var(--success);">
+                    <span style="font-size:8px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">InBody Score</span>
+                    <div style="font-size:1.8rem; font-weight:950; color:var(--success); margin-top:6px;">84</div>
+                  </div>
+                  <div class="inbody-card">
+                    <span style="font-size:8px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">Weight</span>
+                    <div style="font-size:1.3rem; font-weight:900; color:#fff; margin-top:6px;">87.3kg</div>
+                  </div>
+                  <div class="inbody-card">
+                    <span style="font-size:8px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">Muscle Gain</span>
+                    <div style="font-size:1.3rem; font-weight:900; color:var(--success); margin-top:6px;">+1.2kg</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:1.4rem; font-weight:800; color:var(--text-muted); text-align:center; padding-top:24px;">Coach Portal • Real-Time Client Logs Sync</div>
+      </div>
+
+      <!-- SCENE 8: CTA BRAND OUTRO -->
+      <div class="scene" id="scene-outro">
+        <div class="outro-scene">
+          <div class="outro-dumbbell" id="outro-dumbbell-logo">
+            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; image-rendering: crisp-edges;">
+              <g transform="translate(256 256) rotate(-45)">
+                <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+                <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+                <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+                <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+                <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+              </g>
+            </svg>
+          </div>
+          <h1 class="outro-h1" id="outro-brand-text">LIFE GYM</h1>
+          <p class="outro-p" id="outro-tagline">YOUR ATHLETE MANAGER</p>
+          <div class="outro-link" id="outro-website-link">lifegym.io</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    gsap.registerPlugin(TextPlugin);
+
+    // Audio events list mapping exact timeline seconds (30s loop ad)
+    const audioEvents = [
+      { time: 2.2, type: 'click' },
+      
+      { time: 3.5, type: 'click' },
+      { time: 3.75, type: 'click' },
+      { time: 4.0, type: 'click' },
+      { time: 4.3, type: 'click' },
+      { time: 4.5, type: 'click' },
+      { time: 4.75, type: 'click' },
+      { time: 5.0, type: 'click' },
+      { time: 5.25, type: 'click' },
+      { time: 5.5, type: 'click' },
+      { time: 6.2, type: 'click' },
+      { time: 6.4, type: 'success' },
+      { time: 6.75, type: 'whoosh' },
+      
+      { time: 7.8, type: 'click' },
+      { time: 8.5, type: 'click' },
+      { time: 9.3, type: 'click' },
+      { time: 9.5, type: 'success' },
+      { time: 10.6, type: 'whoosh' },
+      
+      { time: 11.2, type: 'click' },
+      { time: 11.8, type: 'click' },
+      { time: 12.0, type: 'lift' },
+      { time: 12.4, type: 'checkmark' },
+      { time: 12.8, type: 'click' },
+      { time: 13.0, type: 'lift' },
+      { time: 13.4, type: 'checkmark' },
+      { time: 13.8, type: 'click' },
+      { time: 14.0, type: 'lift' },
+      { time: 14.4, type: 'checkmark' },
+      { time: 14.8, type: 'click' },
+      { time: 15.0, type: 'success' },
+      
+      { time: 15.6, type: 'whoosh' },
+      { time: 16.2, type: 'click' },
+      { time: 17.2, type: 'scan_beep' },
+      { time: 17.4, type: 'success' },
+      { time: 18.5, type: 'click' },
+      { time: 18.7, type: 'water_bubble' },
+      
+      { time: 19.8, type: 'whoosh' },
+      { time: 20.8, type: 'success' },
+      
+      { time: 22.0, type: 'whoosh' },
+      { time: 23.0, type: 'click' },
+      { time: 23.2, type: 'click' },
+      { time: 23.4, type: 'click' },
+      { time: 23.6, type: 'click' },
+      { time: 23.8, type: 'success' },
+      
+      { time: 26.6, type: 'whoosh' },
+      { time: 27.0, type: 'bass_drop' }
+    ];
+
+    // Realtime audio graph
+    let audioCtx = null;
+    let noiseBuffer = null;
+    let masterCompressor = null;
+    let delayNode = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        masterCompressor = audioCtx.createDynamicsCompressor();
+        masterCompressor.threshold.setValueAtTime(-10, audioCtx.currentTime);
+        masterCompressor.knee.setValueAtTime(10, audioCtx.currentTime);
+        masterCompressor.ratio.setValueAtTime(4, audioCtx.currentTime);
+        masterCompressor.attack.setValueAtTime(0.005, audioCtx.currentTime);
+        masterCompressor.release.setValueAtTime(0.06, audioCtx.currentTime);
+        masterCompressor.connect(audioCtx.destination);
+
+        delayNode = audioCtx.createDelay();
+        delayNode.delayTime.setValueAtTime(0.14, audioCtx.currentTime);
+        const delayFeedback = audioCtx.createGain();
+        delayFeedback.gain.setValueAtTime(0.24, audioCtx.currentTime);
+        const delayGain = audioCtx.createGain();
+        delayGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+
+        delayNode.connect(delayFeedback);
+        delayFeedback.connect(delayNode);
+        delayNode.connect(delayGain);
+        delayGain.connect(masterCompressor);
+
+        // Build noise buffer
+        const bufferSize = audioCtx.sampleRate * 2.0;
+        noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2.0 - 1.0;
+        }
+      }
+    }
+
+    // Playback functions (synthesized inside real-time contexts)
+    function playSound(type) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      if (type === 'click') {
+        triggerRealClick(now, 0.12, 1300);
+        triggerRealClick(now + 0.008, 0.05, 1050);
+      } else if (type === 'success') {
+        triggerRealChime(now);
+      } else if (type === 'whoosh') {
+        triggerRealWhoosh(now);
+      } else if (type === 'lift') {
+        triggerRealLift(now);
+      } else if (type === 'checkmark') {
+        triggerRealCheckmark(now);
+      } else if (type === 'scan_beep') {
+        triggerRealBeep(now);
+      } else if (type === 'water_bubble') {
+        triggerRealBubble(now);
+      } else if (type === 'bass_drop') {
+        triggerRealBassDrop(now);
+      }
+    }
+
+    function triggerRealClick(time, vol, pitch) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(pitch, time);
+      osc.frequency.exponentialRampToValueAtTime(pitch * 0.45, time + 0.012);
+      gain.gain.setValueAtTime(vol, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
+      osc.connect(gain);
+      gain.connect(masterCompressor);
+      osc.start(time);
+      osc.stop(time + 0.015);
+
+      if (noiseBuffer) {
+        const noise = audioCtx.createBufferSource();
+        const filter = audioCtx.createBiquadFilter();
+        const noiseGain = audioCtx.createGain();
+        noise.buffer = noiseBuffer;
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(4500, time);
+        noiseGain.gain.setValueAtTime(vol * 0.9, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.008);
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(masterCompressor);
+        noise.start(time);
+        noise.stop(time + 0.01);
+      }
+    }
+
+    function triggerRealChime(time) {
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const t = time + idx * 0.035;
+        [freq - 2, freq + 2].forEach((f, pairIdx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = pairIdx === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(pairIdx === 0 ? 0.08 : 0.04, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+          osc.connect(gain);
+          gain.connect(masterCompressor);
+          const delaySend = audioCtx.createGain();
+          delaySend.gain.setValueAtTime(0.35, t);
+          gain.connect(delaySend);
+          delaySend.connect(delayNode);
+          osc.start(t);
+          osc.stop(t + 0.42);
+        });
+      });
+    }
+
+    function triggerRealWhoosh(time) {
+      if (!noiseBuffer) return;
+      const noise = audioCtx.createBufferSource();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+      noise.buffer = noiseBuffer;
+      filter.type = 'bandpass';
+      filter.Q.setValueAtTime(3.2, time);
+      filter.frequency.setValueAtTime(190, time);
+      filter.frequency.exponentialRampToValueAtTime(3400, time + 0.20);
+      filter.frequency.exponentialRampToValueAtTime(160, time + 0.45);
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(0.28, time + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.45);
+
+      if (audioCtx.createStereoPanner) {
+        const panner = audioCtx.createStereoPanner();
+        panner.pan.setValueAtTime(-1.0, time);
+        panner.pan.linearRampToValueAtTime(1.0, time + 0.4);
+        noise.connect(filter);
+        filter.connect(panner);
+        panner.connect(gain);
+      } else {
+        noise.connect(filter);
+        filter.connect(gain);
+      }
+      gain.connect(masterCompressor);
+      noise.start(time);
+      noise.stop(time + 0.46);
+    }
+
+    function triggerRealLift(time) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(65, time);
+      osc.frequency.linearRampToValueAtTime(100, time + 0.2);
+      osc.frequency.linearRampToValueAtTime(60, time + 0.4);
+      gain.gain.setValueAtTime(0.01, time);
+      gain.gain.linearRampToValueAtTime(0.14, time + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.42);
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(260, time);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterCompressor);
+      osc.start(time);
+      osc.stop(time + 0.45);
+
+      const clankTime = time + 0.18;
+      const clankFreqs = [1600, 2400, 3200, 4400];
+      clankFreqs.forEach((freq, idx) => {
+        const clankOsc = audioCtx.createOscillator();
+        const clankGain = audioCtx.createGain();
+        clankOsc.type = 'sine';
+        clankOsc.frequency.setValueAtTime(freq, clankTime);
+        clankOsc.frequency.exponentialRampToValueAtTime(freq * 0.88, clankTime + 0.055);
+        clankGain.gain.setValueAtTime(0.018 - idx * 0.003, clankTime);
+        clankGain.gain.exponentialRampToValueAtTime(0.001, clankTime + 0.065);
+        clankOsc.connect(clankGain);
+        clankGain.connect(masterCompressor);
+        const delaySend = audioCtx.createGain();
+        delaySend.gain.setValueAtTime(0.3, clankTime);
+        clankGain.connect(delaySend);
+        delaySend.connect(delayNode);
+        clankOsc.start(clankTime);
+        clankOsc.stop(clankTime + 0.075);
+      });
+    }
+
+    function triggerRealCheckmark(time) {
+      const notes = [659.25, 880.00];
+      notes.forEach((freq, idx) => {
+        const t = time + idx * 0.06;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        osc.connect(gain);
+        gain.connect(masterCompressor);
+        const delaySend = audioCtx.createGain();
+        delaySend.gain.setValueAtTime(0.3, t);
+        gain.connect(delaySend);
+        delaySend.connect(delayNode);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      });
+    }
+
+    function triggerRealBeep(time) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2200, time);
+      gain.gain.setValueAtTime(0.15, time);
+      gain.gain.setValueAtTime(0.15, time + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.075);
+      osc.connect(gain);
+      gain.connect(masterCompressor);
+      osc.start(time);
+      osc.stop(time + 0.08);
+    }
+
+    function triggerRealBubble(time) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, time);
+      osc.frequency.exponentialRampToValueAtTime(850, time + 0.08);
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(0.12, time + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+      osc.connect(gain);
+      gain.connect(masterCompressor);
+      osc.start(time);
+      osc.stop(time + 0.09);
+    }
+
+    function triggerRealBassDrop(time) {
+      const sub = audioCtx.createOscillator();
+      const subGain = audioCtx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(125, time);
+      sub.frequency.exponentialRampToValueAtTime(24, time + 1.25);
+      subGain.gain.setValueAtTime(0.45, time);
+      subGain.gain.exponentialRampToValueAtTime(0.001, time + 1.25);
+      sub.connect(subGain);
+      subGain.connect(masterCompressor);
+      sub.start();
+      sub.stop(time + 1.3);
+
+      const thud = audioCtx.createOscillator();
+      const thudGain = audioCtx.createGain();
+      thud.type = 'triangle';
+      thud.frequency.setValueAtTime(55, time);
+      thud.frequency.exponentialRampToValueAtTime(30, time + 0.18);
+      thudGain.gain.setValueAtTime(0.38, time);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+      thud.connect(thudGain);
+      thudGain.connect(masterCompressor);
+      thud.start();
+      thud.stop(time + 0.2);
+
+      const clangFreqs = [220, 311, 440, 622];
+      clangFreqs.forEach((freq, idx) => {
+        const clangOsc = audioCtx.createOscillator();
+        const clangGain = audioCtx.createGain();
+        clangOsc.type = 'sawtooth';
+        clangOsc.frequency.setValueAtTime(freq, time);
+        const clangFilter = audioCtx.createBiquadFilter();
+        clangFilter.type = 'lowpass';
+        clangFilter.frequency.setValueAtTime(1000 - idx * 100, time);
+        clangFilter.frequency.exponentialRampToValueAtTime(100, time + 0.4);
+        clangGain.gain.setValueAtTime(0.035 - idx * 0.005, time);
+        clangGain.gain.exponentialRampToValueAtTime(0.001, time + 0.65);
+        clangOsc.connect(clangFilter);
+        clangFilter.connect(clangGain);
+        clangGain.connect(masterCompressor);
+        const delaySend = audioCtx.createGain();
+        delaySend.gain.setValueAtTime(0.65, time);
+        clangGain.connect(delaySend);
+        delaySend.connect(delayNode);
+        clangOsc.start(time);
+        clangOsc.stop(time + 0.8);
+      });
+    }
+
+    // --- ATHLETE ARMS UPDATE HELPER ---
+    function updateArms(yBar) {
+      const sLx = 460;
+      const sLy = 230;
+      const hLx = 350;
+      const hLy = yBar;
+      const eLx = 380 - (210 - yBar) * 0.45;
+      const eLy = (sLy + hLy) / 2 + 35 + (210 - yBar) * 0.25;
+      const lArm = document.getElementById('l-arm');
+      if (lArm) lArm.setAttribute('d', `M ${sLx} ${sLy} Q ${eLx} ${eLy} ${hLx} ${hLy}`);
+
+      const sRx = 620;
+      const sRy = 230;
+      const hRx = 730;
+      const hRy = yBar;
+      const eRx = 700 + (210 - yBar) * 0.45;
+      const eRy = (sRy + hRy) / 2 + 35 + (210 - yBar) * 0.25;
+      const rArm = document.getElementById('r-arm');
+      if (rArm) rArm.setAttribute('d', `M ${sRx} ${sRy} Q ${eRx} ${eLy} ${hRx} ${hRy}`);
+    }
+
+    updateArms(95);
+
+    // --- SPARK TRAIL GENERATOR ---
+    function spawnTrail(x, y) {
+      const trail = document.createElement('div');
+      trail.className = 'cursor-trail';
+      trail.style.left = x + 'px';
+      trail.style.top = y + 'px';
+      const size = gsap.utils.random(5, 12);
+      trail.style.width = size + 'px';
+      trail.style.height = size + 'px';
+      const color = gsap.utils.random(['#3b82f6', '#60a5fa', '#10b981', '#8b5cf6']);
+      trail.style.background = color;
+      trail.style.boxShadow = `0 0 10px ${color}`;
+      document.getElementById('canvas').appendChild(trail);
+      
+      setTimeout(() => trail.remove(), 450);
+    }
+
+    // --- PREMIUM INTERACTION GLOWS, RIPPLES & PARTICLE EMITTERS ---
+    function triggerClick(x, y, targetId) {
+      gsap.to('#mouse-cursor', {
+        x: x,
+        y: y,
+        duration: 0.18,
+        ease: 'power2.out',
+        onUpdate: function() {
+          const target = this.targets()[0];
+          const currentX = gsap.getProperty(target, 'x');
+          const currentY = gsap.getProperty(target, 'y');
+          spawnTrail(currentX + 10, currentY + 6);
+        },
+        onComplete: () => {
+          playSound('click');
+          
+          const ripple = document.getElementById('click-ripple');
+          ripple.style.left = x + 'px';
+          ripple.style.top = y + 'px';
+          gsap.fromTo(ripple, { scale: 0.1, opacity: 0.8 }, { scale: 1, opacity: 0, duration: 0.35, ease: 'power2.out' });
+
+          if (targetId) {
+            gsap.fromTo(targetId, { scale: 0.92 }, { scale: 1.0, duration: 0.25, ease: 'back.out(2)' });
+            spawnConfetti(targetId);
+          }
+        }
+      });
+      gsap.to('#mouse-halo', { x: x, y: y, duration: 0.25, ease: 'power1.out' });
+    }
+
+    function triggerTyping(targetId, textVal) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      
+      let currentText = "";
+      const chars = textVal.split("");
+      const typeTl = gsap.timeline();
+      
+      chars.forEach((char, idx) => {
+        typeTl.to(el, {
+          duration: 0.035,
+          onComplete: () => {
+            currentText += char;
+            el.textContent = currentText + " |";
+            playSound('click');
+          }
+        });
+      });
+      
+      typeTl.to(el, {
+        duration: 0.05,
+        onComplete: () => {
+          el.textContent = textVal;
+        }
+      });
+      
+      return typeTl;
+    }
+
+    // Confetti particles generator
+    function spawnConfetti(target) {
+      let parentOffsetX, parentOffsetY;
+      
+      if (typeof target === 'string') {
+        const parentEl = document.getElementById(target.replace('#',''));
+        if (!parentEl) return;
+        const rect = parentEl.getBoundingClientRect();
+        parentOffsetX = rect.left + window.scrollX + rect.width / 2;
+        parentOffsetY = rect.top + window.scrollY + rect.height / 2;
+      } else {
+        parentOffsetX = target[0];
+        parentOffsetY = target[1];
+      }
+      
+      const canvasEl = document.getElementById('canvas');
+      const colors = ['#3b82f6', '#10b981', '#fb923c', '#ef4444', '#8b5cf6', '#f59e0b'];
+      
+      for (let i = 0; i < 30; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-particle';
+        p.style.backgroundColor = gsap.utils.random(colors);
+        p.style.boxShadow = `0 0 12px ${p.style.backgroundColor}`;
+        p.style.borderRadius = gsap.utils.random(['50%', '0%', '35%']);
+        p.style.left = parentOffsetX + 'px';
+        p.style.top = parentOffsetY + 'px';
+        
+        const size = gsap.utils.random(8, 16);
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+
+        const angle = gsap.utils.random(0, Math.PI * 2);
+        const velocity = gsap.utils.random(150, 400);
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity - 100;
+        const rot = gsap.utils.random(180, 720);
+        const dur = gsap.utils.random(0.6, 1.2);
+
+        p.style.setProperty('--tx', `${tx}px`);
+        p.style.setProperty('--ty', `${ty}px`);
+        p.style.setProperty('--rot', `${rot}deg`);
+        p.style.setProperty('--dur', `${dur}s`);
+        
+        canvasEl.appendChild(p);
+        
+        setTimeout(() => p.remove(), dur * 1000 + 50);
+      }
+    }
+
+    // --- GSAP TIMELINE DEFINITION (30 Seconds Full Loop Storyboard) ---
+    const tl = gsap.timeline({ paused: true });
+    const duration = 30; // 30.0s timeline
+
+    // Setup animated variables
+    const barbell = { yBar: 95 };
+    const macroValues = { kcal: 0, prot: 0, carbs: 0, fat: 0 };
+    const waterValue = { ml: 0 };
+    const inbodyValue = { score: 75, weight: 88.5, bf: 24.2, smm: 38.4 };
+
+    tl.duration(duration);
+
+    // 1. Initial Scene Setup
+    tl.to('#scene-landing', { autoAlpha: 1, duration: 0.1 });
+
+    // Scene 1: Landing page trigger click (0.1s - 2.5s)
+    tl.call(triggerClick, [540, 1150, '#start-trial-btn'], '+=0.2')
+      .to('#start-trial-btn', { scale: 0.92, duration: 0.1, yoyo: true, repeat: 1 }, '+=0.2')
+      
+      // Screen 1 to Screen 2: 3D Skew & Zoom transition (2.5s - 3.2s)
+      .call(playSound, ['whoosh'], '+=1.82')
+      .to('#scene-landing', { 
+         scale: 0.55, 
+         rotationY: -75, 
+         rotationX: 15,
+         x: -1200, 
+         autoAlpha: 0, 
+         duration: 0.65, 
+         ease: 'power2.inOut' 
+      })
+      .to('#scene-register', { autoAlpha: 1, duration: 0.05 })
+      .fromTo('.register-modal', 
+         { scale: 0.55, rotationY: 75, rotationX: -15, x: 1200, autoAlpha: 0 }, 
+         { scale: 1, rotationY: 0, rotationX: 0, x: 0, autoAlpha: 1, duration: 0.65, ease: 'back.out(1.1)' }, 
+         '-=0.65'
+      );
+
+    // Scene 2: Onboarding signup input text typing (3.2s - 6.2s)
+    tl.call(triggerClick, [540, 480, null], '+=0.25')
+      .set('#reg-name', { className: 'form-input active-focus' }, '+=0.2')
+      .add(() => triggerTyping('reg-name', 'Coach Khaled'))
+      .set('#reg-name', { className: 'form-input' })
+      
+      .call(triggerClick, [540, 600, null], '+=0.6')
+      .set('#reg-email', { className: 'form-input active-focus' }, '+=0.2')
+      .add(() => triggerTyping('reg-email', 'khaled@lifegym.io'))
+      .set('#reg-email', { className: 'form-input' })
+
+      .call(triggerClick, [540, 720, null], '+=0.6')
+      .set('#reg-password', { className: 'form-input active-focus' }, '+=0.2')
+      .add(() => triggerTyping('reg-password', '••••••••'))
+      .set('#reg-password', { className: 'form-input' })
+
+      .call(triggerClick, [540, 840, null], '+=0.5')
+      .set('#reg-phone', { className: 'form-input active-focus' }, '+=0.2')
+      .add(() => triggerTyping('reg-phone', '01012345678'))
+      .set('#reg-phone', { className: 'form-input' })
+
+      // Click register button
+      .call(triggerClick, [540, 960, '#reg-submit-btn'], '+=0.6')
+      .to('#reg-submit-btn', { scale: 0.94, duration: 0.1, yoyo: true, repeat: 1 }, '+=0.2')
+      .call(playSound, ['success'], '+=0.2')
+      
+      // Screen 2 to Screen 3: Snappy morph bounce transition to Portal (6.2s - 7.0s)
+      .call(playSound, ['whoosh'], '+=0.2')
+      .to('#scene-register', { 
+         scale: 0.7, 
+         rotationX: 80, 
+         y: -1920, 
+         autoAlpha: 0, 
+         duration: 0.65, 
+         ease: 'power2.inOut' 
+      })
+      .to('#scene-portal-roster', { autoAlpha: 1, duration: 0.05 })
+      .fromTo('.portal-box', 
+         { scale: 0.5, rotationX: -80, y: 1920, autoAlpha: 0 }, 
+         { scale: 1, rotationX: 0, y: 0, autoAlpha: 1, duration: 0.65, ease: 'back.out(1.15)' }, 
+         '-=0.65'
+      );
+
+    // Scene 3: Add Client inside Coach Portal (7.0s - 10.6s)
+    tl.call(triggerClick, [190, 520, '#menu-clients'], '+=0.25') // Click clients tab
+      .to('#menu-clients', { className: 'menu-item active', duration: 0.05 }, '+=0.2')
+      .to('#menu-overview', { className: 'menu-item', duration: 0.05 }, '<')
+      .to('#portal-title-text', { text: 'Athlete Directory', duration: 0.2 })
+      
+      .call(triggerClick, [780, 440, '#portal-add-client-btn'], '+=0.4') // Click add client button
+      .to('#portal-client-modal', { autoAlpha: 1, scale: 1, duration: 0.35, ease: 'back.out(1.3)' }, '+=0.2')
+      
+      .call(triggerClick, [440, 720, null], '+=0.4') // Click name input
+      .add(() => triggerTyping('client-input-name', 'Youssef Ali'), '+=0.2')
+      
+      .call(triggerClick, [440, 820, null], '+=0.3') // Click phone input
+      .add(() => triggerTyping('client-input-phone', '01198765432'), '+=0.2')
+      
+      .call(triggerClick, [540, 990, '#client-submit-btn'], '+=0.4') // Click save client button
+      .to('#client-submit-btn', { scale: 0.94, duration: 0.1, yoyo: true, repeat: 1 }, '+=0.2')
+      .call(playSound, ['success'], '+=0.2')
+      .call(spawnConfetti, ['client-submit-btn'], '<')
+      
+      .to('#portal-client-modal', { autoAlpha: 0, scale: 0.8, duration: 0.25, ease: 'power2.in' }, '+=0.2')
+      .set('#no-clients-text', { display: 'none' })
+      .set('#row-youssef', { display: 'flex' })
+      .fromTo('#row-youssef', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' })
+      
+      // Screen 3 to Screen 4: Spin-zoom transition into phone (10.6s - 11.2s)
+      .call(playSound, ['whoosh'], '+=0.4')
+      .to('#scene-portal-roster', { 
+         scale: 0.2, 
+         rotation: -90, 
+         autoAlpha: 0, 
+         duration: 0.7, 
+         ease: 'power3.inOut' 
+      })
+      .to('#scene-client-workout', { autoAlpha: 1, duration: 0.05 })
+      .fromTo('#scene-client-workout .phone-wrapper', 
+         { scale: 0.1, rotation: 90, autoAlpha: 0 }, 
+         { scale: 1, rotation: 0, autoAlpha: 1, duration: 0.7, ease: 'back.out(1.2)' }, 
+         '-=0.7'
+      );
+
+    // Scene 4: Client Workout Bench Press (11.2s - 15.0s)
+    // Set 1 Input (100kg x 10 x RPE 9)
+    tl.set('#set1-w', { className: 'logger-cell-input active' }, '+=0.2')
+      .add(() => triggerTyping('set1-w', '100'))
+      .set('#set1-w', { className: 'logger-cell-input' })
+      
+      .set('#set1-r', { className: 'logger-cell-input active' })
+      .add(() => triggerTyping('set1-r', '10'))
+      .set('#set1-r', { className: 'logger-cell-input' })
+      
+      .set('#set1-rpe', { className: 'logger-cell-input active' })
+      .add(() => triggerTyping('set1-rpe', '9'))
+      .set('#set1-rpe', { className: 'logger-cell-input' })
+      
+      .call(triggerClick, [765, 832, '#check-btn-1'], '+=0.2')
+      .to('#check-btn-1', { scale: 0.82, duration: 0.08, yoyo: true, repeat: 1 }, '+=0.2')
+      .set('#check-btn-1', { className: 'done-check-btn checked', text: '✓' })
+      .call(playSound, ['checkmark'], '+=0.05')
+      .call(spawnConfetti, ['check-btn-1'], '<')
+      
+      // Barbell Rep 1 + shake
+      .call(playSound, ['lift'])
+      .to(barbell, { yBar: 180, duration: 0.18, ease: 'sine.inOut', onUpdate: () => {
+        gsap.set('#svg-bar', { y: barbell.yBar - 95, rotation: gsap.utils.random(-1.5, 1.5) });
+        updateArms(barbell.yBar);
+      }}, '-=0.18')
+      .to(barbell, { yBar: 95, duration: 0.18, ease: 'sine.inOut', onUpdate: () => {
+        gsap.set('#svg-bar', { y: barbell.yBar - 95, rotation: 0 });
+        updateArms(barbell.yBar);
+      }})
+
+      // Set 2 Input (100kg x 8 x RPE 10)
+      .set('#set2-w', { className: 'logger-cell-input active' }, '+=0.1')
+      .add(() => triggerTyping('set2-w', '100'))
+      .set('#set2-w', { className: 'logger-cell-input' })
+      
+      .set('#set2-r', { className: 'logger-cell-input active' })
+      .add(() => triggerTyping('set2-r', '8'))
+      .set('#set2-r', { className: 'logger-cell-input' })
+      
+      .set('#set2-rpe', { className: 'logger-cell-input active' })
+      .add(() => triggerTyping('set2-rpe', '10'))
+      .set('#set2-rpe', { className: 'logger-cell-input' })
+      
+      .call(triggerClick, [765, 878, '#check-btn-2'], '+=0.2')
+      .to('#check-btn-2', { scale: 0.82, duration: 0.08, yoyo: true, repeat: 1 }, '+=0.2')
+      .set('#check-btn-2', { className: 'done-check-btn checked', text: '✓' })
+      .call(playSound, ['checkmark'], '+=0.05')
+      .call(spawnConfetti, ['check-btn-2'], '<')
+
+      // Barbell Rep 2 + shake
+      .call(playSound, ['lift'])
+      .to(barbell, { yBar: 180, duration: 0.18, ease: 'sine.inOut', onUpdate: () => {
+        gsap.set('#svg-bar', { y: barbell.yBar - 95, rotation: gsap.utils.random(-1.5, 1.5) });
+        updateArms(barbell.yBar);
+      }}, '-=0.18')
+      .to(barbell, { yBar: 95, duration: 0.18, ease: 'sine.inOut', onUpdate: () => {
+        gsap.set('#svg-bar', { y: barbell.yBar - 95, rotation: 0 });
+        updateArms(barbell.yBar);
+      }})
+
+      // Set 3 Input (100kg x 6 x RPE 10)
+      .set('#set3-w', { className: 'logger-cell-input active' }, '+=0.1')
+      .add(() => triggerTyping('set3-w', '100'))
+      .set('#set3-w', { className: 'logger-cell-input' })
+      
+      .set('#set3-r', { className: 'logger-cell-input active' })
+      .add(() => triggerTyping('set3-r', '6'))
+      .set('#set3-r', { className: 'logger-cell-input' })
+      
+      .set('#set3-rpe', { className: 'logger-cell-input active' })
+      .add(() => triggerTyping('set3-rpe', '10'))
+      .set('#set3-rpe', { className: 'logger-cell-input' })
+      
+      .call(triggerClick, [765, 924, '#check-btn-3'], '+=0.2')
+      .to('#check-btn-3', { scale: 0.82, duration: 0.08, yoyo: true, repeat: 1 }, '+=0.2')
+      .set('#check-btn-3', { className: 'done-check-btn checked', text: '✓' })
+      .call(playSound, ['checkmark'], '+=0.05')
+      .call(spawnConfetti, ['check-btn-3'], '<')
+
+      // Barbell Rep 3 + shake
+      .call(playSound, ['lift'])
+      .to(barbell, { yBar: 180, duration: 0.18, ease: 'sine.inOut', onUpdate: () => {
+        gsap.set('#svg-bar', { y: barbell.yBar - 95, rotation: gsap.utils.random(-1.5, 1.5) });
+        updateArms(barbell.yBar);
+      }}, '-=0.18')
+      .to(barbell, { yBar: 95, duration: 0.18, ease: 'sine.inOut', onUpdate: () => {
+        gsap.set('#svg-bar', { y: barbell.yBar - 95, rotation: 0 });
+        updateArms(barbell.yBar);
+      }})
+
+      // Click finish workout
+      .call(triggerClick, [540, 1040, '#workout-finish-btn'], '+=0.3')
+      .to('#workout-finish-btn', { scale: 0.94, duration: 0.12, yoyo: true, repeat: 1 }, '+=0.15')
+      
+      // Screen 4 to Screen 5: 3D cube rotate left (15.0s - 15.6s)
+      .call(playSound, ['whoosh'], '+=0.25')
+      .to('#scene-client-workout .phone-wrapper', { 
+         rotationY: -90, 
+         x: -540, 
+         z: -300,
+         autoAlpha: 0, 
+         duration: 0.6, 
+         ease: 'power2.inOut' 
+      })
+      .to('#scene-client-diet', { autoAlpha: 1, duration: 0.05 })
+      .fromTo('#scene-client-diet .phone-wrapper', 
+         { rotationY: 90, x: 540, z: -300, autoAlpha: 0 }, 
+         { rotationY: 0, x: 0, z: 0, autoAlpha: 1, duration: 0.6, ease: 'power2.inOut' }, 
+         '-=0.6'
+      );
+
+    // Scene 5: Diet Barcode Scanner & Water logs (15.6s - 19.8s)
+    tl.call(triggerClick, [540, 835, '#scan-barcode-btn'], '+=0.25') // Click scan barcode button
+      .to('#barcode-scanner', { autoAlpha: 1, duration: 0.35, ease: 'power2.out' }, '+=0.2')
+      .fromTo('#laser-line', { top: 0 }, { top: 374, duration: 0.8, repeat: 1, yoyo: true, ease: 'power2.inOut' })
+      .call(playSound, ['scan_beep'], '-=0.3')
+      .to('#scan-popup-alert', { autoAlpha: 1, scale: 1, duration: 0.25, ease: 'elastic.out(1, 0.7)' })
+      .call(playSound, ['success'], '+=0.1')
+      .call(spawnConfetti, [[540, 960]], '<')
+      .to('#barcode-scanner', { autoAlpha: 0, duration: 0.25 }, '+=0.2')
+      .to('#scan-popup-alert', { autoAlpha: 0, scale: 0.7, duration: 0.2 }, '<')
+      .set('#empty-diet-text', { display: 'none' })
+      
+      // Inject meal card with pop-in GSAP scale
+      .call(() => {
+        const foodBox = document.getElementById('diet-food-items');
+        if (foodBox) {
+          foodBox.innerHTML = `
+            <div class="client-row" id="meal-row-pop" style="padding:12px 16px; background:rgba(255,255,255,0.02); margin:0; transform: scale(0.7); opacity:0; border-radius:12px;">
+              <div>
+                <h5 style="font-weight:900; font-size:0.9rem;">Whey Protein Shake + Banana</h5>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">340 kcal • 32g P • 42g C • 6g F</span>
+              </div>
+              <span style="font-size:0.75rem; font-weight:bold; color:var(--success);">Scanned</span>
+            </div>
+          `;
+          gsap.to('#meal-row-pop', { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.5)' });
+        }
+      })
+      // Macros progress bars fill up
+      .to(macroValues, {
+        kcal: 340, prot: 32, carbs: 42, fat: 6,
+        duration: 0.6,
+        ease: 'power2.out',
+        onUpdate: () => {
+          document.getElementById('macro-kcal').textContent = Math.round(macroValues.kcal);
+          document.getElementById('macro-prot').textContent = Math.round(macroValues.prot);
+          document.getElementById('macro-carbs').textContent = Math.round(macroValues.carbs);
+          document.getElementById('macro-fat').textContent = Math.round(macroValues.fat);
+          
+          document.getElementById('macro-kcal-fill').style.width = `${Math.min((macroValues.kcal/3200)*100, 100)}%`;
+          document.getElementById('macro-prot-fill').style.width = `${Math.min((macroValues.prot/180)*100, 100)}%`;
+          document.getElementById('macro-carbs-fill').style.width = `${Math.min((macroValues.carbs/350)*100, 100)}%`;
+          document.getElementById('macro-fat-fill').style.width = `${Math.min((macroValues.fat/80)*100, 100)}%`;
+        }
+      })
+      .from('#diet-macro-card', { scale: 0.9, y: 15, duration: 0.4, ease: 'back.out(1.5)' }, '-=0.6')
+
+      // Click Log Water
+      .call(triggerClick, [540, 1320, '#log-water-btn'], '+=0.35')
+      .to('#log-water-btn', { scale: 0.94, duration: 0.12, yoyo: true, repeat: 1 }, '+=0.2')
+      .call(playSound, ['water_bubble'], '+=0.1')
+      .to(waterValue, {
+        ml: 500,
+        duration: 0.55,
+        onUpdate: () => {
+          document.getElementById('water-ml-text').textContent = Math.round(waterValue.ml);
+          document.getElementById('water-wave').style.bottom = `${(waterValue.ml / 3500) * 190 - 190}px`;
+        }
+      })
+      .to('#water-circle-el', { scale: 1.08, duration: 0.2, yoyo: true, repeat: 1 }, '-=0.55')
+
+      // Screen 5 to Screen 6: 3D cube rotate up (19.8s - 20.4s)
+      .call(playSound, ['whoosh'], '+=0.3')
+      .to('#scene-client-diet .phone-wrapper', { 
+         rotationX: 90, 
+         y: -960, 
+         z: -300,
+         autoAlpha: 0, 
+         duration: 0.6, 
+         ease: 'power2.inOut' 
+      })
+      .to('#scene-client-inbody', { autoAlpha: 1, duration: 0.05 })
+      .fromTo('#scene-client-inbody .phone-wrapper', 
+         { rotationX: -90, y: 960, z: -300, autoAlpha: 0 }, 
+         { rotationX: 0, y: 0, z: 0, autoAlpha: 1, duration: 0.6, ease: 'power2.inOut' }, 
+         '-=0.6'
+      );
+
+    // Scene 6: InBody results trend display (20.4s - 22.0s)
+    tl.to(inbodyValue, {
+      score: 84, weight: 87.3, bf: 22.1, smm: 39.6,
+      duration: 0.8,
+      ease: 'power2.out',
+      onUpdate: () => {
+        document.getElementById('inbody-score-top').textContent = Math.round(inbodyValue.score);
+        document.getElementById('inbody-score-large').textContent = Math.round(inbodyValue.score);
+        document.getElementById('inbody-weight').textContent = inbodyValue.weight.toFixed(1);
+        document.getElementById('inbody-bf').textContent = inbodyValue.bf.toFixed(1);
+        document.getElementById('inbody-muscle').textContent = inbodyValue.smm.toFixed(1);
+      }
+    }, '+=0.15')
+    .to('#inbody-score-circle-el', { scale: 1.15, rotation: 10, duration: 0.35, yoyo: true, repeat: 1 }, '-=0.8')
+    .call(playSound, ['success'], '+=0.15')
+    .call(spawnConfetti, ['inbody-score-circle-el'], '<')
+    .from('#inbody-card-1', { scale: 0.85, opacity: 0, duration: 0.3, ease: 'back.out(1.5)' }, '-=0.75')
+    .from('#inbody-card-2', { scale: 0.85, opacity: 0, duration: 0.3, ease: 'back.out(1.5)' }, '-=0.65')
+    .from('#inbody-card-3', { scale: 0.85, opacity: 0, duration: 0.3, ease: 'back.out(1.5)' }, '-=0.55')
+
+    // Screen 6 to Screen 7: Snappy zoom out and spin (22.0s - 22.6s)
+    .call(playSound, ['whoosh'], '+=0.3')
+    .to('#scene-client-inbody', { 
+       scale: 0.15, 
+       rotation: 180, 
+       autoAlpha: 0, 
+       duration: 0.7, 
+       ease: 'power3.inOut' 
+    })
+    .to('#scene-portal-sync', { autoAlpha: 1, duration: 0.05 })
+    .fromTo('#scene-portal-sync .portal-box', 
+       { scale: 2.5, rotation: -180, autoAlpha: 0 }, 
+       { scale: 1, rotation: 0, autoAlpha: 1, duration: 0.7, ease: 'back.out(1.2)' }, 
+       '-=0.7'
+    );
+
+    // Scene 7: Coach dashboard sync review tabs (22.6s - 26.6s)
+    // Workouts subtab click
+    tl.call(triggerClick, [460, 330, '#subtab-workouts'], '+=0.25')
+      .to('#subtab-workouts', { className: 'menu-item active', duration: 0.05 }, '+=0.2')
+      .to('#subtab-overview', { className: 'menu-item', duration: 0.05 }, '<')
+      .set('#sync-overview-panel', { display: 'none' })
+      .set('#sync-workouts-panel', { display: 'flex' })
+      .fromTo('#sync-workouts-panel', { rotationX: 25, scale: 0.85, opacity: 0 }, { rotationX: 0, scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' })
+
+      // Diet subtab click
+      .call(triggerClick, [550, 330, '#subtab-diet'], '+=0.35')
+      .to('#subtab-diet', { className: 'menu-item active', duration: 0.05 }, '+=0.2')
+      .to('#subtab-workouts', { className: 'menu-item', duration: 0.05 }, '<')
+      .set('#sync-workouts-panel', { display: 'none' })
+      .set('#sync-diet-panel', { display: 'flex' })
+      .fromTo('#sync-diet-panel', { rotationX: -25, scale: 0.85, opacity: 0 }, { rotationX: 0, scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' })
+
+      // InBody subtab click
+      .call(triggerClick, [640, 330, '#subtab-inbody'], '+=0.35')
+      .to('#subtab-inbody', { className: 'menu-item active', duration: 0.05 }, '+=0.2')
+      .to('#subtab-diet', { className: 'menu-item', duration: 0.05 }, '<')
+      .set('#sync-diet-panel', { display: 'none' })
+      .set('#sync-inbody-panel', { display: 'flex' })
+      .fromTo('#sync-inbody-panel', { rotationY: 20, scale: 0.85, opacity: 0 }, { rotationY: 0, scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' })
+      .call(playSound, ['success'], '+=0.1')
+      .call(spawnConfetti, ['subtab-inbody'], '<')
+
+      // Outro transition: 3D explode out and drop (25.0s - 27.0s)
+      .to('#mouse-cursor', { x: 540, y: 1500, duration: 0.45 }, '+=0.35')
+      .call(playSound, ['whoosh'], '+=0.1')
+      .to('#scene-portal-sync', { 
+         scale: 0.1, 
+         rotationX: 45, 
+         z: -1000, 
+         autoAlpha: 0, 
+         duration: 0.7, 
+         ease: 'power3.inOut' 
+      })
+      .to('#scene-outro', { autoAlpha: 1, duration: 0.05 })
+      .fromTo('#outro-dumbbell-logo', { scale: 0.1, rotation: 270, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.65, ease: 'back.out(1.35)' }, '-=0.15')
+      .fromTo('#outro-brand-text', { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'power2.out' }, '-=0.3')
+      .fromTo('#outro-tagline', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3 }, '-=0.25')
+      .fromTo('#outro-website-link', { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(2)' }, '-=0.2')
+      .call(playSound, ['bass_drop'], '-=0.55')
+      .to({}, { duration: 3.0 }); // Keep static branding logo for final 3 seconds of ad without bouncing
+
+    // --- PLAYBACK CONTROL & INTERACTIONS ---
+    let videoStarted = false;
+
+    function startVideo() {
+      initAudio();
+      if (audioCtx) {
+        audioCtx.resume();
+      }
+      
+      if (!videoStarted) {
+        videoStarted = true;
+        // Fade out overlay and start playing
+        gsap.to('#play-overlay', {
+          opacity: 0,
+          duration: 0.25,
+          ease: 'power2.out',
+          onComplete: () => {
+            document.getElementById('play-overlay').style.display = 'none';
+            tl.play(0);
+          }
+        });
+      } else {
+        tl.play(0);
+      }
+    }
+
+    document.body.addEventListener('click', (e) => {
+      startVideo();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        startVideo();
+      }
+    });
+
+    // Progress handler for Puppeteer rendering
+    window.setAnimationProgress = function(progress) {
+      tl.pause();
+      tl.progress(progress);
+      
+      // Clean up old particles to prevent memory leaks during scrubbing screenshot capture
+      const trails = document.querySelectorAll('.cursor-trail');
+      if (trails.length > 30) {
+        for (let i = 0; i < trails.length - 30; i++) {
+          trails[i].remove();
+        }
+      }
+      const confettis = document.querySelectorAll('.confetti-particle');
+      if (confettis.length > 50) {
+        for (let i = 0; i < confettis.length - 50; i++) {
+          confettis[i].remove();
+        }
+      }
+    };
+
+    // --- OFFLINE AUDIO RENDERING PIPELINE ---
+    window.renderWav = function() {
+      const offlineCtx = new OfflineAudioContext(2, 44100 * duration, 44100);
+      
+      // Offline Audio Graph Setup
+      const compressor = offlineCtx.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-10, 0);
+      compressor.knee.setValueAtTime(10, 0);
+      compressor.ratio.setValueAtTime(4, 0);
+      compressor.attack.setValueAtTime(0.005, 0);
+      compressor.release.setValueAtTime(0.06, 0);
+      compressor.connect(offlineCtx.destination);
+      
+      const delay = offlineCtx.createDelay();
+      delay.delayTime.setValueAtTime(0.14, 0);
+      const delayFeedback = offlineCtx.createGain();
+      delayFeedback.gain.setValueAtTime(0.24, 0);
+      const delayGain = offlineCtx.createGain();
+      delayGain.gain.setValueAtTime(0.35, 0);
+      
+      delay.connect(delayFeedback);
+      delayFeedback.connect(delay);
+      delay.connect(delayGain);
+      delayGain.connect(compressor);
+      
+      // Generate noise buffer
+      const bufferSize = offlineCtx.sampleRate * 2.0;
+      const offlineNoise = offlineCtx.createBuffer(1, bufferSize, offlineCtx.sampleRate);
+      const data = offlineNoise.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2.0 - 1.0;
+      }
+      
+      // Schedule offline events
+      audioEvents.forEach(evt => {
+        const time = evt.time;
+        if (evt.type === 'click') {
+          triggerOfflineClick(offlineCtx, compressor, time, 0.12, 1300, offlineNoise);
+          triggerOfflineClick(offlineCtx, compressor, time + 0.008, 0.05, 1050, offlineNoise);
+        } else if (evt.type === 'success') {
+          triggerOfflineChime(offlineCtx, compressor, delay, time);
+        } else if (evt.type === 'whoosh') {
+          triggerOfflineWhoosh(offlineCtx, compressor, time, offlineNoise);
+        } else if (evt.type === 'lift') {
+          triggerOfflineLift(offlineCtx, compressor, delay, time, offlineNoise);
+        } else if (evt.type === 'checkmark') {
+          triggerOfflineCheckmark(offlineCtx, compressor, delay, time);
+        } else if (evt.type === 'scan_beep') {
+          triggerOfflineBeep(offlineCtx, compressor, time);
+        } else if (evt.type === 'water_bubble') {
+          triggerOfflineBubble(offlineCtx, compressor, time);
+        } else if (evt.type === 'bass_drop') {
+          triggerOfflineBassDrop(offlineCtx, compressor, delay, time, offlineNoise);
+        }
+      });
+      
+      return offlineCtx.startRendering().then(renderedBuffer => {
+        return bufferToWav(renderedBuffer);
+      });
+    };
+
+    // Offline Synth Helpers
+    function triggerOfflineClick(ctx, dest, time, vol, pitch, noiseBuf) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(pitch, time);
+      osc.frequency.exponentialRampToValueAtTime(pitch * 0.45, time + 0.012);
+      gain.gain.setValueAtTime(vol, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(time);
+      osc.stop(time + 0.015);
+
+      if (noiseBuf) {
+        const noise = ctx.createBufferSource();
+        const filter = ctx.createBiquadFilter();
+        const noiseGain = ctx.createGain();
+        noise.buffer = noiseBuf;
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(4500, time);
+        noiseGain.gain.setValueAtTime(vol * 0.9, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.008);
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(dest);
+        noise.start(time);
+        noise.stop(time + 0.01);
+      }
+    }
+
+    function triggerOfflineChime(ctx, dest, delayNode, time) {
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const t = time + idx * 0.035;
+        [freq - 2, freq + 2].forEach((f, pairIdx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = pairIdx === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(pairIdx === 0 ? 0.08 : 0.04, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+          osc.connect(gain);
+          gain.connect(dest);
+          const delaySend = ctx.createGain();
+          delaySend.gain.setValueAtTime(0.35, t);
+          gain.connect(delaySend);
+          delaySend.connect(delayNode);
+          osc.start(t);
+          osc.stop(t + 0.42);
+        });
+      });
+    }
+
+    function triggerOfflineWhoosh(ctx, dest, time, noiseBuf) {
+      if (!noiseBuf) return;
+      const noise = ctx.createBufferSource();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      noise.buffer = noiseBuf;
+      filter.type = 'bandpass';
+      filter.Q.setValueAtTime(3.2, time);
+      filter.frequency.setValueAtTime(190, time);
+      filter.frequency.exponentialRampToValueAtTime(3400, time + 0.20);
+      filter.frequency.exponentialRampToValueAtTime(160, time + 0.45);
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(0.28, time + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.45);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(-1.0, time);
+        panner.pan.linearRampToValueAtTime(1.0, time + 0.4);
+        noise.connect(filter);
+        filter.connect(panner);
+        panner.connect(gain);
+      } else {
+        noise.connect(filter);
+        filter.connect(gain);
+      }
+      gain.connect(dest);
+      noise.start(time);
+      noise.stop(time + 0.46);
+    }
+
+    function triggerOfflineLift(ctx, dest, delayNode, time, noiseBuf) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(65, time);
+      osc.frequency.linearRampToValueAtTime(100, time + 0.2);
+      osc.frequency.linearRampToValueAtTime(60, time + 0.4);
+      gain.gain.setValueAtTime(0.01, time);
+      gain.gain.linearRampToValueAtTime(0.14, time + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.42);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(260, time);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(dest);
+      osc.start(time);
+      osc.stop(time + 0.45);
+
+      const clankTime = time + 0.18;
+      const clankFreqs = [1600, 2400, 3200, 4400];
+      clankFreqs.forEach((freq, idx) => {
+        const clankOsc = ctx.createOscillator();
+        const clankGain = ctx.createGain();
+        clankOsc.type = 'sine';
+        clankOsc.frequency.setValueAtTime(freq, clankTime);
+        clankOsc.frequency.exponentialRampToValueAtTime(freq * 0.88, clankTime + 0.055);
+        clankGain.gain.setValueAtTime(0.018 - idx * 0.003, clankTime);
+        clankGain.gain.exponentialRampToValueAtTime(0.001, clankTime + 0.065);
+        clankOsc.connect(clankGain);
+        clankGain.connect(dest);
+        const delaySend = ctx.createGain();
+        delaySend.gain.setValueAtTime(0.3, clankTime);
+        clankGain.connect(delaySend);
+        delaySend.connect(delayNode);
+        clankOsc.start(clankTime);
+        clankOsc.stop(clankTime + 0.075);
+      });
+    }
+
+    function triggerOfflineCheckmark(ctx, dest, delayNode, time) {
+      const notes = [659.25, 880.00];
+      notes.forEach((freq, idx) => {
+        const t = time + idx * 0.06;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        osc.connect(gain);
+        gain.connect(dest);
+        const delaySend = ctx.createGain();
+        delaySend.gain.setValueAtTime(0.3, t);
+        gain.connect(delaySend);
+        delaySend.connect(delayNode);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      });
+    }
+
+    function triggerOfflineBeep(ctx, dest, time) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2200, time);
+      gain.gain.setValueAtTime(0.15, time);
+      gain.gain.setValueAtTime(0.15, time + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.075);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(time);
+      osc.stop(time + 0.08);
+    }
+
+    function triggerOfflineBubble(ctx, dest, time) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, time);
+      osc.frequency.exponentialRampToValueAtTime(850, time + 0.08);
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(0.12, time + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(time);
+      osc.stop(time + 0.09);
+    }
+
+    function triggerOfflineBassDrop(ctx, dest, delayNode, time, noiseBuf) {
+      const sub = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(125, time);
+      sub.frequency.exponentialRampToValueAtTime(24, time + 1.25);
+      subGain.gain.setValueAtTime(0.45, time);
+      subGain.gain.exponentialRampToValueAtTime(0.001, time + 1.25);
+      sub.connect(subGain);
+      subGain.connect(dest);
+      sub.start(time);
+      sub.stop(time + 1.3);
+
+      const thud = ctx.createOscillator();
+      const thudGain = ctx.createGain();
+      thud.type = 'triangle';
+      thud.frequency.setValueAtTime(55, time);
+      thud.frequency.exponentialRampToValueAtTime(30, time + 0.18);
+      thudGain.gain.setValueAtTime(0.38, time);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+      thud.connect(thudGain);
+      thudGain.connect(dest);
+      thud.start(time);
+      thud.stop(time + 0.2);
+
+      const clangFreqs = [220, 311, 440, 622];
+      clangFreqs.forEach((freq, idx) => {
+        const clangOsc = ctx.createOscillator();
+        const clangGain = ctx.createGain();
+        clangOsc.type = 'sawtooth';
+        clangOsc.frequency.setValueAtTime(freq, time);
+        const clangFilter = ctx.createBiquadFilter();
+        clangFilter.type = 'lowpass';
+        clangFilter.frequency.setValueAtTime(1000 - idx * 100, time);
+        clangFilter.frequency.exponentialRampToValueAtTime(100, time + 0.4);
+        clangGain.gain.setValueAtTime(0.035 - idx * 0.005, time);
+        clangGain.gain.exponentialRampToValueAtTime(0.001, time + 0.65);
+        clangOsc.connect(clangFilter);
+        clangFilter.connect(clangGain);
+        clangGain.connect(dest);
+        const delaySend = ctx.createGain();
+        delaySend.gain.setValueAtTime(0.65, time);
+        clangGain.connect(delaySend);
+        delaySend.connect(delayNode);
+        clangOsc.start(time);
+        clangOsc.stop(time + 0.8);
+      });
+    }
+
+    // Pure JS WAV builder
+    function bufferToWav(buffer) {
+      const numOfChan = buffer.numberOfChannels;
+      const lwa = buffer.sampleRate;
+      const format = 1;
+      const bitDepth = 16;
+      
+      let result;
+      if (numOfChan === 2) {
+        result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+      } else {
+        result = buffer.getChannelData(0);
+      }
+      
+      const bufferLength = result.length * 2;
+      const headerLength = 44;
+      const fileLength = bufferLength + headerLength;
+      const out = new ArrayBuffer(fileLength);
+      const view = new DataView(out);
+      
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, fileLength - 8, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, format, true);
+      view.setUint16(22, numOfChan, true);
+      view.setUint32(24, lwa, true);
+      view.setUint32(28, lwa * numOfChan * (bitDepth / 8), true);
+      view.setUint16(32, numOfChan * (bitDepth / 8), true);
+      view.setUint16(34, bitDepth, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, bufferLength, true);
+      
+      let offset = 44;
+      for (let i = 0; i < result.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, result[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function interleave(inputL, inputR) {
+      const length = inputL.length + inputR.length;
+      const result = new Float32Array(length);
+      let index = 0;
+      let inputIndex = 0;
+      while (index < length) {
+        result[index++] = inputL[inputIndex];
+        result[index++] = inputR[inputIndex];
+        inputIndex++;
+      }
+      return result;
+    }
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+  </script>
+</body>
+</html>

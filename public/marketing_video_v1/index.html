@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Life Gym - Pro Motion Ad (30s)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+  <style>
+    :root {
+      --bg: #03040b;
+      --card: rgba(12, 16, 32, 0.7);
+      --border: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.5);
+      --success: #22c55e;
+      --success-glow: rgba(34, 197, 94, 0.5);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.5);
+      --text: #ffffff;
+      --text-muted: #8a99ad;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+    body {
+      background: var(--bg);
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    #canvas {
+      width: 1080px;
+      height: 1920px;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 80px 80px;
+    }
+
+    /* Professional Cyber Grid Background */
+    .grid-overlay {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+      background-size: 80px 80px;
+      transform: rotate(15deg);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Shifting Ambient Lights */
+    .ambient-glow {
+      position: absolute;
+      width: 1400px;
+      height: 1400px;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(160px);
+      z-index: 2;
+      opacity: 0.4;
+    }
+    #glow-red {
+      top: -400px;
+      left: -200px;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.18) 0%, rgba(3, 4, 11, 0) 70%);
+    }
+    #glow-blue {
+      bottom: -400px;
+      right: -200px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, rgba(3, 4, 11, 0) 70%);
+    }
+
+    /* Virtual Hand/Pointer Simulator */
+    .virtual-cursor {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Header */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      width: 100%;
+    }
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-logo {
+      width: 54px;
+      height: 54px;
+    }
+    .brand-name {
+      font-size: 1.8rem;
+      font-weight: 950;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .status-badge {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    /* Scenes Container */
+    .scenes-wrapper {
+      position: absolute;
+      top: 180px;
+      bottom: 180px;
+      left: 80px;
+      right: 80px;
+      z-index: 5;
+    }
+    .scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    /* Scene 1: Hook */
+    #scene1 {
+      justify-content: center;
+      flex-direction: column;
+      gap: 30px;
+      text-align: center;
+    }
+    .s1-badge {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--danger);
+      letter-spacing: 0.2em;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 6px 20px;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .s1-title {
+      font-size: 4.2rem;
+      font-weight: 950;
+      line-height: 1.1;
+      max-width: 100%;
+    }
+    .s1-desc {
+      font-size: 1.8rem;
+      color: var(--text-muted);
+      max-width: 100%;
+      line-height: 1.5;
+    }
+
+    /* Scene 2: Spreadsheet Failure */
+    #scene2 {
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+    }
+    .text-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+    }
+    .text-panel h2 {
+      font-size: 4.0rem;
+      font-weight: 950;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .text-panel p {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .excel-container {
+      background: #0b0c13;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+      width: 100%;
+      position: relative;
+    }
+    .excel-grid {
+      display: grid;
+      grid-template-columns: 80px repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .excel-cell {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      height: 54px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .excel-cell.header {
+      background: rgba(255, 255, 255, 0.03);
+      font-weight: bold;
+      color: #fff;
+    }
+    .excel-cell.fail {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+      font-weight: 800;
+    }
+    .chat-card {
+      position: absolute;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      backdrop-filter: blur(10px);
+      padding: 16px 24px;
+      border-radius: 16px 16px 16px 0;
+      color: #ff9999;
+      font-weight: 700;
+      font-size: 1.15rem;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    }
+
+    /* Swipe Laser Line */
+    .laser-line {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--primary) 50%, transparent);
+      z-index: 100;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+    .laser-glow {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 100%;
+      box-shadow: 0 0 120px 40px var(--primary);
+    }
+
+    /* Scene 3: Client Phone Portal (PWA) */
+    #scene3 {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 60px;
+    }
+    .phone-perspective {
+      perspective: 1000px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .phone-3d {
+      width: 400px;
+      height: 760px;
+      background: #000;
+      border: 12px solid #171d31;
+      border-radius: 46px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 50px rgba(59,130,246,0.15);
+      transform: rotateY(-20deg) rotateX(15deg);
+      transform-style: preserve-3d;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 40px 24px 24px 24px;
+      background: #060813;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .phone-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 20px;
+      margin-top: 15px;
+    }
+    .phone-btn {
+      width: 100%;
+      background: var(--primary);
+      border: none;
+      color: #fff;
+      padding: 12px 0;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    .water-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .water-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0%; /* Animate this */
+      background: #0284c7;
+      box-shadow: 0 0 20px rgba(2, 132, 199, 0.5);
+      transition: height 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    .water-text {
+      position: relative;
+      z-index: 10;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+    .checkmark-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px var(--success-glow);
+      z-index: 99;
+    }
+    .checkmark-svg {
+      width: 50px;
+      height: 50px;
+      stroke: #fff;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    /* Scene 4: Coach Retention Hub */
+    #scene4 {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 60px;
+    }
+    .dashboard-panel {
+      width: 100%;
+      background: #080911;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 35px;
+      box-shadow: 0 35px 70px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .gauge-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .gauge-circle {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+    .gauge-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+    .gauge-bg { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 10; }
+    .gauge-bar {
+      fill: none;
+      stroke: var(--success);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 314;
+      stroke-dashoffset: 314; /* Animate to 314 * (1 - 0.94) = 18.84 */
+      filter: drop-shadow(0 0 8px var(--success-glow));
+    }
+    .gauge-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fff;
+    }
+    .row-card {
+      background: rgba(255,255,255,0.01);
+      border: 1px solid rgba(255,255,255,0.03);
+      padding: 16px 24px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .row-card.alert-row {
+      background: rgba(239, 68, 68, 0.03);
+      border-color: rgba(239, 68, 68, 0.15);
+    }
+
+
+    /* Scene 5: Outro */
+    #scene5 {
+      justify-content: center;
+      flex-direction: column;
+      gap: 30px;
+      text-align: center;
+    }
+    .logo-container {
+      width: 180px;
+      height: 180px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .barbell-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 35px var(--primary-glow));
+    }
+    .outro-h1 {
+      font-size: 6.0rem;
+      font-weight: 950;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ffffff 40%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 60px rgba(59, 130, 246, 0.2);
+    }
+    .outro-p {
+      font-size: 2.2rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.15em;
+    }
+    .outro-link {
+      font-size: 2.6rem;
+      color: var(--primary);
+      font-weight: 950;
+      margin-top: 15px;
+      text-shadow: 0 0 30px var(--primary-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    /* Footer Navigation Indicator */
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      width: 100%;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 30px;
+    }
+    .progress-bar-container {
+      width: 500px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- VIRTUAL POINTER CURSOR -->
+  <svg class="virtual-cursor" id="v-cursor" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.5 2V21.5L8.5 15.5L14 26L18 24L12.5 13.5L20.5 13L2.5 2Z" fill="white" stroke="black" stroke-width="2" stroke-linejoin="round"/>
+  </svg>
+
+  <div id="canvas">
+    
+    <!-- Background patterns -->
+    <div class="grid-overlay" id="grid-bg"></div>
+    <div class="ambient-glow" id="glow-red"></div>
+    <div class="ambient-glow" id="glow-blue"></div>
+
+    <!-- Neon Swipe Laser -->
+    <div class="laser-line" id="laser-bar">
+      <div class="laser-glow"></div>
+    </div>
+
+    <!-- Top Header Brand -->
+    <div class="header-bar">
+      <div class="brand-area">
+        <svg class="brand-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <span class="brand-name">Life Gym</span>
+      </div>
+      <div class="status-badge" id="timer-text" style="display: none;">0.00s / 30.00s</div>
+    </div>
+
+    <!-- MAIN SCENES -->
+    <div class="scenes-wrapper">
+
+      <!-- SCENE 1: THE HOOK (0s - 4.5s) -->
+      <div class="scene" id="scene1">
+        <div class="s1-badge" id="s1-badge">CHURN FACTOR</div>
+        <h1 class="s1-title" id="s1-title">80% of online athletes quit in month 1.</h1>
+        <p class="s1-desc" id="s1-desc">It is not a lack of drive. It is spreadsheet friction.</p>
+      </div>
+
+      <!-- SCENE 2: EXCEL FATIGUE (4.5s - 9.0s) -->
+      <div class="scene" id="scene2">
+        <div class="text-panel">
+          <span class="s1-badge" style="color:var(--danger); border-color:rgba(239,68,68,0.25);">01 • THE PROBLEM</span>
+          <h2 id="s2-title">Friction kills compliance.</h2>
+          <p id="s2-desc">Typing workouts, water goals, and calorie budgets into clumsy cells feels like administrative work. If tracking splits takes longer than 10 seconds, clients stop.</p>
+        </div>
+        
+        <div class="excel-container" id="s2-excel-card">
+          <div style="font-size:0.85rem; color:#444; font-family:monospace;">split_log_backup_final_v3.xlsx</div>
+          <div class="excel-grid">
+            <div class="excel-cell header">Date</div><div class="excel-cell header">Split</div><div class="excel-cell header">Weight</div><div class="excel-cell header">Set 1</div><div class="excel-cell header">RPE</div>
+            <div class="excel-cell">Mon</div><div class="excel-cell">Push</div><div class="excel-cell">81.5</div><div class="excel-cell">90kg</div><div class="excel-cell">8.5</div>
+            <div class="excel-cell">Tue</div><div class="excel-cell">Pull</div><div class="excel-cell">81.6</div><div class="excel-cell fail" id="s2-cell-fail1">MISS</div><div class="excel-cell fail">?</div>
+            <div class="excel-cell">Wed</div><div class="excel-cell fail">MISS</div><div class="excel-cell fail">MISS</div><div class="excel-cell">92kg</div><div class="excel-cell">9.0</div>
+            <div class="excel-cell">Thu</div><div class="excel-cell">Legs</div><div class="excel-cell fail" id="s2-cell-fail2">MISS</div><div class="excel-cell fail">MISS</div><div class="excel-cell fail">?</div>
+          </div>
+          <!-- Flickering alert chat bubble -->
+          <div class="chat-card" id="s2-chat1" style="top: -20px; left: -30px;">"Wait, did my spreadsheet submit?"</div>
+          <div class="chat-card" id="s2-chat2" style="bottom: -15px; right: -20px; background:rgba(239, 68, 68, 0.15)">"Access denied: file is read-only"</div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: SOLUTION - CLIENT APP PWA (9.0s - 16.5s) -->
+      <div class="scene" id="scene3">
+        <div class="phone-perspective">
+          <div class="phone-3d" id="s3-phone-3d">
+            <div class="phone-screen">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px;">
+                <span style="font-weight:900; font-size:0.75rem; color:#fff; letter-spacing:0.1em;">PUSH Split</span>
+                <span style="background:rgba(59,130,246,0.1); color:var(--primary); font-size:0.65rem; padding:3px 8px; border-radius:4px; font-weight:800;">WEEK 3</span>
+              </div>
+
+              <!-- Workout check card -->
+              <div class="phone-card" id="s3-card-workout">
+                <h4 style="font-size:0.95rem; font-weight:900; color:#fff;">Incline Bench Press</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                  <span style="font-size:0.8rem; font-weight:700;">Set 1: 100 kg x 10</span>
+                  <button class="phone-btn" id="s3-log-btn" style="width:auto; padding:6px 16px;">Log</button>
+                </div>
+              </div>
+
+              <!-- Food log card -->
+              <div class="phone-card" id="s3-card-food">
+                <h4 style="font-size:0.95rem; font-weight:900; color:#fff;">High Protein Oats</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                  <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">450 kcal | 30g Protein</span>
+                  <button class="phone-btn" id="s3-food-btn" style="width:auto; padding:6px 16px;">Log</button>
+                </div>
+              </div>
+
+              <!-- Water visual card -->
+              <div class="phone-card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h4 style="font-size:0.9rem; font-weight:900; color:#fff;">Water Intake</h4>
+                  <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:2px;">Target: 3.0 Liters</span>
+                </div>
+                <div class="water-container">
+                  <div class="water-fill" id="s3-water-fill"></div>
+                  <span class="water-text" id="s3-water-text">0.0L</span>
+                </div>
+              </div>
+
+              <!-- Progress Ring Row -->
+              <div style="display:flex; justify-content:center; align-items:center; gap:20px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:16px; margin-top:auto;" id="s3-pwa-submit">
+                <div style="position:relative; width:54px; height:54px; display:flex; align-items:center; justify-content:center;" id="s3-progress-ring-container">
+                  <svg width="54" height="54" viewBox="0 0 54 54" style="transform: rotate(-90deg);">
+                    <circle cx="27" cy="27" r="22" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="4"></circle>
+                    <circle id="s3-progress-circle" cx="27" cy="27" r="22" fill="none" stroke="var(--primary)" stroke-width="4" stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="138.2" style="transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;"></circle>
+                  </svg>
+                  <!-- Center checkmark icon in progress ring -->
+                  <div id="s3-ring-check" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) scale(0); display:flex; align-items:center; justify-content:center; width:44px; height:44px; background:var(--success); border-radius:50%; box-shadow:0 0 15px var(--success-glow);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div style="text-align:left; flex:1;">
+                  <span style="font-size:0.85rem; font-weight:900; color:#fff; display:block;" id="s3-progress-label">Today's Progress: 0%</span>
+                  <span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-top:2px;" id="s3-progress-sub">Log workout, nutrition & water</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-panel">
+          <span class="s1-badge" style="color:var(--primary); border-color:rgba(59,130,246,0.3); background:rgba(59,130,246,0.05)">02 • THE SOLUTION</span>
+          <h2 id="s3-title">A 10-Second Client Portal.</h2>
+          <p id="s3-desc">No App Store downloads. Athletes open their private portal link straight from WhatsApp, save it to their home screen as a web app, and track their splits in 3 simple taps.</p>
+        </div>
+      </div>
+
+      <!-- SCENE 4: COACH DASHBOARD RETENTION GAUGE (16.5s - 23.5s) -->
+      <div class="scene" id="scene4">
+        <div class="text-panel">
+          <span class="s1-badge" style="color:var(--success); border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.05)">03 • Real-Time Monitoring</span>
+          <h2 id="s4-title">Live Activity Feed.</h2>
+          <p id="s4-desc">Stay connected to your client's progress. The coach portal streams workout logging, nutritional intake, and water entries as they happen in real-time.</p>
+        </div>
+
+        <div style="width: 100%; max-width: 860px; position: relative;">
+          <div class="dashboard-panel" id="s4-panel">
+            
+            <div class="gauge-wrapper">
+              <div class="gauge-circle" style="display: flex; align-items: center; justify-content: center;">
+                <svg class="gauge-svg" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 64px; height: 64px; transform: none; filter: drop-shadow(0 0 8px var(--success-glow));">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h4 style="font-size:1.4rem; font-weight:900; color:#fff;">Live Activity Feed</h4>
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-top:4px;">Chronological client updates synced in real-time</p>
+              </div>
+            </div>
+
+            <!-- Athlete Row 1 -->
+            <div class="row-card" id="s4-row-ok">
+              <div>
+                <span style="font-size:0.95rem; font-weight:800; color:#fff;">Ahmed Samy</span>
+                <span style="font-size:0.75rem; color:var(--success); display:block; margin-top:2px;">Logged Workout: Incline Bench Press</span>
+              </div>
+              <div style="font-size:0.85rem; font-weight:800; color:var(--success);">Push Split • Just Now</div>
+            </div>
+
+            <!-- Athlete Row 2 -->
+            <div class="row-card alert-row" id="s4-row-warn" style="background: rgba(59, 130, 246, 0.03); border-color: rgba(59, 130, 246, 0.15);">
+              <div>
+                <span style="font-size:0.95rem; font-weight:800; color:#fff;">Youssef Ali</span>
+                <span style="font-size:0.75rem; color:var(--primary); display:block; margin-top:2px;" id="s4-warn-text">Logged Food: High Protein Oats</span>
+              </div>
+              <div style="font-size:0.85rem; font-weight:800; color:var(--primary);" id="s4-warn-dots">Diet Log • 5m ago</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 5: OUTRO (23.5s - 30s) -->
+      <div class="scene" id="scene5">
+        <div class="logo-container" id="s5-logo-box">
+          <svg class="barbell-svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(256 256) rotate(-45)">
+              <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" />
+              <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+              <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+              <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+              <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+              <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+              <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            </g>
+          </svg>
+        </div>
+        <h1 class="outro-h1" id="s5-title">LIFE GYM</h1>
+        <p class="outro-p" id="s5-desc">AUTOMATE • SCALE • RETAIN</p>
+        <div class="outro-link" id="s5-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 38px; height: 38px; filter: drop-shadow(0 0 8px var(--primary-glow));">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          </svg>
+          @lifegym.io
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Footer Progress Bar -->
+    <div class="footer-bar">
+      <div class="outro-p" style="font-size:1.1rem; font-weight:800; color:var(--primary);">@lifegym.io</div>
+      <div class="progress-bar-container" style="display: none;">
+        <div class="progress-bar-fill" id="timeline-progress-fill"></div>
+      </div>
+      <div></div>
+    </div>
+
+  </div>
+
+  <script>
+    gsap.registerPlugin(TextPlugin);
+
+    function getCanvasCoords(elementSelector) {
+      const canvas = document.getElementById('canvas');
+      const el = document.querySelector(elementSelector);
+      if (!canvas || !el) return { x: 0, y: 0 };
+      const canvasRect = canvas.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      return {
+        x: (elRect.left - canvasRect.left) + elRect.width / 2,
+        y: (elRect.top - canvasRect.top) + elRect.height / 2
+      };
+    }
+
+    const tl = gsap.timeline({
+      paused: false, // Plays automatically as it was before
+      onUpdate: updateIndicator
+    });
+
+    const duration = 18; // exact 18 seconds
+
+    function updateIndicator() {
+      const time = tl.time();
+      const progress = tl.progress();
+      document.getElementById('timer-text').innerText = time.toFixed(2) + 's / ' + duration.toFixed(2) + 's';
+      document.getElementById('timeline-progress-fill').style.width = (progress * 100) + '%';
+    }
+
+    // Expose progress hook for Puppeteer frames capture
+    window.setAnimationProgress = function(progress) {
+      tl.pause();
+      tl.progress(progress);
+      updateIndicator();
+    };
+
+    // --------------------------------------------------
+    // ANIMATION ENGINE (Premium Motion Graphic Style)
+    // --------------------------------------------------
+
+    // Global rotation grid bg
+    gsap.to('#grid-bg', { rotation: 45, duration: 18, ease: 'none' });
+
+    // Scene 1: Hook Intro
+    tl.to('#scene1', { autoAlpha: 1, duration: 0.4 })
+      .from('#s1-badge', { scale: 0.8, y: -20, opacity: 0, duration: 0.5, ease: 'back.out(2)' }, '-=0.2')
+      .from('#s1-title', { y: 40, opacity: 0, duration: 0.6, ease: 'power4.out' }, '-=0.3')
+      .from('#s1-desc', { y: 20, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
+      .to('#scene1', { autoAlpha: 0, scale: 0.95, duration: 0.4, ease: 'power2.in' }, '+=0.4')
+
+    // Scene 2: Spreadsheet Fatigue
+    tl.to('#glow-red', { opacity: 0.8, duration: 0.6 }, '-=0.3')
+      .to('#scene2', { autoAlpha: 1, duration: 0.4 }, '-=0.2')
+      .from('#s2-title', { x: -40, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.1')
+      .from('#s2-desc', { x: -20, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
+      .from('#s2-excel-card', { rotationX: -15, rotationY: 10, y: 100, opacity: 0, duration: 0.8, ease: 'back.out(1.2)' }, '-=0.5')
+      
+      // Virtual Cursor interaction - moving cursor to cell
+      .to('#v-cursor', { opacity: 1, x: () => getCanvasCoords('#s2-cell-fail1').x, y: () => getCanvasCoords('#s2-cell-fail1').y, duration: 0.6, ease: 'power2.inOut' }, '-=0.3')
+      .to('#v-cursor', { scale: 0.8, duration: 0.12, repeat: 1, yoyo: true })
+      
+      // Error flicker & shake
+      .to('#s2-excel-card', { x: '+=15', duration: 0.04, repeat: 4, yoyo: true })
+      .to('#s2-cell-fail1, #s2-cell-fail2', { background: 'rgba(239, 68, 68, 0.35)', color: '#fff', scale: 1.05, duration: 0.15, repeat: 1, yoyo: true })
+      
+      // Chat card pop-ins
+      .from('#s2-chat1', { scale: 0, opacity: 0, rotation: -10, duration: 0.4, ease: 'elastic.out(1, 0.7)' }, '-=0.1')
+      .from('#s2-chat2', { scale: 0, opacity: 0, rotation: 10, duration: 0.4, ease: 'elastic.out(1, 0.7)' }, '-=0.2')
+      
+      // Cursor disappears
+      .to('#v-cursor', { opacity: 0, duration: 0.25 })
+      .to('#scene2', { autoAlpha: 0, scale: 0.95, duration: 0.4, ease: 'power2.in' }, '+=0.3')
+
+    // Swipe transition bar
+    tl.to('#laser-bar', { left: '100%', duration: 0.7, ease: 'power3.inOut' }, '-=0.1')
+      .to('#glow-red', { opacity: 0.15, duration: 0.6 }, '-=0.6')
+      .to('#glow-blue', { opacity: 0.8, duration: 0.6 }, '-=0.6')
+
+    // Scene 3: Client App PWA
+    tl.to('#scene3', { autoAlpha: 1, duration: 0.4 }, '-=0.4')
+      .from('#s3-phone-3d', { rotationY: 40, rotationX: 0, y: 150, scale: 0.8, opacity: 0, duration: 0.9, ease: 'back.out(1.3)' }, '-=0.1')
+      .from('#s3-title', { x: 40, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.7')
+      .from('#s3-desc', { x: 20, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.5')
+      .from('#s3-card-workout', { y: 20, opacity: 0, duration: 0.4 }, '-=0.4')
+      .from('#s3-card-food', { y: 20, opacity: 0, duration: 0.4 }, '-=0.3')
+      .from('#s3-pwa-submit', { y: 20, opacity: 0, duration: 0.4 }, '-=0.3')
+      
+      // Pointer tap visual clicks PWA Workout (Sped up!)
+      .to('#v-cursor', { opacity: 1, x: () => getCanvasCoords('#s3-log-btn').x, y: () => getCanvasCoords('#s3-log-btn').y, duration: 0.18, ease: 'power2.inOut' }, '+=0.03')
+      .to('#v-cursor', { scale: 0.8, duration: 0.04, repeat: 1, yoyo: true })
+      .to('#s3-log-btn', { background: 'var(--success)', text: 'Logged', scale: 1.05, duration: 0.08 })
+      .to('#s3-progress-circle', { strokeDashoffset: 92.6, duration: 0.1 }, '-=0.08')
+      .to('#s3-progress-label', { text: "Today's Progress: 33%", duration: 0.08 }, '-=0.08')
+      .to('#s3-progress-sub', { text: "Workout synced", duration: 0.08 }, '-=0.08')
+      
+      // Cursor moves to log food (Sped up!)
+      .to('#v-cursor', { x: () => getCanvasCoords('#s3-food-btn').x, y: () => getCanvasCoords('#s3-food-btn').y, duration: 0.18, ease: 'power2.inOut' }, '+=0.02')
+      .to('#v-cursor', { scale: 0.8, duration: 0.04, repeat: 1, yoyo: true })
+      .to('#s3-food-btn', { background: 'var(--success)', text: 'Logged', scale: 1.05, duration: 0.08 })
+      .to('#s3-progress-circle', { strokeDashoffset: 47.0, duration: 0.1 }, '-=0.08')
+      .to('#s3-progress-label', { text: "Today's Progress: 66%", duration: 0.08 }, '-=0.08')
+      .to('#s3-progress-sub', { text: "Nutrition synced", duration: 0.08 }, '-=0.08')
+
+      // Cursor moves to log water (Sped up!)
+      .to('#v-cursor', { x: () => getCanvasCoords('.water-container').x, y: () => getCanvasCoords('.water-container').y, duration: 0.18, ease: 'power2.inOut' }, '+=0.02')
+      .to('#v-cursor', { scale: 0.8, duration: 0.04 })
+      .to('#s3-water-fill', { height: '80%', duration: 0.15, ease: 'power2.out' }, '-=0.05')
+      .to('#s3-water-text', { text: '2.4L', duration: 0.12 }, '-=0.12')
+      .to('#s3-progress-circle', { strokeDashoffset: 0, stroke: 'var(--success)', duration: 0.15 }, '-=0.1')
+      .to('#s3-progress-label', { text: "Today's Progress: 100%", duration: 0.08 }, '-=0.1')
+      .to('#s3-progress-sub', { text: "All logs synced!", duration: 0.08 }, '-=0.1')
+      .to('#v-cursor', { opacity: 0, duration: 0.08 })
+
+      // Transform progress ring to success checkmark (Sped up!)
+      .to('#s3-ring-check', { scale: 1, duration: 0.12, ease: 'back.out(1.7)' })
+      .to('#s3-progress-ring-container', { scale: 1.15, duration: 0.06, repeat: 1, yoyo: true, ease: 'power2.out' }, '-=0.1')
+      
+      .to('#scene3', { autoAlpha: 0, scale: 0.95, duration: 0.4, ease: 'power2.in' })
+
+    // Scene 4: Coach Retention hub / Live Activity Feed
+    tl.to('#scene4', { autoAlpha: 1, duration: 0.4 }, '-=0.1')
+      .from('#s4-title', { x: -40, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.1')
+      .from('#s4-desc', { x: -20, opacity: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
+      .from('#s4-panel', { scale: 0.92, y: 80, opacity: 0, duration: 0.7, ease: 'back.out(1.1)' }, '-=0.5')
+      
+      .from('#s4-row-ok', { x: -20, opacity: 0, duration: 0.4 }, '-=0.5')
+      .from('#s4-row-warn', { x: -20, opacity: 0, duration: 0.4 }, '-=0.3')
+      
+      // Flash warnings/highlights
+      .to('#s4-row-warn', { background: 'rgba(59, 130, 246, 0.08)', duration: 0.15, repeat: 2, yoyo: true }, '+=0.1')
+      
+      .to('#scene4', { autoAlpha: 0, scale: 0.95, duration: 0.4, ease: 'power2.in' }, '+=0.3')
+
+    // Scene 5: Outro Brand CTA
+    tl.to('#scene5', { autoAlpha: 1, duration: 0.4 })
+      .from('#s5-logo-box', { rotation: -180, scale: 0.2, opacity: 0, duration: 0.9, ease: 'back.out(1.5)' }, '-=0.2')
+      
+      // Spin barbell logo
+      .to('.barbell-svg', { rotation: 45, duration: 0.7, ease: 'power2.out' }, '-=0.1')
+      .from('#s5-title', { opacity: 0, y: 20, duration: 0.6, ease: 'power3.out' }, '-=0.3')
+      .from('#s5-desc', { opacity: 0, y: 20, duration: 0.6, ease: 'power3.out' }, '-=0.2')
+      .from('#s5-link', { opacity: 0, scale: 0.8, duration: 0.5, ease: 'back.out(2)' }, '-=0.2')
+      
+      // Final logo scale
+      .to('#s5-logo-box', { scale: 1.05, duration: 0.8, ease: 'power1.inOut' });
+
+    // Enforce timeline constraints
+    tl.duration(duration);
+
+  </script>
+</body>
+</html>

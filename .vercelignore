@@ -1,0 +1,9 @@
+node_modules
+dist
+dist_desktop
+.git
+.vercel
+scratch
+*.sql
+*.zip
+*.exe

@@ -20,6 +20,8 @@ export default function WhatsAppManagerPage() {
   const [showToken, setShowToken] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'CONNECTED' | 'DISCONNECTED' | 'INITIALIZING' | 'UNKNOWN'>('UNKNOWN');
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [gatewayQr, setGatewayQr] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Anti-Ban Safeguards States
   const [delayMin, setDelayMin] = useState(5);
@@ -91,6 +93,7 @@ export default function WhatsAppManagerPage() {
   const checkGatewayStatus = async () => {
     if (!gatewayUrl.trim()) {
       setConnectionStatus('UNKNOWN');
+      setGatewayQr(null);
       return;
     }
     try {
@@ -101,12 +104,24 @@ export default function WhatsAppManagerPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setConnectionStatus(data.status || 'CONNECTED');
+        const rawStatus = String(data.status || 'disconnected').toUpperCase();
+        if (rawStatus === 'CONNECTED') {
+          setConnectionStatus('CONNECTED');
+          setGatewayQr(null);
+        } else if (rawStatus === 'CONNECTING' || rawStatus === 'QRCODE') {
+          setConnectionStatus('INITIALIZING');
+          setGatewayQr(data.qr || null);
+        } else {
+          setConnectionStatus('DISCONNECTED');
+          setGatewayQr(null);
+        }
       } else {
         setConnectionStatus('DISCONNECTED');
+        setGatewayQr(null);
       }
     } catch (e) {
       setConnectionStatus('DISCONNECTED');
+      setGatewayQr(null);
     } finally {
       setCheckingStatus(false);
     }
@@ -117,6 +132,43 @@ export default function WhatsAppManagerPage() {
       checkGatewayStatus();
     }
   }, [gatewayUrl]);
+
+  // Periodic polling if disconnected or initializing
+  useEffect(() => {
+    let interval: any = null;
+    if (gatewayUrl && connectionStatus !== 'CONNECTED') {
+      interval = setInterval(() => {
+        checkGatewayStatus();
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [gatewayUrl, connectionStatus]);
+
+  const handleGatewayLogout = async () => {
+    if (!gatewayUrl.trim()) return;
+    if (!confirm('Are you sure you want to log out of the WhatsApp session and clear connection keys?')) return;
+    setLoggingOut(true);
+    const toastId = toast.loading('Disconnecting WhatsApp gateway...');
+    try {
+      const cleanUrl = gatewayUrl.trim().replace(/\/$/, '');
+      const headers: Record<string, string> = {};
+      if (gatewayToken.trim()) {
+        headers['Authorization'] = `Bearer ${gatewayToken.trim()}`;
+      }
+      const res = await fetch(`${cleanUrl}/logout`, { method: 'POST', headers });
+      if (!res.ok) throw new Error('Logout request failed');
+      toast.success('Logged out successfully. Scan a new QR code.', { id: toastId });
+      setConnectionStatus('DISCONNECTED');
+      setGatewayQr(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to logout.', { id: toastId });
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   // Save Settings
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -418,34 +470,57 @@ export default function WhatsAppManagerPage() {
         >
           <RefreshCw size={14} />
         </button>
-      </div>
-
-      {/* Gateway Connection Status */}
-      <div className="bg-[#0f1424] border border-gray-800 rounded-2xl p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-3.5 h-3.5 rounded-full ${
-            connectionStatus === 'CONNECTED' ? 'bg-emerald-500 animate-pulse' :
-            connectionStatus === 'INITIALIZING' ? 'bg-amber-500 animate-pulse' :
-            'bg-red-500'
-          }`} />
-          <div>
-            <p className="text-[9px] font-black uppercase text-gray-500">Connection Status</p>
-            <p className="text-xs font-bold text-white mt-0.5">
-              {connectionStatus === 'CONNECTED' ? 'Connected & Ready' :
-               connectionStatus === 'INITIALIZING' ? 'Initializing Session...' :
-               'Disconnected / Offline'}
-            </p>
+      </div>      {/* Gateway Connection Status */}
+      <div className="flex flex-col gap-3 bg-[#0f1424] border border-gray-800 rounded-2xl p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-3.5 h-3.5 rounded-full ${
+              connectionStatus === 'CONNECTED' ? 'bg-emerald-500 animate-pulse' :
+              connectionStatus === 'INITIALIZING' ? 'bg-amber-500 animate-pulse' :
+              'bg-red-500'
+            }`} />
+            <div>
+              <p className="text-[9px] font-black uppercase text-gray-500">Connection Status</p>
+              <p className="text-xs font-bold text-white mt-0.5">
+                {connectionStatus === 'CONNECTED' ? 'Connected & Ready' :
+                 connectionStatus === 'INITIALIZING' ? 'Scan QR / Connecting...' :
+                 'Disconnected / Offline'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {connectionStatus === 'CONNECTED' && (
+              <button
+                type="button"
+                disabled={loggingOut}
+                onClick={handleGatewayLogout}
+                className="px-3 py-1.5 bg-red-950/40 hover:bg-red-950 border border-red-800/30 text-red-400 text-[10px] uppercase font-bold tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              >
+                {loggingOut ? 'Logging out...' : 'Disconnect'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={checkGatewayStatus}
+              disabled={checkingStatus}
+              className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-[10px] font-bold text-gray-300 rounded-xl border border-gray-800 flex items-center gap-1"
+            >
+              {checkingStatus ? 'Checking...' : <><RefreshCw size={11} /> Refresh Status</>}
+            </button>
           </div>
         </div>
-        <button
-          onClick={checkGatewayStatus}
-          disabled={checkingStatus}
-          className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-[10px] font-bold text-gray-300 rounded-xl border border-gray-800 flex items-center gap-1"
-        >
-          {checkingStatus ? 'Checking...' : <><RefreshCw size={11} /> Refresh Status</>}
-        </button>
-      </div>
 
+        {connectionStatus === 'INITIALIZING' && gatewayQr && (
+          <div className="flex flex-col items-center justify-center bg-[#060813] border border-amber-500/20 rounded-xl p-4 space-y-3 mt-1">
+            <div className="bg-white p-2 rounded-xl">
+              <img src={gatewayQr} alt="WhatsApp Web QR Code" className="w-40 h-40" />
+            </div>
+            <p className="text-[10px] text-amber-400 font-bold text-center">
+              Scan this QR code with your Linked WhatsApp Phone to authenticate.
+            </p>
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Settings Form */}
         <form onSubmit={handleSaveSettings} className="bg-gradient-to-br from-[#0c1020] to-[#121630] border border-blue-900/40 rounded-3xl p-5 space-y-4 shadow-2xl">

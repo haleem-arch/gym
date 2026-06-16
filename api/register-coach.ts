@@ -167,7 +167,7 @@ ${origin}/login
         .maybeSingle();
 
       const ownerTargets = ownerProfile?.targets || {};
-      if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_token || !ownerTargets.whatsapp_instance) {
+      if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_gateway_url) {
         return;
       }
 
@@ -176,7 +176,8 @@ ${origin}/login
       if (!isTriggered) return;
 
       const cleanedPhone = formatWhatsAppPhone(phone);
-      const waEndpoint = `https://api.wapilot.net/api/v2/${ownerTargets.whatsapp_instance.trim()}/send-message`;
+      const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
+      const waEndpoint = `${gatewayUrl}/send-text`;
 
       const DEFAULT_TPL_COACH = `*LIFE GYM - Coach Portal Activated* 👑\n\nWelcome, *{display_name}*!\n\nYour administrative account has been provisioned. You can now log in to manage your clients, build workout templates, track diet logs, and approve memberships.\n\n*Your Login Credentials:*\n• *Portal Link:* {link}\n• *Username:* {username}\n• *Password:* {password}\n\n© 2026 Life Gym.`;
 
@@ -187,21 +188,29 @@ ${origin}/login
         .replace(/{password}/g, password)
         .replace(/{link}/g, `${origin}/login`);
 
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (ownerTargets.whatsapp_gateway_token) {
+        headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+      }
+
+      // Anti-ban delay throttle
+      const delayMin = ownerTargets.whatsapp_delay_min !== undefined ? Number(ownerTargets.whatsapp_delay_min) : 5;
+      const delayMax = ownerTargets.whatsapp_delay_max !== undefined ? Number(ownerTargets.whatsapp_delay_max) : 15;
+      const randomDelay = Math.floor(Math.random() * (delayMax - delayMin + 1) + delayMin);
+      await new Promise(resolve => setTimeout(resolve, randomDelay * 1000));
+
       const waRes = await fetch(waEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'token': ownerTargets.whatsapp_token.trim()
-        },
+        headers,
         body: JSON.stringify({
-          chat_id: cleanedPhone,
+          to: cleanedPhone,
           text: formattedMessage.trim()
         })
       });
 
       if (!waRes.ok) {
         const errText = await waRes.text();
-        console.error(`WaPilot WhatsApp Public Coach Welcome error: ${waRes.status}`, errText);
+        console.error(`WhatsApp Gateway Public Coach Welcome error: ${waRes.status}`, errText);
       }
     })();
 

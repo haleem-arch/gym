@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Coach Marketing Kit</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #05060f;
+      --card-bg: rgba(17, 19, 30, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --secondary: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .brand-pill {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #60a5fa;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    .main-layout {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* Left Sidebar: Navigation List */
+    .sidebar {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 24px;
+      max-height: 800px;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .post-nav-item {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      border: 1px solid transparent;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .post-nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+
+    .post-nav-item.active {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 20px -6px rgba(59, 130, 246, 0.2);
+    }
+
+    .post-nav-item .tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .post-nav-item .title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Right Preview Container */
+    .preview-container {
+      display: grid;
+      grid-template-columns: 500px 1fr;
+      gap: 30px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 32px;
+      padding: 30px;
+    }
+
+    /* Instagram Live Post Preview Frame */
+    .instagram-frame {
+      width: 440px;
+      height: 440px;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .ig-content-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      padding: 35px;
+    }
+
+    /* Details Panel */
+    .details-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      padding-left: 10px;
+    }
+
+    .details-header h3 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      background: linear-gradient(to right, #fff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .caption-box {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      white-space: pre-line;
+      max-height: 220px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .copy-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      margin-top: 20px;
+      align-self: flex-start;
+    }
+
+    .copy-btn:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Template Cards Layout Styling */
+    /* Theme Gradients */
+    .bg-gradient-1 { background: linear-gradient(135deg, #090e1a 0%, #172554 100%); }
+    .bg-gradient-2 { background: linear-gradient(135deg, #090e1a 0%, #1e1b4b 100%); }
+    .bg-gradient-3 { background: linear-gradient(135deg, #0b0f19 0%, #111827 100%); }
+    .bg-gradient-4 { background: linear-gradient(135deg, #0f172a 0%, #0369a1 100%); }
+    .bg-gradient-5 { background: linear-gradient(135deg, #18002a 0%, #3b0764 100%); }
+    .bg-gradient-6 { background: linear-gradient(135deg, #022c22 0%, #064e3b 100%); }
+    .bg-gradient-7 { background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%); }
+    .bg-gradient-8 { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+    .bg-gradient-9 { background: linear-gradient(135deg, #111827 0%, #020617 100%); }
+    .bg-gradient-10 { background: linear-gradient(135deg, #3b0764 0%, #1d4ed8 100%); }
+
+    /* Post Interiors */
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .post-logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .post-logo-symbol {
+      width: 36px;
+      height: 36px;
+    }
+
+    .post-brand-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .post-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .post-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .post-tagline {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #60a5fa;
+      letter-spacing: 0.15em;
+      margin-bottom: 8px;
+    }
+
+    .post-headline {
+      font-size: 1.85rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .post-description {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.45;
+      margin-bottom: 15px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .feature-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .feature-pill svg {
+      width: 14px;
+      height: 14px;
+      color: #3b82f6;
+    }
+
+    .post-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 15px;
+      margin-top: 15px;
+    }
+
+    .post-footer-handle {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .post-footer-action {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="brand-pill">Coaching Marketing Suite</span>
+    <h1>Life Gym Launch & Teaser Posts</h1>
+    <p>10 premium CSS-designed, interactive marketing templates tailored for coaches. Copy captions directly to engage your audience on Instagram and WhatsApp.</p>
+  </header>
+
+  <main class="main-layout">
+    <!-- Sidebar navigation -->
+    <div class="sidebar">
+      <h2>
+        <svg style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" fill="none"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Select Post Post
+      </h2>
+      <div id="nav-list"></div>
+    </div>
+
+    <!-- Right Live Preview Frame and Details Panel -->
+    <div class="preview-container">
+      <div class="instagram-frame">
+        <div id="post-view" class="ig-content-wrapper bg-gradient-1">
+          <!-- Dynamically Rendered Inside JavaScript -->
+        </div>
+      </div>
+
+      <div class="details-panel">
+        <div class="details-header">
+          <h3 id="panel-title">Post Details</h3>
+          <p id="panel-desc" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;"></p>
+          
+          <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary);">Instagram Caption & Call to Action</label>
+          <div class="caption-box" id="caption-text">
+            Caption goes here...
+          </div>
+        </div>
+
+        <button class="copy-btn" onclick="copyCaption()">
+          <svg style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" fill="currentColor"/></svg>
+          Copy Caption to Clipboard
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 10 Interactive Marketing Post Definitions
+    const posts = [
+      {
+        id: 1,
+        tag: "Teaser / Coming Soon",
+        title: "The Ultimate Coach Portal",
+        headline: "Ditch the Messy Chats. Own Your Business.",
+        tagline: "Coming Soon to Life Gym",
+        description: "A centralized, beautiful portal designed specifically for modern coaches to onboard clients, track progress, and automate their daily workflows with zero friction.",
+        gradientClass: "bg-gradient-1",
+        badge: "Teaser",
+        features: ["1-Click Onboarding", "Custom Client Goals", "Centralized CRM", "Premium Analytics"],
+        footerAction: "Swipe for Preview",
+        caption: `🚀 COMING SOON: The Ultimate Coach Portal by Life Gym! 🚀\n\nCoaches, are you tired of tracking client progress across multiple spreadsheets, notes apps, and chaotic WhatsApp threads? It's time to build a professional home for your fitness business.\n\nWe are launching a beautiful, state-of-the-art Coach Portal. Centralized athlete management, premium metric trackers, custom program design, and automated triggers—all in one place.\n\n👉 Follow @lifegym.io to be the first in line when we go live.\n📲 Need help setting up your systems? Click our WhatsApp link in bio to chat with us directly!\n\n#LifeGym #GymManagement #CoachPortal #PersonalTrainer #FitnessBusiness #CoachingSoftware #OnlineTrainer #ClientOnboarding`,
+        detailsDesc: "Use this to create hype before launching the coach portal. Highlights the professional consolidation of client details."
+      },
+      {
+        id: 2,
+        tag: "Live Now / Product Launch",
+        title: "Free Custom WhatsApp Gateway",
+        headline: "Unlimited WhatsApp Messages. No Setup Fees.",
+        tagline: "Live Now & Free Forever",
+        description: "Direct connection from your client portal to their phone. Say goodbye to expensive monthly WhatsApp APIs and unlock unlimited automated alerts.",
+        gradientClass: "bg-gradient-2",
+        badge: "New Release",
+        features: ["Zero Platform Fees", "Unlimited Sending", "Direct Connection", "Self-Hosted Control"],
+        footerAction: "Link in Bio",
+        caption: `⚡️ WE ARE LIVE: Introducing the Custom WhatsApp Gateway! ⚡️\n\nSay goodbye to overpriced third-party WhatsApp APIs that charge you per message. Life Gym's new self-hosted WhatsApp Gateway is officially live!\n\nConnect your own gateway URL and send unlimited onboarding messages, auto-replies, and broadcasts directly to your clients' phones for FREE.\n\n🔥 100% Free\n🔥 Unlimited Messages\n🔥 Full Admin Autonomy\n\n👉 Set up yours today. Link in bio of @lifegym.io\n📲 Got questions about the self-hosted gateway? Message us directly via the WhatsApp link in bio!`,
+        detailsDesc: "Promotes the core value proposition of the custom WhatsApp gateway: unlimited messages, zero markup fees."
+      },
+      {
+        id: 3,
+        tag: "Feature Spotlight",
+        title: "Automated Welcome Engine",
+        headline: "Welcome New Clients Instantly, Automatically.",
+        tagline: "Feature Highlight",
+        description: "Send professional, custom onboarding guides and welcome messages to new clients as soon as they subscribe. No manual typing required.",
+        gradientClass: "bg-gradient-3",
+        badge: "Automations",
+        features: ["Welcome Messages", "Instant Dispatch", "Dynamic Templates", "Delay Intervals"],
+        footerAction: "Learn More",
+        caption: `👋 First impressions matter. Automate your client welcome sequences with Life Gym!\n\nThe moment a new athlete joins your team, Life Gym automatically sends a warm, professional onboarding message directly to their WhatsApp. Share registration links, welcome guides, and instructions instantly without lifting a finger.\n\nKeep your clients engaged and scaling from second one.\n\n👉 Explore all automation features at @lifegym.io\n📲 Need setup help? Click our WhatsApp link in bio!`,
+        detailsDesc: "Focuses on the welcome automation, saving hours of manual onboarding work."
+      },
+      {
+        id: 4,
+        tag: "Feature Spotlight",
+        title: "Bulk Broadcast Hub",
+        headline: "Broadcast to 100+ Athletes in 1-Click.",
+        tagline: "Feature Highlight",
+        description: "Announce schedule changes, group challenges, motivational updates, or PDF files. Reach all your clients simultaneously on their favorite app.",
+        gradientClass: "bg-gradient-4",
+        badge: "Broadcasting",
+        features: ["Bulk Messages", "File Attachments", "Anti-Ban Protection", "Real-Time Tracking"],
+        footerAction: "Try It Now",
+        caption: `📣 Reach all your athletes in seconds with the Bulk Broadcast Hub!\n\nWhether you are sending a workout reminder, announcing a group challenge, or distributing a new meal guide PDF, Life Gym makes it easy. Draft one message, select your clients, and hit send.\n\nOur intelligent background dispatcher delivers your message to everyone safely.\n\n👉 Discover the broadcast console on @lifegym.io\n📲 Ready to set up your bulk sender? Message us via our WhatsApp link in bio!`,
+        detailsDesc: "Highlights the capability to send broadcast announcements and files instantly."
+      },
+      {
+        id: 5,
+        tag: "Feature Spotlight",
+        title: "Keyword Auto-Replies",
+        headline: "Stay Open 24/7 with Interactive Replies.",
+        tagline: "Feature Highlight",
+        description: "Define custom keywords (like 'price', 'workout', 'diet') and let our gateway reply instantly. Never miss a client query again.",
+        gradientClass: "bg-gradient-5",
+        badge: "Auto Reply",
+        features: ["Keyword Matching", "Instant Answers", "Welcome Rules", "Custom Responses"],
+        footerAction: "Configure Now",
+        caption: `🤖 Let your WhatsApp handle the repetitive questions while you sleep!\n\nLife Gym's Keyword Auto-Reply engine answers incoming client queries instantly. Configure rules like:\n💬 "Price" ➡️ Auto-sends your coaching packages\n💬 "Schedule" ➡️ Auto-sends booking links\n💬 "Diet" ➡️ Auto-sends standard nutrition guidelines\n\nRemain 100% responsive, increase client satisfaction, and reclaim your time.\n\n👉 Setup guidelines are live at @lifegym.io\n📲 Get free support setting up your rules: Link in bio!`,
+        detailsDesc: "Explains how keyword-based interactive auto-replies act as a 24/7 automated coaching receptionist."
+      },
+      {
+        id: 6,
+        tag: "Savings & Benefits",
+        title: "Say Goodbye to Per-Message Fees",
+        headline: "Stop Paying for WhatsApp API Markup.",
+        tagline: "Zero Cost Gateway",
+        description: "Own-brand communication gateway. Host it yourself easily, pay nothing for API traffic, and send unconstrained files and templates.",
+        gradientClass: "bg-gradient-6",
+        badge: "Save Money",
+        features: ["No Monthly Fees", "Zero Markup", "Self-Hosted Privacy", "Unrestricted Files"],
+        footerAction: "Start Saving",
+        caption: `💸 Attention Coaches: Stop wasting money on expensive monthly WhatsApp API bills!\n\nMost providers charge a flat fee PLUS a markup on every message you send. With Life Gym, you connect your own free gateway and pay absolutely nothing for traffic.\n\nUnlimited onboarding alerts, unlimited workout messages, unlimited broadcasts. 100% free.\n\n👉 Learn how to launch your gateway for free: Link in bio @lifegym.io\n📲 Message us via the WhatsApp link in our bio to get set up!`,
+        detailsDesc: "Direct financial hook showing coaches how much they save compared to traditional providers."
+      },
+      {
+        id: 7,
+        tag: "Anti-Ban Protection",
+        title: "Intelligent Anti-Ban Safeguards",
+        headline: "Reach Clients Safely. Protect Your Number.",
+        tagline: "Security Feature",
+        description: "Built-in smart randomized throttling delays between messages, coupled with automated warm-up messaging loops to keep your account safe.",
+        gradientClass: "bg-gradient-7",
+        badge: "Account Safety",
+        features: ["Randomized Delays", "Warm-Up Loops", "Safety Thresholds", "Natural Throttling"],
+        footerAction: "Learn Security",
+        caption: `🛡️ Send bulk messages without fear of WhatsApp bans!\n\nLife Gym protects your coaching number with state-of-the-art Anti-Ban safeguards:\n🔹 Randomized Throttling: Adds a natural, human-like delay between sent messages.\n🔹 Warm-up Loops: Dispatches friendly messages to your trusted test numbers to keep your channel warm.\n\nProfessional, automated, and secure communications.\n\n👉 Read our safety guide at @lifegym.io\n📲 Want to make sure your account is safe? Contact us via the WhatsApp link in bio!`,
+        detailsDesc: "Explains the technical anti-ban safeguarding methods built into the dashboard."
+      },
+      {
+        id: 8,
+        tag: "Live Now / UI Showcase",
+        title: "WhatsApp Manager Console",
+        headline: "Control Everything in a Premium Dashboard.",
+        tagline: "Live Now",
+        description: "Monitor connectivity status, configure anti-ban delays, edit custom greeting keywords, and track message dispatch history in real time.",
+        gradientClass: "bg-gradient-8",
+        badge: "Admin Suite",
+        features: ["Live Pairing Check", "Anti-Ban Control", "Dynamic Counters", "Keyword Registry"],
+        footerAction: "View Console",
+        caption: `💻 Control your entire WhatsApp marketing directly inside Life Gym!\n\nOur brand-new WhatsApp Manager Console is live on the system dashboard. Toggle notifications, monitor your gateway status, tweak anti-ban variables, customize auto-replies, and send broadcasts from one premium control hub.\n\nComplete autonomy, beautiful layout, total utility.\n\n👉 Experience the console now: @lifegym.io\n📲 Need a quick walkthrough? Message us via our WhatsApp link in bio!`,
+        detailsDesc: "Showcases the premium admin layout of the WhatsApp Manager dashboard."
+      },
+      {
+        id: 9,
+        tag: "Testimonial & Proof",
+        title: "Double Client Retention",
+        headline: "Keep Clients Accountable and Retained Longer.",
+        tagline: "Coaching Results",
+        description: "Automated progress tracking reminders sent straight to WhatsApp increase program adherence and client renewal rates by up to 2.4x.",
+        gradientClass: "bg-gradient-9",
+        badge: "Client Growth",
+        features: ["Daily Accountability", "High Response Rates", "Progress Triggers", "Renewal Boosts"],
+        footerAction: "See Case Study",
+        caption: `📈 How Automated WhatsApp Reminders Can Double Your Client Retention!\n\nEmail newsletters go unread. In-app notifications get swiped away. But WhatsApp has a 98% open rate.\n\nBy automating daily check-in links and workout accountability prompts straight to your clients' WhatsApp, you keep them fully engaged. Increased engagement leads to better results, and better results mean higher client retention.\n\n👉 Level up your accountability strategy with @lifegym.io\n📲 Tap the link in bio to message us on WhatsApp and get started!`,
+        detailsDesc: "Focuses on the business outcome (client retention) of using automated WhatsApp follow-ups."
+      },
+      {
+        id: 10,
+        tag: "Call to Action",
+        title: "Join Life Gym Today",
+        headline: "Scale Your Coaching Team and Reclaim Your Time.",
+        tagline: "Get Started Now",
+        description: "Create your free coach account today. Experience the power of self-hosted automations, bulk scheduling, and responsive user portals.",
+        gradientClass: "bg-gradient-10",
+        badge: "Get Started",
+        features: ["Free Registration", "Instant Activation", "No Credit Card", "Unlimited Gateway"],
+        footerAction: "Register Now",
+        caption: `Ready to stop working IN your business and start working ON your business? 🚀\n\nLife Gym equips you with the tools, custom gateways, and portal automation you need to scale your coaching team, double client satisfaction, and reclaim hours of manual admin time every single week.\n\nJoin hundreds of successful coaches who have consolidated their portals.\n\n👉 Sign up for free: Link in bio @lifegym.io\n📲 Have questions before signing up? Click our WhatsApp link in bio to chat with our team!`,
+        detailsDesc: "A strong closing call-to-action to convert coaches who visit the Instagram page."
+      }
+    ];
+
+    // Dumbbell Logo SVG
+    const logoSvg = `
+      <svg viewBox="0 0 512 512" style="width: 100%; height: 100%; image-rendering: crisp-edges;">
+        <g transform="translate(256 256) rotate(-45)">
+          <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#ffffff" opacity="0.3" />
+          <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+          <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+          <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+          <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+          <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+        </g>
+      </svg>
+    `;
+
+    // Render Navigation List
+    const navContainer = document.getElementById("nav-list");
+    
+    function initApp() {
+      posts.forEach((post, index) => {
+        const item = document.createElement("div");
+        item.className = `post-nav-item ${index === 0 ? 'active' : ''}`;
+        item.onclick = () => selectPost(index);
+        item.innerHTML = `
+          <span class="tag" style="color: ${getTagColor(post.tag)}">${post.tag}</span>
+          <span class="title">${post.title}</span>
+        `;
+        navContainer.appendChild(item);
+      });
+
+      // Load first post
+      selectPost(0);
+    }
+
+    function getTagColor(tag) {
+      if (tag.includes("Live Now")) return "#10b981";
+      if (tag.includes("Teaser")) return "#f59e0b";
+      if (tag.includes("Feature")) return "#3b82f6";
+      return "#8b5cf6";
+    }
+
+    function selectPost(index) {
+      // Toggle active states on side list
+      const items = document.querySelectorAll(".post-nav-item");
+      items.forEach((item, idx) => {
+        if (idx === index) item.classList.add("active");
+        else item.classList.remove("active");
+      });
+
+      const post = posts[index];
+      
+      // Update Instagram Simulated Image Canvas
+      const postView = document.getElementById("post-view");
+      postView.className = `ig-content-wrapper ${post.gradientClass}`;
+      
+      postView.innerHTML = `
+        <div class="post-header">
+          <div class="post-logo-row">
+            <div class="post-logo-symbol">${logoSvg}</div>
+            <div class="post-brand-name">Life Gym</div>
+          </div>
+          <div class="post-badge">${post.badge}</div>
+        </div>
+
+        <div class="post-main">
+          <div class="post-tagline">${post.tagline}</div>
+          <div class="post-headline">${post.headline}</div>
+          <div class="post-description">${post.description}</div>
+          
+          <div class="feature-grid">
+            ${post.features.map(feat => `
+              <div class="feature-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                ${feat}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="post-footer">
+          <div class="post-footer-handle">@lifegym.io</div>
+          <div class="post-footer-action">
+            ${post.footerAction}
+            <svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      `;
+
+      // Update Info Panel details
+      document.getElementById("panel-title").innerText = `${index + 1}. ${post.title}`;
+      document.getElementById("panel-desc").innerText = post.detailsDesc;
+      
+      const captionText = document.getElementById("caption-text");
+      captionText.innerText = post.caption;
+    }
+
+    function copyCaption() {
+      const captionText = document.getElementById("caption-text").innerText;
+      navigator.clipboard.writeText(captionText).then(() => {
+        alert("Caption copied successfully to clipboard!");
+      }).catch(err => {
+        console.error("Could not copy text: ", err);
+      });
+    }
+
+    // Run Initialization
+    initApp();
+  </script>
+</body>
+</html>

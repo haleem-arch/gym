@@ -1,0 +1,93 @@
+=== INSTAGRAM / YOUTUBE AD TRANSCRIPTS & CAPTIONS FOR V2 VIDEOS ===
+
+This file logs the exact scripts for the 12 generated video assets.
+
+==================================================
+VIDEO ID 1 [16:9] - The Full Loop
+==================================================
+[Story Description]:
+- Full Loop: Hook, WhatsApp Credentials Invite, Coach adding Client Roster, Client PWA logger and Syncing.
+
+
+==================================================
+VIDEO ID 2 [16:9] - WhatsApp Onboarding
+==================================================
+[Story Description]:
+- WhatsApp Onboarding: Invitation Form submit, WhatsApp Bot chat receive, Client PWA installation.
+
+
+==================================================
+VIDEO ID 3 [16:9] - Hydration & Macros Sync
+==================================================
+[Story Description]:
+- Hydration & Macros Sync: TodayView macros rings tracking, logging +0.5L water, Coach gauge syncing up to 80%.
+
+
+==================================================
+VIDEO ID 4 [16:9] - Churn Risk Prevention
+==================================================
+[Story Description]:
+- Churn Warning & WhatsApp Auto-Reminders: Coach Roster red churn alerts, automated outreach message template trigger.
+
+
+==================================================
+VIDEO ID 5 [16:9] - InBody Text Parser
+==================================================
+[Story Description]:
+- InBody Parser: Raw text paste, click Parse, composition data visual mapping (SMM, Fat % indicators).
+
+
+==================================================
+VIDEO ID 6 [9:16] - The Full Loop (Reel)
+==================================================
+[Story Description]:
+- Full Loop: Hook, WhatsApp Credentials Invite, Coach adding Client Roster, Client PWA logger and Syncing.
+
+
+==================================================
+VIDEO ID 7 [9:16] - WhatsApp Onboarding (Reel)
+==================================================
+[Story Description]:
+- WhatsApp Onboarding: Invitation Form submit, WhatsApp Bot chat receive, Client PWA installation.
+
+
+==================================================
+VIDEO ID 8 [9:16] - Hydration & Macros Sync (Reel)
+==================================================
+[Story Description]:
+- Hydration & Macros Sync: TodayView macros rings tracking, logging +0.5L water, Coach gauge syncing up to 80%.
+
+
+==================================================
+VIDEO ID 9 [9:16] - Churn Risk Prevention (Reel)
+==================================================
+[Story Description]:
+- Churn Warning & WhatsApp Auto-Reminders: Coach Roster red churn alerts, automated outreach message template trigger.
+
+
+==================================================
+VIDEO ID 10 [9:16] - InBody Text Parser (Reel)
+==================================================
+[Story Description]:
+- InBody Parser: Raw text paste, click Parse, composition data visual mapping (SMM, Fat % indicators).
+
+
+==================================================
+VIDEO ID 11 [9:16] - Real Tracker Sync (Reel - 10s Fast Ad)
+==================================================
+[Story Description]:
+- 10s Fast non-stop Animation Ad: Hooks the Excel pain point, logs 3 sets (100kg x 10/8/6 reps) on client PWA, transitions to Coach Dashboard workouts list, and triggers the codebase GymReceipt stats counts modal. Lasts exactly 10 seconds. Silent Version.
+
+
+==================================================
+VIDEO ID 12 [9:16] - Real Tracker Sync (Reel - 10s Fast Ad with Programmatic Audio)
+==================================================
+[Story Description]:
+- 10s Fast non-stop Animation Ad: Vertical Reel duplicate of Video 11 containing programmatic Web Audio API synthesizers. Includes tactile selector tick clicks, rewarding double-chime arpeggios on set logs, sweep whooshes on repetitions and viewport panning, a C-major receipt fanfare chime, and a deep outro bass drop impact.
+
+
+==================================================
+VIDEO ID 13 [9:16] - Full SaaS Loop (Reel - 30s Fast Ad with Programmatic Audio)
+==================================================
+[Story Description]:
+- 30s Fast Animation Ad: Covers the full SaaS loop: Coach Landing page signup form → account registration form onboarding → Coach Portal Roster (adding client Youssef Ali) → Client PWA workout logger (bench pressing and entering sets) → Client PWA macro and water tracker (barcode scanner simulation and water logging) → Client PWA InBody score visual → Coach Portal real-time dashboard sync profile verification (checking client's workout logs, meals, water, and body composition). Compiled as a 1080p MP4 file with high-fidelity synthesizers.

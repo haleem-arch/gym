@@ -169,7 +169,37 @@ ipcMain.on('download-and-install-update', (event, downloadUrl) => {
 });
 
 // App lifecycle event listeners
+let gatewayProcess = null;
+
+function startWhatsAppGateway() {
+  const gatewayPath = path.join(__dirname, 'whatsapp-gateway', 'server.js');
+  if (fs.existsSync(gatewayPath)) {
+    console.log('Spawning WhatsApp Gateway child process at:', gatewayPath);
+    try {
+      gatewayProcess = spawn('node', [gatewayPath], {
+        env: {
+          ...process.env,
+          PORT: '3001',
+          WHATSAPP_GATEWAY_TOKEN: 'life-gym-token-12345',
+          WEBHOOK_URL: 'https://gym-kappa-three.vercel.app/api/user-management?action=whatsapp-incoming',
+          WEBHOOK_TOKEN: 'life-gym-token-12345'
+        },
+        stdio: 'inherit'
+      });
+
+      gatewayProcess.on('error', (err) => {
+        console.error('Failed to start WhatsApp Gateway child process:', err);
+      });
+    } catch (err) {
+      console.error('Error spawning WhatsApp Gateway process:', err);
+    }
+  } else {
+    console.error('WhatsApp Gateway server.js not found at:', gatewayPath);
+  }
+}
+
 app.whenReady().then(() => {
+  startWhatsAppGateway();
   createWindow();
 
   app.on('activate', () => {
@@ -180,6 +210,14 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  if (gatewayProcess) {
+    console.log('Terminating WhatsApp Gateway child process...');
+    try {
+      gatewayProcess.kill();
+    } catch (e) {
+      console.error('Failed to kill gateway process:', e);
+    }
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
