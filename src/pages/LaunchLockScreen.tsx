@@ -125,15 +125,22 @@ export default function LaunchLockScreen({
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('launch_waitlist')
-        .insert([{
+      const response = await fetch('/api/join-waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           name: name.trim(),
           email: email.trim().toLowerCase(),
           phone: whatsappPhone.trim()
-        }]);
+        })
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to join waitlist');
+      }
 
       setSubmitted(true);
       toast.success('Successfully joined the waitlist!');
