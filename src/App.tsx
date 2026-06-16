@@ -93,8 +93,8 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | null, session: any, onCheckLaunch: () => void }) => {
-  const [showIntro, setShowIntro] = useState(true);
+const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { userRole: string | null, session: any, onCheckLaunch: () => void, showWelcomeSplash?: boolean }) => {
+  const [showIntro, setShowIntro] = useState(!showWelcomeSplash);
   const location = useLocation();
 
   const navigate = useNavigate();
@@ -818,11 +818,12 @@ function App() {
           <Route path="*" element={
             <>
               <CookieConsent />
-              {showWelcomeSplash ? (
-                <div className="w-full h-screen bg-[#060713]" />
-              ) : (
-                <AppContent userRole={userRole} session={session} onCheckLaunch={checkLaunchStatus} />
-              )}
+              <AppContent 
+                userRole={userRole} 
+                session={session} 
+                onCheckLaunch={checkLaunchStatus} 
+                showWelcomeSplash={showWelcomeSplash}
+              />
             </>
           } />
         </Routes>
