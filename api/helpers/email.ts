@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import dns from 'dns';
 import { createClient } from '@supabase/supabase-js';
 
-const GMAIL_USER = process.env.GMAIL_USER || 'tsmhaleem@gmail.com';
+const GMAIL_USER = process.env.GMAIL_USER || 'life.gym.team@gmail.com';
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'grhmtoukbmkpoofo';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';

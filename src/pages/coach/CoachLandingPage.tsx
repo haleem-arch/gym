@@ -1091,7 +1091,7 @@ export default function CoachLandingPage() {
             Terms of Use
           </button>
           <a 
-            href="https://wa.me/201128828954?text=Hello%20Life%20Gym%20Team%2C%20I%20need%20support%20with%20my%20account." 
+            href="https://wa.me/201031449441?text=Hello%20Life%20Gym%20Team%2C%20I%20need%20support%20with%20my%20account." 
             target="_blank" 
             rel="noopener noreferrer" 
             className="hover:text-white transition-colors bg-transparent border-none p-0 cursor-pointer font-bold"
