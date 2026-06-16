@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendBulkEmails } from './helpers/email.js'
+import { waitUntil } from '@vercel/functions'
 
 const globalProcess = (globalThis as any).process || { env: {} };
 
@@ -78,9 +79,9 @@ export default async function handler(req: any, res: any) {
 
     const ownerTargets = ownerProfile?.targets || {};
 
-    // 3. Send WhatsApp confirmation (Awaited to ensure completion on serverless)
-    if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
-      try {
+    // 3. Define WhatsApp send promise
+    const sendWhatsAppPromise = (async () => {
+      if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
         const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
         const waEndpoint = `${gatewayUrl}/send-text`;
 
@@ -118,15 +119,13 @@ export default async function handler(req: any, res: any) {
             .eq('id', OWNER_ID);
         } else {
           const errTxt = await waRes.text();
-          console.error('Failed to send waitlist WhatsApp message:', errTxt);
+          throw new Error(`Gateway returned status ${waRes.status}: ${errTxt}`);
         }
-      } catch (waErr) {
-        console.error('WhatsApp gateway fetch error:', waErr);
       }
-    }
+    })();
 
-    // 4. Send Email confirmation (Awaited to ensure completion on serverless)
-    try {
+    // 4. Define Email send promise
+    const sendEmailPromise = (async () => {
       const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -194,16 +193,25 @@ export default async function handler(req: any, res: any) {
 </body>
 </html>`;
 
-      const emailResults = await sendBulkEmails({
+      await sendBulkEmails({
         to: email.trim(),
         subject: "You're on the list! 🚀 | Life Gym",
-        text: `Hello ${name.trim()}!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist!\n\nWe are putting the final touches on the platform. As soon as the website goes live, we will send your official credentials and early access link to your inbox and WhatsApp!\n\nBest,\nLife Gym Team`,
+        text: `Hello ${name.trim()}!\n\nThank you for requesting access to Life Gym. We've successfully added you to our launch waitlist!\n\nWe are putting the final touches on the platform. As soon as the website goes live, you will be the first to receive your official credentials and early access link to your inbox and WhatsApp!\n\nBest,\nLife Gym Team`,
         html: emailHtml
       });
-      console.log('Waitlist email send results:', emailResults);
-    } catch (emailErr) {
-      console.error('Waitlist email send failed:', emailErr);
-    }
+    })();
+
+    // 5. Run both promises in the background via Vercel waitUntil
+    waitUntil(
+      Promise.all([
+        sendWhatsAppPromise.catch(waErr => {
+          console.error('Waitlist WhatsApp send failed:', waErr);
+        }),
+        sendEmailPromise.catch(emailErr => {
+          console.error('Waitlist email send failed:', emailErr);
+        })
+      ])
+    );
 
     return res.status(200).json({ success: true });
   } catch (err: any) {
