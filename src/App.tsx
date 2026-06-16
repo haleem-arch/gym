@@ -114,7 +114,7 @@ const AppContent = ({ userRole, session }: { userRole: string | null, session: a
   
   useEffect(() => {
     if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
-      navigate('/coach/dashboard', { replace: true });
+      navigate('/coach-portal', { replace: true });
     }
   }, [isCoachOrOwner, location.pathname, isCoachPortal]);
 
