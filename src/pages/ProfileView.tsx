@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield, MessageSquare } from 'lucide-react';
+import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield, MessageSquare, Lightbulb, Star, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ProfileSkeleton } from '../components/SkeletonLoaders';
 
@@ -18,13 +18,35 @@ export default function ProfileView() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Feedback Form State
+    // Feedback Form State
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackCategory, setFeedbackCategory] = useState<'feedback' | 'bug'>('feedback');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackSuccessShow, setFeedbackSuccessShow] = useState(false);
+  const [lastFeedbackTime, setLastFeedbackTime] = useState<number | null>(() => {
+    const saved = localStorage.getItem('athlete_last_feedback_time');
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [lockMinutesLeft, setLockMinutesLeft] = useState(0);
+
+  useEffect(() => {
+    if (!lastFeedbackTime) return;
+    const updateLock = () => {
+      const diff = Date.now() - lastFeedbackTime;
+      const ONE_HOUR = 60 * 60 * 1000;
+      if (diff < ONE_HOUR) {
+        setLockMinutesLeft(Math.ceil((ONE_HOUR - diff) / 60000));
+      } else {
+        setLockMinutesLeft(0);
+      }
+    };
+    updateLock();
+    const interval = setInterval(updateLock, 10000);
+    return () => clearInterval(interval);
+  }, [lastFeedbackTime]);
 
   useEffect(() => {
     fetchProfileAndCoach();
@@ -121,7 +143,7 @@ export default function ProfileView() {
     }
   };
 
-  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedbackMessage.trim()) return;
     setSubmittingFeedback(true);
@@ -135,7 +157,7 @@ export default function ProfileView() {
         .from('feedbacks')
         .insert({
           user_id: session?.user?.id || null,
-          rating: feedbackRating || null,
+          rating: feedbackCategory === 'bug' ? null : (feedbackRating || null),
           message: feedbackMessage.trim(),
           name: profile?.display_name || null,
           email: profile?.email || null,
@@ -144,10 +166,16 @@ export default function ProfileView() {
         });
 
       if (error) throw error;
+      
+      const now = Date.now();
+      localStorage.setItem('athlete_last_feedback_time', now.toString());
+      setLastFeedbackTime(now);
+      
       setFeedbackSuccess(true);
       setFeedbackMessage('');
       setFeedbackRating(5);
       setFeedbackCategory('feedback');
+      setFeedbackSuccessShow(true);
     } catch (err: any) {
       console.error(err);
       setFeedbackError(err.message || 'Failed to submit feedback.');
@@ -381,100 +409,151 @@ export default function ProfileView() {
         </form>
       </motion.div>
 
-      {/* Send Feedback / Report Problem Card */}
+            {/* Send Feedback / Report Problem Card (Glassmorphism layout) */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="bg-surface border border-gray-800 rounded-3xl p-6 shadow-lg space-y-5"
+        className="border border-white/[0.06] bg-zinc-950/40 backdrop-blur-xl rounded-3xl p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] space-y-5 relative overflow-hidden"
       >
-        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2 border-b border-gray-800/80 pb-2">
-          <MessageSquare size={14} /> Send Feedback or Report Problem
-        </h3>
+        <AnimatePresence mode="wait">
+          {feedbackSuccessShow ? (
+            <motion.div
+              key="thanks"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex flex-col items-center justify-center py-8 text-center space-y-3"
+            >
+              <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
+                <CheckCircle size={28} />
+              </div>
+              <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider">Thank You!</h3>
+              <p className="text-[11px] text-gray-300 max-w-xs">Your feedback helps us make the platform better. We have received your submission.</p>
+              <button
+                type="button"
+                onClick={() => setFeedbackSuccessShow(false)}
+                className="mt-4 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              >
+                Close
+              </button>
+            </motion.div>
+          ) : lastFeedbackTime && (Date.now() - lastFeedbackTime < 60 * 60 * 1000) ? (
+            <motion.div
+              key="locked"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-8 text-center space-y-3"
+            >
+              <div className="w-14 h-14 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <Clock size={26} />
+              </div>
+              <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Form Locked</h3>
+              <p className="text-[11px] text-gray-300 max-w-xs">To prevent spam, you can submit feedback once per hour.</p>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2 text-[10px] text-gray-400 font-mono mt-1">
+                Try again in: <span className="text-blue-400 font-bold">{lockMinutesLeft} minutes</span>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-5"
+            >
+              <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2 border-b border-white/[0.06] pb-2">
+                <MessageSquare size={14} /> Send Feedback or Report Problem
+              </h3>
 
-        <form onSubmit={handleSubmitFeedback} className="space-y-4">
-          {/* Submission Category */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider ml-1">Submission Type</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setFeedbackCategory('feedback')}
-                className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                  feedbackCategory === 'feedback'
-                    ? 'bg-blue-600/15 border-blue-500 text-blue-400'
-                    : 'bg-transparent border-gray-800 text-gray-400 hover:border-gray-700'
-                }`}
-              >
-                💡 General Feedback
-              </button>
-              <button
-                type="button"
-                onClick={() => setFeedbackCategory('bug')}
-                className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                  feedbackCategory === 'bug'
-                    ? 'bg-red-600/15 border-red-500 text-red-400'
-                    : 'bg-transparent border-gray-800 text-gray-400 hover:border-gray-700'
-                }`}
-              >
-                ⚠️ Report a Bug
-              </button>
-            </div>
-          </div>
-          {/* Rating */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider ml-1">Rating (Optional)</label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
+              <form onSubmit={handleSubmitFeedback} className="space-y-4">
+                {/* Submission Category */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider ml-1">Submission Type</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackCategory('feedback')}
+                      className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        feedbackCategory === 'feedback'
+                          ? 'bg-blue-600/15 border-blue-500/30 text-blue-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
+                          : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 hover:border-white/[0.1] hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <Lightbulb size={12} className="shrink-0" />
+                      <span>Feedback</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackCategory('bug')}
+                      className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        feedbackCategory === 'bug'
+                          ? 'bg-red-600/15 border-red-500/30 text-red-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
+                          : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 hover:border-white/[0.1] hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <AlertTriangle size={12} className="shrink-0" />
+                      <span>Bug Report</span>
+                    </button>
+                  </div>
+                </div>
+
+                {feedbackCategory !== 'bug' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider ml-1">Rating (Optional)</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setFeedbackRating(star)}
+                          className="transition-transform hover:scale-120 duration-150 p-1 cursor-pointer focus:outline-none"
+                        >
+                          <Star
+                            size={20}
+                            className={`transition-colors duration-150 ${
+                              star <= feedbackRating
+                                ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]'
+                                : 'text-zinc-655 hover:text-zinc-400'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Feedback Message */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider ml-1">Your Message</label>
+                  <textarea
+                    value={feedbackMessage}
+                    onChange={e => setFeedbackMessage(e.target.value)}
+                    placeholder="Tell us what went wrong, suggest an improvement, or share your thoughts..."
+                    rows={4}
+                    required
+                    className="w-full bg-[#121624]/60 border border-white/[0.06] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors resize-none placeholder-gray-655"
+                  />
+                </div>
+
+                {/* Alerts */}
+                {feedbackError && (
+                  <div className="bg-red-950/40 border border-red-500/20 rounded-xl p-3 flex items-start gap-2 text-red-400 text-xs animate-shake">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                    <span>{feedbackError}</span>
+                  </div>
+                )}
+
                 <button
-                  key={star}
-                  type="button"
-                  onClick={() => setFeedbackRating(star)}
-                  className={`text-lg p-1 transition-colors ${
-                    star <= feedbackRating ? 'text-amber-400' : 'text-gray-600 hover:text-gray-400'
-                  }`}
+                  type="submit"
+                  disabled={submittingFeedback || !feedbackMessage.trim()}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-98 disabled:bg-gray-850 disabled:text-gray-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-blue-500"
                 >
-                  ★
+                  {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Feedback Message */}
-          <div className="space-y-1">
-            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider ml-1">Your Message</label>
-            <textarea
-              value={feedbackMessage}
-              onChange={e => setFeedbackMessage(e.target.value)}
-              placeholder="Tell us what went wrong, suggest an improvement, or share your thoughts..."
-              rows={4}
-              className="w-full bg-[#121624] border border-gray-800 rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500 transition-colors resize-none"
-            />
-          </div>
-
-          {/* Alerts */}
-          {feedbackError && (
-            <div className="bg-red-950/40 border border-red-500/20 rounded-xl p-3 flex items-start gap-2 text-red-400 text-xs">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
-              <span>{feedbackError}</span>
-            </div>
+              </form>
+            </motion.div>
           )}
-
-          {feedbackSuccess && (
-            <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-xl p-3 flex items-start gap-2 text-emerald-400 text-xs">
-              <CheckCircle size={14} className="shrink-0 mt-0.5" />
-              <span>Feedback submitted successfully! Thank you.</span>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={submittingFeedback || !feedbackMessage.trim()}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 active:scale-98 disabled:bg-gray-850 disabled:text-gray-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
-          </button>
-        </form>
+        </AnimatePresence>
       </motion.div>
     </div>
   );
