@@ -245,7 +245,6 @@ function App() {
 
   const [launchStatus, setLaunchStatus] = useState<'live' | 'coming_soon' | 'maintenance'>('live');
   const [launchTime, setLaunchTime] = useState<string | null>(null);
-  const [bypassPasscode, setBypassPasscode] = useState('haleem@425336');
   const [bypassActive, setBypassActive] = useState(false);
   const [checkingLaunch, setCheckingLaunch] = useState(true);
   const [lockCoaches, setLockCoaches] = useState(false);
@@ -254,14 +253,13 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('launch_settings')
-        .select('status, launch_time, bypass_passcode, lock_coaches')
+        .select('status, launch_time, lock_coaches')
         .eq('id', 'main')
         .maybeSingle();
 
       if (!error && data) {
         setLaunchStatus(data.status);
         setLaunchTime(data.launch_time);
-        setBypassPasscode(data.bypass_passcode);
         setLockCoaches(!!data.lock_coaches);
         
         // Auto-launch check
@@ -284,12 +282,25 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Check localStorage for bypass token
-    const savedBypass = localStorage.getItem('bypass_launch_control') === 'true';
-    if (savedBypass) {
-      setBypassActive(true);
-    }
+    const verifySavedBypass = async () => {
+      const token = localStorage.getItem('bypass_launch_control');
+      if (token) {
+        try {
+          const { data: isValid } = await supabase
+            .rpc('verify_bypass_hash', { entered_hash: token });
+          if (isValid) {
+            setBypassActive(true);
+          } else {
+            localStorage.removeItem('bypass_launch_control');
+            setBypassActive(false);
+          }
+        } catch (e) {
+          console.error('Bypass verification error:', e);
+        }
+      }
+    };
 
+    verifySavedBypass();
     checkLaunchStatus();
     const interval = setInterval(checkLaunchStatus, 5000); // Check every 5s
     return () => clearInterval(interval);
@@ -632,7 +643,6 @@ function App() {
           <LaunchLockScreen 
             status={launchStatus as 'coming_soon' | 'maintenance'} 
             launchTime={launchTime} 
-            bypassPasscode={bypassPasscode} 
             onBypassSuccess={() => setBypassActive(true)} 
           />
         </Suspense>

@@ -18,7 +18,6 @@ import toast from 'react-hot-toast';
 interface LaunchLockScreenProps {
   status: 'coming_soon' | 'maintenance';
   launchTime: string | null;
-  bypassPasscode: string;
   onBypassSuccess: () => void;
 }
 
@@ -50,7 +49,6 @@ const BrandLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
 export default function LaunchLockScreen({ 
   status, 
   launchTime, 
-  bypassPasscode,
   onBypassSuccess 
 }: LaunchLockScreenProps) {
   // Waitlist form state
@@ -149,15 +147,28 @@ export default function LaunchLockScreen({
   };
 
   // Handle Admin Bypass
-  const handleBypassSubmit = (e: React.FormEvent) => {
+  const handleBypassSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (enteredPasscode.trim() === bypassPasscode.trim()) {
-      localStorage.setItem('bypass_launch_control', 'true');
-      toast.success('Admin access granted');
-      onBypassSuccess();
-    } else {
-      toast.error('Invalid passcode');
-      setEnteredPasscode('');
+    const cleanPasscode = enteredPasscode.trim();
+    if (!cleanPasscode) return;
+
+    try {
+      const { data: token, error } = await supabase
+        .rpc('verify_bypass_passcode', { entered_passcode: cleanPasscode });
+
+      if (error) throw error;
+
+      if (token) {
+        localStorage.setItem('bypass_launch_control', token);
+        toast.success('Admin access granted');
+        onBypassSuccess();
+      } else {
+        toast.error('Invalid passcode');
+        setEnteredPasscode('');
+      }
+    } catch (err) {
+      console.error('Bypass verification error:', err);
+      toast.error('Verification failed');
     }
   };
 
