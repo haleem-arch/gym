@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield, MessageSquare, Lightbulb, Star, AlertTriangle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ProfileSkeleton } from '../components/SkeletonLoaders';
 
 export default function ProfileView() {
@@ -24,7 +24,6 @@ export default function ProfileView() {
   const [feedbackCategory, setFeedbackCategory] = useState<'feedback' | 'bug'>('feedback');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const [feedbackSuccessShow, setFeedbackSuccessShow] = useState(false);
   const [lastFeedbackTime, setLastFeedbackTime] = useState<number | null>(() => {
     const saved = localStorage.getItem('athlete_last_feedback_time');
@@ -148,7 +147,6 @@ export default function ProfileView() {
     if (!feedbackMessage.trim()) return;
     setSubmittingFeedback(true);
     setFeedbackError(null);
-    setFeedbackSuccess(false);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -171,7 +169,6 @@ export default function ProfileView() {
       localStorage.setItem('athlete_last_feedback_time', now.toString());
       setLastFeedbackTime(now);
       
-      setFeedbackSuccess(true);
       setFeedbackMessage('');
       setFeedbackRating(5);
       setFeedbackCategory('feedback');
