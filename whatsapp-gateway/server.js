@@ -1,249 +1,361 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import express from 'express';
 import cors from 'cors';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode';
-import pino from 'pino';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Global WhatsApp state
-let sock = null;
-let connectionStatus = 'disconnected'; // 'disconnected', 'connecting', 'qrcode', 'connected'
-let qrCodeBase64 = null;
-let qrCodeRaw = null;
-let connectedUser = null;
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Token Verification
-const verifyToken = (req, res, next) => {
-  const token = process.env.WHATSAPP_GATEWAY_TOKEN;
-  if (!token) {
-    return next(); // Skip if no token configured
-  }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: Missing token' });
-  }
+const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || '';
 
-  const reqToken = authHeader.substring(7).trim();
-  if (reqToken !== token.trim()) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+// Token authorization middleware
+app.use((req, res, next) => {
+  if (GATEWAY_TOKEN) {
+    const authHeader = req.headers['authorization'] || req.headers['token'];
+    let reqToken = '';
+    if (authHeader) {
+      reqToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    } else if (req.query.token) {
+      reqToken = String(req.query.token).trim();
+    }
+    if (reqToken !== GATEWAY_TOKEN.trim()) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid gateway token' });
+    }
   }
-
   next();
+});
+
+const PORT = process.env.PORT || 7860;
+
+let latestQr = '';
+let connectionStatus = 'DISCONNECTED';
+const mediaCache = new Map();
+
+const isWindows = process.platform === 'win32';
+const defaultWinPath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+
+const puppeteerOptions = {
+  headless: true,
+  args: [
+    '--no-sandbox', 
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu'
+  ]
 };
 
-// Start Baileys connection
-async function connectToWhatsApp() {
-  console.log('Initializing WhatsApp Gateway connection...');
-  try {
-    const sessionDir = path.join(__dirname, 'session_auth_info');
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
-    let version = [2, 3000, 1017585002]; // fallback version
-    try {
-      const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
-      console.log(`Using WA Web version v${latestVersion.join('.')}, isLatest: ${isLatest}`);
-      version = latestVersion;
-    } catch (err) {
-      console.warn('Failed to fetch latest WA Web version, using fallback:', err);
-    }
-
-    const makeWASocketFunc = makeWASocket.default || makeWASocket;
-    sock = makeWASocketFunc({
-      version,
-      auth: state,
-      printQRInTerminal: false, // deprecation warning avoided by disabling this
-      logger: pino({ level: 'silent' }),
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-
-    sock.ev.on('connection.update', async (update) => {
-      const { connection, lastDisconnect, qr } = update;
-
-      if (qr) {
-        connectionStatus = 'qrcode';
-        qrCodeRaw = qr;
-        try {
-          qrCodeBase64 = await qrcode.toDataURL(qr);
-          console.log('New QR Code generated. Scan to connect.');
-        } catch (err) {
-          console.error('Failed to generate QR data URL:', err);
-        }
-      }
-
-      if (connection === 'connecting') {
-        connectionStatus = 'connecting';
-      }
-
-      if (connection === 'open') {
-        connectionStatus = 'connected';
-        qrCodeBase64 = null;
-        qrCodeRaw = null;
-        connectedUser = sock.user;
-        console.log('WhatsApp connection successfully opened! Connected as:', sock.user.id);
-      }
-
-      if (connection === 'close') {
-        const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== DisconnectReason.forbidden;
-        console.log(`Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
-
-        if (shouldReconnect) {
-          connectionStatus = 'connecting';
-          connectToWhatsApp();
-        } else {
-          connectionStatus = 'disconnected';
-          connectedUser = null;
-          qrCodeBase64 = null;
-          qrCodeRaw = null;
-          console.log('Logged out of WhatsApp. Clearing session...');
-          try {
-            fs.rmSync(sessionDir, { recursive: true, force: true });
-          } catch (e) {
-            console.error('Failed to clear session folder:', e);
-          }
-          connectToWhatsApp(); // Restart to show QR code again
-        }
-      }
-    });
-
-    // Incoming Message Webhook Forwarder
-    sock.ev.on('messages.upsert', async (m) => {
-      if (m.type === 'notify') {
-        for (const msg of m.messages) {
-          if (!msg.key.fromMe && msg.message) {
-            const senderJid = msg.key.remoteJid;
-            const textContent = msg.message.conversation || 
-                               msg.message.extendedTextMessage?.text || 
-                               msg.message.imageMessage?.caption || 
-                               '';
-            
-            if (senderJid && textContent) {
-              const phone = senderJid.split('@')[0];
-              console.log(`Received WhatsApp message from [${phone}]: ${textContent}`);
-
-              const webhookUrl = process.env.WEBHOOK_URL;
-              const webhookToken = process.env.WEBHOOK_TOKEN;
-
-              if (webhookUrl) {
-                try {
-                  const headers = { 'Content-Type': 'application/json' };
-                  if (webhookToken) {
-                    headers['Authorization'] = `Bearer ${webhookToken}`;
-                  }
-
-                  const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({
-                      phone,
-                      text: textContent
-                    })
-                  });
-                  console.log(`Webhook forwarded message to main server. Status: ${response.status}`);
-                } catch (err) {
-                  console.error('Failed to forward incoming message to webhook:', err);
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-
-  } catch (err) {
-    console.error('Fatal connection error:', err);
-    connectionStatus = 'disconnected';
-    setTimeout(connectToWhatsApp, 5000);
-  }
+if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+  puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+} else if (isWindows) {
+  puppeteerOptions.executablePath = defaultWinPath;
 }
 
-// REST API Endpoints
+const client = new Client({
+  authStrategy: new LocalAuth({
+    dataPath: path.join(__dirname, '.wwebjs_auth')
+  }),
+  puppeteer: puppeteerOptions
+});
 
-// 1. Get status and QR code
+client.on('qr', (qr) => {
+  console.log('QR RECEIVED:', qr);
+  qrcode.toDataURL(qr, (err, url) => {
+    if (!err) {
+      latestQr = url;
+    }
+  });
+  connectionStatus = 'DISCONNECTED';
+});
+
+client.on('ready', () => {
+  console.log('Client is ready!');
+  connectionStatus = 'CONNECTED';
+  latestQr = '';
+});
+
+client.on('authenticated', () => {
+  console.log('Client authenticated!');
+});
+
+client.on('auth_failure', (msg) => {
+  console.error('AUTHENTICATION FAILURE:', msg);
+  connectionStatus = 'DISCONNECTED';
+  latestQr = '';
+});
+
+client.on('disconnected', (reason) => {
+  console.log('Client was logged out:', reason);
+  connectionStatus = 'DISCONNECTED';
+  latestQr = '';
+});
+
+client.on('message', async (msg) => {
+  if (!msg.fromMe) {
+    const sender = msg.from;
+    const text = msg.body;
+    console.log(`Received message from ${sender}: ${text}`);
+    try {
+      const webhookUrl = 'https://gym-kappa-three.vercel.app/api/user-management?action=whatsapp-incoming';
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: sender.split('@')[0],
+          text: text
+        })
+      });
+    } catch (err) {
+      console.error('Webhook error:', err.message);
+    }
+  }
+});
+
 app.get('/status', (req, res) => {
   res.json({
     status: connectionStatus,
-    qr: qrCodeBase64,
-    user: connectedUser ? {
-      id: connectedUser.id,
-      name: connectedUser.name
-    } : null
+    qr: latestQr
   });
 });
 
-// 2. Send text message
-app.post('/send-text', verifyToken, async (req, res) => {
-  const { to, text } = req.body;
+app.get('/chats', async (req, res) => {
+  if (connectionStatus !== 'CONNECTED') {
+    return res.status(400).json({ error: 'WhatsApp is not connected' });
+  }
+  try {
+    const chats = await client.getChats();
+    const chatData = chats.slice(0, 40).map(c => ({
+      id: c.id._serialized,
+      name: c.name || c.id.user,
+      unreadCount: c.unreadCount,
+      timestamp: c.timestamp,
+      lastMessage: c.lastMessage ? {
+        body: c.lastMessage.body,
+        fromMe: c.lastMessage.fromMe,
+        timestamp: c.lastMessage.timestamp
+      } : null
+    }));
+    res.json(chatData);
+  } catch (err) {
+    console.error('Error getting chats:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/chats/:jid/messages', async (req, res) => {
+  if (connectionStatus !== 'CONNECTED') {
+    return res.status(400).json({ error: 'WhatsApp is not connected' });
+  }
+  try {
+    const chat = await client.getChatById(req.params.jid);
+    const messages = await chat.fetchMessages({ limit: 40 });
+    
+    const msgData = [];
+    for (const m of messages) {
+      const isMedia = m.hasMedia && (m.type === 'image' || m.type === 'sticker' || m.type === 'video');
+
+      let quotedBody = null;
+      let quotedSender = null;
+      if (m.hasQuotedMsg && m._data && m._data.quotedMsg) {
+        quotedBody = m._data.quotedMsg.body || '';
+        const qSender = m._data.quotedMsg.author || m._data.quotedMsg.from;
+        quotedSender = qSender ? qSender.split('@')[0] : null;
+      }
+
+      msgData.push({
+        id: m.id._serialized,
+        body: m.body,
+        fromMe: m.fromMe,
+        timestamp: m.timestamp,
+        author: m.author,
+        hasMedia: isMedia,
+        mediaType: m.type,
+        hasQuotedMsg: m.hasQuotedMsg,
+        quotedBody: quotedBody,
+        quotedSender: quotedSender
+      });
+    }
+    
+    res.json(msgData);
+  } catch (err) {
+    console.error('Error getting messages:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/messages/:id/media', async (req, res) => {
+  if (connectionStatus !== 'CONNECTED') {
+    return res.status(400).json({ error: 'WhatsApp is not connected' });
+  }
+  const messageId = req.params.id;
+  try {
+    if (mediaCache.has(messageId)) {
+      const cached = mediaCache.get(messageId);
+      res.setHeader('Content-Type', cached.mimetype);
+      return res.send(cached.data);
+    }
+
+    const parts = messageId.split('_');
+    const jid = parts[1];
+    if (!jid) throw new Error('Invalid messageId format');
+
+    const chat = await client.getChatById(jid);
+    const messages = await chat.fetchMessages({ limit: 80 });
+    const msg = messages.find(m => m.id._serialized === messageId);
+    if (!msg || !msg.hasMedia) {
+      return res.status(404).json({ error: 'Media not found' });
+    }
+
+    const media = await msg.downloadMedia();
+    if (media) {
+      const buffer = Buffer.from(media.data, 'base64');
+      mediaCache.set(messageId, { data: buffer, mimetype: media.mimetype });
+      res.setHeader('Content-Type', media.mimetype);
+      return res.send(buffer);
+    }
+    res.status(404).json({ error: 'Failed to download media' });
+  } catch (err) {
+    console.error('Error getting message media:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/contact/:jid', async (req, res) => {
+  if (connectionStatus !== 'CONNECTED') {
+    return res.status(400).json({ error: 'WhatsApp is not connected' });
+  }
+  try {
+    const contact = await client.getContactById(req.params.jid);
+    res.json({
+      id: contact.id._serialized,
+      number: contact.number || '',
+      name: contact.name || '',
+      pushname: contact.pushname || '',
+      shortName: contact.shortName || '',
+      formattedName: contact.formattedName || ''
+    });
+  } catch (err) {
+    console.error('Error getting contact:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/logout', async (req, res) => {
+  try {
+    if (connectionStatus === 'CONNECTED') {
+      await client.logout();
+    }
+    connectionStatus = 'DISCONNECTED';
+    latestQr = '';
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    try {
+      await client.destroy();
+      startClient();
+      connectionStatus = 'DISCONNECTED';
+      latestQr = '';
+      res.json({ success: true, message: 'Client destroyed and re-initialized' });
+    } catch (destroyErr) {
+      res.status(500).json({ error: err.message || destroyErr.message });
+    }
+  }
+});
+
+app.post('/send-text', async (req, res) => {
+  const { to, text, replyToMessageId } = req.body;
   if (!to || !text) {
-    return res.status(400).json({ error: 'Missing to or text parameter' });
+    return res.status(400).json({ error: 'Missing to or text' });
   }
 
-  if (connectionStatus !== 'connected' || !sock) {
-    return res.status(503).json({ error: 'WhatsApp client is not connected' });
+  if (connectionStatus !== 'CONNECTED') {
+    return res.status(400).json({ error: 'WhatsApp is not connected' });
   }
 
   try {
-    let cleanPhone = to.replace(/\D/g, '');
-    if (!cleanPhone.endsWith('@s.whatsapp.net')) {
-      cleanPhone = `${cleanPhone}@s.whatsapp.net`;
+    let formattedJid = to;
+    if (!to.includes('@')) {
+      formattedJid = `${to.replace(/\D/g, '')}@c.us`;
     }
 
-    console.log(`Sending message to [${cleanPhone}]: ${text.substring(0, 50)}...`);
-    await sock.sendMessage(cleanPhone, { text: text.trim() });
+    let messageToReply = null;
+    if (replyToMessageId) {
+      try {
+        const chat = await client.getChatById(formattedJid);
+        const messages = await chat.fetchMessages({ limit: 50 });
+        messageToReply = messages.find(m => m.id._serialized === replyToMessageId);
+      } catch (e) {
+        console.error('Failed to locate message to reply to:', e);
+      }
+    }
+
+    if (messageToReply) {
+      await messageToReply.reply(text);
+    } else {
+      const options = {};
+      if (replyToMessageId) {
+        options.quotedMessageId = replyToMessageId;
+      }
+      await client.sendMessage(formattedJid, text, options);
+    }
     res.json({ success: true });
   } catch (err) {
-    console.error('Error sending message:', err);
-    res.status(500).json({ error: err.message || 'Failed to send message' });
+    console.error('Send error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// 3. Logout / Reset connection
-app.post('/logout', verifyToken, async (req, res) => {
-  console.log('Logging out client...');
+app.post('/delete-message', async (req, res) => {
+  const { messageId } = req.body;
+  if (!messageId) {
+    return res.status(400).json({ error: 'Missing messageId' });
+  }
+  if (connectionStatus !== 'CONNECTED') {
+    return res.status(400).json({ error: 'WhatsApp is not connected' });
+  }
   try {
-    if (sock) {
-      await sock.logout();
+    const parts = messageId.split('_');
+    const jid = parts[1];
+    if (!jid) throw new Error('Invalid messageId format');
+
+    const chat = await client.getChatById(jid);
+    const messages = await chat.fetchMessages({ limit: 50 });
+    const msg = messages.find(m => m.id._serialized === messageId);
+    if (!msg) {
+      throw new Error('Message not found in recent history');
     }
+    await msg.delete(true); // Delete for everyone
+    res.json({ success: true });
   } catch (err) {
-    console.error('Error during logout:', err);
+    console.error('Delete error:', err);
+    res.status(500).json({ error: err.message });
   }
-
-  connectionStatus = 'disconnected';
-  qrCodeBase64 = null;
-  qrCodeRaw = null;
-  connectedUser = null;
-
-  try {
-    const sessionDir = path.join(__dirname, 'session_auth_info');
-    fs.rmSync(sessionDir, { recursive: true, force: true });
-  } catch (err) {
-    console.error('Failed to delete auth session folder:', err);
-  }
-
-  // Re-initiate connection to get a new QR code
-  connectToWhatsApp();
-  res.json({ success: true });
 });
 
-// Start Express and WhatsApp Socket client
+async function startClient() {
+  try {
+    await client.initialize();
+  } catch (err) {
+    console.error('Initial launch failed, retrying in 3s...', err);
+    try {
+      await client.destroy();
+    } catch (destroyErr) {
+      console.error('Failed to destroy client on failed initialize:', destroyErr);
+    }
+    setTimeout(startClient, 3000);
+  }
+}
+
 app.listen(PORT, () => {
-  console.log(`WhatsApp Gateway listening on port ${PORT}`);
-  connectToWhatsApp();
+  console.log(`WhatsApp Gateway Server running on port ${PORT}`);
+  startClient();
 });
