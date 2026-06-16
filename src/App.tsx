@@ -116,12 +116,17 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
   // Redirect logged-in coach/owner to coach dashboard if they are on a non-coach path
   const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
   const isCoachPortal = location.pathname.startsWith('/coach-portal');
+  const isMobile = window.innerWidth < 1024;
   
   useEffect(() => {
     if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
-      navigate('/coach-portal', { replace: true });
+      if (isMobile) {
+        navigate('/coach/dashboard', { replace: true });
+      } else {
+        navigate('/coach-portal', { replace: true });
+      }
     }
-  }, [isCoachOrOwner, location.pathname, isCoachPortal]);
+  }, [isCoachOrOwner, location.pathname, isCoachPortal, isMobile]);
 
 
 
@@ -171,9 +176,8 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
     return <Navigate to="/coach-portal" replace />;
   }
 
-  const isMobile = window.innerWidth < 1024;
   if (isCoachPortal && isMobile) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/coach/dashboard" replace />;
   }
 
   if (isCoachPortal) {
