@@ -275,11 +275,19 @@ export default function LaunchLockScreen({
             <div className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-blue-500/5 animate-ping" style={{ animationDuration: '6s' }} />
 
             {/* Tilted Phone Mockup (Behind, Tilted to the right) */}
-            <div className="absolute right-[-20px] sm:right-6 top-1/2 -translate-y-1/2 z-0 transform rotate-[12deg] origin-center opacity-50 sm:opacity-75 scale-[0.75] sm:scale-100 flex-shrink-0 pointer-events-none">
-              <motion.div 
-                initial={{ opacity: 0, y: 30, rotate: -3 }}
-                animate={{ opacity: 1, y: 0, rotate: -1 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
+            <motion.div 
+              animate={{ 
+                y: ["-50%", "-53%", "-50%"],
+                rotate: [10, 13, 10]
+              }}
+              transition={{ 
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute right-[-5px] sm:right-12 top-1/2 z-0 opacity-80 sm:opacity-95 scale-[0.8] sm:scale-100 flex-shrink-0 pointer-events-none origin-center"
+            >
+              <div 
                 className="w-[220px] sm:w-[280px] h-[440px] sm:h-[560px] bg-black rounded-[30px] sm:rounded-[48px] border-[4px] sm:border-[6px] border-gray-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] p-2 sm:p-3 relative overflow-hidden flex-shrink-0"
               >
                 {/* Camera notch */}
@@ -366,8 +374,8 @@ export default function LaunchLockScreen({
                     <span>Profile</span>
                   </div>
                 </div>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
 
             {/* Waitlist Form Card (Foreground, Centered on Mobile, Left-aligned on Desktop) */}
             <div className="absolute left-1/2 -translate-x-1/2 sm:left-4 sm:translate-x-0 top-1/2 -translate-y-1/2 z-10 w-full max-w-[285px] xs:max-w-[310px] sm:max-w-[345px] drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-fade-in">
