@@ -5444,7 +5444,6 @@ export default function DesktopCoachPortal() {
           )}
 
 
-
           {updateStatus.available && (
             <button 
               onClick={handleStartUpdate}

@@ -29,6 +29,15 @@ const FoodInventory = lazy(() => import('./pages/FoodInventory'));
 const InBodyView = lazy(() => import('./pages/InBodyView'));
 const ProfileView = lazy(() => import('./pages/ProfileView'));
 
+// Coach Pages
+const DashboardPage = lazy(() => import('./pages/coach/DashboardPage'));
+const ClientsListPage = lazy(() => import('./pages/coach/ClientsListPage'));
+const AddClientPage = lazy(() => import('./pages/coach/AddClientPage'));
+const ClientManagementPage = lazy(() => import('./pages/coach/ClientManagementPage'));
+const OwnerDashboardPage = lazy(() => import('./pages/coach/OwnerDashboardPage'));
+const SystemConsolePage = lazy(() => import('./pages/coach/SystemConsolePage'));
+const WhatsAppManagerPage = lazy(() => import('./pages/coach/WhatsAppManagerPage'));
+const DesktopCoachPortal = lazy(() => import('./pages/coach/DesktopCoachPortal'));
 
 const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
@@ -92,7 +101,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = ({ onCheckLaunch }: { onCheckLaunch: () => void }) => {
+const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | null, session: any, onCheckLaunch: () => void }) => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
 
@@ -105,9 +114,22 @@ const AppContent = ({ onCheckLaunch }: { onCheckLaunch: () => void }) => {
     onCheckLaunch();
   }, [location.pathname, onCheckLaunch]);
 
-
-
-
+  // Redirect logged-in coach/owner to coach dashboard if they are on a non-coach path
+  const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
+  const isCoachPortal = location.pathname.startsWith('/coach-portal');
+  const isMobile = window.innerWidth < 1024;
+  
+  useEffect(() => {
+    if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
+      if (isElectron) {
+        navigate('/coach-portal', { replace: true });
+      } else if (isMobile) {
+        navigate('/coach/dashboard', { replace: true });
+      } else {
+        navigate('/coach-portal', { replace: true });
+      }
+    }
+  }, [isCoachOrOwner, location.pathname, isCoachPortal, isMobile]);
 
   let direction = 1;
   if (currentIndex > prevIndex.current) direction = 1;
@@ -149,9 +171,23 @@ const AppContent = ({ onCheckLaunch }: { onCheckLaunch: () => void }) => {
   // Any active overlay = hide the bottom nav so it can't bleed through
   const anyOverlayActive = showSplash || showGymSplash;
 
+  if (isElectron && !location.pathname.startsWith('/coach') && !isCoachPortal) {
+    return <Navigate to="/coach-portal" replace />;
+  }
 
+  if (isCoachPortal && isMobile) {
+    return <Navigate to="/coach/dashboard" replace />;
+  }
 
-
+  if (isCoachPortal) {
+    return (
+      <div className="w-full h-screen bg-background text-gray-100 font-sans overflow-hidden no-scrollbar">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/coach-portal" element={<DesktopCoachPortal />} />
+        </Routes>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -176,11 +212,16 @@ const AppContent = ({ onCheckLaunch }: { onCheckLaunch: () => void }) => {
               <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
               <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
 
-
               <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
 
-
-
+              {/* Coach Routes */}
+              <Route path="/coach/dashboard" element={<PageTransition direction={direction}><DashboardPage /></PageTransition>} />
+              <Route path="/coach/clients" element={<PageTransition direction={direction}><ClientsListPage /></PageTransition>} />
+              <Route path="/coach/clients/new" element={<PageTransition direction={direction}><AddClientPage /></PageTransition>} />
+              <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
+              <Route path="/coach/owner" element={<PageTransition direction={direction}><OwnerDashboardPage /></PageTransition>} />
+              <Route path="/coach/system" element={<PageTransition direction={direction}><SystemConsolePage /></PageTransition>} />
+              <Route path="/coach/whatsapp-manager" element={<PageTransition direction={direction}><WhatsAppManagerPage /></PageTransition>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
@@ -191,7 +232,7 @@ const AppContent = ({ onCheckLaunch }: { onCheckLaunch: () => void }) => {
         <div id="modal-portal" className="absolute inset-0 pointer-events-none z-[90]" />
 
         {/* Bottom nav — hidden while any full-screen overlay is active */}
-        {!anyOverlayActive && <BottomNav />}
+        {!anyOverlayActive && !isCoachOrOwner && <BottomNav />}
       </div>
 
       {/* ── Full-screen overlays rendered OUTSIDE the clipped shell ── */}
@@ -374,17 +415,6 @@ function App() {
           return;
         }
 
-        const isCoachOrOwner = profile.role === 'coach' || session.user.id === OWNER_ID;
-        if (isCoachOrOwner && !isElectron) {
-          toast.error('Access Denied: The Coach Portal can only be accessed using the Life Gym Desktop App.', { duration: 6000 });
-          await supabase.auth.signOut();
-          setSession(null);
-          setNeedsOnboarding(undefined);
-          setIsSuspended(false);
-          setUserRole(null);
-          return;
-        }
-
         if (profile.role === 'client' && isElectron) {
           toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
           await supabase.auth.signOut();
@@ -514,13 +544,6 @@ function App() {
         }
         if (payload.new?.role === 'client' && isElectron) {
           toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
-          supabase.auth.signOut();
-          setSession(null);
-          return;
-        }
-        const isCoachOrOwner = payload.new?.role === 'coach' || session.user.id === OWNER_ID;
-        if (isCoachOrOwner && !isElectron) {
-          toast.error('Access Denied: The Coach Portal can only be accessed using the Life Gym Desktop App.', { duration: 6000 });
           supabase.auth.signOut();
           setSession(null);
           return;
@@ -816,7 +839,7 @@ function App() {
               {showWelcomeSplash ? (
                 <div className="w-full h-screen bg-[#060713]" />
               ) : (
-                <AppContent onCheckLaunch={checkLaunchStatus} />
+                <AppContent userRole={userRole} session={session} onCheckLaunch={checkLaunchStatus} />
               )}
             </>
           } />
