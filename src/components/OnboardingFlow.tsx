@@ -179,9 +179,9 @@ export default function OnboardingFlow({
         const startX = btnRect.left - cardRect.left + btnRect.width / 2;
         const startY = btnRect.top - cardRect.top + btnRect.height / 2;
 
-        // End: left edge of the checkbox (pointed slightly higher)
+        // End: point directly at the checkbox (raised higher)
         const endX = cbRect.left - cardRect.left + 8;
-        const endY = cbRect.top - cardRect.top + cbRect.height / 2 - 8;
+        const endY = cbRect.top - cardRect.top + 8;
 
         // Curved path swooping to the right (arched upwards, never goes below the button)
         const controlX = Math.max(startX, endX) + 110;

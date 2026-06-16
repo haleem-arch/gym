@@ -118,8 +118,8 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-[390px] z-10 flex flex-col items-center">
         {/* Header Branding */}
         <div className="flex flex-col items-center mb-8 w-full z-10">
-          <div className="relative bg-blue-600 border border-blue-500/20 flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4 w-16 h-16 rounded-2xl">
-            <Dumbbell className="w-7 h-7 text-white" />
+          <div className="mb-4">
+            <img src="/icon.svg" alt="Life Gym Logo" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-3xl font-black tracking-widest text-white uppercase font-mono">
             LIFE GYM

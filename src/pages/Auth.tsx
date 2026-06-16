@@ -92,9 +92,9 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
         const startX = btnRect.left - cardRect.left + btnRect.width / 2;
         const startY = btnRect.top - cardRect.top + btnRect.height / 2;
 
-        // End at the checkbox relative to the card (pointed slightly higher)
+        // End at the checkbox relative to the card (raised higher)
         const endX = cbRect.left - cardRect.left + 8;
-        const endY = cbRect.top - cardRect.top + cbRect.height / 2 - 8;
+        const endY = cbRect.top - cardRect.top + 8;
 
         // Curved path swooping to the right (arched upwards, never goes below the button)
         const controlX = Math.max(startX, endX) + 110;
