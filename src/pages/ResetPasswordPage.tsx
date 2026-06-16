@@ -97,9 +97,9 @@ export default function ResetPasswordPage() {
 
   if (verifying) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#090b11] text-gray-200 relative overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#030408] text-gray-200 relative overflow-hidden">
+        {/* Glow directly behind verification content */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-600/20 rounded-full blur-[80px] pointer-events-none" />
         <div className="flex flex-col items-center gap-4 z-10">
           <Dumbbell className="w-12 h-12 text-blue-500 animate-spin" />
           <p className="text-xs uppercase tracking-widest font-black text-gray-400">Verifying reset link...</p>
@@ -109,30 +109,29 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#090b11] text-gray-200 px-6 py-10 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#030408] text-gray-200 px-6 py-10 relative overflow-hidden">
       <Toaster position="top-center" reverseOrder={false} />
       
-      {/* Background decorations */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Brand Blue Glow positioned directly behind the card to show true glassmorphism */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] h-[360px] bg-blue-600/20 rounded-full blur-[90px] pointer-events-none z-0" />
       
       <div className="w-full max-w-[390px] z-10 flex flex-col items-center">
         {/* Header Branding */}
-        <div className="flex flex-col items-center mb-8 w-full">
-          <div className="relative bg-gradient-to-tr from-blue-600 to-purple-600 border border-white/10 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4 w-16 h-16 rounded-2xl">
+        <div className="flex flex-col items-center mb-8 w-full z-10">
+          <div className="relative bg-blue-600 border border-blue-500/20 flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4 w-16 h-16 rounded-2xl">
             <Dumbbell className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-black tracking-widest text-white uppercase font-mono">
             LIFE GYM
           </h1>
-          <p className="text-sm text-gray-550 mt-1 font-semibold flex items-center gap-1">
+          <p className="text-sm text-gray-400 mt-1 font-semibold flex items-center gap-1.5">
             <Sparkles size={12} className="text-blue-500" /> Peak Fitness & Nutrition
           </p>
         </div>
 
         {success ? (
           /* SUCCESS SCREEN */
-          <div className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-2xl shadow-2xl relative text-center flex flex-col items-center">
+          <div className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-[0_8px_32px_0_rgba(59,130,246,0.1)] relative text-center flex flex-col items-center z-10">
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 shadow-inner">
               <CheckCircle2 className="w-7 h-7" />
             </div>
@@ -142,7 +141,7 @@ export default function ResetPasswordPage() {
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] cursor-pointer mt-1 text-sm flex items-center justify-center gap-2"
             >
               <span>Go to Sign In</span>
               <ArrowRight className="w-4 h-4" />
@@ -150,12 +149,12 @@ export default function ResetPasswordPage() {
           </div>
         ) : !isValid ? (
           /* EXPIRED / INVALID SCREEN */
-          <div className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-2xl shadow-2xl relative text-center flex flex-col items-center">
+          <div className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-[0_8px_32px_0_rgba(59,130,246,0.1)] relative text-center flex flex-col items-center z-10">
             <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-6 shadow-inner">
               <AlertCircle className="w-7 h-7" />
             </div>
             <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">Link Expired</h2>
-            <p className="text-gray-400 text-xs leading-relaxed mb-6">
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
               {errorMsg}
             </p>
             <button
@@ -167,10 +166,10 @@ export default function ResetPasswordPage() {
           </div>
         ) : (
           /* RESET PASSWORD INPUT FORM */
-          <div className="w-full bg-[#121620]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-2xl shadow-2xl relative">
+          <div className="w-full bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-[0_8px_32px_0_rgba(59,130,246,0.1)] relative z-10">
             <h2 className="text-xl font-black text-white uppercase tracking-wider mb-1">Create New Password</h2>
             <p className="text-gray-400 text-xs font-semibold mb-6">
-              Resetting for: <span className="text-blue-400 font-mono">{email}</span>
+              Resetting for: <span className="text-blue-500 font-mono">{email}</span>
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -184,7 +183,7 @@ export default function ResetPasswordPage() {
                     placeholder="Min 6 characters"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:outline-none focus:border-blue-500 text-sm transition-all"
+                    className="w-full bg-black/40 text-white rounded-xl py-3 pl-11 pr-4 border border-white/10 focus:outline-none focus:border-blue-500 text-sm transition-all"
                   />
                 </div>
               </div>
@@ -199,7 +198,7 @@ export default function ResetPasswordPage() {
                     placeholder="Repeat password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border border-gray-800 focus:outline-none focus:border-blue-500 text-sm transition-all"
+                    className="w-full bg-black/40 text-white rounded-xl py-3 pl-11 pr-4 border border-white/10 focus:outline-none focus:border-blue-500 text-sm transition-all"
                   />
                 </div>
               </div>
@@ -207,7 +206,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={updating}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer mt-6 text-sm flex items-center justify-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] cursor-pointer mt-6 text-sm flex items-center justify-center gap-2 disabled:opacity-55 disabled:cursor-not-allowed"
               >
                 {updating ? (
                   <>
