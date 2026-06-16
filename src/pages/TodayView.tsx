@@ -436,6 +436,7 @@ const TodayView = () => {
           <button 
             onClick={() => {
               if (window.confirm("Are you sure you want to sign out?")) {
+                localStorage.removeItem('bypass_launch_control');
                 supabase.auth.signOut();
               }
             }} 

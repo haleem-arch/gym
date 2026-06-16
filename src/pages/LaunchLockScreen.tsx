@@ -179,7 +179,7 @@ export default function LaunchLockScreen({
         >
           <BrandLogo className="w-8 h-8" />
           <span className="font-black tracking-widest text-xs uppercase text-white flex items-center">
-            Life Gym <span className="text-blue-400 font-bold text-[9px] lowercase tracking-normal bg-blue-500/10 px-1.5 py-0.5 rounded-full ml-1.5">club</span>
+            Life Gym
           </span>
         </div>
         
@@ -260,7 +260,7 @@ export default function LaunchLockScreen({
                         placeholder="Your full name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-[#05060f]/80 border border-gray-850 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
+                        className="w-full bg-[#05060f]/80 border border-gray-855 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
                       />
                     </div>
 
@@ -272,7 +272,7 @@ export default function LaunchLockScreen({
                         placeholder="Your email address"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-[#05060f]/80 border border-gray-850 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
+                        className="w-full bg-[#05060f]/80 border border-gray-855 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
                       />
                     </div>
 
@@ -284,7 +284,7 @@ export default function LaunchLockScreen({
                         placeholder="WhatsApp number (e.g. +201...)"
                         value={whatsappPhone}
                         onChange={(e) => setWhatsappPhone(e.target.value)}
-                        className="w-full bg-[#05060f]/80 border border-gray-850 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
+                        className="w-full bg-[#05060f]/80 border border-gray-855 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
                       />
                     </div>
 
@@ -352,7 +352,7 @@ export default function LaunchLockScreen({
         <div className="flex-1 w-full max-w-sm flex items-center justify-center relative">
           {/* Animated glow rings around phone using blue brand color */}
           <div className="absolute w-72 h-72 rounded-full border border-blue-500/5 animate-ping" style={{ animationDuration: '6s' }} />
-          <div className="absolute w-80 h-80 rounded-full border border-blue-550/5 animate-ping" style={{ animationDuration: '9s' }} />
+          <div className="absolute w-80 h-80 rounded-full border border-blue-555/5 animate-ping" style={{ animationDuration: '9s' }} />
 
           {/* Premium CSS Phone Mockup */}
           <motion.div 
@@ -383,64 +383,203 @@ export default function LaunchLockScreen({
                 </div>
               </div>
 
-              {/* Mock App Content (100% Matching Real Website Dashboard) */}
-              <div className="flex-1 mt-6 flex flex-col justify-between overflow-hidden">
-                {/* Simulated Header */}
-                <div className="flex items-center justify-between pb-3 border-b border-gray-900/60">
-                  <div className="flex items-center gap-1.5">
-                    <BrandLogo className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-black uppercase tracking-wider text-white">Life Gym</span>
-                  </div>
-                  <span className="text-[6px] text-gray-500 font-mono uppercase bg-blue-500/10 px-2 py-0.5 rounded-full text-blue-400 font-bold border border-blue-500/15">Active</span>
-                </div>
-
-                {/* Simulated Calories Ring Visualizer (100% related to real dashboard) */}
-                <div className="my-auto flex flex-col items-center justify-center py-4 relative">
-                  <div className="w-28 h-28 rounded-full border-4 border-dashed border-blue-500/10 flex items-center justify-center p-3 relative">
-                    <div className="w-full h-full rounded-full border-4 border-blue-500 border-t-transparent animate-spin" style={{ animationDuration: '6s' }} />
-                  </div>
-                  
-                  {/* Realtime stats mockup */}
-                  <div className="absolute text-center flex flex-col items-center justify-center">
-                    <span className="text-[7px] font-black uppercase tracking-widest text-gray-500">nutrition</span>
-                    <span className="text-lg font-black text-white font-mono leading-none mt-1">1,840</span>
-                    <span className="text-[7px] font-bold text-blue-400 font-mono mt-0.5">/ 2,400 kcal</span>
-                  </div>
-                </div>
-
-                {/* Dashboard Stats cards mockup (Actual website features) */}
-                <div className="space-y-2">
-                  <div className="bg-[#0c1020] border border-gray-900/80 p-2.5 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                        <TrendingUp size={10} />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[7px] font-bold text-gray-500 uppercase tracking-wider">active workout</p>
-                        <p className="text-[9px] font-black text-white uppercase mt-0.5">Pull Day Routine</p>
-                      </div>
+              {/* Mock App Content */}
+              {status === 'coming_soon' ? (
+                /* Mock App Content (100% Matching Real Website Dashboard) */
+                <div className="flex-1 mt-6 flex flex-col justify-between overflow-hidden">
+                  {/* Simulated Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-900/60">
+                    <div className="flex items-center gap-1.5">
+                      <BrandLogo className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-wider text-white">Life Gym</span>
                     </div>
-                    <span className="text-[6px] text-blue-400 font-bold uppercase font-mono">12 sets left</span>
+                    <span className="text-[6px] text-gray-500 font-mono uppercase bg-blue-500/10 px-2 py-0.5 rounded-full text-blue-400 font-bold border border-blue-500/15">Active</span>
                   </div>
 
-                  <div className="bg-[#0c1020] border border-gray-900/80 p-2.5 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                        <Droplets size={10} />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[7px] font-bold text-gray-500 uppercase tracking-wider">water tracker</p>
-                        <p className="text-[9px] font-black text-white uppercase mt-0.5">1.5 Liters Logged</p>
-                      </div>
+                  {/* Simulated Calories Ring Visualizer */}
+                  <div className="my-auto flex flex-col items-center justify-center py-4 relative">
+                    <div className="w-28 h-28 rounded-full border-4 border-dashed border-blue-500/10 flex items-center justify-center p-3 relative">
+                      <div className="w-full h-full rounded-full border-4 border-blue-500 border-t-transparent animate-spin" style={{ animationDuration: '6s' }} />
                     </div>
-                    <span className="text-[6px] text-blue-400 font-bold uppercase font-mono">50% daily goal</span>
+                    
+                    {/* Realtime stats mockup */}
+                    <div className="absolute text-center flex flex-col items-center justify-center">
+                      <span className="text-[7px] font-black uppercase tracking-widest text-gray-500">nutrition</span>
+                      <span className="text-lg font-black text-white font-mono leading-none mt-1">1,840</span>
+                      <span className="text-[7px] font-bold text-blue-400 font-mono mt-0.5">/ 2,400 kcal</span>
+                    </div>
+                  </div>
+
+                  {/* Dashboard Stats cards mockup */}
+                  <div className="space-y-2">
+                    <div className="bg-[#0c1020] border border-gray-900/80 p-2.5 rounded-2xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                          <TrendingUp size={10} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[7px] font-bold text-gray-500 uppercase tracking-wider">active workout</p>
+                          <p className="text-[9px] font-black text-white uppercase mt-0.5">Pull Day Routine</p>
+                        </div>
+                      </div>
+                      <span className="text-[6px] text-blue-400 font-bold uppercase font-mono">12 sets left</span>
+                    </div>
+
+                    <div className="bg-[#0c1020] border border-gray-900/80 p-2.5 rounded-2xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                          <Droplets size={10} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[7px] font-bold text-gray-500 uppercase tracking-wider">water tracker</p>
+                          <p className="text-[9px] font-black text-white uppercase mt-0.5">1.5 Liters Logged</p>
+                        </div>
+                      </div>
+                      <span className="text-[6px] text-blue-400 font-bold uppercase font-mono">50% daily goal</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Maintenance Mode Funny Worker Animation (Looping Cartoon Construction Worker) */
+                <div className="flex-1 mt-6 flex flex-col justify-between overflow-hidden relative">
+                  {/* Simulated Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-900/60">
+                    <div className="flex items-center gap-1.5">
+                      <Wrench className="w-3.5 h-3.5 text-amber-500" />
+                      <span className="text-[9px] font-black uppercase tracking-wider text-white">System Core</span>
+                    </div>
+                    <span className="text-[6px] text-gray-500 font-mono uppercase bg-amber-500/10 px-2 py-0.5 rounded-full text-amber-400 font-bold border border-amber-500/15">Upgrading</span>
+                  </div>
+
+                  {/* Funny SVG Construction worker */}
+                  <div className="flex-1 flex items-center justify-center">
+                    <svg viewBox="0 0 200 300" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <style>{`
+                        @keyframes swing {
+                          0% { transform: rotate(0deg); }
+                          30% { transform: rotate(-50deg); }
+                          40% { transform: rotate(15deg); }
+                          45% { transform: rotate(10deg); }
+                          70% { transform: rotate(0deg); }
+                          100% { transform: rotate(0deg); }
+                        }
+                        @keyframes hammer-drop {
+                          0%, 40% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+                          42% { transform: translate(15px, 20px) rotate(80deg); opacity: 1; }
+                          55% { transform: translate(25px, 110px) rotate(180deg); opacity: 1; }
+                          75% { transform: translate(25px, 110px) rotate(180deg); opacity: 0; }
+                          80%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+                        }
+                        @keyframes head-shake {
+                          0%, 39% { transform: translate(0, 0) rotate(0deg); }
+                          41% { transform: translate(-2px, -4px) rotate(-10deg); }
+                          45% { transform: translate(2px, 8px) rotate(15deg); }
+                          50% { transform: translate(-2px, 25px) rotate(35deg); }
+                          75% { transform: translate(-2px, 25px) rotate(35deg); }
+                          85% { transform: translate(0, 0) rotate(0deg); }
+                        }
+                        @keyframes spark {
+                          0%, 39% { opacity: 0; transform: scale(0.1); }
+                          40% { opacity: 1; transform: scale(1.2); }
+                          43% { opacity: 0; transform: scale(0.5); }
+                          100% { opacity: 0; }
+                        }
+                        @keyframes text-bubble {
+                          0%, 43% { opacity: 0; transform: scale(0.5); }
+                          50%, 75% { opacity: 1; transform: scale(1); }
+                          80% { opacity: 0; transform: scale(0.8); }
+                        }
+                        .arm {
+                          transform-origin: 55px 130px;
+                          animation: swing 2.5s infinite ease-in-out;
+                        }
+                        .hammer {
+                          transform-origin: 35px 95px;
+                          animation: hammer-drop 2.5s infinite ease-in-out;
+                        }
+                        .worker-head {
+                          transform-origin: 75px 125px;
+                          animation: head-shake 2.5s infinite ease-in-out;
+                        }
+                        .spark-grp {
+                          transform-origin: 120px 145px;
+                          animation: spark 2.5s infinite ease-out;
+                        }
+                        .bubble {
+                          transform-origin: 100px 70px;
+                          animation: text-bubble 2.5s infinite cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        }
+                      `}</style>
+
+                      {/* Ground / Platform */}
+                      <rect x="20" y="220" width="160" height="8" rx="4" fill="#1f2937" />
+                      
+                      {/* Server Rack / Cabinet being hit */}
+                      <rect x="110" y="140" width="60" height="80" rx="6" fill="#0c1020" stroke="#1f2937" strokeWidth="3" />
+                      <circle cx="125" cy="155" r="3" fill="#3b82f6" />
+                      <circle cx="125" cy="165" r="3" fill="#ef4444" />
+                      <rect x="140" y="152" width="20" height="4" rx="2" fill="#1f2937" />
+                      <rect x="125" y="180" width="35" height="25" rx="3" fill="#05060f" />
+                      <line x1="130" y1="187" x2="155" y2="187" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="130" y1="193" x2="145" y2="193" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+
+                      {/* Funny Ouch Bubble */}
+                      <g className="bubble">
+                        <path d="M 80,75 L 60,65 L 75,55 L 125,55 L 130,75 Z" fill="#ef4444" />
+                        <text x="96" y="66" fontFamily="sans-serif" fontSize="10" fontWeight="bold" fill="white" textAnchor="middle">OUCH! *#%</text>
+                      </g>
+
+                      {/* Spark Impact */}
+                      <g className="spark-grp">
+                        <path d="M 120,145 L 100,125 M 120,145 L 95,145 M 120,145 L 105,160 M 120,145 L 135,125 M 120,145 L 145,145" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
+                        <circle cx="120" cy="145" r="6" fill="#f59e0b" />
+                      </g>
+
+                      {/* Worker Body (Stick figure) */}
+                      {/* Legs */}
+                      <line x1="60" y1="220" x2="70" y2="180" stroke="#3b82f6" strokeWidth="6" strokeLinecap="round" />
+                      <line x1="85" y1="220" x2="78" y2="180" stroke="#3b82f6" strokeWidth="6" strokeLinecap="round" />
+                      
+                      {/* Torso */}
+                      <line x1="75" y1="180" x2="75" y2="135" stroke="#1e293b" strokeWidth="8" stroke-linecap="round" />
+
+                      {/* Head & Helmet */}
+                      <g className="worker-head">
+                        <circle cx="75" cy="115" r="12" fill="#ffedd5" stroke="#1e293b" strokeWidth="2" />
+                        {/* Closed eye / hit expression */}
+                        <path d="M 70,115 L 74,117 M 74,117 L 70,119" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M 80,115 L 76,117 M 76,117 L 80,119" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M 72,123 Q 75,120 78,123" stroke="#1e293b" strokeWidth="2" fill="none" strokeLinecap="round" />
+                        {/* Yellow Helmet */}
+                        <path d="M 60,112 A 15,15 0 0,1 90,112 Z" fill="#f59e0b" />
+                        <rect x="57" y="110" width="36" height="3" rx="1" fill="#d97706" />
+                      </g>
+
+                      {/* Left Arm (Steady) */}
+                      <line x1="75" y1="145" x2="90" y2="170" stroke="#ffedd5" strokeWidth="5" strokeLinecap="round" />
+
+                      {/* Right Arm (Swinging Hammer) */}
+                      <g className="arm">
+                        <line x1="75" y1="140" x2="50" y2="110" stroke="#ffedd5" strokeWidth="5" strokeLinecap="round" />
+                        {/* Hammer Group */}
+                        <g className="hammer">
+                          <rect x="25" y="90" width="8" height="35" rx="2" fill="#78350f" transform="rotate(25 29 107)" />
+                          <rect x="18" y="80" width="22" height="14" rx="3" fill="#6b7280" stroke="#374151" strokeWidth="1.5" transform="rotate(25 29 107)" />
+                        </g>
+                      </g>
+                    </svg>
+                  </div>
+
+                  {/* Maintenance text footer inside screen */}
+                  <div className="text-center pb-2 text-[7px] text-gray-500 font-semibold uppercase tracking-wider font-mono">
+                    upgrades compile loop
+                  </div>
+                </div>
+              )}
 
               {/* Bottom Nav Mockup */}
               <div className="border-t border-gray-900/60 pt-2.5 mt-4 flex justify-around text-[7px] font-bold text-gray-550 font-mono">
-                <span className="text-blue-500">Today</span>
+                <span className={status === 'coming_soon' ? "text-blue-500" : "text-gray-550"}>Today</span>
                 <span>Workout</span>
                 <span>Diet</span>
                 <span>Profile</span>
@@ -460,7 +599,7 @@ export default function LaunchLockScreen({
             setEnteredPasscode('');
             setShowBypassModal(true);
           }}
-          className="p-2 bg-gray-950/85 border border-gray-900 hover:border-gray-850 hover:bg-gray-900 rounded-xl text-gray-400 hover:text-white transition-all cursor-pointer"
+          className="p-2 bg-gray-950/85 border border-gray-900 hover:border-gray-855 hover:bg-gray-900 rounded-xl text-gray-400 hover:text-white transition-all cursor-pointer"
           title="Admin Bypass Login"
         >
           <Lock size={12} />
@@ -483,7 +622,7 @@ export default function LaunchLockScreen({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-[#0c1020] border border-gray-850 w-full max-w-xs p-6 rounded-3xl z-10 shadow-2xl relative"
+              className="bg-[#0c1020] border border-gray-855 w-full max-w-xs p-6 rounded-3xl z-10 shadow-2xl relative"
             >
               <h3 className="text-xs font-black text-white uppercase tracking-wider mb-1 flex items-center gap-1.5">
                 <Lock size={13} className="text-blue-400" />

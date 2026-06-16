@@ -598,7 +598,10 @@ function App() {
     return <DumbbellLoader fullScreen size={140} />;
   }
 
-  if (launchStatus !== 'live' && !bypassActive) {
+  const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
+  const shouldShowLockScreen = launchStatus !== 'live' && !isCoachOrOwner && (!bypassActive || userRole === 'client');
+
+  if (shouldShowLockScreen) {
     return (
       <Router>
         <Suspense fallback={<DumbbellLoader fullScreen size={100} />}>
