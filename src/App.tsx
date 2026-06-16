@@ -374,6 +374,17 @@ function App() {
           return;
         }
 
+        const isCoachOrOwner = profile.role === 'coach' || session.user.id === OWNER_ID;
+        if (isCoachOrOwner && !isElectron) {
+          toast.error('Access Denied: The Coach Portal can only be accessed using the Life Gym Desktop App.', { duration: 6000 });
+          await supabase.auth.signOut();
+          setSession(null);
+          setNeedsOnboarding(undefined);
+          setIsSuspended(false);
+          setUserRole(null);
+          return;
+        }
+
         if (profile.role === 'client' && isElectron) {
           toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
           await supabase.auth.signOut();
@@ -503,6 +514,13 @@ function App() {
         }
         if (payload.new?.role === 'client' && isElectron) {
           toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
+          supabase.auth.signOut();
+          setSession(null);
+          return;
+        }
+        const isCoachOrOwner = payload.new?.role === 'coach' || session.user.id === OWNER_ID;
+        if (isCoachOrOwner && !isElectron) {
+          toast.error('Access Denied: The Coach Portal can only be accessed using the Life Gym Desktop App.', { duration: 6000 });
           supabase.auth.signOut();
           setSession(null);
           return;
