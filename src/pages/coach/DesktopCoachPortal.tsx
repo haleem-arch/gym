@@ -200,6 +200,11 @@ export default function DesktopCoachPortal() {
   const [copiedPasscode, setCopiedPasscode] = useState(false);
   const [showPasscode, setShowPasscode] = useState(false);
 
+  // Feedback States
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+
   // Lists & DB Data
   const [profiles, setProfiles] = useState<any[]>([]);
   const [clientsList, setClientsList] = useState<any[]>([]);
@@ -2897,6 +2902,33 @@ export default function DesktopCoachPortal() {
       toast.error(err.message || 'Failed to update your password.');
     } finally {
       setUpdatingOwnPassword(false);
+    }
+  };
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackMessage.trim()) return;
+    setSubmittingFeedback(true);
+    try {
+      const { error } = await supabase
+        .from('feedbacks')
+        .insert({
+          user_id: coachUserId,
+          rating: feedbackRating,
+          message: feedbackMessage.trim(),
+          name: myCoachProfile?.display_name || 'Coach',
+          email: myCoachProfile?.email || '',
+          phone: myCoachProfile?.targets?.phone_number || ''
+        });
+      if (error) throw error;
+      setFeedbackMessage('');
+      setFeedbackRating(5);
+      toast.success('Feedback submitted successfully!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to submit feedback.');
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -9264,6 +9296,57 @@ export default function DesktopCoachPortal() {
                     className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-4 rounded-2xl text-sm uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
                   >
                     {updatingOwnPassword ? 'Updating Password...' : <><Save size={15} /> Update Password</>}
+                  </button>
+                </form>
+              </div>
+
+              {/* Send Feedback or Report Problem */}
+              <div className="rounded-3xl border border-gray-800/80 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-8 shadow-xl space-y-6">
+                <div className="flex items-center gap-4 border-b border-gray-800/60 pb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shadow-inner flex-shrink-0">
+                    <Mail size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black uppercase text-blue-500 tracking-wider">Send Feedback or Report Problem</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Let us know what went wrong, suggest improvements, or share your thoughts.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmitFeedback} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">Rating (Optional)</label>
+                    <div className="flex gap-1.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setFeedbackRating(i + 1)}
+                          className="text-2xl transition-transform hover:scale-110 cursor-pointer"
+                        >
+                          <span className={i < feedbackRating ? 'text-amber-400' : 'text-gray-700'}>★</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">Your Message</label>
+                    <textarea
+                      value={feedbackMessage}
+                      onChange={e => setFeedbackMessage(e.target.value)}
+                      placeholder="Type your message here..."
+                      rows={5}
+                      required
+                      className="w-full bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-650 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)] resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submittingFeedback || !feedbackMessage.trim()}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-4 rounded-2xl text-sm uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {submittingFeedback ? 'Submitting...' : <><Save size={14} /> Submit Feedback</>}
                   </button>
                 </form>
               </div>
