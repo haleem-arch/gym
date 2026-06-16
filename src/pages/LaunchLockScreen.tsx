@@ -201,14 +201,26 @@ export default function LaunchLockScreen({
           </span>
         </div>
         
-        {status === 'coming_soon' && totalWaitlist !== null && (
-          <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">
-              {totalWaitlist} on waitlist
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {status === 'coming_soon' && totalWaitlist !== null && (
+            <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">
+                {totalWaitlist} on waitlist
+              </span>
+            </div>
+          )}
+          <button
+            onClick={() => {
+              setEnteredPasscode('');
+              setShowBypassModal(true);
+            }}
+            className="p-2.5 bg-gray-950/80 border border-gray-900 hover:border-gray-800 hover:bg-gray-900 rounded-xl text-gray-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
+            title="Admin Bypass Login"
+          >
+            <Lock size={12} />
+          </button>
+        </div>
       </header>
 
       {/* Main Content Area */}
