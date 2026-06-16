@@ -194,9 +194,9 @@ export default function LaunchLockScreen({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-12 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 z-10">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-12 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-16 z-10">
         
-        {/* Left Column: Title & Countdown */}
+        {/* Left Column: Title, Countdown & Form */}
         <div className="flex-1 text-center lg:text-left max-w-xl">
           {status === 'coming_soon' ? (
             <>
@@ -223,28 +223,95 @@ export default function LaunchLockScreen({
                     <span className="block text-xl sm:text-2xl md:text-3xl font-black text-white font-mono leading-none">
                       {timeLeft.days.toString().padStart(2, '0')}
                     </span>
-                    <span className="text-[8px] font-bold text-gray-550 uppercase tracking-wider mt-1 block">Days</span>
+                    <span className="text-[8px] font-bold text-gray-555 uppercase tracking-wider mt-1 block">Days</span>
                   </div>
                   <div className="text-center border-l border-gray-900/60">
                     <span className="block text-xl sm:text-2xl md:text-3xl font-black text-white font-mono leading-none">
                       {timeLeft.hours.toString().padStart(2, '0')}
                     </span>
-                    <span className="text-[8px] font-bold text-gray-550 uppercase tracking-wider mt-1 block">Hours</span>
+                    <span className="text-[8px] font-bold text-gray-555 uppercase tracking-wider mt-1 block">Hours</span>
                   </div>
                   <div className="text-center border-l border-gray-900/60">
                     <span className="block text-xl sm:text-2xl md:text-3xl font-black text-white font-mono leading-none">
                       {timeLeft.minutes.toString().padStart(2, '0')}
                     </span>
-                    <span className="text-[8px] font-bold text-gray-550 uppercase tracking-wider mt-1 block">Mins</span>
+                    <span className="text-[8px] font-bold text-gray-555 uppercase tracking-wider mt-1 block">Mins</span>
                   </div>
                   <div className="text-center border-l border-gray-900/60">
                     <span className="block text-xl sm:text-2xl md:text-3xl font-black text-blue-400 font-mono leading-none">
                       {timeLeft.seconds.toString().padStart(2, '0')}
                     </span>
-                    <span className="text-[8px] font-bold text-gray-550 uppercase tracking-wider mt-1 block">Secs</span>
+                    <span className="text-[8px] font-bold text-gray-555 uppercase tracking-wider mt-1 block">Secs</span>
                   </div>
                 </div>
               )}
+
+              {/* Waitlist Subscription Card */}
+              <div className="mt-6 sm:mt-10 max-w-md mx-auto lg:mx-0">
+                {!submitted ? (
+                  <form onSubmit={handleJoinWaitlist} className="bg-gray-950/30 border border-gray-900/80 p-5 sm:p-6 rounded-3xl space-y-4 backdrop-blur-sm animate-fade-in text-left">
+                    <h3 className="text-xs font-black uppercase text-white tracking-widest text-left">Join The Waitlist</h3>
+                    
+                    <div className="relative text-left">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-550 w-4 h-4" />
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Your full name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-[#05060f]/80 border border-gray-800 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
+                      />
+                    </div>
+
+                    <div className="relative text-left">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-550 w-4 h-4" />
+                      <input 
+                        type="email" 
+                        required
+                        placeholder="Your email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-[#05060f]/80 border border-gray-800 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
+                      />
+                    </div>
+
+                    <div className="relative text-left">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-555 w-4 h-4" />
+                      <input 
+                        type="tel" 
+                        required
+                        placeholder="WhatsApp number (e.g. +201...)"
+                        value={whatsappPhone}
+                        onChange={(e) => setWhatsappPhone(e.target.value)}
+                        className="w-full bg-[#05060f]/80 border border-gray-800 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {submitting ? 'Adding...' : 'Request Access Now'}
+                    </button>
+                  </form>
+                ) : (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[#0c1020]/30 border border-gray-900/80 p-6 sm:p-8 rounded-3xl text-center flex flex-col items-center gap-3 backdrop-blur-md"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                      <CheckCircle size={24} />
+                    </div>
+                    <h4 className="text-sm font-black uppercase tracking-wider text-white">You're On The List!</h4>
+                    <p className="text-gray-400 text-xs leading-relaxed max-w-xs">
+                      We'll ping your WhatsApp and email as soon as portal access codes are ready to dispatch.
+                    </p>
+                  </motion.div>
+                )}
+              </div>
             </>
           ) : (
             <>
@@ -264,221 +331,121 @@ export default function LaunchLockScreen({
               <p className="mt-3 sm:mt-4 text-gray-400 text-xs sm:text-sm md:text-base leading-relaxed">
                 The website is under maintenance now. We are currently rolling out new systems and performing database upgrades to optimize performance. Please come back later.
               </p>
+
+              {/* Maintenance Animation Graphic */}
+              <div className="mt-6 sm:mt-10 p-4 sm:p-6 bg-[#0c1020]/40 border border-gray-900 rounded-3xl backdrop-blur-sm max-w-md mx-auto lg:mx-0 flex items-center gap-4 sm:gap-5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Upgrades in progress</h4>
+                  <p className="text-gray-500 text-[10px] mt-1 leading-relaxed">
+                    Database tables migration and API endpoints warmups are actively running.
+                  </p>
+                </div>
+              </div>
             </>
           )}
         </div>
 
-        {/* Right Column: Premium CSS Phone Mockup + Layered Form */}
-        {status === 'coming_soon' ? (
-          <div className="flex-1 w-full max-w-lg flex items-center justify-center relative min-h-[460px] sm:min-h-[580px] my-6 lg:my-0">
-            {/* Glow rings */}
-            <div className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-blue-500/5 animate-ping" style={{ animationDuration: '6s' }} />
+        {/* Right Column: Premium CSS Phone Mockup (Floating & Centered) */}
+        <div className="flex-1 w-full max-w-sm flex items-center justify-center relative flex-shrink-0 mt-3 sm:mt-0">
+          {/* Animated glow rings around phone using blue brand color */}
+          <div className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-blue-500/5 animate-ping" style={{ animationDuration: '6s' }} />
+          <div className="absolute w-64 h-64 sm:w-80 sm:h-80 rounded-full border border-blue-555/5 animate-ping" style={{ animationDuration: '9s' }} />
 
-            {/* Tilted Phone Mockup (Behind, Tilted to the right) */}
-            <motion.div 
-              animate={{ 
-                y: ["-50%", "-53%", "-50%"],
-                rotate: [10, 13, 10]
-              }}
-              transition={{ 
-                duration: 6,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute right-[-5px] sm:right-12 top-1/2 z-0 opacity-80 sm:opacity-95 scale-[0.8] sm:scale-100 flex-shrink-0 pointer-events-none origin-center"
-            >
-              <div 
-                className="w-[220px] sm:w-[280px] h-[440px] sm:h-[560px] bg-black rounded-[30px] sm:rounded-[48px] border-[4px] sm:border-[6px] border-gray-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] p-2 sm:p-3 relative overflow-hidden flex-shrink-0"
-              >
-                {/* Camera notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 sm:w-28 h-4 sm:h-6 bg-black rounded-b-xl sm:rounded-b-2xl z-20 flex items-center justify-center">
-                  <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-gray-900 border border-gray-800" />
-                </div>
-
-                {/* Inner display */}
-                <div className="w-full h-full bg-[#05060f] rounded-[24px] sm:rounded-[38px] p-3 sm:p-4 flex flex-col justify-between overflow-hidden relative">
-                  {/* Interactive background design */}
-                  <div className="absolute top-[-10%] right-[-10%] w-24 h-24 rounded-full bg-blue-500/5 blur-xl" />
-                  <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 rounded-full bg-blue-600/5 blur-xl" />
-
-                  {/* Status Bar */}
-                  <div className="flex justify-between items-center text-[7px] sm:text-[8px] font-bold text-gray-550 font-mono mt-1 px-1">
-                    <span>09:41 AM</span>
-                    <div className="flex items-center gap-1">
-                      <Activity size={8} className="text-blue-500 animate-pulse" />
-                      <span>5G</span>
-                      <span>100%</span>
-                    </div>
-                  </div>
-
-                  {/* Mock App Content (100% Matching Real Website Dashboard) */}
-                  <div className="flex-1 mt-4 sm:mt-6 flex flex-col justify-between overflow-hidden">
-                    {/* Simulated Header */}
-                    <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-gray-900/60">
-                      <div className="flex items-center gap-1.5">
-                        <BrandLogo className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-white">Life Gym</span>
-                      </div>
-                      <span className="text-[5px] sm:text-[6px] text-gray-550 font-mono uppercase bg-blue-500/10 px-1.5 sm:px-2 py-0.5 rounded-full text-blue-400 font-bold border border-blue-500/15">Active</span>
-                    </div>
-
-                    {/* Simulated Calories Ring Visualizer */}
-                    <div className="my-auto flex flex-col items-center justify-center py-2 sm:py-4 relative">
-                      <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full border-4 border-dashed border-blue-500/10 flex items-center justify-center p-2 sm:p-3 relative">
-                        <div className="w-full h-full rounded-full border-4 border-blue-500 border-t-transparent animate-spin" style={{ animationDuration: '6s' }} />
-                      </div>
-                      
-                      {/* Realtime stats mockup */}
-                      <div className="absolute text-center flex flex-col items-center justify-center">
-                        <span className="text-[5px] sm:text-[7px] font-black uppercase tracking-widest text-gray-500">nutrition</span>
-                        <span className="text-sm sm:text-lg font-black text-white font-mono leading-none mt-0.5 sm:mt-1">1,840</span>
-                        <span className="text-[5px] sm:text-[7px] font-bold text-blue-400 font-mono mt-0.5">/ 2,400 kcal</span>
-                      </div>
-                    </div>
-
-                    {/* Dashboard Stats cards mockup */}
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="bg-[#0c1020] border border-gray-900/80 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                            <TrendingUp size={10} />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[5px] sm:text-[7px] font-bold text-gray-550 uppercase tracking-wider">active workout</p>
-                            <p className="text-[8px] sm:text-[9px] font-black text-white uppercase mt-0.5">Pull Day Routine</p>
-                          </div>
-                        </div>
-                        <span className="text-[5px] sm:text-[6px] text-blue-400 font-bold uppercase font-mono">12 sets left</span>
-                      </div>
-
-                      <div className="bg-[#0c1020] border border-gray-900/80 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                            <Droplets size={10} />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[5px] sm:text-[7px] font-bold text-gray-550 uppercase tracking-wider">water tracker</p>
-                            <p className="text-[8px] sm:text-[9px] font-black text-white uppercase mt-0.5">1.5 Liters Logged</p>
-                          </div>
-                        </div>
-                        <span className="text-[5px] sm:text-[6px] text-blue-400 font-bold uppercase font-mono">50% daily goal</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Nav Mockup */}
-                  <div className="border-t border-gray-900/60 pt-2 sm:pt-2.5 mt-3 sm:mt-4 flex justify-around text-[7px] font-bold text-gray-550 font-mono">
-                    <span className="text-blue-500">Today</span>
-                    <span>Workout</span>
-                    <span>Diet</span>
-                    <span>Profile</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Waitlist Form Card (Foreground, Centered on Mobile, Left-aligned on Desktop) */}
-            <div className="absolute left-1/2 -translate-x-1/2 sm:left-4 sm:translate-x-0 top-1/2 -translate-y-1/2 z-10 w-full max-w-[285px] xs:max-w-[310px] sm:max-w-[345px] drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-fade-in">
-              {!submitted ? (
-                <form onSubmit={handleJoinWaitlist} className="bg-[#0c1020]/90 border border-gray-800/80 p-5 sm:p-6 rounded-3xl space-y-4 backdrop-blur-md">
-                  <h3 className="text-xs font-black uppercase text-white tracking-widest text-left">Join The Waitlist</h3>
-                  
-                  <div className="relative text-left">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="Your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-[#05060f]/80 border border-gray-800 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
-                    />
-                  </div>
-
-                  <div className="relative text-left">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                    <input 
-                      type="email" 
-                      required
-                      placeholder="Your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-[#05060f]/80 border border-gray-800 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
-                    />
-                  </div>
-
-                  <div className="relative text-left">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="WhatsApp number (e.g. +201...)"
-                      value={whatsappPhone}
-                      onChange={(e) => setWhatsappPhone(e.target.value)}
-                      className="w-full bg-[#05060f]/80 border border-gray-800 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-3 text-xs text-white outline-none font-medium transition-all"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    {submitting ? 'Adding...' : 'Request Access Now'}
-                  </button>
-                </form>
-              ) : (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-[#0c1020]/90 border border-gray-800/80 p-6 sm:p-8 rounded-3xl text-center flex flex-col items-center gap-3 backdrop-blur-md"
-                >
-                  <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                    <CheckCircle size={24} />
-                  </div>
-                  <h4 className="text-sm font-black uppercase tracking-wider text-white">You're On The List!</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed max-w-xs">
-                    We'll ping your WhatsApp and email as soon as portal access codes are ready to dispatch.
-                  </p>
-                </motion.div>
-              )}
+          {/* Premium CSS Phone Mockup with floating loop */}
+          <motion.div 
+            animate={{ 
+              y: [0, -12, 0],
+              rotate: [-1, 1, -1]
+            }}
+            transition={{ 
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="w-[220px] sm:w-[280px] h-[440px] sm:h-[560px] bg-black rounded-[30px] sm:rounded-[48px] border-[4px] sm:border-[6px] border-gray-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] p-2 sm:p-3 relative overflow-hidden flex-shrink-0"
+          >
+            {/* Camera notch */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 sm:w-28 h-4 sm:h-6 bg-black rounded-b-xl sm:rounded-b-2xl z-20 flex items-center justify-center">
+              <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-gray-900 border border-gray-800" />
             </div>
-          </div>
-        ) : (
-          /* Maintenance Mode - Centered Worker Mockup */
-          <div className="flex-1 w-full max-w-sm flex items-center justify-center relative flex-shrink-0 my-4 sm:my-0">
-            {/* Glow rings */}
-            <div className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-blue-500/5 animate-ping" style={{ animationDuration: '6s' }} />
 
-            <motion.div 
-              initial={{ opacity: 0, y: 30, rotate: -3 }}
-              animate={{ opacity: 1, y: 0, rotate: -1 }}
-              transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
-              whileHover={{ scale: 1.02, rotate: 1 }}
-              className="w-[220px] sm:w-[280px] h-[440px] sm:h-[560px] bg-black rounded-[30px] sm:rounded-[48px] border-[4px] sm:border-[6px] border-gray-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] p-2 sm:p-3 relative overflow-hidden flex-shrink-0"
-            >
-              {/* Camera notch */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 sm:w-28 h-4 sm:h-6 bg-black rounded-b-xl sm:rounded-b-2xl z-20 flex items-center justify-center">
-                <div className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-gray-900 border border-gray-800" />
+            {/* Inner display */}
+            <div className="w-full h-full bg-[#05060f] rounded-[24px] sm:rounded-[38px] p-3 sm:p-4 flex flex-col justify-between overflow-hidden relative">
+              {/* Interactive background design */}
+              <div className="absolute top-[-10%] right-[-10%] w-24 h-24 rounded-full bg-blue-500/5 blur-xl" />
+              <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 rounded-full bg-blue-600/5 blur-xl" />
+
+              {/* Status Bar */}
+              <div className="flex justify-between items-center text-[7px] sm:text-[8px] font-bold text-gray-550 font-mono mt-1 px-1">
+                <span>09:41 AM</span>
+                <div className="flex items-center gap-1">
+                  <Activity size={8} className="text-blue-500 animate-pulse" />
+                  <span>5G</span>
+                  <span>100%</span>
+                </div>
               </div>
 
-              {/* Inner display */}
-              <div className="w-full h-full bg-[#05060f] rounded-[24px] sm:rounded-[38px] p-3 sm:p-4 flex flex-col justify-between overflow-hidden relative">
-                {/* Interactive background design */}
-                <div className="absolute top-[-10%] right-[-10%] w-24 h-24 rounded-full bg-blue-500/5 blur-xl" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-24 h-24 rounded-full bg-blue-600/5 blur-xl" />
+              {/* Mock App Content */}
+              {status === 'coming_soon' ? (
+                /* Mock App Content (100% Matching Real Website Dashboard) */
+                <div className="flex-1 mt-4 sm:mt-6 flex flex-col justify-between overflow-hidden">
+                  {/* Simulated Header */}
+                  <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-gray-900/60">
+                    <div className="flex items-center gap-1.5">
+                      <BrandLogo className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-white">Life Gym</span>
+                    </div>
+                    <span className="text-[5px] sm:text-[6px] text-gray-555 font-mono uppercase bg-blue-500/10 px-1.5 sm:px-2 py-0.5 rounded-full text-blue-400 font-bold border border-blue-500/15">Active</span>
+                  </div>
 
-                {/* Status Bar */}
-                <div className="flex justify-between items-center text-[7px] sm:text-[8px] font-bold text-gray-550 font-mono mt-1 px-1">
-                  <span>09:41 AM</span>
-                  <div className="flex items-center gap-1">
-                    <Activity size={8} className="text-blue-500 animate-pulse" />
-                    <span>5G</span>
-                    <span>100%</span>
+                  {/* Simulated Calories Ring Visualizer */}
+                  <div className="my-auto flex flex-col items-center justify-center py-2 sm:py-4 relative">
+                    <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full border-4 border-dashed border-blue-500/10 flex items-center justify-center p-2 sm:p-3 relative">
+                      <div className="w-full h-full rounded-full border-4 border-blue-500 border-t-transparent animate-spin" style={{ animationDuration: '6s' }} />
+                    </div>
+                    
+                    {/* Realtime stats mockup */}
+                    <div className="absolute text-center flex flex-col items-center justify-center">
+                      <span className="text-[5px] sm:text-[7px] font-black uppercase tracking-widest text-gray-555">nutrition</span>
+                      <span className="text-sm sm:text-lg font-black text-white font-mono leading-none mt-0.5 sm:mt-1">1,840</span>
+                      <span className="text-[5px] sm:text-[7px] font-bold text-blue-400 font-mono mt-0.5">/ 2,400 kcal</span>
+                    </div>
+                  </div>
+
+                  {/* Dashboard Stats cards mockup */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <div className="bg-[#0c1020] border border-gray-900/80 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                          <TrendingUp size={10} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[5px] sm:text-[7px] font-bold text-gray-555 uppercase tracking-wider">active workout</p>
+                          <p className="text-[8px] sm:text-[9px] font-black text-white uppercase mt-0.5">Pull Day Routine</p>
+                        </div>
+                      </div>
+                      <span className="text-[5px] sm:text-[6px] text-blue-400 font-bold uppercase font-mono">12 sets left</span>
+                    </div>
+
+                    <div className="bg-[#0c1020] border border-gray-900/80 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                          <Droplets size={10} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[5px] sm:text-[7px] font-bold text-gray-555 uppercase tracking-wider">water tracker</p>
+                          <p className="text-[8px] sm:text-[9px] font-black text-white uppercase mt-0.5">1.5 Liters Logged</p>
+                        </div>
+                      </div>
+                      <span className="text-[5px] sm:text-[6px] text-blue-400 font-bold uppercase font-mono">50% daily goal</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Maintenance Mode Funny Worker Animation */}
+              ) : (
+                /* Maintenance Mode Funny Worker Animation (Looping Cartoon Construction Worker) */
                 <div className="flex-1 mt-4 sm:mt-6 flex flex-col justify-between overflow-hidden relative">
                   {/* Simulated Header */}
                   <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-gray-900/60">
@@ -486,7 +453,7 @@ export default function LaunchLockScreen({
                       <Wrench className="w-3.5 h-3.5 text-amber-500" />
                       <span className="text-[9px] font-black uppercase tracking-wider text-white">System Core</span>
                     </div>
-                    <span className="text-[6px] text-gray-550 font-mono uppercase bg-amber-500/10 px-2 py-0.5 rounded-full text-amber-400 font-bold border border-amber-500/15">Upgrading</span>
+                    <span className="text-[6px] text-gray-555 font-mono uppercase bg-amber-500/10 px-2 py-0.5 rounded-full text-amber-400 font-bold border border-amber-500/15">Upgrading</span>
                   </div>
 
                   {/* Funny SVG Construction worker */}
@@ -559,6 +526,7 @@ export default function LaunchLockScreen({
                           animation: spin-stars 1.5s infinite linear, fade-stars 6s infinite ease-in-out;
                         }
                       `}</style>
+
                       {/* Ground */}
                       <rect x="20" y="220" width="160" height="8" rx="4" fill="#1f2937" />
 
@@ -624,22 +592,24 @@ export default function LaunchLockScreen({
                       </g>
                     </svg>
                   </div>
-                  <div className="text-center pb-2 text-[7px] text-gray-500 font-semibold uppercase tracking-wider font-mono">
+
+                  {/* Maintenance text footer inside screen */}
+                  <div className="text-center pb-2 text-[7px] text-gray-550 font-semibold uppercase tracking-wider font-mono">
                     upgrades compile loop
                   </div>
                 </div>
+              )}
 
-                {/* Bottom Nav Mockup */}
-                <div className="border-t border-gray-900/60 pt-2 sm:pt-2.5 mt-3 sm:mt-4 flex justify-around text-[7px] font-bold text-gray-550 font-mono">
-                  <span>Today</span>
-                  <span>Workout</span>
-                  <span>Diet</span>
-                  <span>Profile</span>
-                </div>
+              {/* Bottom Nav Mockup */}
+              <div className="border-t border-gray-900/60 pt-2 sm:pt-2.5 mt-3 sm:mt-4 flex justify-around text-[7px] font-bold text-gray-550 font-mono">
+                <span className={status === 'coming_soon' ? "text-blue-500" : "text-gray-550"}>Today</span>
+                <span>Workout</span>
+                <span>Diet</span>
+                <span>Profile</span>
               </div>
-            </motion.div>
-          </div>
-        )}
+            </div>
+          </motion.div>
+        </div>
       </main>
 
       {/* Footer */}
