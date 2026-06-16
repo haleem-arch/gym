@@ -1,5 +1,5 @@
 // Rollback v0.0.9 - standard gym version
-import { useEffect, useState, useRef, lazy, Suspense } from 'react';
+import { useEffect, useState, useRef, lazy, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
@@ -100,13 +100,18 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = ({ userRole, session }: { userRole: string | null, session: any }) => {
+const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | null, session: any, onCheckLaunch: () => void }) => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
 
   const navigate = useNavigate();
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
+
+  // Trigger launch status check immediately when entering any page
+  useEffect(() => {
+    onCheckLaunch();
+  }, [location.pathname, onCheckLaunch]);
 
   // Redirect logged-in coach/owner to coach dashboard if they are on a non-coach path
   const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
@@ -164,6 +169,11 @@ const AppContent = ({ userRole, session }: { userRole: string | null, session: a
 
   if (isElectron && !location.pathname.startsWith('/coach')) {
     return <Navigate to="/coach-portal" replace />;
+  }
+
+  const isMobile = window.innerWidth < 1024;
+  if (isCoachPortal && isMobile) {
+    return <Navigate to="/" replace />;
   }
 
   if (isCoachPortal) {
@@ -279,39 +289,39 @@ function App() {
   const [bypassActive, setBypassActive] = useState(false);
   const [checkingLaunch, setCheckingLaunch] = useState(true);
 
-  useEffect(() => {
-    const checkLaunchStatus = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('launch_settings')
-          .select('status, launch_time, bypass_passcode')
-          .eq('id', 'main')
-          .maybeSingle();
+  const checkLaunchStatus = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('launch_settings')
+        .select('status, launch_time, bypass_passcode')
+        .eq('id', 'main')
+        .maybeSingle();
 
-        if (!error && data) {
-          setLaunchStatus(data.status);
-          setLaunchTime(data.launch_time);
-          setBypassPasscode(data.bypass_passcode);
-          
-          // Auto-launch check
-          if (data.status !== 'live' && data.launch_time) {
-            const difference = +new Date(data.launch_time) - +new Date();
-            if (difference <= 0) {
-              setLaunchStatus('live');
-              await supabase
-                .from('launch_settings')
-                .update({ status: 'live' })
-                .eq('id', 'main');
-            }
+      if (!error && data) {
+        setLaunchStatus(data.status);
+        setLaunchTime(data.launch_time);
+        setBypassPasscode(data.bypass_passcode);
+        
+        // Auto-launch check
+        if (data.status !== 'live' && data.launch_time) {
+          const difference = +new Date(data.launch_time) - +new Date();
+          if (difference <= 0) {
+            setLaunchStatus('live');
+            await supabase
+              .from('launch_settings')
+              .update({ status: 'live' })
+              .eq('id', 'main');
           }
         }
-      } catch (err) {
-        console.error('Launch settings error:', err);
-      } finally {
-        setCheckingLaunch(false);
       }
-    };
+    } catch (err) {
+      console.error('Launch settings error:', err);
+    } finally {
+      setCheckingLaunch(false);
+    }
+  }, []);
 
+  useEffect(() => {
     // Check localStorage for bypass token
     const savedBypass = localStorage.getItem('bypass_launch_control') === 'true';
     if (savedBypass) {
@@ -321,7 +331,7 @@ function App() {
     checkLaunchStatus();
     const interval = setInterval(checkLaunchStatus, 5000); // Check every 5s
     return () => clearInterval(interval);
-  }, []);
+  }, [checkLaunchStatus]);
 
   useEffect(() => {
     // 1. Check current session
@@ -804,7 +814,7 @@ function App() {
               {showWelcomeSplash ? (
                 <div className="w-full h-screen bg-[#060713]" />
               ) : (
-                <AppContent userRole={userRole} session={session} />
+                <AppContent userRole={userRole} session={session} onCheckLaunch={checkLaunchStatus} />
               )}
             </>
           } />
