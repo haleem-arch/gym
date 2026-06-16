@@ -1,5 +1,5 @@
 // Rollback v0.0.9 - standard gym version
-import { useEffect, useState, useRef, lazy } from 'react';
+import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
@@ -11,6 +11,7 @@ import { SplashOverlay } from './components/SplashOverlay';
 import { GymSplashOverlay } from './components/GymSplashOverlay';
 import OnboardingFlow from './components/OnboardingFlow';
 import CookieConsent from './components/CookieConsent';
+import LaunchLockScreen from './pages/LaunchLockScreen';
 
 const HRDashboard = lazy(() => import('./pages/HRDashboard'));
 const TodayView = lazy(() => import('./pages/TodayView'));
@@ -261,6 +262,56 @@ function App() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [clientProfile, setClientProfile] = useState<any>(null);
   const [coachProfile, setCoachProfile] = useState<any>(null);
+
+  const [launchStatus, setLaunchStatus] = useState<'live' | 'coming_soon' | 'maintenance'>('live');
+  const [launchTime, setLaunchTime] = useState<string | null>(null);
+  const [bypassPasscode, setBypassPasscode] = useState('haleem@425336');
+  const [bypassActive, setBypassActive] = useState(false);
+  const [checkingLaunch, setCheckingLaunch] = useState(true);
+
+  useEffect(() => {
+    const checkLaunchStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('launch_settings')
+          .select('status, launch_time, bypass_passcode')
+          .eq('id', 'main')
+          .maybeSingle();
+
+        if (!error && data) {
+          setLaunchStatus(data.status);
+          setLaunchTime(data.launch_time);
+          setBypassPasscode(data.bypass_passcode);
+          
+          // Auto-launch check
+          if (data.status !== 'live' && data.launch_time) {
+            const difference = +new Date(data.launch_time) - +new Date();
+            if (difference <= 0) {
+              setLaunchStatus('live');
+              await supabase
+                .from('launch_settings')
+                .update({ status: 'live' })
+                .eq('id', 'main');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Launch settings error:', err);
+      } finally {
+        setCheckingLaunch(false);
+      }
+    };
+
+    // Check localStorage for bypass token
+    const savedBypass = localStorage.getItem('bypass_launch_control') === 'true';
+    if (savedBypass) {
+      setBypassActive(true);
+    }
+
+    checkLaunchStatus();
+    const interval = setInterval(checkLaunchStatus, 5000); // Check every 5s
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // 1. Check current session
@@ -533,8 +584,68 @@ function App() {
 
   const effectiveSession = signupInProgress ? null : session;
 
+  if (checkingLaunch) {
+    return <DumbbellLoader fullScreen size={140} />;
+  }
+
+  if (launchStatus !== 'live' && !bypassActive) {
+    return (
+      <Router>
+        <Suspense fallback={<DumbbellLoader fullScreen size={100} />}>
+          <Toaster 
+            position="top-center" 
+            reverseOrder={false} 
+            toastOptions={{
+              style: {
+                background: '#0a0d1e',
+                color: '#fff',
+                border: '1px solid rgba(59, 130, 246, 0.15)',
+                borderRadius: '14px',
+                fontSize: '11px',
+                fontWeight: '700',
+                fontFamily: 'Outfit, sans-serif',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5)',
+                padding: '10px 16px',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#0a0d1e',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#0a0d1e',
+                },
+              },
+              loading: {
+                style: {
+                  border: '1px solid rgba(245, 158, 11, 0.2)',
+                },
+                iconTheme: {
+                  primary: '#f59e0b',
+                  secondary: '#0a0d1e',
+                }
+              }
+            }}
+          />
+          <LaunchLockScreen 
+            status={launchStatus} 
+            launchTime={launchTime} 
+            bypassPasscode={bypassPasscode} 
+            onBypassSuccess={() => setBypassActive(true)} 
+          />
+        </Suspense>
+      </Router>
+    );
+  }
+
   return (
     <Router>
+      <Suspense fallback={<DumbbellLoader fullScreen size={100} />}>
       <Toaster 
         position="top-center" 
         reverseOrder={false} 
@@ -686,6 +797,7 @@ function App() {
           } />
         </Routes>
       )}
+      </Suspense>
     </Router>
   );
 }
