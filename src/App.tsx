@@ -100,13 +100,23 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = () => {
+const AppContent = ({ userRole, session }: { userRole: string | null, session: any }) => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
 
   const navigate = useNavigate();
   const prevIndex = useRef(getTabIndex(location.pathname));
   const currentIndex = getTabIndex(location.pathname);
+
+  // Redirect logged-in coach/owner to coach dashboard if they are on a non-coach path
+  const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
+  const isCoachPortal = location.pathname.startsWith('/coach-portal');
+  
+  useEffect(() => {
+    if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
+      navigate('/coach/dashboard', { replace: true });
+    }
+  }, [isCoachOrOwner, location.pathname, isCoachPortal]);
 
 
 
@@ -150,7 +160,7 @@ const AppContent = () => {
   // Any active overlay = hide the bottom nav so it can't bleed through
   const anyOverlayActive = showSplash || showGymSplash;
 
-  const isCoachPortal = location.pathname.startsWith('/coach-portal');
+
 
   if (isElectron && !location.pathname.startsWith('/coach')) {
     return <Navigate to="/coach-portal" replace />;
@@ -791,7 +801,7 @@ function App() {
               {showWelcomeSplash ? (
                 <div className="w-full h-screen bg-[#060713]" />
               ) : (
-                <AppContent />
+                <AppContent userRole={userRole} session={session} />
               )}
             </>
           } />
