@@ -29,15 +29,7 @@ const FoodInventory = lazy(() => import('./pages/FoodInventory'));
 const InBodyView = lazy(() => import('./pages/InBodyView'));
 const ProfileView = lazy(() => import('./pages/ProfileView'));
 
-// Coach Pages
-const DashboardPage = lazy(() => import('./pages/coach/DashboardPage'));
-const ClientsListPage = lazy(() => import('./pages/coach/ClientsListPage'));
-const AddClientPage = lazy(() => import('./pages/coach/AddClientPage'));
-const ClientManagementPage = lazy(() => import('./pages/coach/ClientManagementPage'));
-const OwnerDashboardPage = lazy(() => import('./pages/coach/OwnerDashboardPage'));
-const SystemConsolePage = lazy(() => import('./pages/coach/SystemConsolePage'));
-const WhatsAppManagerPage = lazy(() => import('./pages/coach/WhatsAppManagerPage'));
-const DesktopCoachPortal = lazy(() => import('./pages/coach/DesktopCoachPortal'));
+
 const CoachLandingPage = lazy(() => import('./pages/coach/CoachLandingPage'));
 const DownloadBlueprintPage = lazy(() => import('./pages/coach/DownloadBlueprintPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
@@ -100,7 +92,7 @@ const PageTransition = ({ children, direction }: { children: React.ReactNode, di
 
 
 
-const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | null, session: any, onCheckLaunch: () => void }) => {
+const AppContent = ({ onCheckLaunch }: { onCheckLaunch: () => void }) => {
   const [showIntro, setShowIntro] = useState(true);
   const location = useLocation();
 
@@ -113,20 +105,7 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
     onCheckLaunch();
   }, [location.pathname, onCheckLaunch]);
 
-  // Redirect logged-in coach/owner to coach dashboard if they are on a non-coach path
-  const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
-  const isCoachPortal = location.pathname.startsWith('/coach-portal');
-  const isMobile = window.innerWidth < 1024;
-  
-  useEffect(() => {
-    if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
-      if (isMobile) {
-        navigate('/coach/dashboard', { replace: true });
-      } else {
-        navigate('/coach-portal', { replace: true });
-      }
-    }
-  }, [isCoachOrOwner, location.pathname, isCoachPortal, isMobile]);
+
 
 
 
@@ -172,23 +151,7 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
 
 
 
-  if (isElectron && !location.pathname.startsWith('/coach')) {
-    return <Navigate to="/coach-portal" replace />;
-  }
 
-  if (isCoachPortal && isMobile) {
-    return <Navigate to="/coach/dashboard" replace />;
-  }
-
-  if (isCoachPortal) {
-    return (
-      <div className="w-full h-screen bg-background text-gray-100 font-sans overflow-hidden no-scrollbar">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/coach-portal" element={<DesktopCoachPortal />} />
-        </Routes>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -217,14 +180,7 @@ const AppContent = ({ userRole, session, onCheckLaunch }: { userRole: string | n
               <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
 
 
-              {/* Coach Routes */}
-              <Route path="/coach/dashboard" element={<PageTransition direction={direction}><DashboardPage /></PageTransition>} />
-              <Route path="/coach/clients" element={<PageTransition direction={direction}><ClientsListPage /></PageTransition>} />
-              <Route path="/coach/clients/new" element={<PageTransition direction={direction}><AddClientPage /></PageTransition>} />
-              <Route path="/coach/clients/:clientId" element={<PageTransition direction={direction}><ClientManagementPage /></PageTransition>} />
-              <Route path="/coach/owner" element={<PageTransition direction={direction}><OwnerDashboardPage /></PageTransition>} />
-              <Route path="/coach/system" element={<PageTransition direction={direction}><SystemConsolePage /></PageTransition>} />
-              <Route path="/coach/whatsapp-manager" element={<PageTransition direction={direction}><WhatsAppManagerPage /></PageTransition>} />
+
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
@@ -818,7 +774,7 @@ function App() {
               {showWelcomeSplash ? (
                 <div className="w-full h-screen bg-[#060713]" />
               ) : (
-                <AppContent userRole={userRole} session={session} onCheckLaunch={checkLaunchStatus} />
+                <AppContent onCheckLaunch={checkLaunchStatus} />
               )}
             </>
           } />

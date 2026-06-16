@@ -313,6 +313,13 @@ export default function CoachLandingPage() {
 
       if (profileError) throw profileError;
 
+      // Block coach/owner login on web PWA
+      if (profile && (profile.role === 'coach' || authData.user.id === OWNER_ID)) {
+        await supabase.auth.signOut();
+        setErrorMessage('coach_detected_web');
+        return;
+      }
+
       if (profile && profile.role !== 'coach' && authData.user.id !== OWNER_ID) {
         await supabase.auth.signOut();
         setErrorMessage('athlete_detected');
@@ -320,7 +327,7 @@ export default function CoachLandingPage() {
       }
 
       setShowAuthModal(false);
-      navigate(window.innerWidth < 1024 ? '/coach/dashboard' : '/coach-portal');
+      navigate('/');
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to sign in.');
     } finally {
@@ -1126,7 +1133,7 @@ export default function CoachLandingPage() {
               </div>
 
               {/* error message bar */}
-              {errorMessage && errorMessage !== 'athlete_detected' && (
+              {errorMessage && errorMessage !== 'athlete_detected' && errorMessage !== 'coach_detected_web' && (
                 <div className="bg-red-500/10 border-b border-red-500/20 text-red-400 text-[10px] font-bold p-3 text-center">
                   {errorMessage}
                 </div>
@@ -1135,7 +1142,30 @@ export default function CoachLandingPage() {
               {/* MODAL BODY CONTROLLER */}
               <div className="p-6">
                 {authMode === 'login' ? (
-                  errorMessage === 'athlete_detected' ? (
+                  errorMessage === 'coach_detected_web' ? (
+                    <div className="space-y-4 text-center p-2">
+                      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-200 shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                      </div>
+                      <h5 className="text-sm font-black text-white uppercase tracking-wider">Coach Portal Disabled on Web</h5>
+                      <p className="text-xs text-zinc-400 leading-relaxed max-w-[280px] mx-auto font-medium">
+                        The coach portal is no longer accessible through web browsers. Please download and install the Life Gym Desktop App to manage your athletes.
+                      </p>
+                      <a
+                        href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
+                        className="flex items-center justify-center gap-1.5 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer"
+                      >
+                        <Download size={12} /> Download Desktop App
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setErrorMessage(null)}
+                        className="mt-2 text-xs text-zinc-400 hover:text-white font-black uppercase tracking-wider bg-transparent border-none cursor-pointer underline transition-all"
+                      >
+                        Back to Login
+                      </button>
+                    </div>
+                  ) : errorMessage === 'athlete_detected' ? (
                     <div className="space-y-4 text-center p-2">
                       <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-200 shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12" y2="18"></line></svg>
