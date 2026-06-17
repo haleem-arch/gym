@@ -2617,6 +2617,11 @@ export default function DesktopCoachPortal() {
       }
 
       const currentTargets = managementClientProfile.user?.targets || {};
+      const wasSuspended = currentTargets.is_deactivated === true || 
+                           currentTargets.subscription_status === 'suspended' || 
+                           currentTargets.subscription_status === 'expired' ||
+                           !currentTargets.subscription_end_date ||
+                           new Date(currentTargets.subscription_end_date) < new Date();
       
       // Calculate is_deactivated state dynamically
       let isDeactivated = false;
@@ -2676,11 +2681,23 @@ export default function DesktopCoachPortal() {
       
       fetchBaseData();
 
-      // Trigger WhatsApp reactivation if now active
+      // Trigger WhatsApp reactivation/renewal if now active
       if (updatedTargets.phone_number && !isDeactivated) {
-        triggerWhatsAppEvent('client_reactivated', updatedTargets.phone_number, {
-          display_name: managementClientProfile.user?.display_name || 'Athlete'
-        });
+        if (wasSuspended) {
+          triggerWhatsAppEvent('client_reactivated', updatedTargets.phone_number, {
+            display_name: managementClientProfile.user?.display_name || 'Athlete'
+          });
+        } else {
+          const planName = period === 'custom' ? 'Custom Plan' : period;
+          const formattedEndDate = subscription_end_date 
+            ? new Date(subscription_end_date).toLocaleDateString('en-GB') 
+            : '';
+          triggerWhatsAppEvent('client_renewed', updatedTargets.phone_number, {
+            display_name: managementClientProfile.user?.display_name || 'Athlete',
+            plan: planName,
+            end_date: formattedEndDate
+          });
+        }
       }
     } catch (err: any) {
       console.error(err);

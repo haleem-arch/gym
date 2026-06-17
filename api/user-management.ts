@@ -259,32 +259,33 @@ ${origin}/login
           `.trim();
 
           const htmlCoachWelcome = `
-            <div style="font-family: sans-serif; background-color: #f4f4f5; padding: 20px; color: #18181b;">
-              <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; max-width: 520px; margin: 20px auto; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h1 style="color: #10b981; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
-                  <p style="font-size: 9px; color: #3b82f6; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Coach Portal Activated</p>
+            <div style="font-family: 'Outfit', 'Inter', sans-serif; background-color: #07080f; padding: 40px 20px; color: #ffffff; min-height: 100%;">
+              <div style="background-color: #121624; border: 1px solid #1e293b; border-radius: 16px; max-width: 520px; margin: 0 auto; padding: 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center;">
+                <div style="margin-bottom: 24px;">
+                  <img src="${origin}/icon.svg" alt="Life Gym Logo" style="width: 64px; height: 64px; display: inline-block;" />
+                  <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; margin: 12px 0 0 0; text-transform: uppercase;">LIFE GYM</h1>
+                  <p style="font-size: 10px; color: #3b82f6; font-weight: 800; letter-spacing: 0.15em; margin: 4px 0 0 0; text-transform: uppercase;">Coach Portal Activated</p>
                 </div>
                 
-                <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome to the Team, Coach ${display_name?.trim()}! 👑</h2>
+                <h2 style="color: #ffffff; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Welcome to the Team, Coach ${display_name?.trim()}! 👑</h2>
                 
-                <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
+                <p style="font-size: 13px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
                   A professional coach account has been successfully provisioned for you. You can now log in to manage your athletes.
                 </p>
                 
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
-                  <span style="color: #10b981; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Details</span>
-                  <strong>Email:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail}</code><br />
-                  <strong>Password:</strong> <code style="color: #f59e0b; font-family: monospace; font-size: 13px;">${password}</code>
+                <div style="background-color: #1b2234; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; font-size: 13px; color: #cbd5e1; margin-bottom: 28px; text-align: left; line-height: 1.6;">
+                  <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Details</span>
+                  <strong>Email:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${cleanEmail}</code><br style="margin-bottom: 8px;" />
+                  <strong>Password:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${password}</code>
                 </div>
                 
-                <div style="text-align: center; margin-bottom: 28px;">
-                  <a href="${origin}/login" target="_blank" style="background-color: #10b981; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                <div style="margin-bottom: 28px;">
+                  <a href="${origin}/login" target="_blank" style="background-color: #3b82f6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                     Log In to Coach Portal
                   </a>
                 </div>
                 
-                <p style="font-size: 10px; color: #9ca3af; margin-top: 36px; border-top: 1px solid #e4e4e7; padding-top: 16px; text-align: center; margin-bottom: 0;">
+                <p style="font-size: 10px; color: #64748b; margin-top: 36px; border-top: 1px solid #1e293b; padding-top: 16px; margin-bottom: 0;">
                   © 2026 Life Gym. All rights reserved.
                 </p>
               </div>
@@ -326,33 +327,34 @@ ${origin}/client-login
             `.trim();
 
             const htmlAthleteWelcome = `
-              <div style="font-family: sans-serif; background-color: #f4f4f5; padding: 20px; color: #18181b;">
-                <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; max-width: 520px; margin: 20px auto; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                  <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #3b82f6; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin: 0;">LIFE GYM</h1>
-                    <p style="font-size: 9px; color: #10b981; font-weight: 900; letter-spacing: 0.15em; margin: 5px 0 0 0; text-transform: uppercase;">Athlete Portal Activated</p>
+              <div style="font-family: 'Outfit', 'Inter', sans-serif; background-color: #07080f; padding: 40px 20px; color: #ffffff; min-height: 100%;">
+                <div style="background-color: #121624; border: 1px solid #1e293b; border-radius: 16px; max-width: 520px; margin: 0 auto; padding: 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); text-align: center;">
+                  <div style="margin-bottom: 24px;">
+                    <img src="${origin}/icon.svg" alt="Life Gym Logo" style="width: 64px; height: 64px; display: inline-block;" />
+                    <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: -0.02em; margin: 12px 0 0 0; text-transform: uppercase;">LIFE GYM</h1>
+                    <p style="font-size: 10px; color: #3b82f6; font-weight: 800; letter-spacing: 0.15em; margin: 4px 0 0 0; text-transform: uppercase;">Athlete Portal Activated</p>
                   </div>
                   
-                  <h2 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px; text-align: center;">Welcome, ${display_name?.trim() || 'Athlete'}! 🏋️</h2>
+                  <h2 style="color: #ffffff; font-size: 18px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Welcome, ${display_name?.trim() || 'Athlete'}! 🏋️</h2>
                   
-                  <p style="font-size: 13px; line-height: 1.6; color: #4b5563; margin-bottom: 20px;">
+                  <p style="font-size: 13px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
                     Coach <strong>${coachName}</strong> has created your training and diet logs profile on Life Gym. You can now log in to view your workouts, report compliance, check diet targets, and track your metrics in real-time.
                   </p>
                   
-                  <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
-                    <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Credentials</span>
-                    <strong>Portal Link:</strong> <code style="color: #10b981; font-family: monospace; font-size: 13px;">${origin}/client-login</code><br />
-                    <strong>Username:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail.split('@')[0]}</code><br />
-                    <strong>Password:</strong> <code style="color: #f59e0b; font-family: monospace; font-size: 13px;">${password}</code>
+                  <div style="background-color: #1b2234; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; font-size: 13px; color: #cbd5e1; margin-bottom: 28px; text-align: left; line-height: 1.6;">
+                    <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Credentials</span>
+                    <strong>Portal Link:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${origin}/client-login</code><br style="margin-bottom: 8px;" />
+                    <strong>Username:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${cleanEmail.split('@')[0]}</code><br style="margin-bottom: 8px;" />
+                    <strong>Password:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${password}</code>
                   </div>
                   
-                  <div style="text-align: center; margin-bottom: 28px;">
+                  <div style="margin-bottom: 28px;">
                     <a href="${origin}/client-login" target="_blank" style="background-color: #3b82f6; color: #ffffff; font-weight: 800; font-size: 12px; text-decoration: none; padding: 14px 28px; border-radius: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                       Access Athlete Portal
                     </a>
                   </div>
                   
-                  <p style="font-size: 10px; color: #9ca3af; margin-top: 36px; border-top: 1px solid #e4e4e7; padding-top: 16px; text-align: center; margin-bottom: 0;">
+                  <p style="font-size: 10px; color: #64748b; margin-top: 36px; border-top: 1px solid #1e293b; padding-top: 16px; margin-bottom: 0;">
                     © 2026 Life Gym. All rights reserved.
                   </p>
                 </div>
@@ -1049,6 +1051,7 @@ ${origin}/client-login
       const DEFAULT_TPL_COACH_SUSPENDED = `*LIFE GYM* 👑\n\nHello, Coach *{display_name}*!\n\nYour coaching account has been suspended due to your subscription ending.\n\nTo renew your subscription and reactivate access for you and your athletes, please log in to the desktop portal.\n\n*Need help? Contact support at:*\n📧 life.gym.team@gmail.com`;
       const DEFAULT_TPL_CLIENT_SUSPENDED = `*LIFE GYM* 🏋️\n\nHello, *{display_name}*!\n\nYour athlete account has been temporarily suspended because your active training plan has ended.\n\nPlease contact your coach *{coach_name}* at *{coach_phone}* to renew your plan and reactivate your account.\n\nLet's get back to crushing weights soon! 💪🔥`;
       const DEFAULT_TPL_CLIENT_REACTIVATED = `*LIFE GYM* 🏋️\n\nHello, *{display_name}*!\n\nYour account has been reactivated! Go crush weights! 💪🔥`;
+      const DEFAULT_TPL_CLIENT_RENEWED = `*LIFE GYM* 🏋️\n\nHello *{display_name}*!\n\nYour subscription plan has been successfully renewed for *{plan}* (valid until *{end_date}*). Let's keep crushing those targets! 💪🔥\n\n© 2026 Life Gym.`;
       const DEFAULT_TPL_COACH_REACTIVATED = `*LIFE GYM - Subscription Reactivated* 👑\n\nHello, Coach *{display_name}*!\n\nYour coaching account has been reactivated. \n\n*Receipt Details:*\n• *Plan Period:* {plan}\n• *Start Date:* {start_date}\n• *End Date:* {end_date}\n\nTime to get back to work! 🚀`;
 
       if (event === 'sub_approved') {
@@ -1069,6 +1072,9 @@ ${origin}/client-login
       } else if (event === 'client_reactivated') {
         isTriggered = ownerTargets.whatsapp_trigger_client_reactivated !== false;
         rawTemplate = ownerTargets.whatsapp_tpl_client_reactivated || DEFAULT_TPL_CLIENT_REACTIVATED;
+      } else if (event === 'client_renewed') {
+        isTriggered = ownerTargets.whatsapp_trigger_client_renewed !== false;
+        rawTemplate = ownerTargets.whatsapp_tpl_client_renewed || DEFAULT_TPL_CLIENT_RENEWED;
       } else if (event === 'coach_reactivated') {
         isTriggered = ownerTargets.whatsapp_trigger_coach_reactivated !== false;
         rawTemplate = ownerTargets.whatsapp_tpl_coach_reactivated || DEFAULT_TPL_COACH_REACTIVATED;

@@ -665,6 +665,7 @@ export default function CoachLandingPage() {
 
         <motion.div 
           variants={cardsContainerVariants}
+          style={{ WebkitOverflowScrolling: 'touch' }}
           className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 -mx-6 px-6 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 sm:gap-6 md:overflow-x-visible md:px-0 md:mx-0 md:pb-0"
         >
           {[
@@ -701,7 +702,7 @@ export default function CoachLandingPage() {
           ].map((feat, idx) => (
             <div 
               key={idx}
-              className="w-[82vw] shrink-0 snap-center p-8 rounded-2xl bg-zinc-900/30 border border-zinc-900 hover:border-zinc-800/80 transition-all flex flex-col text-left group md:w-auto md:shrink"
+              className="w-[82vw] shrink-0 snap-center snap-always p-8 rounded-2xl bg-zinc-900/30 border border-zinc-900 hover:border-zinc-800/80 transition-all flex flex-col text-left group md:w-auto md:shrink"
             >
               <div className="w-10 h-10 rounded-xl bg-blue-950/20 border border-blue-900/30 flex items-center justify-center mb-6 text-blue-400 group-hover:text-blue-300 transition-colors">
                 {feat.icon}
@@ -787,13 +788,14 @@ export default function CoachLandingPage() {
         <motion.div 
           id="billing-plans"
           variants={cardsContainerVariants}
+          style={{ WebkitOverflowScrolling: 'touch' }}
           className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 -mx-6 px-6 no-scrollbar sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 items-stretch scroll-mt-24 sm:overflow-x-visible sm:px-0 sm:mx-0 sm:pb-0"
         >
           {/* 2 Weeks Plan */}
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
+            className="w-[76vw] shrink-0 snap-center snap-always p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
           >
             <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">2 Weeks</span>
@@ -827,7 +829,7 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900 border border-blue-500/40 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-xl sm:scale-105 hover:border-blue-500 transition-all group sm:w-auto sm:shrink"
+            className="w-[76vw] shrink-0 snap-center snap-always p-6 sm:p-8 bg-zinc-900 border border-blue-500/40 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-xl sm:scale-105 hover:border-blue-500 transition-all group sm:w-auto sm:shrink"
           >
             <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white font-black text-[8px] uppercase tracking-widest px-3 py-1 rounded-full shadow-lg z-10 border border-blue-500">
               Most Popular
@@ -864,7 +866,7 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
+            className="w-[76vw] shrink-0 snap-center snap-always p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
           >
             <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-850 border border-zinc-700/60 px-3 py-1 rounded-lg">3 Months</span>
@@ -898,7 +900,7 @@ export default function CoachLandingPage() {
           <motion.div 
             variants={cardEntranceVariants}
             whileHover="hover"
-            className="w-[76vw] shrink-0 snap-center p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
+            className="w-[76vw] shrink-0 snap-center snap-always p-6 sm:p-8 bg-zinc-900/30 border border-zinc-900 rounded-2xl sm:rounded-[28px] flex flex-col justify-between relative shadow-lg hover:border-zinc-800 transition-all group sm:w-auto sm:shrink"
           >
             <div className="space-y-4 sm:space-y-5">
               <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest bg-zinc-800 border border-zinc-700/60 px-3 py-1 rounded-lg">6 Months</span>
