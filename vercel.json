@@ -55,7 +55,7 @@
     },
     {
       "path": "/api/cron-retry-whatsapp",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 1 * * *"
     }
   ]
 }
