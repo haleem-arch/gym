@@ -44,6 +44,10 @@
       "destination": "/api/user-management?action=update-password"
     },
     {
+      "source": "/api/cron-retry-whatsapp",
+      "destination": "/api/user-management?action=retry-whatsapp"
+    },
+    {
       "source": "/((?!api/)[^.]*)",
       "destination": "/index.html"
     }
