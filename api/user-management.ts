@@ -65,8 +65,25 @@ async function sendWhatsAppMessageHelper({
 
     if (!res.ok) {
       const errText = await res.text();
+      // Log delivery failure in DB
+      await supabaseAdmin.from('whatsapp_delivery_logs').insert({
+        recipient_phone: cleanedPhone,
+        message_text: text.trim(),
+        status: 'failed',
+        error_message: `Gateway returned status ${res.status}: ${errText}`,
+        last_attempt_at: new Date().toISOString()
+      }).catch((logErr: any) => console.error('Failed to log WhatsApp delivery failure:', logErr));
+
       return { success: false, error: `Gateway returned status ${res.status}: ${errText}` };
     }
+
+    // Log delivery success in DB
+    await supabaseAdmin.from('whatsapp_delivery_logs').insert({
+      recipient_phone: cleanedPhone,
+      message_text: text.trim(),
+      status: 'sent',
+      last_attempt_at: new Date().toISOString()
+    }).catch((logErr: any) => console.error('Failed to log WhatsApp delivery success:', logErr));
 
     // State-based Warm-up message check
     const nextCount = (ownerTargets.whatsapp_sent_count || 0) + 1;
@@ -112,6 +129,15 @@ async function sendWhatsAppMessageHelper({
     return { success: true };
   } catch (err: any) {
     console.error('sendWhatsAppMessageHelper error:', err);
+    // Log exception failure in DB
+    await supabaseAdmin.from('whatsapp_delivery_logs').insert({
+      recipient_phone: cleanedPhone,
+      message_text: text.trim(),
+      status: 'failed',
+      error_message: err.message || String(err),
+      last_attempt_at: new Date().toISOString()
+    }).catch((logErr: any) => console.error('Failed to log WhatsApp delivery exception:', logErr));
+
     return { success: false, error: err.message };
   }
 }
@@ -727,6 +753,32 @@ ${origin}/client-login
         return res.status(400).json({ error: 'Missing uid or password parameter' });
       }
 
+      // Fetch client profile first to check rate limit
+      const { data: clientProfile, error: clientError } = await supabaseAdmin
+        .from('profiles')
+        .select('display_name, targets')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (clientError || !clientProfile) {
+        return res.status(404).json({ error: 'Client profile not found' });
+      }
+
+      // Check Rate Limit: 10 minutes per client
+      const clientTargets = clientProfile.targets || {};
+      const lastChange = clientTargets.last_password_change_time;
+      if (lastChange) {
+        const lastChangeDate = new Date(lastChange);
+        const now = new Date();
+        const diffMinutes = (now.getTime() - lastChangeDate.getTime()) / (1000 * 60);
+        if (diffMinutes < 10) {
+          const minutesRemaining = Math.ceil(10 - diffMinutes);
+          return res.status(429).json({ 
+            error: `Rate Limit: You can only change this client's password once every 10 minutes. Please try again in ${minutesRemaining} minutes.` 
+          });
+        }
+      }
+
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         uid,
         { password }
@@ -736,12 +788,16 @@ ${origin}/client-login
         return res.status(400).json({ error: updateError.message });
       }
 
-      // Fetch client profile and owner configs to trigger WhatsApp notification
-      const { data: clientProfile, error: clientError } = await supabaseAdmin
+      // Update client targets with the current timestamp
+      const updatedClientTargets = {
+        ...clientTargets,
+        last_password_change_time: new Date().toISOString()
+      };
+
+      await supabaseAdmin
         .from('profiles')
-        .select('display_name, targets')
-        .eq('id', uid)
-        .maybeSingle();
+        .update({ targets: updatedClientTargets })
+        .eq('id', uid);
 
       const { data: ownerProfile } = await supabaseAdmin
         .from('profiles')
@@ -757,32 +813,19 @@ ${origin}/client-login
         const coachName = profile?.display_name || 'your coach';
 
         const sendWhatsAppPromise = (async () => {
-          if (ownerTargets.whatsapp_enabled && ownerTargets.whatsapp_gateway_url) {
-            const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
-            const waEndpoint = `${gatewayUrl}/send-text`;
+          const defaultTemplate = `*LIFE GYM* 🏋️\n\nHello *{display_name}*!\n\nYour coach *{coach_name}* has updated your password to:\n👉 *{password}*\n\n© 2026 Life Gym.`;
+          const template = ownerTargets.whatsapp_tpl_coach_changed_password || defaultTemplate;
+          const formattedMessage = template
+            .replace(/{display_name}/g, clientName)
+            .replace(/{coach_name}/g, coachName)
+            .replace(/{password}/g, password);
 
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (ownerTargets.whatsapp_gateway_token) {
-              headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
-            }
-
-            const defaultTemplate = `*LIFE GYM* 🏋️\n\nHello *{display_name}*!\n\nYour coach *{coach_name}* has updated your password to:\n👉 *{password}*\n\n© 2026 Life Gym.`;
-            const template = ownerTargets.whatsapp_tpl_coach_changed_password || defaultTemplate;
-            const formattedMessage = template
-              .replace(/{display_name}/g, clientName)
-              .replace(/{coach_name}/g, coachName)
-              .replace(/{password}/g, password);
-
-            const cleanedPhone = formatWhatsAppPhone(clientPhone);
-            await fetch(waEndpoint, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                to: cleanedPhone,
-                text: formattedMessage.trim()
-              })
-            });
-          }
+          await sendWhatsAppMessageHelper({
+            to: clientPhone,
+            text: formattedMessage,
+            ownerTargets,
+            supabaseAdmin
+          });
         })();
 
         waitUntil(sendWhatsAppPromise.catch(err => {

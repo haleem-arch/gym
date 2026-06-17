@@ -17,7 +17,7 @@ import { DumbbellLoader } from '../../components/DumbbellLoader';
 import { SegmentalBodyMap } from '../../components/SegmentalBodyMap';
 import { GymReceipt } from '../../components/GymReceipt';
 import { FAKE_CLIENTS, getMockClientProfile, getMockClientData } from '../../utils/mockTutorialData';
-// import ConfirmationModal from '../../components/ConfirmationModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
 
@@ -588,24 +588,24 @@ export default function DesktopCoachPortal() {
   };
 
   // Custom styled confirm modal states
-  // const [customConfirmOpen, setCustomConfirmOpen] = useState(false);
-  // const [customConfirmTitle, setCustomConfirmTitle] = useState('');
-  // const [customConfirmMessage, setCustomConfirmMessage] = useState('');
-  // const [customConfirmVariant, setCustomConfirmVariant] = useState<'danger' | 'warning' | 'info' | 'success'>('info');
-  // const [customConfirmCallback, setCustomConfirmCallback] = useState<(() => void) | null>(null);
-  // 
-  // const showConfirm = (
-  //   title: string,
-  //   message: string,
-  //   variant: 'danger' | 'warning' | 'info' | 'success',
-  //   callback: () => void
-  // ) => {
-  //   setCustomConfirmTitle(title);
-  //   setCustomConfirmMessage(message);
-  //   setCustomConfirmVariant(variant);
-  //   setCustomConfirmCallback(() => callback);
-  //   setCustomConfirmOpen(true);
-  // };
+  const [customConfirmOpen, setCustomConfirmOpen] = useState(false);
+  const [customConfirmTitle, setCustomConfirmTitle] = useState('');
+  const [customConfirmMessage, setCustomConfirmMessage] = useState('');
+  const [customConfirmVariant, setCustomConfirmVariant] = useState<'danger' | 'warning' | 'info' | 'success'>('info');
+  const [customConfirmCallback, setCustomConfirmCallback] = useState<(() => void) | null>(null);
+  
+  const showConfirm = (
+    title: string,
+    message: string,
+    variant: 'danger' | 'warning' | 'info' | 'success',
+    callback: () => void
+  ) => {
+    setCustomConfirmTitle(title);
+    setCustomConfirmMessage(message);
+    setCustomConfirmVariant(variant);
+    setCustomConfirmCallback(() => callback);
+    setCustomConfirmOpen(true);
+  };
 
   // Subscriptions Tab Reactivation Modal state
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
@@ -2030,15 +2030,21 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleDeleteScan = async (id: string) => {
-    if (!window.confirm('Delete this scan?')) return;
-    const { error } = await supabase.from('inbody_scans').delete().eq('id', id);
-    if (error) {
-      toast.error('Unable to delete scan.');
-      return;
-    }
-    toast.success('Scan deleted');
-    fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  const handleDeleteScan = (id: string) => {
+    showConfirm(
+      'Delete Scan',
+      'Are you sure you want to delete this biometrics scan? This action cannot be undone.',
+      'danger',
+      async () => {
+        const { error } = await supabase.from('inbody_scans').delete().eq('id', id);
+        if (error) {
+          toast.error('Unable to delete scan.');
+          return;
+        }
+        toast.success('Scan deleted');
+        fetchClientData(selectedClientId!, clientActiveDateStr, true);
+      }
+    );
   };
 
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2199,15 +2205,21 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleDeleteSplitDay = async (id: string) => {
-    if (!window.confirm('Delete this split day? All exercises in it will be removed.')) return;
-    const { error } = await supabase.from('user_workout_plans').delete().eq('id', id);
-    if (error) {
-      toast.error('Unable to delete split day.');
-      return;
-    }
-    toast.success('Split deleted');
-    fetchClientData(selectedClientId!, clientActiveDateStr, true);
+  const handleDeleteSplitDay = (id: string) => {
+    showConfirm(
+      'Delete Split Day',
+      'Are you sure you want to delete this split day? All exercises in it will be removed.',
+      'danger',
+      async () => {
+        const { error } = await supabase.from('user_workout_plans').delete().eq('id', id);
+        if (error) {
+          toast.error('Unable to delete split day.');
+          return;
+        }
+        toast.success('Split deleted');
+        fetchClientData(selectedClientId!, clientActiveDateStr, true);
+      }
+    );
   };
 
   const handleRenameSplitDay = async (plan: any) => {
@@ -2524,62 +2536,71 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleToggleManagementSuspension = async () => {
+  const handleToggleManagementSuspension = () => {
     if (!managementSelectedClientId || !managementClientProfile) return;
     const isSuspended = managementClientProfile.user?.targets?.is_deactivated === true;
-    const msg = isSuspended ? 'Reactivate athlete access?' : 'Suspend athlete access immediately?';
-    if (!window.confirm(msg)) return;
+    const title = isSuspended ? 'Reactivate Athlete' : 'Suspend Athlete';
+    const msg = isSuspended 
+      ? `Are you sure you want to reactivate access for athlete ${managementClientProfile.user?.display_name || 'Athlete'}?`
+      : `Are you sure you want to suspend access for athlete ${managementClientProfile.user?.display_name || 'Athlete'} immediately?`;
+    
+    showConfirm(
+      title,
+      msg,
+      isSuspended ? 'success' : 'danger',
+      async () => {
+        setManagementUpdatingSuspension(true);
+        try {
+          const currentTargets = managementClientProfile.user?.targets || {};
+          const updatedTargets = { ...currentTargets, is_deactivated: !isSuspended };
 
-    setManagementUpdatingSuspension(true);
-    try {
-      const currentTargets = managementClientProfile.user?.targets || {};
-      const updatedTargets = { ...currentTargets, is_deactivated: !isSuspended };
+          if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
+            toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
+            setManagementClientProfile((prev: any) => ({
+              ...prev,
+              user: { ...prev.user, targets: updatedTargets }
+            }));
+            setManagementUpdatingSuspension(false);
+            return;
+          }
 
-      if (managementSelectedClientId.startsWith('fake_client_') || managementSelectedClientId === 'fake_deployed_thor') {
-        toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
-        setManagementClientProfile((prev: any) => ({
-          ...prev,
-          user: { ...prev.user, targets: updatedTargets }
-        }));
-        setManagementUpdatingSuspension(false);
-        return;
-      }
+          const { error } = await supabase
+            .from('profiles')
+            .update({ targets: updatedTargets })
+            .eq('id', managementSelectedClientId);
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ targets: updatedTargets })
-        .eq('id', managementSelectedClientId);
+          if (error) throw error;
+          toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
+          setManagementClientProfile((prev: any) => ({
+            ...prev,
+            user: { ...prev.user, targets: updatedTargets }
+          }));
+          fetchBaseData();
 
-      if (error) throw error;
-      toast.success(isSuspended ? 'Athlete reactivated!' : 'Athlete account suspended.');
-      setManagementClientProfile((prev: any) => ({
-        ...prev,
-        user: { ...prev.user, targets: updatedTargets }
-      }));
-      fetchBaseData();
-
-      // Trigger WhatsApp notifications
-      if (currentTargets.phone_number) {
-        if (!isSuspended) {
-          // Suspend
-          triggerWhatsAppEvent('client_suspended', currentTargets.phone_number, {
-            display_name: managementClientProfile.user?.display_name || 'Athlete',
-            coach_name: myCoachProfile?.display_name || 'your coach',
-            coach_phone: myCoachProfile?.targets?.phone_number || ''
-          });
-        } else {
-          // Reactivate
-          triggerWhatsAppEvent('client_reactivated', currentTargets.phone_number, {
-            display_name: managementClientProfile.user?.display_name || 'Athlete'
-          });
+          // Trigger WhatsApp notifications
+          if (currentTargets.phone_number) {
+            if (!isSuspended) {
+              // Suspend
+              triggerWhatsAppEvent('client_suspended', currentTargets.phone_number, {
+                display_name: managementClientProfile.user?.display_name || 'Athlete',
+                coach_name: myCoachProfile?.display_name || 'your coach',
+                coach_phone: myCoachProfile?.targets?.phone_number || ''
+              });
+            } else {
+              // Reactivate
+              triggerWhatsAppEvent('client_reactivated', currentTargets.phone_number, {
+                display_name: managementClientProfile.user?.display_name || 'Athlete'
+              });
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error('Failed to update suspension status.');
+        } finally {
+          setManagementUpdatingSuspension(false);
         }
       }
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update suspension status.');
-    } finally {
-      setManagementUpdatingSuspension(false);
-    }
+    );
   };
 
   const handleUpdateSubscription = async () => {
@@ -5615,11 +5636,16 @@ export default function DesktopCoachPortal() {
           )}
 
           <button 
-            onClick={async () => {
-              if (window.confirm("Are you sure you want to sign out?")) {
-                await supabase.auth.signOut();
-                window.location.href = '/coach-portal';
-              }
+            onClick={() => {
+              showConfirm(
+                'Sign Out',
+                'Are you sure you want to sign out?',
+                'warning',
+                async () => {
+                  await supabase.auth.signOut();
+                  window.location.href = '/coach-portal';
+                }
+              );
             }}
             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg border border-red-900/40 hover:border-red-700 bg-red-950/20 text-[10px] font-bold text-red-400 hover:text-white transition-all active:scale-95 cursor-pointer"
             title="Log Out"
@@ -8712,21 +8738,26 @@ export default function DesktopCoachPortal() {
                                       setReactivateDelay('0');
                                       setReactivateModalOpen(true);
                                     } else {
-                                      if (window.confirm(`Suspend access for client ${c.full_name || 'Client'} immediately?`)) {
-                                        try {
-                                          const updatedTargets = { ...targets, is_deactivated: true };
-                                          const { error } = await supabase
-                                            .from('profiles')
-                                            .update({ targets: updatedTargets })
-                                            .eq('id', c.id);
-                                          if (error) throw error;
-                                          toast.success('Athlete suspended.');
-                                          fetchBaseData(true);
-                                        } catch (err) {
-                                          console.error(err);
-                                          toast.error('Failed to suspend athlete.');
+                                      showConfirm(
+                                        'Suspend Athlete',
+                                        `Suspend access for client ${c.full_name || 'Client'} immediately?`,
+                                        'danger',
+                                        async () => {
+                                          try {
+                                            const updatedTargets = { ...targets, is_deactivated: true };
+                                            const { error } = await supabase
+                                              .from('profiles')
+                                              .update({ targets: updatedTargets })
+                                              .eq('id', c.id);
+                                            if (error) throw error;
+                                            toast.success('Athlete suspended.');
+                                            fetchBaseData(true);
+                                          } catch (err) {
+                                            console.error(err);
+                                            toast.error('Failed to suspend athlete.');
+                                          }
                                         }
-                                      }
+                                      );
                                     }
                                   }}
                                   className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer mr-2 ${
@@ -9703,9 +9734,14 @@ export default function DesktopCoachPortal() {
                                     type="button"
                                     disabled={isProcessing}
                                     onClick={() => {
-                                      if (window.confirm(`Approve subscription renewal for ${item.coachName}?`)) {
-                                        handleApprovePaymentDirect(item.coachId);
-                                      }
+                                      showConfirm(
+                                        'Approve Subscription',
+                                        `Are you sure you want to approve the subscription renewal for coach ${item.coachName}?`,
+                                        'success',
+                                        () => {
+                                          handleApprovePaymentDirect(item.coachId);
+                                        }
+                                      );
                                     }}
                                     className="px-3.5 py-1.5 border border-zinc-800 hover:border-emerald-900 bg-emerald-950/20 hover:bg-emerald-900/20 disabled:opacity-50 text-emerald-400 hover:text-emerald-305 rounded-lg uppercase tracking-wider text-[9px] font-black cursor-pointer transition-all"
                                   >
@@ -10028,6 +10064,21 @@ export default function DesktopCoachPortal() {
           </div>
         </div>
       )}
+
+      {/* CUSTOM GLASSMORPHIC CONFIRMATION MODAL */}
+      <ConfirmationModal
+        isOpen={customConfirmOpen}
+        title={customConfirmTitle}
+        message={customConfirmMessage}
+        variant={customConfirmVariant}
+        onConfirm={() => {
+          setCustomConfirmOpen(false);
+          if (customConfirmCallback) customConfirmCallback();
+        }}
+        onCancel={() => {
+          setCustomConfirmOpen(false);
+        }}
+      />
 
       {/* COACH SUBSCRIPTION PAYMENT OVERLAY MODAL */}
       {showSubscriptionOverlay && (
@@ -11441,9 +11492,14 @@ export default function DesktopCoachPortal() {
                           setCoachReactivateModalOpen(true);
                         } else {
                           // Suspend -> Prompt confirmation
-                          if (window.confirm(`Are you sure you want to suspend coach ${currentCoach.display_name}?`)) {
-                            handleToggleCoachSuspension(currentCoach.id, false);
-                          }
+                          showConfirm(
+                            'Suspend Coach',
+                            `Are you sure you want to suspend coach ${currentCoach.display_name}? This will block their login access immediately.`,
+                            'danger',
+                            () => {
+                              handleToggleCoachSuspension(currentCoach.id, false);
+                            }
+                          );
                         }
                       }}
                       disabled={updatingCoachStatus || isDeletingCoach}
