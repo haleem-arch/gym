@@ -1765,7 +1765,7 @@ export default function CoachLandingPage() {
 
         {/* Button */}
         <a
-          href="https://wa.me/201128828954?text=Hey%20Life%20Gym%20team!%20I%20have%20a%20question%20about%20the%20coaching%20platform..."
+          href="https://wa.me/201031449441?text=Hey%20Life%20Gym%20team!%20I%20have%20a%2520question%2520about%2520the%2520coaching%2520platform..."
           target="_blank"
           rel="noopener noreferrer"
           className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 flex items-center justify-center text-white shadow-2xl shadow-emerald-600/30 hover:shadow-emerald-500/40 border border-emerald-400/20 active:scale-95 transition-all duration-200 cursor-pointer relative"

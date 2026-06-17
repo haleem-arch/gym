@@ -107,7 +107,7 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
 
   // Redirect logged-in coach/owner to coach dashboard if they are on a non-coach path
   const isCoachOrOwner = session?.user?.id === OWNER_ID || userRole === 'coach';
-  const isCoachPortal = location.pathname.startsWith('/coach-portal');
+  const isCoachPortal = location.pathname.startsWith('/coach-portal') || location.pathname.startsWith('/coach_portal');
   const isMobile = window.innerWidth < 1024;
   
   useEffect(() => {
@@ -173,6 +173,7 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
       <div className="w-full h-screen bg-background text-gray-100 font-sans overflow-hidden no-scrollbar">
         <Routes location={location} key={location.pathname}>
           <Route path="/coach-portal" element={<DesktopCoachPortal />} />
+          <Route path="/coach_portal" element={<DesktopCoachPortal />} />
         </Routes>
       </div>
     );
@@ -385,6 +386,7 @@ function App() {
           const signupInProgress = localStorage.getItem('signup_in_progress') === 'true';
           if (signupInProgress) {
             console.log('Signup in progress, waiting for profile insert...');
+            setTimeout(checkOnboarding, 500); // Retry after 500ms
             return;
           }
           console.warn('Authenticated user has no profile — account deleted. Signing out.');

@@ -274,9 +274,9 @@ ${origin}/login
                 </p>
                 
                 <div style="background-color: #1b2234; border: 1px solid #2d3748; border-radius: 12px; padding: 20px; font-size: 13px; color: #cbd5e1; margin-bottom: 28px; text-align: left; line-height: 1.6;">
-                  <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Login Details</span>
-                  <strong>Email:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${cleanEmail}</code><br style="margin-bottom: 8px;" />
-                  <strong>Password:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${password}</code>
+                  <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Coach Details</span>
+                  <strong>Login Email:</strong> <code style="color: #ffffff; font-family: monospace; font-size: 13px; background-color: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${cleanEmail}</code><br style="margin-bottom: 8px;" />
+                  <strong>Subscription Status:</strong> <span style="color: #3b82f6; font-weight: bold;">14-Day Free Trial</span>
                 </div>
                 
                 <div style="margin-bottom: 28px;">
