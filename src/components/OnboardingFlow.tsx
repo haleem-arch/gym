@@ -138,60 +138,15 @@ export default function OnboardingFlow({
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotError, setForgotError] = useState<string | null>(null);
 
-  // Flying Arrow States & Refs
-  const [showArrow, setShowArrow] = useState(false);
-  const [arrowPoints, setArrowPoints] = useState<{
-    startX: number;
-    startY: number;
-    controlX: number;
-    controlY: number;
-    endX: number;
-    endY: number;
-  } | null>(null);
-
   const cardRef = useRef<HTMLDivElement>(null);
-  const privacyContainerRef = useRef<HTMLInputElement>(null);
   const loginButtonRef = useRef<HTMLButtonElement>(null);
 
   const [showPassword, setShowPassword] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms' | 'cookies' | null>(null);
+  const [legalError, setLegalError] = useState(false);
 
-  // Automatically fade out the flying arrow when legal terms are accepted
-  useEffect(() => {
-    if (legalAccepted) {
-      setShowArrow(false);
-    }
-  }, [legalAccepted]);
 
-  const triggerPrivacyArrow = () => {
-    setShowArrow(false);
-    setTimeout(() => {
-      const btnEl = loginButtonRef.current;
-      const cbEl = privacyContainerRef.current;
-      const cardEl = cardRef.current;
-      if (btnEl && cbEl && cardEl) {
-        const btnRect = btnEl.getBoundingClientRect();
-        const cbRect = cbEl.getBoundingClientRect();
-        const cardRect = cardEl.getBoundingClientRect();
-
-        // Start: center of login button relative to card
-        const startX = btnRect.left - cardRect.left + btnRect.width / 2;
-        const startY = btnRect.top - cardRect.top + btnRect.height / 2;
-
-        // End: point directly at the checkbox (directly targeting checkbox input element and shifting slightly up)
-        const endX = cbRect.left - cardRect.left + 8;
-        const endY = cbRect.top - cardRect.top + 2;
-
-        // Curved path swooping to the right (arched upwards, never goes below the button)
-        const controlX = Math.max(startX, endX) + 110;
-        const controlY = (startY + endY) / 2 - 25;
-
-        setArrowPoints({ startX, startY, controlX, controlY, endX, endY });
-        setShowArrow(true);
-      }
-    }, 40);
-  };
 
   // Step 2: Workouts split states with embedded baseline exercises
   const [splits, setSplits] = useState<SplitItem[]>([
@@ -486,8 +441,8 @@ export default function OnboardingFlow({
   const handleSignInAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!legalAccepted) {
+      setLegalError(true);
       toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
-      triggerPrivacyArrow();
       return;
     }
     setLoading(true);
@@ -1047,30 +1002,36 @@ export default function OnboardingFlow({
                       </div>
                     </div>
                     {/* Legal Checkbox */}
-                    <div className="flex items-start gap-2.5 pt-1.5 pb-1 select-none relative">
-                      <input 
-                        ref={privacyContainerRef}
-                        type="checkbox" 
-                        id="legal-accept-onboarding"
-                        checked={legalAccepted} 
-                        onChange={e => {
-                          setLegalAccepted(e.target.checked);
-                          if (e.target.checked) {
-                            setShowArrow(false);
-                          }
-                        }} 
-                        className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
-                      />
-                      <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
-                        I agree to the{' '}
-                        <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
-                          Terms of Service
-                        </button>{' '}
-                        and{' '}
-                        <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
-                          Privacy Policy
-                        </button>
-                      </label>
+                    <div className="flex flex-col gap-1 pt-1.5 pb-1 select-none relative">
+                      <div className="flex items-start gap-2.5">
+                        <input 
+                          type="checkbox" 
+                          id="legal-accept-onboarding"
+                          checked={legalAccepted} 
+                          onChange={e => {
+                            setLegalAccepted(e.target.checked);
+                            if (e.target.checked) {
+                              setLegalError(false);
+                            }
+                          }} 
+                          className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
+                        />
+                        <label htmlFor="legal-accept-onboarding" className="text-[10px] text-gray-400 leading-normal text-left">
+                          I agree to the{' '}
+                          <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                            Terms of Service
+                          </button>{' '}
+                          and{' '}
+                          <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                            Privacy Policy
+                          </button>
+                        </label>
+                      </div>
+                      {legalError && (
+                        <p className="text-[10px] text-red-500 font-bold text-left pl-[26px] mt-0.5 animate-pulse">
+                          ⚠️ You must agree to the Terms of Service and Privacy Policy to proceed.
+                        </p>
+                      )}
                     </div>
 
                     <button 
@@ -1097,61 +1058,6 @@ export default function OnboardingFlow({
                     </button>
                   </form>
                 )}
-
-                {/* Flying Arrow Overlay */}
-                <AnimatePresence>
-                  {showArrow && arrowPoints && (
-                    <motion.svg
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute inset-0 pointer-events-none z-50 overflow-visible w-full h-full"
-                    >
-                        <defs>
-                        {/* Gradient fades from transparent at tail to solid blue at head */}
-                        <linearGradient id="arrow-trail-grad" gradientUnits="userSpaceOnUse"
-                          x1={arrowPoints.startX} y1={arrowPoints.startY}
-                          x2={arrowPoints.endX} y2={arrowPoints.endY}>
-                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
-                          <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.55" />
-                          <stop offset="100%" stopColor="#60a5fa" stopOpacity="1" />
-                        </linearGradient>
-                        <marker id="flying-arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
-                          <path d="M1,1 L9,5 L1,9 Z" fill="#3b82f6" />
-                        </marker>
-                      </defs>
-
-                      {/* Quadratic bezier: center of button → swoops right → checkbox */}
-                      <motion.path
-                        d={`M ${arrowPoints.startX} ${arrowPoints.startY} Q ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.endX} ${arrowPoints.endY}`}
-                        fill="none"
-                        stroke="url(#arrow-trail-grad)"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        markerEnd="url(#flying-arrowhead)"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{
-                          pathLength: { duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] },
-                        }}
-                      />
-
-                      {/* Glowing pulse at the checkbox destination */}
-                      <motion.circle
-                        cx={arrowPoints.endX}
-                        cy={arrowPoints.endY}
-                        r="8"
-                        fill="rgba(59,130,246,0.15)"
-                        stroke="#3b82f6"
-                        strokeWidth="1.5"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: [0.8, 2, 0.8], opacity: [0, 0.9, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.1, delay: 0.7 }}
-                      />
-                    </motion.svg>
-                  )}
-                </AnimatePresence>
               </div>
             )}
 
