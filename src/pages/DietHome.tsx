@@ -27,19 +27,23 @@ const DietHome = () => {
       setUserId(uid);
 
       let myTargets: any = null;
+      let myProfileData: any = null;
       if (uid) {
-        const { data: myProfile } = await supabase.from('profiles').select('targets').eq('id', uid).maybeSingle();
+        const { data: myProfile } = await supabase.from('profiles').select('targets, coach_id').eq('id', uid).maybeSingle();
         if (myProfile?.targets?.disable_diet) {
           setIsLocked(true);
         }
         myTargets = myProfile?.targets;
+        myProfileData = myProfile;
       }
 
       const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       const ownerTargets = ownerProfile?.targets;
 
       let shouldDisable = true;
-      if (myTargets && myTargets.disable_nutrition_targets !== undefined) {
+      if (myProfileData && !myProfileData.coach_id) {
+        shouldDisable = false; // Self-guided athletes can always edit targets
+      } else if (myTargets && myTargets.disable_nutrition_targets !== undefined) {
         shouldDisable = !!myTargets.disable_nutrition_targets;
       } else if (ownerTargets && ownerTargets.disable_nutrition_targets !== undefined) {
         shouldDisable = !!ownerTargets.disable_nutrition_targets;

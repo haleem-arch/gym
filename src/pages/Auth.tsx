@@ -54,57 +54,9 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
     if (email) checkLock();
   }, [email]);
 
-  // Flying Arrow States & Refs
-  const [showArrow, setShowArrow] = useState(false);
-  const [arrowPoints, setArrowPoints] = useState<{
-    startX: number;
-    startY: number;
-    controlX: number;
-    controlY: number;
-    endX: number;
-    endY: number;
-  } | null>(null);
-
   const cardRef = useRef<HTMLDivElement>(null);
-  const privacyContainerRef = useRef<HTMLDivElement>(null);
   const loginButtonRef = useRef<HTMLButtonElement>(null);
-
-  // Automatically fade out the flying arrow when legal terms are accepted
-  useEffect(() => {
-    if (legalAccepted) {
-      setShowArrow(false);
-    }
-  }, [legalAccepted]);
-
-  const triggerPrivacyArrow = () => {
-    setShowArrow(false);
-    // Allow state to reset, then recalculate and animate
-    setTimeout(() => {
-      const btnEl = loginButtonRef.current;
-      const cbEl = privacyContainerRef.current;
-      const cardEl = cardRef.current;
-      if (btnEl && cbEl && cardEl) {
-        const btnRect = btnEl.getBoundingClientRect();
-        const cbRect = cbEl.getBoundingClientRect();
-        const cardRect = cardEl.getBoundingClientRect();
-
-        // Start at the center of the login button relative to the card
-        const startX = btnRect.left - cardRect.left + btnRect.width / 2;
-        const startY = btnRect.top - cardRect.top + btnRect.height / 2;
-
-        // End at the checkbox relative to the card (raised higher)
-        const endX = cbRect.left - cardRect.left + 8;
-        const endY = cbRect.top - cardRect.top + 8;
-
-        // Curved path swooping to the right (arched upwards, never goes below the button)
-        const controlX = Math.max(startX, endX) + 110;
-        const controlY = (startY + endY) / 2 - 25;
-
-        setArrowPoints({ startX, startY, controlX, controlY, endX, endY });
-        setShowArrow(true);
-      }
-    }, 40);
-  };
+  const [legalError, setLegalError] = useState(false);
 
   const getShortErrorMessage = (msg: string | null) => {
     if (!msg) return '';
@@ -137,8 +89,8 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
       return;
     }
     if (!legalAccepted) {
+      setLegalError(true);
       toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
-      triggerPrivacyArrow();
       return;
     }
 
@@ -163,31 +115,122 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
     setErrorMsg(null);
 
     try {
-      const finalEmail = email.includes('@') ? email : `${email.trim().toLowerCase()}@stride.fit`;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: finalEmail,
-        password,
-      });
+      const cleanEmail = email.trim().toLowerCase();
+      const finalEmail = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@stride.fit`;
 
-      if (error) throw error;
+      if (isSignUp) {
+        if (!cleanEmail.includes('@')) {
+          throw new Error('Please enter a valid email address.');
+        }
 
-      if (data.session) {
-        if (window.location.pathname.startsWith('/coach-portal')) {
-          const { data: profile, error: profileErr } = await supabase
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              display_name: displayName.trim(),
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+          // Set is_new_signup to true in localStorage
+          localStorage.setItem('is_new_signup', 'true');
+
+          // Create the profiles record
+          const { error: profileErr } = await supabase
+            .from('profiles')
+            .upsert({
+              id: data.user.id,
+              email: cleanEmail,
+              display_name: displayName.trim() || cleanEmail.split('@')[0],
+              role: 'client',
+              coach_id: null,
+              targets: { onboarding_completed: false }
+            });
+          if (profileErr) console.error('Profile creation error:', profileErr);
+
+          // Create the client_profiles record
+          const { error: clientProfileErr } = await supabase
+            .from('client_profiles')
+            .upsert({
+              user_id: data.user.id,
+              coach_id: null
+            });
+          if (clientProfileErr) console.error('Client profile creation error:', clientProfileErr);
+
+          if (!data.session) {
+            toast.success('Registration successful! Please check your email for a verification link.', { duration: 6000 });
+            setIsSignUp(false); // Switch to sign in view
+          } else {
+            toast.success(`Welcome, ${displayName.trim()}! Let's set up your profile.`);
+            onSessionConfigured(data.session);
+          }
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: finalEmail,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data.session) {
+          if (window.location.pathname.startsWith('/coach-portal')) {
+            const { data: profile, error: profileErr } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', data.session.user.id)
+              .maybeSingle();
+
+            const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
+            if (profileErr || (profile?.role !== 'coach' && data.session.user.id !== OWNER_ID)) {
+              await supabase.auth.signOut();
+              throw new Error('Access Denied. Only coaches can log in on this page.');
+            }
+          }
+          localStorage.removeItem(lockKey);
+
+          // Also double check if profiles or client_profiles records are missing, create them!
+          const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', data.session.user.id)
             .maybeSingle();
 
-          const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-          if (profileErr || (profile?.role !== 'coach' && data.session.user.id !== OWNER_ID)) {
-            await supabase.auth.signOut();
-            throw new Error('Access Denied. Only coaches can log in on this page.');
+          if (!profile) {
+            await supabase.from('profiles').insert({
+              id: data.session.user.id,
+              email: data.session.user.email,
+              display_name: data.session.user.user_metadata?.display_name || data.session.user.email?.split('@')[0],
+              role: 'client',
+              coach_id: null,
+              targets: { onboarding_completed: false }
+            });
+            await supabase.from('client_profiles').insert({
+              user_id: data.session.user.id,
+              coach_id: null
+            });
+            localStorage.setItem('is_new_signup', 'true');
+          } else if (profile.role === 'client') {
+            const { data: clientProf } = await supabase
+              .from('client_profiles')
+              .select('user_id')
+              .eq('user_id', data.session.user.id)
+              .maybeSingle();
+            if (!clientProf) {
+              await supabase.from('client_profiles').insert({
+                user_id: data.session.user.id,
+                coach_id: null
+              });
+            }
           }
+
+          toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
+          onSessionConfigured(data.session);
         }
-        localStorage.removeItem(lockKey);
-        toast.success(`Welcome back, ${data.session.user.user_metadata?.display_name || data.session.user.email}!`);
-        onSessionConfigured(data.session);
       }
     } catch (err: any) {
       console.error(err);
@@ -512,29 +555,37 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
             </AnimatePresence>
 
             {/* Legal Checkbox */}
-            <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1.5 pb-1 select-none text-left relative">
-              <input 
-                type="checkbox" 
-                id="legal-accept-auth"
-                checked={legalAccepted} 
-                onChange={e => {
-                  setLegalAccepted(e.target.checked);
-                  if (e.target.checked) {
-                    setShowArrow(false);
-                  }
-                }} 
-                className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
-              />
-              <label htmlFor="legal-accept-auth" className="text-[10px] text-gray-400 leading-normal">
-                I agree to the{' '}
-                <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
-                  Terms of Service
-                </button>{' '}
-                and{' '}
-                <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
-                  Privacy Policy
-                </button>
-              </label>
+            <div className="flex flex-col gap-1 pt-1.5 pb-1 select-none relative">
+              <div className="flex items-start gap-2.5">
+                <input 
+                  type="checkbox" 
+                  id="legal-accept-auth"
+                  checked={legalAccepted} 
+                  onChange={e => {
+                    setLegalAccepted(e.target.checked);
+                    if (e.target.checked) {
+                      setLegalError(false);
+                    }
+                  }} 
+                  className="mt-0.5 h-4 w-4 rounded border-gray-800 bg-[#181d29] text-blue-600 focus:ring-blue-500 focus:ring-offset-[#121620] focus:ring-2 cursor-pointer transition-colors"
+                />
+                <label htmlFor="legal-accept-auth" className="text-[10px] text-gray-400 leading-normal text-left">
+                  I agree to the{' '}
+                  <button type="button" onClick={() => setModalType('terms')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                    Terms of Service
+                  </button>{' '}
+                  and{' '}
+                  <button type="button" onClick={() => setModalType('privacy')} className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors cursor-pointer">
+                    Privacy Policy
+                  </button>
+                </label>
+              </div>
+              {legalError && (
+                <div className="flex items-start gap-1.5 text-[10px] text-red-555 font-bold text-left pl-[26px] mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span>You must agree to the Terms of Service and Privacy Policy to proceed.</span>
+                </div>
+              )}
             </div>
 
             <button
@@ -555,61 +606,6 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
               )}
             </button>
           </form>
-
-          {/* Flying Arrow Overlay */}
-          <AnimatePresence>
-            {showArrow && arrowPoints && (
-              <motion.svg
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 pointer-events-none z-50 overflow-visible w-full h-full"
-              >
-                <defs>
-                  <linearGradient id="arrow-trail-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
-                    <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#60a5fa" stopOpacity="1" />
-                  </linearGradient>
-                  <marker id="flying-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-                    <path d="M1,1 L7,4 L1,7 Z" fill="#60a5fa" />
-                  </marker>
-                </defs>
-
-                {/* Curved path */}
-                <motion.path
-                  d={`M ${arrowPoints.startX} ${arrowPoints.startY} Q ${arrowPoints.controlX} ${arrowPoints.controlY} ${arrowPoints.endX} ${arrowPoints.endY}`}
-                  fill="none"
-                  stroke="url(#arrow-trail-grad)"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  markerEnd="url(#flying-arrowhead)"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{
-                    pathLength: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] },
-                  }}
-                />
-
-                {/* Glowing pulse at the destination */}
-                <motion.circle
-                  cx={arrowPoints.endX}
-                  cy={arrowPoints.endY}
-                  r="10"
-                  className="fill-blue-500/20 stroke-blue-400"
-                  strokeWidth="1.5"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: [1, 2, 1], opacity: [0, 0.8, 0] }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 1.2,
-                    delay: 0.6,
-                  }}
-                />
-              </motion.svg>
-            )}
-          </AnimatePresence>
         </motion.div>
 
         {/* Demo Accounts Info */}

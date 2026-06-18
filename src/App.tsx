@@ -378,7 +378,7 @@ function App() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('display_name, targets, role')
+          .select('display_name, targets, role, coach_id')
           .eq('id', session.user.id)
           .maybeSingle();
 
@@ -452,6 +452,11 @@ function App() {
 
         if (session.user.id === OWNER_ID || profile.role === 'coach') {
           isDeactivated = false;
+        } else if (!profile.coach_id) {
+          // Self-guided (coachless) athletes bypass subscription-related suspension checks
+          if (isDeactivated) {
+            reason = 'Your account has been deactivated. Please contact support to restore access.';
+          }
         } else if (targets.subscription_start_date && targets.subscription_end_date) {
           const startDate = new Date(targets.subscription_start_date);
           const endDate = new Date(targets.subscription_end_date);

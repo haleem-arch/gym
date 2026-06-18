@@ -27,7 +27,7 @@ create table public.profiles (
 create table public.client_profiles (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid references public.profiles(id) on delete cascade not null unique,
-  coach_id uuid references public.profiles(id) not null,
+  coach_id uuid references public.profiles(id),
   age integer,
   height numeric,
   experience_level text default 'beginner',

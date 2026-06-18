@@ -44,7 +44,7 @@ const TodayView = () => {
       if (session?.user) {
         let isUserHaleem = session.user.email?.toLowerCase().startsWith('haleem') || false;
         if (!isUserHaleem) {
-          const { data: profile } = await supabase.from('profiles').select('role, display_name, targets').eq('id', session.user.id).maybeSingle();
+          const { data: profile } = await supabase.from('profiles').select('role, display_name, targets, coach_id').eq('id', session.user.id).maybeSingle();
           if (profile?.role === 'coach') {
             isUserHaleem = true;
           }
@@ -58,7 +58,9 @@ const TodayView = () => {
           const ownerTargets = ownerProfile?.targets || {};
           
           let disableNutrition = true;
-          if (userTargets.disable_nutrition_targets !== undefined) {
+          if (profile && !profile.coach_id) {
+            disableNutrition = false; // Self-guided athletes can always edit targets
+          } else if (userTargets.disable_nutrition_targets !== undefined) {
             disableNutrition = !!userTargets.disable_nutrition_targets;
           } else if (ownerTargets.disable_nutrition_targets !== undefined) {
             disableNutrition = !!ownerTargets.disable_nutrition_targets;

@@ -232,7 +232,7 @@ const WorkoutHome = () => {
       setCurrentUserId(session.user.id);
 
       // Fetch own profile targets to check lock status
-      const { data: myProfile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+      const { data: myProfile } = await supabase.from('profiles').select('targets, coach_id').eq('id', session.user.id).maybeSingle();
       if (myProfile?.targets?.disable_workout) {
         setIsLocked(true);
       }
@@ -241,7 +241,9 @@ const WorkoutHome = () => {
       const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
       
       let shouldDisableWorkout = true;
-      if (myProfile?.targets && myProfile.targets.disable_workout_templates !== undefined) {
+      if (myProfile && !myProfile.coach_id) {
+        shouldDisableWorkout = false; // Self-guided athletes can always edit workouts/templates
+      } else if (myProfile?.targets && myProfile.targets.disable_workout_templates !== undefined) {
         shouldDisableWorkout = !!myProfile.targets.disable_workout_templates;
       } else if (ownerProfile?.targets && ownerProfile.targets.disable_workout_templates !== undefined) {
         shouldDisableWorkout = !!ownerProfile.targets.disable_workout_templates;
