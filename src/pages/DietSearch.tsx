@@ -34,6 +34,10 @@ const DietSearch = () => {
   const [customBarcode, setCustomBarcode] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
+  // Scanner stabilization refs to prevent camera-blur misreads
+  const lastScannedCodeRef = useRef<string>('');
+  const consecutiveScanCountRef = useRef<number>(0);
+
   // Sync editable states with selected food
   useEffect(() => {
     if (selectedFood) {
@@ -89,12 +93,33 @@ const DietSearch = () => {
   };
 
   const handleScanSuccess = (code: string) => {
-    if (!validateBarcodeChecksum(code)) {
-      console.warn("Discarded scanned barcode due to invalid checksum (likely camera blur misread):", code);
+    const trimmed = code.trim();
+    if (!validateBarcodeChecksum(trimmed)) {
+      console.warn("Discarded scanned barcode due to invalid checksum (likely camera blur misread):", trimmed);
+      lastScannedCodeRef.current = '';
+      consecutiveScanCountRef.current = 0;
       return;
     }
+
+    // Stabilize scanner: require 3 consecutive identical reads to ensure camera is focused
+    if (lastScannedCodeRef.current === trimmed) {
+      consecutiveScanCountRef.current += 1;
+    } else {
+      lastScannedCodeRef.current = trimmed;
+      consecutiveScanCountRef.current = 1;
+      return; // Wait for next frame
+    }
+
+    if (consecutiveScanCountRef.current < 3) {
+      return; // Wait for next frame
+    }
+
+    // Success! Reset refs
+    lastScannedCodeRef.current = '';
+    consecutiveScanCountRef.current = 0;
+
     playBeep();
-    setQuery(code);
+    setQuery(trimmed);
     setShowScanner(false);
   };
 
@@ -104,6 +129,10 @@ const DietSearch = () => {
 
     const startScanning = async () => {
       if (showScanner) {
+        // Reset stabilization refs
+        lastScannedCodeRef.current = '';
+        consecutiveScanCountRef.current = 0;
+
         // Wait 250ms for modal rendering to mount the #reader element
         await new Promise((resolve) => setTimeout(resolve, 250));
         if (!isActive) return;

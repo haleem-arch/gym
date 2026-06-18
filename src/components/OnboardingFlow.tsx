@@ -150,7 +150,7 @@ export default function OnboardingFlow({
   } | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
-  const privacyContainerRef = useRef<HTMLDivElement>(null);
+  const privacyContainerRef = useRef<HTMLInputElement>(null);
   const loginButtonRef = useRef<HTMLButtonElement>(null);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -179,9 +179,9 @@ export default function OnboardingFlow({
         const startX = btnRect.left - cardRect.left + btnRect.width / 2;
         const startY = btnRect.top - cardRect.top + btnRect.height / 2;
 
-        // End: point directly at the checkbox (raised higher)
+        // End: point directly at the checkbox (directly targeting checkbox input element and shifting slightly up)
         const endX = cbRect.left - cardRect.left + 8;
-        const endY = cbRect.top - cardRect.top + 8;
+        const endY = cbRect.top - cardRect.top + 2;
 
         // Curved path swooping to the right (arched upwards, never goes below the button)
         const controlX = Math.max(startX, endX) + 110;
@@ -1047,8 +1047,9 @@ export default function OnboardingFlow({
                       </div>
                     </div>
                     {/* Legal Checkbox */}
-                    <div ref={privacyContainerRef} className="flex items-start gap-2.5 pt-1.5 pb-1 select-none relative">
+                    <div className="flex items-start gap-2.5 pt-1.5 pb-1 select-none relative">
                       <input 
+                        ref={privacyContainerRef}
                         type="checkbox" 
                         id="legal-accept-onboarding"
                         checked={legalAccepted} 
