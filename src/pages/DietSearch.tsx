@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Search, Plus, Globe, UtensilsCrossed, ChevronLeft, Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DumbbellLoader } from '../components/DumbbellLoader';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 const DietSearch = () => {
   const navigate = useNavigate();
@@ -26,6 +26,7 @@ const DietSearch = () => {
   const [baseProtein, setBaseProtein] = useState<string>('0');
   const [baseCarbs, setBaseCarbs] = useState<string>('0');
   const [baseFat, setBaseFat] = useState<string>('0');
+  const [showEditMacros, setShowEditMacros] = useState(false);
 
   // Barcode Scanner State
   const [showScanner, setShowScanner] = useState(false);
@@ -41,6 +42,7 @@ const DietSearch = () => {
       setBaseProtein(String(selectedFood.protein ?? 0));
       setBaseCarbs(String(selectedFood.carbs ?? 0));
       setBaseFat(String(selectedFood.fat ?? 0));
+      setShowEditMacros(false); // Hide editing by default when opening a food sheet
     }
   }, [selectedFood]);
 
@@ -66,7 +68,31 @@ const DietSearch = () => {
     }
   };
 
+  const validateBarcodeChecksum = (code: string): boolean => {
+    const trimmed = code.trim();
+    // Validate barcode checksum only if it is a standard EAN-13, UPC-A, or EAN-8 (8, 12, 13, 14 digits)
+    if (!/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(trimmed)) {
+      return true; // allow custom short barcodes/inputs
+    }
+    const digits = trimmed.split('').map(Number);
+    const checkDigit = digits.pop()!;
+    
+    let sum = 0;
+    const reversed = digits.reverse();
+    for (let i = 0; i < reversed.length; i++) {
+      const weight = (i % 2 === 0) ? 3 : 1;
+      sum += reversed[i] * weight;
+    }
+    
+    const calculatedCheck = (10 - (sum % 10)) % 10;
+    return calculatedCheck === checkDigit;
+  };
+
   const handleScanSuccess = (code: string) => {
+    if (!validateBarcodeChecksum(code)) {
+      console.warn("Discarded scanned barcode due to invalid checksum (likely camera blur misread):", code);
+      return;
+    }
     playBeep();
     setQuery(code);
     setShowScanner(false);
@@ -97,7 +123,13 @@ const DietSearch = () => {
                 const boxHeight = Math.floor(boxWidth * 0.55);
                 return { width: boxWidth, height: boxHeight };
               },
-              aspectRatio: 1.7777778
+              aspectRatio: 1.7777778,
+              formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E
+              ]
             },
             (decodedText) => {
               handleScanSuccess(decodedText);
@@ -490,66 +522,101 @@ const DietSearch = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 pb-10 max-h-[90vh] overflow-y-auto"
             >
-              <div className="mb-4">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Food Name</label>
-                <input 
-                  type="text"
-                  maxLength={100}
-                  value={baseName}
-                  onChange={(e) => setBaseName(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 px-4 text-sm font-bold text-white focus:border-primary outline-none"
-                  placeholder="e.g. Snickers Bar"
-                />
-              </div>
+              {!showEditMacros ? (
+                <>
+                  <h3 className="text-xl font-bold text-white mb-1">{selectedFood.name}</h3>
+                  <p className="text-xs text-gray-400 mb-4 border-b border-gray-800 pb-4">
+                    {isSelectedPerItem
+                      ? `${selectedFood.kcal_per_100g} kcal per serving`
+                      : `Base: ${selectedFood.kcal_per_100g} kcal per 100g`
+                    }
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditMacros(true)}
+                    className="text-xs font-bold text-red-500 hover:text-red-400 active:scale-95 transition-all mb-6 block hover:underline"
+                  >
+                    ⚠️ Is there a problem with the food details?
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Food Name</label>
+                    <input 
+                      type="text"
+                      maxLength={100}
+                      value={baseName}
+                      onChange={(e) => setBaseName(e.target.value)}
+                      className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 px-4 text-sm font-bold text-white focus:border-primary outline-none"
+                      placeholder="e.g. Snickers Bar"
+                    />
+                  </div>
 
-              {/* Editable Base Macros section */}
-              <div className="bg-gray-900/50 border border-gray-850 rounded-2xl p-4 mb-6">
-                <span className="text-[10px] font-extrabold text-gray-550 uppercase tracking-widest block mb-3">
-                  Edit Base Nutrition ({isSelectedPerItem ? 'per serving' : 'per 100g'})
-                </span>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Calories</label>
-                    <input 
-                      type="number"
-                      inputMode="decimal"
-                      value={baseKcal}
-                      onChange={(e) => setBaseKcal(e.target.value)}
-                      className="w-full bg-gray-950 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-primary text-center outline-none focus:border-primary"
-                    />
+                  {/* Editable Base Macros section */}
+                  <div className="bg-gray-900/50 border border-gray-850 rounded-2xl p-4 mb-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[10px] font-extrabold text-gray-550 uppercase tracking-widest block">
+                        Edit Base Nutrition ({isSelectedPerItem ? 'per serving' : 'per 100g'})
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setBaseName(selectedFood.name || '');
+                          setBaseKcal(String(selectedFood.kcal_per_100g ?? 0));
+                          setBaseProtein(String(selectedFood.protein ?? 0));
+                          setBaseCarbs(String(selectedFood.carbs ?? 0));
+                          setBaseFat(String(selectedFood.fat ?? 0));
+                          setShowEditMacros(false);
+                        }}
+                        className="text-[10px] font-bold text-gray-400 hover:text-white"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Calories</label>
+                        <input 
+                          type="number"
+                          inputMode="decimal"
+                          value={baseKcal}
+                          onChange={(e) => setBaseKcal(e.target.value)}
+                          className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-primary text-center outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Protein (g)</label>
+                        <input 
+                          type="number"
+                          inputMode="decimal"
+                          value={baseProtein}
+                          onChange={(e) => setBaseProtein(e.target.value)}
+                          className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-blue-400 text-center outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Carbs (g)</label>
+                        <input 
+                          type="number"
+                          inputMode="decimal"
+                          value={baseCarbs}
+                          onChange={(e) => setBaseCarbs(e.target.value)}
+                          className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-green-400 text-center outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Fat (g)</label>
+                        <input 
+                          type="number"
+                          inputMode="decimal"
+                          value={baseFat}
+                          onChange={(e) => setBaseFat(e.target.value)}
+                          className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-yellow-400 text-center outline-none focus:border-yellow-500"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Protein (g)</label>
-                    <input 
-                      type="number"
-                      inputMode="decimal"
-                      value={baseProtein}
-                      onChange={(e) => setBaseProtein(e.target.value)}
-                      className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-blue-400 text-center outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Carbs (g)</label>
-                    <input 
-                      type="number"
-                      inputMode="decimal"
-                      value={baseCarbs}
-                      onChange={(e) => setBaseCarbs(e.target.value)}
-                      className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-green-400 text-center outline-none focus:border-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Fat (g)</label>
-                    <input 
-                      type="number"
-                      inputMode="decimal"
-                      value={baseFat}
-                      onChange={(e) => setBaseFat(e.target.value)}
-                      className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-yellow-400 text-center outline-none focus:border-yellow-500"
-                    />
-                  </div>
-                </div>
-              </div>
               
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex-1">
