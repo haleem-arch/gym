@@ -180,6 +180,30 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
     );
   }
 
+  const isAthlete = userRole === 'client' || userRole === 'athlete';
+  if (isAthlete && !isMobile) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 min-h-[100dvh] bg-[#090b11] text-center text-zinc-100 font-sans select-none">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        </div>
+        <h1 className="text-xl font-black text-white uppercase tracking-wider">Mobile Portal Required</h1>
+        <p className="text-gray-400 text-xs mt-3 max-w-[280px] leading-relaxed font-semibold">
+          The Athlete Portal is designed exclusively for mobile devices. Please access this website using your mobile phone browser to log meals, record workouts, and track progress.
+        </p>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.reload();
+          }}
+          className="mt-8 px-6 py-2.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-gray-400 hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer active:scale-95"
+        >
+          Sign Out
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* ── App shell (constrained width, clipped) ── */}
@@ -399,7 +423,7 @@ function App() {
           return;
         }
 
-        if (profile.role === 'client' && isElectron) {
+        if ((profile.role === 'client' || profile.role === 'athlete') && isElectron) {
           toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
           await supabase.auth.signOut();
           setSession(null);
@@ -531,7 +555,7 @@ function App() {
         if (payload.new) {
           setClientProfile(payload.new);
         }
-        if (payload.new?.role === 'client' && isElectron) {
+        if ((payload.new?.role === 'client' || payload.new?.role === 'athlete') && isElectron) {
           toast.error('Access Denied: The Desktop App is only for coaches. Please use your mobile phone browser to access your athlete portal.', { duration: 6000 });
           supabase.auth.signOut();
           setSession(null);
@@ -617,7 +641,7 @@ function App() {
     if (lockCoaches) {
       shouldShowLockScreen = !bypassActive;
     } else {
-      const isClient = userRole === 'client';
+      const isClient = userRole === 'client' || userRole === 'athlete';
       if (isCoachOrOwner) {
         shouldShowLockScreen = false;
       } else {
@@ -780,22 +804,8 @@ function App() {
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/" element={<CoachLandingPage />} />
-          <Route path="/login" element={
-            <OnboardingFlow 
-              initialStep={1} 
-              onSessionConfigured={setSession} 
-            />
-          } />
-          <Route path="/client-login" element={
-            isElectron ? (
-              <Navigate to="/" replace />
-            ) : (
-              <OnboardingFlow 
-                initialStep={1} 
-                onSessionConfigured={setSession} 
-              />
-            )
-          } />
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/client-login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       ) : needsOnboarding ? (

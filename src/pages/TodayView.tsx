@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, WifiOff } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, WifiOff, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -37,6 +37,20 @@ const TodayView = () => {
   const [isHaleem, setIsHaleem] = useState(false);
   const [disableNutritionTargets, setDisableNutritionTargets] = useState(true);
   const [showWaterModal, setShowWaterModal] = useState(false);
+  const [showFirstTimeMessage, setShowFirstTimeMessage] = useState(false);
+
+  const handleDismissFirstTime = async () => {
+    setShowFirstTimeMessage(false);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: profile } = await supabase.from('profiles').select('targets').eq('id', session.user.id).maybeSingle();
+      if (profile?.targets) {
+        const updatedTargets = { ...profile.targets };
+        delete updatedTargets.show_first_time_message;
+        await supabase.from('profiles').update({ targets: updatedTargets }).eq('id', session.user.id);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -52,6 +66,10 @@ const TodayView = () => {
             setUserDisplayName(profile.display_name);
           }
           
+          if (profile?.targets?.show_first_time_message === true) {
+            setShowFirstTimeMessage(true);
+          }
+
           // Read target locks
           const userTargets = profile?.targets || {};
           const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
@@ -1186,6 +1204,45 @@ const TodayView = () => {
           </div>
         </div>
       )}
+
+      {/* First Time Athlete Welcome Overlay */}
+      <AnimatePresence>
+        {showFirstTimeMessage && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleDismissFirstTime}
+              className="fixed inset-0 bg-[#09090b]/80 backdrop-blur-sm z-[200]"
+            />
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 font-sans select-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="w-full max-w-sm bg-[#0e1222] border border-blue-900/35 rounded-3xl p-6 shadow-2xl relative text-center"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 mb-4 animate-bounce">
+                  <Sparkles size={24} />
+                </div>
+                <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Welcome to Life Gym! 👋</h3>
+                <p className="text-gray-300 text-xs leading-relaxed font-semibold mb-6">
+                  You are registered as a self-guided athlete. You have full access to log meals, track water, build custom workout programs, and record your training sessions.
+                  <br /><br />
+                  💡 <span className="text-primary font-bold">Tip:</span> Go to the <span className="text-primary font-bold">InBody</span> tab to add scan logs and track body composition!
+                </p>
+                <button
+                  onClick={handleDismissFirstTime}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  Let's Get Started!
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

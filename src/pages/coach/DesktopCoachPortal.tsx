@@ -1238,7 +1238,7 @@ export default function DesktopCoachPortal() {
       const { data: userProfiles } = await profilesQuery;
       if (userProfiles) {
         setProfiles(userProfiles);
-        setClientsList(userProfiles.filter(p => p.role === 'client'));
+        setClientsList(userProfiles.filter(p => p.role === 'client' || p.role === 'athlete'));
       }
 
       // Fetch exercises database catalog
@@ -1330,7 +1330,7 @@ export default function DesktopCoachPortal() {
         
         if (feedProfiles) {
           feedProfiles.forEach(p => {
-            if (p.role === 'client') {
+            if (p.role === 'client' || p.role === 'athlete') {
               feedProfilesMap[p.id] = {
                 display_name: p.display_name || 'Athlete',
                 client_code: p.targets?.client_code
@@ -8842,7 +8842,7 @@ export default function DesktopCoachPortal() {
                       },
                       {
                         label: 'Managed Clients (Total)',
-                        value: profiles.filter(p => p.role === 'client').length,
+                        value: profiles.filter(p => p.role === 'client' || p.role === 'athlete').length,
                         icon: <ShieldCheck className="text-indigo-400" size={18} />,
                         colorClass: 'text-indigo-400',
                         glowClass: 'from-indigo-500/10 to-transparent',
@@ -8909,7 +8909,7 @@ export default function DesktopCoachPortal() {
                             const tg = coach.targets || {};
                             const isDeact = tg.is_deactivated === true;
                             const isSelf = coach.id === OWNER_ID;
-                            const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === coach.id);
+                            const coachClients = profiles.filter(p => (p.role === 'client' || p.role === 'athlete') && p.coach_id === coach.id);
                             
                             const now = new Date();
                             const isExpired = !isSelf && tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
@@ -11342,7 +11342,7 @@ export default function DesktopCoachPortal() {
       >
         {selectedSystemCoach && (() => {
           const currentCoach = profiles.find(p => p.id === selectedSystemCoach.id) || selectedSystemCoach;
-          const coachClients = profiles.filter(p => p.role === 'client' && p.coach_id === currentCoach.id);
+          const coachClients = profiles.filter(p => (p.role === 'client' || p.role === 'athlete') && p.coach_id === currentCoach.id);
           const isSelf = currentCoach.id === OWNER_ID;
           const tg = currentCoach.targets || {};
           
