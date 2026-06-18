@@ -331,6 +331,21 @@ export default function OnboardingFlow({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // File size check: 1MB limit
+    if (file.size > 1024 * 1024) {
+      toast.error("File is too large. CSV upload is limited to 1MB.");
+      event.target.value = '';
+      return;
+    }
+
+    // File type/extension check
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.csv')) {
+      toast.error("Invalid file format. Please upload a .csv file.");
+      event.target.value = '';
+      return;
+    }
+
     setIsImporting(true);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -340,21 +355,26 @@ export default function OnboardingFlow({
         return;
       }
 
-      // Simple CSV split
+      // Simple CSV split and limit to 100 rows
       const lines = text.split('\n').filter(line => line.trim().length > 0);
-      if (lines.length < 2) {
+      if (lines.length > 101) {
+        toast.error("The CSV file exceeds the limit of 100 entries. Only the first 100 records will be parsed.");
+      }
+
+      const parsedLines = lines.slice(0, 101);
+      if (parsedLines.length < 2) {
         toast.error('Invalid CSV file or empty file.');
         setIsImporting(false);
         return;
       }
 
       // Parse headers
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const headers = parsedLines[0].split(',').map(h => h.trim().toLowerCase());
       const parsedScans = [];
 
       // Parse rows
-      for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',').map(v => v.trim());
+      for (let i = 1; i < parsedLines.length; i++) {
+        const row = parsedLines[i].split(',').map(v => v.trim());
         if (row.length < 5) continue; // Skip malformed rows
 
         const getValue = (keyContains: string) => {
@@ -944,6 +964,7 @@ export default function OnboardingFlow({
                               value={forgotEmail} 
                               onChange={e => { setForgotEmail(e.target.value); setForgotError(null); }} 
                               placeholder="name@example.com" 
+                              maxLength={100}
                               className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                             />
                           </div>
@@ -988,6 +1009,7 @@ export default function OnboardingFlow({
                         <input 
                           type="text" required value={email} onChange={e => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }} 
                           placeholder="e.g. ahmed" 
+                          maxLength={100}
                           className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                       </div>
@@ -999,6 +1021,7 @@ export default function OnboardingFlow({
                         <input 
                           type={showPassword ? "text" : "password"} required value={password} onChange={e => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} 
                           placeholder="••••••••" 
+                          maxLength={100}
                           className="w-full bg-[#181d29] border border-gray-800 rounded-xl py-3 pl-10 pr-10 text-white text-[16px] outline-none focus:border-blue-500 transition-colors" 
                         />
                         <button 

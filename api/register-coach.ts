@@ -46,6 +46,10 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    if (email.length > 100 || password.length > 100 || displayName.length > 100 || phone.length > 30) {
+      return res.status(400).json({ error: 'Input fields exceed allowed character limits' });
+    }
+
     const cleanEmail = email.trim().toLowerCase();
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {

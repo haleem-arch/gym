@@ -181,6 +181,7 @@ export default function ResetPasswordPage() {
                     type="password"
                     required
                     placeholder="Min 6 characters"
+                    maxLength={100}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full bg-black/40 text-white rounded-xl py-3 pl-11 pr-4 border border-white/10 focus:outline-none focus:border-blue-500 text-sm transition-all"
@@ -196,6 +197,7 @@ export default function ResetPasswordPage() {
                     type="password"
                     required
                     placeholder="Repeat password"
+                    maxLength={100}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full bg-black/40 text-white rounded-xl py-3 pl-11 pr-4 border border-white/10 focus:outline-none focus:border-blue-500 text-sm transition-all"

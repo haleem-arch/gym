@@ -450,6 +450,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Enter your name"
+                      maxLength={100}
                       className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
                         attemptedSubmit && !displayName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                       }`}
@@ -469,6 +470,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="name@example.com"
+                  maxLength={100}
                   className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
                     attemptedSubmit && !email.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                   }`}
@@ -486,6 +488,7 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="••••••••"
+                  maxLength={100}
                   className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
                     attemptedSubmit && !password.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
                   }`}

@@ -79,6 +79,10 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Missing required parameters: period, method, sender_details' });
     }
 
+    if (period.length > 50 || method.length > 50 || sender_details.length > 500 || (screenshot && screenshot.length > 3 * 1024 * 1024)) {
+      return res.status(400).json({ error: 'Input fields exceed allowed size limits' });
+    }
+
     // Retrieve owner's profile for dynamic prices and Telegram chat ID
     const { data: ownerProfile } = await supabaseAdmin
       .from('profiles')

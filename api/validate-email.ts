@@ -24,6 +24,10 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    if (email.length > 100) {
+      return res.status(400).json({ error: 'Email must be under 100 characters' });
+    }
+
     const validation = await validateEmailAddress(email);
     return res.status(200).json(validation);
   } catch (err: any) {

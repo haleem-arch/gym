@@ -221,6 +221,10 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Missing email or password' });
       }
 
+      if (email.length > 100 || password.length > 100 || (display_name && display_name.length > 100)) {
+        return res.status(400).json({ error: 'Email, password, and name must be under 100 characters' });
+      }
+
       const cleanEmail = email.trim().toLowerCase();
       const userRole = role || 'client';
 
@@ -697,6 +701,10 @@ ${origin}/client-login
         return res.status(450).json({ error: 'Missing target uid' });
       }
 
+      if (password && password.length > 100) {
+        return res.status(400).json({ error: 'Password must be under 100 characters' });
+      }
+
       const { data: currentProfile, error: fetchError } = await supabaseAdmin
         .from('profiles')
         .select('role, targets')
@@ -751,6 +759,10 @@ ${origin}/client-login
       const { uid, password } = req.body;
       if (!uid || !password) {
         return res.status(400).json({ error: 'Missing uid or password parameter' });
+      }
+
+      if (password.length > 100) {
+        return res.status(400).json({ error: 'Password must be under 100 characters' });
       }
 
       // Fetch client profile first to check rate limit
@@ -992,6 +1004,10 @@ ${origin}/client-login
         return res.status(400).json({ error: 'Missing to or text parameter' });
       }
 
+      if (to.length > 30 || text.length > 1000) {
+        return res.status(400).json({ error: 'Phone must be under 30 characters and message must be under 1000 characters' });
+      }
+
       const { data: ownerProfile } = await supabaseAdmin
         .from('profiles')
         .select('targets')
@@ -1024,6 +1040,10 @@ ${origin}/client-login
       const { gatewayUrl, token, phone, text } = req.body;
       if (!gatewayUrl || !phone) {
         return res.status(400).json({ error: 'Missing gatewayUrl or phone parameter' });
+      }
+
+      if (phone.length > 30 || (text && text.length > 1000) || (token && token.length > 500) || gatewayUrl.length > 500) {
+        return res.status(400).json({ error: 'Parameters exceed allowed length limits' });
       }
 
       const cleanedPhone = formatWhatsAppPhone(phone);
@@ -1189,7 +1209,8 @@ ${origin}/client-login
       }
 
       const senderPhone = formatWhatsAppPhone(String(rawSender));
-      const messageText = String(rawText).trim();
+      // Truncate incoming message to 1000 characters to prevent buffer issues while keeping webhook active
+      const messageText = String(rawText).trim().slice(0, 1000);
 
       // Check if the sender is our own trusted warmup phone, or owner's number, to prevent loops
       const warmupPhone = ownerTargets.whatsapp_warmup_phone ? formatWhatsAppPhone(ownerTargets.whatsapp_warmup_phone) : '';

@@ -52,6 +52,10 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Email is required' });
       }
 
+      if (email.length > 100) {
+        return res.status(400).json({ error: 'Email must be under 100 characters' });
+      }
+
       const cleanEmail = email.trim().toLowerCase();
 
       // Create Admin Client to query profiles and insert token
@@ -274,6 +278,10 @@ export default async function handler(req: any, res: any) {
       const { token, newPassword } = req.body;
       if (!token || !newPassword) {
         return res.status(400).json({ error: 'Token and new password are required' });
+      }
+
+      if (newPassword.length > 100 || token.length > 200) {
+        return res.status(400).json({ error: 'Parameters exceed allowed length limits' });
       }
 
       if (newPassword.trim().length < 6) {

@@ -22,6 +22,35 @@ const FoodCreator = () => {
       return;
     }
 
+    if (formData.name.length > 100) {
+      alert("Product name cannot exceed 100 characters.");
+      return;
+    }
+
+    if (formData.barcode && formData.barcode.length > 20) {
+      alert("Barcode cannot exceed 20 characters.");
+      return;
+    }
+
+    const kcalVal = parseFloat(formData.kcal);
+    const proteinVal = parseFloat(formData.protein);
+    const carbsVal = parseFloat(formData.carbs);
+    const fatVal = parseFloat(formData.fat);
+
+    if (isNaN(kcalVal) || kcalVal < 0 || kcalVal > 5000) {
+      alert("Please enter a valid Calories value (0 - 5000).");
+      return;
+    }
+
+    if (
+      isNaN(proteinVal) || proteinVal < 0 || proteinVal > 500 ||
+      isNaN(carbsVal) || carbsVal < 0 || carbsVal > 500 ||
+      isNaN(fatVal) || fatVal < 0 || fatVal > 500
+    ) {
+      alert("Please enter valid macro values (0 - 500g).");
+      return;
+    }
+
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -68,6 +97,7 @@ const FoodCreator = () => {
             placeholder="e.g. Juhayna Greek Yogurt Plain"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
+            maxLength={100}
             className="w-full bg-surface border border-gray-700 rounded-xl py-3 px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
           />
         </div>
@@ -80,6 +110,7 @@ const FoodCreator = () => {
             placeholder="Scan or type barcode"
             value={formData.barcode}
             onChange={(e) => setFormData({...formData, barcode: e.target.value})}
+            maxLength={20}
             className="w-full bg-surface border border-gray-700 rounded-xl py-3 px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
           />
         </div>
@@ -121,11 +152,13 @@ const FoodCreator = () => {
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-semibold text-gray-300 w-24">Calories <span className="text-danger">*</span></label>
               <div className="relative flex-1">
-                <input 
+                 <input 
                   type="number" 
                   inputMode="decimal"
                   value={formData.kcal}
                   onChange={(e) => setFormData({...formData, kcal: e.target.value})}
+                  min={0}
+                  max={5000}
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 pl-3 pr-10 text-white focus:border-primary outline-none"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
@@ -137,11 +170,13 @@ const FoodCreator = () => {
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-semibold text-gray-300 w-24">Protein <span className="text-danger">*</span></label>
               <div className="relative flex-1">
-                <input 
+                 <input 
                   type="number" 
                   inputMode="decimal"
                   value={formData.protein}
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
+                  min={0}
+                  max={500}
                   className="w-full bg-gray-900 border border-blue-900/50 rounded-lg py-2 pl-3 pr-8 text-white focus:border-blue-500 outline-none"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
@@ -153,11 +188,13 @@ const FoodCreator = () => {
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-semibold text-gray-300 w-24">Carbs <span className="text-danger">*</span></label>
               <div className="relative flex-1">
-                <input 
+                 <input 
                   type="number" 
                   inputMode="decimal"
                   value={formData.carbs}
                   onChange={(e) => setFormData({...formData, carbs: e.target.value})}
+                  min={0}
+                  max={500}
                   className="w-full bg-gray-900 border border-green-900/50 rounded-lg py-2 pl-3 pr-8 text-white focus:border-green-500 outline-none"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
@@ -169,11 +206,13 @@ const FoodCreator = () => {
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-semibold text-gray-300 w-24">Fat <span className="text-danger">*</span></label>
               <div className="relative flex-1">
-                <input 
+                 <input 
                   type="number" 
                   inputMode="decimal"
                   value={formData.fat}
                   onChange={(e) => setFormData({...formData, fat: e.target.value})}
+                  min={0}
+                  max={500}
                   className="w-full bg-gray-900 border border-yellow-900/50 rounded-lg py-2 pl-3 pr-8 text-white focus:border-yellow-500 outline-none"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">

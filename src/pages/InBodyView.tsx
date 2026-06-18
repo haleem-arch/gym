@@ -81,7 +81,41 @@ export default function InBodyView() {
     setIsSubmitting(true);
     
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Safety check: verify no input value string is excessively long to prevent DB/browser crashes
+    const isAnyFieldTooLong = Object.values(formData).some(val => typeof val === 'string' && val.length > 15);
+    if (isAnyFieldTooLong) {
+      alert("One of the input fields exceeds the allowed character limit.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const weightVal = parseFloat(formData.weight) || 0;
+    const smmVal = parseFloat(formData.smm) || 0;
+    const bfmVal = parseFloat(formData.bfm) || 0;
+    const bfPercentVal = parseFloat(formData.bf_percent) || 0;
+    const bmrVal = parseInt(formData.bmr) || 0;
+    const scoreVal = parseInt(formData.score) || 0;
+
+    if (weightVal < 20 || weightVal > 500) {
+      alert("Please enter a valid weight between 20 and 500 kg.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (smmVal < 5 || smmVal > 250 || bfmVal < 0 || bfmVal > 250 || bfPercentVal < 0 || bfPercentVal > 100) {
+      alert("Please enter valid body composition values.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (bmrVal < 0 || bmrVal > 10000 || scoreVal < 0 || scoreVal > 150) {
+      alert("Please enter valid BMR and score values.");
+      setIsSubmitting(false);
+      return;
+    }
 
     const segmental = {
       visceralFat: parseFloat(formData.visceralFat) || 0,
@@ -98,12 +132,12 @@ export default function InBodyView() {
     const payload = {
       user_id: session.user.id,
       date: formData.date,
-      weight: parseFloat(formData.weight) || 0,
-      smm: parseFloat(formData.smm) || 0,
-      bfm: parseFloat(formData.bfm) || 0,
-      bf_percent: parseFloat(formData.bf_percent) || 0,
-      bmr: parseInt(formData.bmr) || 0,
-      score: parseInt(formData.score) || 0,
+      weight: weightVal,
+      smm: smmVal,
+      bfm: bfmVal,
+      bf_percent: bfPercentVal,
+      bmr: bmrVal,
+      score: scoreVal,
       segmental: segmental
     };
 
@@ -122,6 +156,21 @@ export default function InBodyView() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // File size check: 1MB limit
+    if (file.size > 1024 * 1024) {
+      alert("File is too large. CSV upload is limited to 1MB.");
+      event.target.value = ''; // Reset file input
+      return;
+    }
+
+    // File type/extension check
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.csv')) {
+      alert("Invalid file format. Please upload a .csv file.");
+      event.target.value = ''; // Reset file input
+      return;
+    }
+
     setIsImporting(true);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -131,16 +180,21 @@ export default function InBodyView() {
         return;
       }
 
-      // Simple CSV split
+      // Simple CSV split and limit to 100 rows
       const lines = text.split('\n').filter(line => line.trim().length > 0);
-      if (lines.length < 2) {
+      if (lines.length > 101) {
+        alert("The CSV file exceeds the limit of 100 entries. Only the first 100 records will be parsed.");
+      }
+
+      const parsedLines = lines.slice(0, 101);
+      if (parsedLines.length < 2) {
         alert('Invalid CSV file or empty file.');
         setIsImporting(false);
         return;
       }
 
       // Parse headers
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const headers = parsedLines[0].split(',').map(h => h.trim().toLowerCase());
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -151,8 +205,8 @@ export default function InBodyView() {
       const payloads = [];
 
       // Parse rows
-      for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',').map(v => v.trim());
+      for (let i = 1; i < parsedLines.length; i++) {
+        const row = parsedLines[i].split(',').map(v => v.trim());
         if (row.length < 5) continue; // Skip malformed rows
 
         const getValue = (keyContains: string) => {

@@ -20,11 +20,29 @@ const DietSearch = () => {
   const [grams, setGrams] = useState<string>('100');
   const [isAdding, setIsAdding] = useState(false);
 
+  // Editable base values for bottom sheet
+  const [baseName, setBaseName] = useState('');
+  const [baseKcal, setBaseKcal] = useState<string>('0');
+  const [baseProtein, setBaseProtein] = useState<string>('0');
+  const [baseCarbs, setBaseCarbs] = useState<string>('0');
+  const [baseFat, setBaseFat] = useState<string>('0');
+
   // Barcode Scanner State
   const [showScanner, setShowScanner] = useState(false);
   const [cameraStream, setCameraStream] = useState<any | null>(null);
   const [customBarcode, setCustomBarcode] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
+
+  // Sync editable states with selected food
+  useEffect(() => {
+    if (selectedFood) {
+      setBaseName(selectedFood.name || '');
+      setBaseKcal(String(selectedFood.kcal_per_100g ?? 0));
+      setBaseProtein(String(selectedFood.protein ?? 0));
+      setBaseCarbs(String(selectedFood.carbs ?? 0));
+      setBaseFat(String(selectedFood.fat ?? 0));
+    }
+  }, [selectedFood]);
 
   const playBeep = () => {
     try {
@@ -238,25 +256,54 @@ const DietSearch = () => {
 
     const amount = parseFloat(grams);
     const isPerItem = selectedFood.serving_type === 'per_item';
-    if (isNaN(amount) || amount <= 0) {
-      alert(isPerItem ? 'Please enter a valid quantity.' : 'Please enter a valid amount in grams.');
+    if (isNaN(amount) || amount <= 0 || amount > 10000) {
+      alert(isPerItem ? 'Please enter a valid quantity between 0.1 and 10000.' : 'Please enter a valid amount between 0.1g and 10000g.');
+      setIsAdding(false);
+      return;
+    }
+
+    const kcalVal = parseFloat(baseKcal) || 0;
+    const proteinVal = parseFloat(baseProtein) || 0;
+    const carbsVal = parseFloat(baseCarbs) || 0;
+    const fatVal = parseFloat(baseFat) || 0;
+
+    // Realistic bounds check for base nutritional values to protect database
+    if (kcalVal < 0 || kcalVal > 5000) {
+      alert("Calories per 100g/serving must be between 0 and 5000.");
+      setIsAdding(false);
+      return;
+    }
+    if (proteinVal < 0 || proteinVal > 500 || carbsVal < 0 || carbsVal > 500 || fatVal < 0 || fatVal > 500) {
+      alert("Macros must be between 0 and 500g.");
+      setIsAdding(false);
+      return;
+    }
+    if (!baseName.trim()) {
+      alert("Please enter a valid food name.");
       setIsAdding(false);
       return;
     }
 
     let foodId = selectedFood.id;
+    const nameChanged = baseName.trim() !== selectedFood.name;
+    const macrosChanged = 
+      kcalVal !== (selectedFood.kcal_per_100g || 0) ||
+      proteinVal !== (selectedFood.protein || 0) ||
+      carbsVal !== (selectedFood.carbs || 0) ||
+      fatVal !== (selectedFood.fat || 0);
 
-    // If it's an API product, save it to Supabase first!
-    if (selectedFood.source === 'api') {
+    // If it's an API product OR if it was modified by the user, save it as a local food first!
+    if (selectedFood.source === 'api' || nameChanged || macrosChanged) {
       const { data: { session } } = await supabase.auth.getSession();
       const newLocalFood = {
         user_id: session?.user?.id || null,
-        name: selectedFood.name,
-        barcode: selectedFood.barcode,
-        kcal_per_100g: selectedFood.kcal_per_100g,
-        protein: selectedFood.protein,
-        carbs: selectedFood.carbs,
-        fat: selectedFood.fat,
+        name: baseName.trim(),
+        barcode: selectedFood.barcode || null,
+        kcal_per_100g: kcalVal,
+        protein: proteinVal,
+        carbs: carbsVal,
+        fat: fatVal,
+        serving_type: selectedFood.serving_type || 'per_100g',
         source: 'barcode' // Store as barcode so it's a permanent local item now
       };
 
@@ -267,7 +314,7 @@ const DietSearch = () => {
         .single();
 
       if (insertError) {
-        console.error("Error saving API food to DB:", insertError);
+        console.error("Error saving API/modified food to DB:", insertError);
         alert("Failed to save product to local inventory.");
         setIsAdding(false);
         return;
@@ -279,16 +326,16 @@ const DietSearch = () => {
 
     const multiplier = isPerItem ? amount : amount / 100;
     const calculatedMacros = {
-      kcal: selectedFood.kcal_per_100g * multiplier,
-      protein: selectedFood.protein * multiplier,
-      carbs: selectedFood.carbs * multiplier,
-      fat: selectedFood.fat * multiplier
+      kcal: kcalVal * multiplier,
+      protein: proteinVal * multiplier,
+      carbs: carbsVal * multiplier,
+      fat: fatVal * multiplier
     };
 
     const newItem = {
       id: crypto.randomUUID(),
       food_id: foodId,
-      name: selectedFood.name,
+      name: baseName.trim(),
       grams: amount,
       macros: calculatedMacros,
       serving_type: selectedFood.serving_type || 'per_100g'
@@ -314,10 +361,10 @@ const DietSearch = () => {
     ? parseFloat(grams || '0')
     : parseFloat(grams || '0') / 100;
   const calculatedPreview = selectedFood ? {
-    kcal: selectedFood.kcal_per_100g * previewMultiplier,
-    protein: selectedFood.protein * previewMultiplier,
-    carbs: selectedFood.carbs * previewMultiplier,
-    fat: selectedFood.fat * previewMultiplier,
+    kcal: (parseFloat(baseKcal) || 0) * previewMultiplier,
+    protein: (parseFloat(baseProtein) || 0) * previewMultiplier,
+    carbs: (parseFloat(baseCarbs) || 0) * previewMultiplier,
+    fat: (parseFloat(baseFat) || 0) * previewMultiplier,
   } : null;
 
   return (
@@ -336,10 +383,11 @@ const DietSearch = () => {
           </button>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-550 w-4 h-4" />
           <input 
             type="text" 
             autoFocus
+            maxLength={100}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search food or scan barcode..." 
@@ -440,17 +488,70 @@ const DietSearch = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 pb-10"
+              className="bg-surface border-t border-gray-800 rounded-t-3xl p-6 relative z-10 pb-10 max-h-[90vh] overflow-y-auto"
             >
-              <h3 className="text-xl font-bold text-white mb-1">{selectedFood.name}</h3>
-              <p className="text-xs text-gray-400 mb-6 border-b border-gray-800 pb-4">
-                {isSelectedPerItem
-                  ? `${selectedFood.kcal_per_100g} kcal per serving`
-                  : `Base: ${selectedFood.kcal_per_100g} kcal per 100g`
-                }
-              </p>
+              <div className="mb-4">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Food Name</label>
+                <input 
+                  type="text"
+                  maxLength={100}
+                  value={baseName}
+                  onChange={(e) => setBaseName(e.target.value)}
+                  className="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 px-4 text-sm font-bold text-white focus:border-primary outline-none"
+                  placeholder="e.g. Snickers Bar"
+                />
+              </div>
+
+              {/* Editable Base Macros section */}
+              <div className="bg-gray-900/50 border border-gray-850 rounded-2xl p-4 mb-6">
+                <span className="text-[10px] font-extrabold text-gray-550 uppercase tracking-widest block mb-3">
+                  Edit Base Nutrition ({isSelectedPerItem ? 'per serving' : 'per 100g'})
+                </span>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Calories</label>
+                    <input 
+                      type="number"
+                      inputMode="decimal"
+                      value={baseKcal}
+                      onChange={(e) => setBaseKcal(e.target.value)}
+                      className="w-full bg-gray-950 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-primary text-center outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Protein (g)</label>
+                    <input 
+                      type="number"
+                      inputMode="decimal"
+                      value={baseProtein}
+                      onChange={(e) => setBaseProtein(e.target.value)}
+                      className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-blue-400 text-center outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Carbs (g)</label>
+                    <input 
+                      type="number"
+                      inputMode="decimal"
+                      value={baseCarbs}
+                      onChange={(e) => setBaseCarbs(e.target.value)}
+                      className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-green-400 text-center outline-none focus:border-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 block mb-1 text-center">Fat (g)</label>
+                    <input 
+                      type="number"
+                      inputMode="decimal"
+                      value={baseFat}
+                      onChange={(e) => setBaseFat(e.target.value)}
+                      className="w-full bg-gray-955 border border-gray-800 rounded-lg py-1.5 px-1 text-xs font-bold text-yellow-400 text-center outline-none focus:border-yellow-500"
+                    />
+                  </div>
+                </div>
+              </div>
               
-              <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-6">
                 <div className="flex-1">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">{isSelectedPerItem ? 'Quantity (Servings)' : 'Amount'}</label>
                   <div className="relative">
@@ -466,8 +567,8 @@ const DietSearch = () => {
                   </div>
                 </div>
                 
-                <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Calories</span>
+                <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center h-[88px]">
+                  <span className="text-xs font-bold text-gray-550 uppercase tracking-wider block mb-1">Calories</span>
                   <span className="text-2xl font-bold text-primary">{Math.round(calculatedPreview?.kcal || 0)}</span>
                 </div>
               </div>
@@ -478,11 +579,11 @@ const DietSearch = () => {
                   <span className="text-lg font-bold text-blue-400">{Math.round(calculatedPreview?.protein || 0)}g</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase">Carbs</span>
+                  <span className="text-[10px] font-bold text-gray-550 uppercase">Carbs</span>
                   <span className="text-lg font-bold text-green-400">{Math.round(calculatedPreview?.carbs || 0)}g</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase">Fat</span>
+                  <span className="text-[10px] font-bold text-gray-550 uppercase">Fat</span>
                   <span className="text-lg font-bold text-yellow-400">{Math.round(calculatedPreview?.fat || 0)}g</span>
                 </div>
               </div>
@@ -583,15 +684,16 @@ const DietSearch = () => {
               </div>
 
               {/* Manual Barcode Input */}
-              <div className="bg-gray-950/40 border border-gray-850 p-4 rounded-xl mb-6">
+              <div className="bg-gray-955/40 border border-gray-850 p-4 rounded-xl mb-6">
                 <label className="text-[10px] font-bold text-gray-550 uppercase tracking-widest block mb-2">Manual Barcode Input</label>
                 <div className="flex gap-2">
                   <input
-                    type="number"
+                    type="text"
+                    maxLength={20}
                     value={customBarcode}
                     onChange={(e) => setCustomBarcode(e.target.value.replace(/\D/g, ''))}
                     placeholder="e.g. 5000159461122"
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-primary/50 font-mono font-bold"
+                    className="flex-1 bg-gray-955 border border-gray-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-primary/50 font-mono font-bold"
                     inputMode="numeric"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && customBarcode.trim()) {

@@ -49,6 +49,10 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Missing required parameters: name, email, phone' });
     }
 
+    if (name.length > 100 || email.length > 100 || phone.length > 30) {
+      return res.status(400).json({ error: 'Input fields exceed allowed character limits' });
+    }
+
     if (!supabaseServiceKey) {
       return res.status(500).json({ error: 'Database credentials not configured' });
     }
