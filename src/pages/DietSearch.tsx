@@ -565,9 +565,10 @@ const DietSearch = () => {
                   <button
                     type="button"
                     onClick={() => setShowEditMacros(true)}
-                    className="text-xs font-bold text-red-500 hover:text-red-400 active:scale-95 transition-all mb-6 block hover:underline"
+                    className="flex items-center text-xs font-bold text-red-500 hover:text-red-400 active:scale-95 transition-all mb-6 hover:underline"
                   >
-                    ⚠️ Is there a problem with the food details?
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 flex-shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span>Is there a problem with the food details?</span>
                   </button>
                 </>
               ) : (

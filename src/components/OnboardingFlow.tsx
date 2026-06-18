@@ -926,9 +926,10 @@ export default function OnboardingFlow({
                         </div>
 
                         {forgotError && (
-                          <p className="text-[10px] font-black tracking-widest uppercase text-red-400 leading-relaxed">
-                            ⚠️ {forgotError}
-                          </p>
+                          <div className="flex items-start gap-1.5 text-[10px] font-black tracking-widest uppercase text-red-400 leading-relaxed">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            <span>{forgotError}</span>
+                          </div>
                         )}
 
                         <div className="flex gap-2 pt-1">
@@ -1028,9 +1029,10 @@ export default function OnboardingFlow({
                         </label>
                       </div>
                       {legalError && (
-                        <p className="text-[10px] text-red-500 font-bold text-left pl-[26px] mt-0.5 animate-pulse">
-                          ⚠️ You must agree to the Terms of Service and Privacy Policy to proceed.
-                        </p>
+                        <div className="flex items-start gap-1.5 text-[10px] text-red-550 font-bold text-left pl-[26px] mt-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          <span>You must agree to the Terms of Service and Privacy Policy to proceed.</span>
+                        </div>
                       )}
                     </div>
 
