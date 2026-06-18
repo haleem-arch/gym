@@ -406,6 +406,30 @@ export default function ProfileView() {
         </form>
       </motion.div>
 
+      {/* Cookie Consent Settings Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.22 }}
+        className="bg-surface border border-gray-800 rounded-3xl p-6 shadow-lg space-y-4"
+      >
+        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+          <Shield size={14} className="text-[#3b82f6]" /> Cookie Preferences
+        </h3>
+        <p className="text-xs text-gray-400 leading-relaxed">
+          Manage your tracking consents for analytics, speed performance logs, and diagnostic recordings.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new Event('reopen_cookie_consent'));
+          }}
+          className="w-full py-3.5 bg-[#121629] hover:bg-[#181d33] border border-blue-955/40 text-gray-200 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <span>Update Consent Preferences</span>
+        </button>
+      </motion.div>
+
             {/* Send Feedback / Report Problem Card (Glassmorphism layout) */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}

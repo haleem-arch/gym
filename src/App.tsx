@@ -10,6 +10,7 @@ import { DumbbellLoader } from './components/DumbbellLoader';
 import { SplashOverlay } from './components/SplashOverlay';
 import { GymSplashOverlay } from './components/GymSplashOverlay';
 import OnboardingFlow from './components/OnboardingFlow';
+import CookieConsentBanner from './components/CookieConsentBanner';
 import LaunchLockScreen from './pages/LaunchLockScreen';
 
 const HRDashboard = lazy(() => import('./pages/HRDashboard'));
@@ -821,6 +822,7 @@ function App() {
         </Routes>
       )}
       </Suspense>
+      <CookieConsentBanner />
     </Router>
   );
 }

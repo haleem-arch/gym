@@ -109,7 +109,15 @@ const DietSearch = () => {
         if (!isActive) return;
 
         try {
-          const scanner = new Html5Qrcode("reader");
+          const scanner = new Html5Qrcode("reader", {
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E
+            ],
+            verbose: false
+          });
           scannerInstance = scanner;
           scannerRef.current = scanner;
 
@@ -123,13 +131,7 @@ const DietSearch = () => {
                 const boxHeight = Math.floor(boxWidth * 0.55);
                 return { width: boxWidth, height: boxHeight };
               },
-              aspectRatio: 1.7777778,
-              formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E
-              ]
+              aspectRatio: 1.7777778
             },
             (decodedText) => {
               handleScanSuccess(decodedText);
@@ -617,6 +619,8 @@ const DietSearch = () => {
                       </div>
                     </div>
                   </div>
+                </>
+              )}
               
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex-1">
