@@ -30,7 +30,7 @@ const DietHome = () => {
       let myProfileData: any = null;
       if (uid) {
         const { data: myProfile } = await supabase.from('profiles').select('targets, coach_id').eq('id', uid).maybeSingle();
-        if (myProfile?.targets?.disable_diet) {
+        if (myProfile?.targets?.disable_diet && myProfile.coach_id) {
           setIsLocked(true);
         }
         myTargets = myProfile?.targets;

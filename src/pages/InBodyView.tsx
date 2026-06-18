@@ -52,11 +52,11 @@ export default function InBodyView() {
     // Check lock status
     const { data: profile } = await supabase
       .from('profiles')
-      .select('targets')
+      .select('targets, coach_id')
       .eq('id', session.user.id)
       .maybeSingle();
 
-    if (profile?.targets?.disable_inbody) {
+    if (profile?.targets?.disable_inbody && profile.coach_id) {
       setIsLocked(true);
     }
 

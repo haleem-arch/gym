@@ -12,11 +12,11 @@ const BottomNav = () => {
     const fetchTargets = async (uid: string) => {
       const { data } = await supabase
         .from('profiles')
-        .select('targets')
+        .select('targets, coach_id')
         .eq('id', uid)
         .maybeSingle();
-      if (data?.targets) {
-        setTargets(data.targets);
+      if (data) {
+        setTargets({ ...data.targets, coach_id: data.coach_id });
       }
     };
 
@@ -64,6 +64,7 @@ const BottomNav = () => {
   
   const navItems = allNavItems.filter(item => {
     if (item.restrict && userId !== OWNER_ID) return false;
+    if (targets?.coach_id === null) return true; // Self-guided athlete has no locks
     if (item.lockKey && targets?.[item.lockKey] === true) return false;
     return true;
   });

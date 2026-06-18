@@ -233,7 +233,7 @@ const WorkoutHome = () => {
 
       // Fetch own profile targets to check lock status
       const { data: myProfile } = await supabase.from('profiles').select('targets, coach_id').eq('id', session.user.id).maybeSingle();
-      if (myProfile?.targets?.disable_workout) {
+      if (myProfile?.targets?.disable_workout && myProfile.coach_id) {
         setIsLocked(true);
       }
 

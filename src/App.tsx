@@ -537,7 +537,7 @@ function App() {
           setSession(null);
           return;
         }
-        if (session.user.id === OWNER_ID || userRole === 'coach' || payload.new?.role === 'coach') {
+        if (session.user.id === OWNER_ID || userRole === 'coach' || payload.new?.role === 'coach' || !payload.new?.coach_id) {
           setIsSuspended(false);
           setSuspensionReason(null);
           return;
