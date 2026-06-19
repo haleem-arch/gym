@@ -443,12 +443,14 @@ function App() {
         setUserRole(profile.role || null);
         setClientProfile(profile);
 
+        let ownerData: any = null;
         try {
-          const { data: ownerData } = await supabase
+          const { data } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', OWNER_ID)
             .maybeSingle();
+          ownerData = data;
 
           let coachData = null;
           const { data: clientProfileRecord } = await supabase
