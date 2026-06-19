@@ -321,7 +321,13 @@ export default function CoachLandingPage() {
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
     setErrorMessage(null);
-    setOnboardingMode('form');
+
+    const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
+    if (mode === 'register' && isWindows && !isElectron) {
+      setOnboardingMode('options');
+    } else {
+      setOnboardingMode('form');
+    }
     setShowAuthModal(true);
   };
 
@@ -714,7 +720,12 @@ export default function CoachLandingPage() {
           type="button"
           onClick={() => {
             setAuthMode('register');
-            setOnboardingMode('form');
+            const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
+            if (isWindows && !isElectron) {
+              setOnboardingMode('options');
+            } else {
+              setOnboardingMode('form');
+            }
             setOnboardingStep(1);
             setAttemptedStep1Submit(false);
           }}
@@ -1793,6 +1804,15 @@ export default function CoachLandingPage() {
                             className="w-full bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 hover:border-zinc-850 text-zinc-300 font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
                           >
                             <span>Continue via Web Browser</span>
+                          </button>
+                        </div>
+                        <div className="text-center pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setAuthMode('choose_role')}
+                            className="text-[10px] text-zinc-550 hover:text-zinc-300 font-bold uppercase tracking-wider underline bg-transparent border-none cursor-pointer"
+                          >
+                            Go Back
                           </button>
                         </div>
                       </div>
