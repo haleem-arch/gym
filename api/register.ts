@@ -302,23 +302,86 @@ ${origin}/
         </div>
       `;
 
+      const sendWhatsAppPromise = (async () => {
+        if (!phone) return;
+
+        // Fetch owner targets to check settings
+        const { data: ownerProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('targets')
+          .eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c')
+          .maybeSingle();
+
+        const ownerTargets = ownerProfile?.targets || {};
+        if (!ownerTargets.whatsapp_enabled || !ownerTargets.whatsapp_gateway_url) {
+          return;
+        }
+
+        // Check if WhatsApp triggers are enabled
+        const isTriggered = ownerTargets.whatsapp_trigger_athlete_onboarding !== false;
+        if (!isTriggered) return;
+
+        const cleanedPhone = formatWhatsAppPhone(phone);
+        const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
+        const waEndpoint = `${gatewayUrl}/send-text`;
+
+        const DEFAULT_TPL_ATHLETE = `*Welcome to Life Gym, Athlete {display_name}!* 🦾\n\nYour self-guided athlete account has been successfully created.\n\nYou can now log in to log meals, record your workouts, track water, and view InBody composition trends.\n\n*Your Account Details:*\n• *Portal Link:* {link}\n• *Login Email:* {username}\n• *Starting Targets:* {kcal} kcal\n\nLet's crush some goals! 💪🔥`;
+
+        const rawTemplate = ownerTargets.whatsapp_tpl_athlete_onboarding || DEFAULT_TPL_ATHLETE;
+        const formattedMessage = rawTemplate
+          .replace(/{display_name}/g, displayName.trim())
+          .replace(/{username}/g, cleanEmail)
+          .replace(/{kcal}/g, String(kcal))
+          .replace(/{link}/g, `${origin}/`);
+
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (ownerTargets.whatsapp_gateway_token) {
+          headers['Authorization'] = `Bearer ${ownerTargets.whatsapp_gateway_token.trim()}`;
+        }
+
+        // Anti-ban delay throttle
+        const delayMin = ownerTargets.whatsapp_delay_min !== undefined ? Number(ownerTargets.whatsapp_delay_min) : 5;
+        const delayMax = ownerTargets.whatsapp_delay_max !== undefined ? Number(ownerTargets.whatsapp_delay_max) : 15;
+        const randomDelay = Math.floor(Math.random() * (delayMax - delayMin + 1) + delayMin);
+        await new Promise(resolve => setTimeout(resolve, randomDelay * 1000));
+
+        const waRes = await fetch(waEndpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            to: cleanedPhone,
+            text: formattedMessage.trim()
+          })
+        });
+
+        if (!waRes.ok) {
+          const errText = await waRes.text();
+          console.error(`WhatsApp Gateway Public Athlete Welcome error: ${waRes.status}`, errText);
+        }
+      })();
+
       waitUntil(
-        sendBulkEmails({
-          to: cleanEmail,
-          subject: 'Welcome to Life Gym! 🦾 Your Athlete Portal is Ready',
-          text: textWelcome,
-          html: htmlWelcome,
-          fromName: 'Life Gym Team',
-          templateId: 'athlete_signup',
-          templateVariables: {
-            display_name: displayName.trim(),
-            email: cleanEmail,
-            kcal: String(kcal),
-            origin: origin
-          }
-        }).catch(emailErr => {
-          console.error('Failed to send athlete welcome email:', emailErr);
-        })
+        Promise.all([
+          sendBulkEmails({
+            to: cleanEmail,
+            subject: 'Welcome to Life Gym! 🦾 Your Athlete Portal is Ready',
+            text: textWelcome,
+            html: htmlWelcome,
+            fromName: 'Life Gym Team',
+            templateId: 'athlete_signup',
+            templateVariables: {
+              display_name: displayName.trim(),
+              email: cleanEmail,
+              kcal: String(kcal),
+              origin: origin
+            }
+          }).catch(emailErr => {
+            console.error('Failed to send athlete welcome email:', emailErr);
+          }),
+          sendWhatsAppPromise.catch(waErr => {
+            console.error('Failed to send athlete onboarding WhatsApp:', waErr);
+          })
+        ])
       );
 
       return res.status(200).json({ success: true, user: authData.user });
