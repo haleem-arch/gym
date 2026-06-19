@@ -169,6 +169,10 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
     return <Navigate to="/" replace />;
   }
 
+  if (isCoachPortal && !isCoachOrOwner) {
+    return <Navigate to="/" replace />;
+  }
+
   if (isCoachPortal) {
     return (
       <div className="w-full h-screen bg-background text-gray-100 font-sans overflow-hidden no-scrollbar">
@@ -371,6 +375,9 @@ function App() {
     // 2. Listen to authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session || null);
+      setUserRole(null);
+      setClientProfile(null);
+      setCoachProfile(null);
     });
 
     return () => {
