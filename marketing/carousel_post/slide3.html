@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 3 - Workouts List</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#05060f',
+            surface: '#0c1020',
+            primary: '#3b82f6',
+            success: '#22c55e',
+            danger: '#ef4444',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/css">
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060713;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+    .card {
+      width: 1080px;
+      height: 1080px;
+      background-color: #05060f;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 90px;
+    }
+    .glow-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 7, 19, 0) 70%);
+      filter: blur(60px);
+      pointer-events: none;
+    }
+    .glow-top { top: -200px; right: -200px; }
+    .glow-bottom { bottom: -250px; left: -200px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow-bg glow-top"></div>
+    <div class="glow-bg glow-bottom"></div>
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center z-10 w-full">
+      <div class="flex items-center gap-4">
+        <svg class="w-12 h-12" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#4b5563" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <div class="font-black text-3xl tracking-wider text-white uppercase">Life<span>Gym</span></div>
+      </div>
+      <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-widest uppercase">03 / 05 • Workouts List</span>
+    </div>
+
+    <!-- Center content: 2-Column Workouts and Tab toggle Mockup -->
+    <div class="z-10 my-auto w-[900px] mx-auto grid grid-cols-2 gap-6">
+      
+      <!-- Left Column: Workout list -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-400">Today's Focus</p>
+            <h3 class="font-bold text-xl text-white">Workouts List</h3>
+          </div>
+          <!-- Tab toggle -->
+          <div class="bg-[#0c1020]/90 border border-white/5 p-1 rounded-xl flex items-center shadow-lg">
+            <button class="bg-[#3b82f6] text-[#05060f] px-3 py-1 rounded-lg text-[10px] font-black uppercase">History</button>
+            <span class="text-gray-400 px-3 py-1 text-[10px] font-bold uppercase">Insights</span>
+          </div>
+        </div>
+
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 space-y-4 shadow-xl">
+          <!-- Exercise Row 1 -->
+          <div class="flex items-center justify-between border-b border-white/5 pb-3">
+            <div class="flex items-center gap-3">
+              <span class="h-9 w-9 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shadow-lg shadow-green-500/20">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <div>
+                <span class="text-xs font-bold text-white block">Back Squat</span>
+                <span class="text-[10px] text-gray-400 block mt-0.5">4 sets × 8 reps • 140 kg</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-gray-500">Done</span>
+          </div>
+
+          <!-- Exercise Row 2 -->
+          <div class="flex items-center justify-between border-b border-white/5 pb-3">
+            <div class="flex items-center gap-3">
+              <span class="h-9 w-9 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shadow-lg shadow-green-500/20">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <div>
+                <span class="text-xs font-bold text-white block">Romanian Deadlift</span>
+                <span class="text-[10px] text-gray-400 block mt-0.5">3 sets × 10 reps • 120 kg</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-gray-500">Done</span>
+          </div>
+
+          <!-- Exercise Row 3 -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="h-9 w-9 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shadow-lg shadow-green-500/20">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <div>
+                <span class="text-xs font-bold text-white block">Leg Press</span>
+                <span class="text-[10px] text-gray-400 block mt-0.5">3 sets × 12 reps • 280 kg</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-gray-500">Done</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Training stats & Session Breakdown -->
+      <div class="space-y-6">
+        <!-- Session Stats Card -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl space-y-4">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider">Session Stats</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+              <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Duration</span>
+              <span class="text-lg font-black text-white mt-1 block">58 mins</span>
+            </div>
+            <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+              <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Volume Lifted</span>
+              <span class="text-lg font-black text-blue-400 mt-1 block">8,450 kg</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-gray-400 px-1 pt-1">
+            <span>Average Heart Rate</span>
+            <span class="font-bold text-[#ef4444] flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              142 bpm
+            </span>
+          </div>
+        </div>
+
+        <!-- Training Session Summary Card (Replaced coach notes & split info) -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl space-y-4">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider font-bold">Training Session Summary</h4>
+          <div class="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3.5 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-400">Target Muscle Group:</span>
+              <span class="font-bold text-white">Legs Focus</span>
+            </div>
+            <div class="flex justify-between border-t border-white/5 pt-2">
+              <span class="text-gray-400">Logged Movements:</span>
+              <span class="font-bold text-white">3 Exercises</span>
+            </div>
+            <div class="flex justify-between border-t border-white/5 pt-2">
+              <span class="text-gray-400">Total Logged Sets:</span>
+              <span class="font-bold text-blue-400">10 Completed Sets</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-between items-center z-10 border-t border-white/5 pt-6 w-full">
+      <div class="text-gray-400 text-lg font-semibold tracking-wide">@lifegym.io</div>
+      <div class="text-white text-lg font-bold tracking-wide flex items-center gap-2">
+        Swipe to see charts <span class="text-[#3b82f6] font-black">→</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

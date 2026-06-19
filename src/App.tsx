@@ -28,6 +28,7 @@ const FoodInventory = lazy(() => import('./pages/FoodInventory'));
 
 const InBodyView = lazy(() => import('./pages/InBodyView'));
 const ProfileView = lazy(() => import('./pages/ProfileView'));
+const AnalyticsView = lazy(() => import('./pages/AnalyticsView'));
 
 const DesktopCoachPortal = lazy(() => import('./pages/coach/DesktopCoachPortal'));
 
@@ -230,7 +231,7 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
               <Route path="/diet/food/new" element={<PageTransition direction={direction}><FoodCreator /></PageTransition>} />
               <Route path="/diet/inventory" element={<PageTransition direction={direction}><FoodInventory /></PageTransition>} />
               <Route path="/inbody" element={<PageTransition direction={direction}><InBodyView /></PageTransition>} />
-
+              <Route path="/analytics" element={<PageTransition direction={direction}><AnalyticsView /></PageTransition>} />
               <Route path="/profile" element={<PageTransition direction={direction}><ProfileView /></PageTransition>} />
 
 

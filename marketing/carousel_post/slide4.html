@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 4 - Performance Insights</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#05060f',
+            surface: '#0c1020',
+            primary: '#3b82f6',
+            success: '#22c55e',
+            danger: '#ef4444',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/css">
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060713;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+    .card {
+      width: 1080px;
+      height: 1080px;
+      background-color: #05060f;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 90px;
+    }
+    .glow-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 7, 19, 0) 70%);
+      filter: blur(60px);
+      pointer-events: none;
+    }
+    .glow-top { top: -200px; right: -200px; }
+    .glow-bottom { bottom: -250px; left: -200px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow-bg glow-top"></div>
+    <div class="glow-bg glow-bottom"></div>
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center z-10 w-full">
+      <div class="flex items-center gap-4">
+        <svg class="w-12 h-12" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#4b5563" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <div class="font-black text-3xl tracking-wider text-white uppercase">Life<span>Gym</span></div>
+      </div>
+      <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-widest uppercase">04 / 05 • Insights Charts</span>
+    </div>
+
+    <!-- Center content: 2-Column Insights graphs -->
+    <div class="z-10 my-auto w-[900px] mx-auto grid grid-cols-2 gap-6">
+      
+      <!-- Left Column: Volume Trends Chart Card (Taller) -->
+      <div class="space-y-4">
+        <div>
+          <p class="text-xs text-gray-400">Strength Progression</p>
+          <h3 class="font-bold text-xl text-white">Volume Trends</h3>
+        </div>
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl h-[330px] flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-bold">Session Weights</span>
+            <span class="text-xs text-blue-400 font-bold bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-full">May 24: 8,450 kg</span>
+          </div>
+          
+          <div class="h-52 flex items-end justify-center w-full relative">
+            <!-- Area Chart SVG (Taller) -->
+            <svg class="absolute inset-0 w-full h-full" viewBox="0 0 300 150" preserveAspectRatio="none">
+              <!-- Gridlines -->
+              <line x1="0" y1="37" x2="300" y2="37" stroke="rgba(255, 255, 255, 0.05)" stroke-width="0.5"/>
+              <line x1="0" y1="75" x2="300" y2="75" stroke="rgba(255, 255, 255, 0.05)" stroke-width="0.5"/>
+              <line x1="0" y1="112" x2="300" y2="112" stroke="rgba(255, 255, 255, 0.05)" stroke-width="0.5"/>
+              <!-- Area Gradient Fill -->
+              <path d="M0,120 Q50,105 100,75 T200,45 T300,15 L300,150 L0,150 Z" fill="url(#volumeGrad)" opacity="0.15"/>
+              <!-- Stroke line -->
+              <path d="M0,120 Q50,105 100,75 T200,45 T300,15" fill="none" stroke="#3b82f6" stroke-width="2"/>
+              <!-- Interactive active dot -->
+              <circle cx="200" cy="45" r="4.5" fill="#3b82f6" filter="drop-shadow(0 0 4px rgba(59, 130, 246, 0.8))"/>
+              <defs>
+                <linearGradient id="volumeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6"/>
+                  <stop offset="100%" stop-color="transparent"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Chart Labels -->
+          <div class="flex justify-between text-[10px] text-gray-500 pt-2 border-t border-white/5">
+            <span>March</span>
+            <span>April</span>
+            <span>May</span>
+            <span>June</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Run Performance Chart Card & Monthly stats -->
+      <div class="space-y-6">
+        <!-- Run Performance Card (Taller) -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl h-[230px] flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-bold">Run Performance</span>
+            <span class="text-xs text-[#22c55e] font-bold bg-green-500/10 border border-green-500/20 px-2.5 py-0.5 rounded-full">Jun 15 Pace: 4:32 /km</span>
+          </div>
+          
+          <div class="h-32 flex items-end justify-between w-full relative px-6">
+            <!-- Composed Chart SVG overlay for Pace line -->
+            <svg class="absolute inset-0 w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+              <!-- Pace line -->
+              <path d="M30,70 Q90,50 150,55 T270,35" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+              <!-- Pace dots -->
+              <circle cx="270" cy="35" r="3" fill="#8b5cf6"/>
+            </svg>
+            <!-- Bar charts -->
+            <div class="w-7 bg-[#10b981] opacity-75 rounded-t-sm h-[40%]"></div>
+            <div class="w-7 bg-[#10b981] opacity-75 rounded-t-sm h-[55%]"></div>
+            <div class="w-7 bg-[#10b981] opacity-75 rounded-t-sm h-[50%]"></div>
+            <div class="w-7 bg-[#10b981] opacity-75 rounded-t-sm h-[75%]"></div>
+            <div class="w-7 bg-[#10b981] opacity-75 rounded-t-sm h-[85%] relative">
+              <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rounded-full bg-white border border-emerald-500"></div>
+            </div>
+          </div>
+          <div class="flex justify-between text-[8px] text-gray-500 px-6 pt-1 border-t border-white/5">
+            <span>May 1</span>
+            <span>May 15</span>
+            <span>Jun 1</span>
+            <span>Jun 15</span>
+          </div>
+        </div>
+
+        <!-- Monthly Performance Summary Card -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl space-y-3.5">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider">Monthly Summary</h4>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div class="flex justify-between border-b border-white/5 pb-1">
+              <span class="text-gray-400">Total Runs</span>
+              <span class="font-bold text-white">12 sessions</span>
+            </div>
+            <div class="flex justify-between border-b border-white/5 pb-1">
+              <span class="text-gray-400">Avg Pace</span>
+              <span class="font-bold text-white">4:45 /km</span>
+            </div>
+            <div class="flex justify-between border-b border-white/5 pb-1">
+              <span class="text-gray-400">Distance</span>
+              <span class="font-bold text-emerald-400">58.4 km</span>
+            </div>
+            <div class="flex justify-between border-b border-white/5 pb-1">
+              <span class="text-gray-400">Active Streak</span>
+              <span class="font-bold text-blue-400">12 days</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-between items-center z-10 border-t border-white/5 pt-6 w-full">
+      <div class="text-gray-400 text-lg font-semibold tracking-wide">@lifegym.io</div>
+      <div class="text-white text-lg font-bold tracking-wide flex items-center gap-2">
+        Swipe to see biometrics <span class="text-[#3b82f6] font-black">→</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

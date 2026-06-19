@@ -173,6 +173,20 @@ const TodayView = () => {
   const [statusLoading, setStatusLoading] = useState<boolean>(debugLoading || true);
   const [inbodyLoading, setInbodyLoading] = useState<boolean>(debugLoading || true);
 
+  const [monthlySummary, setMonthlySummary] = useState<{
+    totalRuns: number;
+    distanceKm: number;
+    avgPace: string;
+    activeStreak: number;
+    loading: boolean;
+  }>({
+    totalRuns: 0,
+    distanceKm: 0,
+    avgPace: '0:00',
+    activeStreak: 0,
+    loading: true
+  });
+
   useEffect(() => {
     let active = true;
     const fetchWorkoutStatus = async () => {
@@ -298,6 +312,154 @@ const TodayView = () => {
 
   useEffect(() => {
     localStorage.setItem('athlete_dashboard_selected_date', activeDateStr);
+  }, [activeDateStr]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchMonthlySummary = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const start = new Date(year, month, 1);
+        const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const end = new Date(year, month + 1, 0);
+        const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+        // 1. Fetch current month's runs
+        const { data: manualRuns } = await supabase
+          .from('workouts')
+          .select('id, notes, duration')
+          .eq('user_id', session.user.id)
+          .eq('day_type', 'RUN')
+          .eq('status', 'completed')
+          .gte('date', startStr)
+          .lte('date', endStr);
+
+        const { data: stravaRuns } = await supabase
+          .from('strava_activities')
+          .select('id, distance, moving_time, start_date')
+          .eq('athlete_id', session.user.id)
+          .gte('start_date', `${startStr}T00:00:00Z`)
+          .lte('start_date', `${endStr}T23:59:59Z`);
+
+        // 2. Fetch all activity dates for streak
+        const { data: workoutsData } = await supabase
+          .from('workouts')
+          .select('date')
+          .eq('user_id', session.user.id)
+          .eq('status', 'completed');
+        
+        const { data: stravaAll } = await supabase
+          .from('strava_activities')
+          .select('start_date')
+          .eq('athlete_id', session.user.id);
+          
+        const { data: dietAll } = await supabase
+          .from('diet_logs')
+          .select('date')
+          .eq('user_id', session.user.id);
+
+        const { data: scansAll } = await supabase
+          .from('inbody_scans')
+          .select('date')
+          .eq('user_id', session.user.id);
+
+        if (!active) return;
+
+        // Process Runs & Distance
+        const runMap = new Map<string, { dist: number; dur: number }>();
+        
+        // Strava runs
+        (stravaRuns || []).forEach(r => {
+          const dateStr = new Date(r.start_date).toISOString().split('T')[0];
+          const dist = (r.distance || 0) / 1000;
+          const dur = r.moving_time || 0;
+          runMap.set(`${dateStr}-${dist.toFixed(1)}`, { dist, dur });
+        });
+
+        // Manual runs
+        (manualRuns || []).forEach(w => {
+          let dist = 0;
+          try {
+            if (w.notes) {
+              const parsed = JSON.parse(w.notes);
+              dist = parsed.distance_km || 0;
+            }
+          } catch(e) {}
+          const dur = w.duration || 0;
+          const key = `manual-${w.id}`;
+          runMap.set(key, { dist, dur });
+        });
+
+        let totalRunsCount = runMap.size;
+        let totalDistance = 0;
+        let totalDuration = 0;
+
+        runMap.forEach(val => {
+          totalDistance += val.dist;
+          totalDuration += val.dur;
+        });
+
+        // Pace calculation
+        let avgPaceStr = '0:00';
+        if (totalDistance > 0 && totalDuration > 0) {
+          const totalPaceSeconds = totalDuration / totalDistance;
+          const paceMins = Math.floor(totalPaceSeconds / 60);
+          const paceSecs = Math.round(totalPaceSeconds % 60);
+          avgPaceStr = `${paceMins}:${paceSecs.toString().padStart(2, '0')}`;
+        }
+
+        // Streak calculation
+        const activeDates = new Set<string>();
+        (workoutsData || []).forEach(w => activeDates.add(w.date));
+        (stravaAll || []).forEach(r => {
+          const dateStr = new Date(r.start_date).toISOString().split('T')[0];
+          activeDates.add(dateStr);
+        });
+        (dietAll || []).forEach(d => activeDates.add(d.date));
+        (scansAll || []).forEach(s => activeDates.add(s.date));
+
+        let streak = 0;
+        if (activeDates.size > 0) {
+          const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = new Date(yesterday.getTime() - yesterday.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+          const hasToday = activeDates.has(todayStr);
+          const hasYesterday = activeDates.has(yesterdayStr);
+
+          if (hasToday || hasYesterday) {
+            let checkDate = hasToday ? new Date() : yesterday;
+            let checkDateStr = checkDate.toISOString().split('T')[0];
+
+            while (activeDates.has(checkDateStr)) {
+              streak++;
+              checkDate.setDate(checkDate.getDate() - 1);
+              checkDateStr = new Date(checkDate.getTime() - checkDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            }
+          }
+        }
+
+        setMonthlySummary({
+          totalRuns: totalRunsCount,
+          distanceKm: parseFloat(totalDistance.toFixed(1)),
+          avgPace: avgPaceStr,
+          activeStreak: streak,
+          loading: false
+        });
+
+      } catch (err) {
+        console.error("Error fetching monthly summary in TodayView:", err);
+      }
+    };
+
+    fetchMonthlySummary();
+    return () => { active = false; };
   }, [activeDateStr]);
 
   useEffect(() => {
@@ -677,6 +839,67 @@ const TodayView = () => {
 
       {/* Subtle Separation Divider */}
       <div className="w-full border-t border-white/10 my-1" />
+
+      {/* Monthly Summary Card */}
+      <ErrorBoundary title="Monthly Summary">
+        {monthlySummary.loading ? (
+          <div className="bg-surface rounded-2xl p-4 border border-gray-800 animate-pulse h-24 flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-800 rounded w-28"></div>
+              <div className="h-6 bg-gray-800 rounded w-48"></div>
+            </div>
+            <div className="h-8 w-8 bg-gray-800 rounded-full"></div>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 }}
+            onClick={() => navigate('/analytics')}
+            className="bg-surface rounded-2xl p-4 border border-gray-800 hover:border-blue-900/30 hover:bg-slate-900/20 transition-all cursor-pointer shadow-lg relative overflow-hidden group flex flex-col gap-3.5 select-none"
+          >
+            {/* Background Accent Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-center z-10">
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">Monthly Summary</span>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="14" 
+                height="14" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="text-gray-500 group-hover:text-primary transition-colors group-hover:translate-x-0.5 duration-250"
+              >
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 z-10 text-xs font-semibold text-gray-400 leading-none">
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-gray-550 uppercase font-bold tracking-wider">Total Runs</span>
+                <span className="text-sm font-black text-white">{monthlySummary.totalRuns} <span className="text-[11px] text-gray-500 font-normal">sessions</span></span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider">Avg Pace</span>
+                <span className="text-sm font-black text-white">{monthlySummary.avgPace} <span className="text-[11px] text-gray-500 font-normal">/km</span></span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider">Distance</span>
+                <span className="text-sm font-black text-success">{monthlySummary.distanceKm} <span className="text-[11px] text-gray-500 font-normal">km</span></span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider">Active Streak</span>
+                <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-500">{monthlySummary.activeStreak} <span className="text-[11px] text-gray-500 font-normal">days</span></span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </ErrorBoundary>
 
       {/* DETAILS Header & Bottom Cards */}
       <div className="flex flex-col gap-4 w-full">

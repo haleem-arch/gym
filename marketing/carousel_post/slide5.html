@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 5 - InBody Biometrics</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#05060f',
+            surface: '#0c1020',
+            primary: '#3b82f6',
+            success: '#22c55e',
+            danger: '#ef4444',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/css">
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060713;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+    .card {
+      width: 1080px;
+      height: 1080px;
+      background-color: #05060f;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 90px;
+    }
+    .glow-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 7, 19, 0) 70%);
+      filter: blur(60px);
+      pointer-events: none;
+    }
+    .glow-top { top: -200px; right: -200px; }
+    .glow-bottom { bottom: -250px; left: -200px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow-bg glow-top"></div>
+    <div class="glow-bg glow-bottom"></div>
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center z-10 w-full">
+      <div class="flex items-center gap-4">
+        <svg class="w-12 h-12" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#4b5563" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+        <div class="font-black text-3xl tracking-wider text-white uppercase">Life<span>Gym</span></div>
+      </div>
+      <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-4 py-1.5 rounded-full text-sm font-bold tracking-widest uppercase">05 / 05 • Biometrics</span>
+    </div>
+
+    <!-- Center content: 2-Column InBody Biometrics cards -->
+    <div class="z-10 my-auto w-[900px] mx-auto grid grid-cols-2 gap-6">
+      
+      <!-- Left Column: Biometrics Cards & BMR -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-400">Body Composition</p>
+            <h3 class="font-bold text-xl text-white">InBody Scans</h3>
+          </div>
+          <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">Biometrics</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Muscle Mass Card -->
+          <div class="bg-[#0c1020]/90 border border-white/5 rounded-2xl p-4 shadow-xl">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-bold">Skeletal Muscle</span>
+            <span class="text-2xl font-black text-white mt-1.5 block">38.2 kg</span>
+            <span class="text-[10px] text-success font-semibold mt-1.5 block flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              +1.2 kg this month
+            </span>
+          </div>
+          <!-- Body Fat Card -->
+          <div class="bg-[#0c1020]/90 border border-white/5 rounded-2xl p-4 shadow-xl">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-bold">Body Fat %</span>
+            <span class="text-2xl font-black text-white mt-1.5 block">14.2%</span>
+            <span class="text-[10px] text-danger font-semibold mt-1.5 block flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-danger"></span>
+              -3.5% this month
+            </span>
+          </div>
+        </div>
+
+        <!-- BMR & Visceral Fat Cards (Fills space) -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl space-y-3">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider">Secondary Metrics</h4>
+          <div class="flex justify-between items-center text-sm border-b border-white/5 pb-2.5">
+            <span class="text-gray-400">Basal Metabolic Rate</span>
+            <span class="font-black text-white">1,840 kcal/day</span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-400">Visceral Fat Level</span>
+            <span class="font-black text-emerald-400">Level 5 (Healthy)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Muscle Growth Curve & Skeletal Details -->
+      <div class="space-y-6">
+        <!-- Growth curve card (Taller) -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-6 shadow-xl h-[230px] flex flex-col justify-between">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider">Muscle Growth Curve</h4>
+          <!-- Simulated Bar Chart (Taller) -->
+          <div class="flex items-end justify-between h-28 pt-4 px-4">
+            <div class="w-8 bg-white/10 rounded-t-md h-[40%]"></div>
+            <div class="w-8 bg-white/10 rounded-t-md h-[55%]"></div>
+            <div class="w-8 bg-white/10 rounded-t-md h-[70%]"></div>
+            <div class="w-8 bg-primary rounded-t-md h-[85%] shadow-[0_0_15px_rgba(59,130,246,0.6)]"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-gray-500 pt-1 border-t border-white/5">
+            <span>Mar</span>
+            <span>Apr</span>
+            <span>May</span>
+            <span>Jun</span>
+          </div>
+        </div>
+
+        <!-- Body Water & Bone Mineral Card -->
+        <div class="bg-[#0c1020]/90 border border-white/5 rounded-3xl p-5 shadow-xl space-y-3">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider">Bone & Water Density</h4>
+          <div class="flex justify-between items-center text-sm border-b border-white/5 pb-2.5">
+            <span class="text-gray-400">Total Body Water</span>
+            <span class="font-bold text-blue-400">62.4% (Optimal)</span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-400">Bone Mineral Mass</span>
+            <span class="font-bold text-white">3.2 kg</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-between items-center z-10 border-t border-white/5 pt-6 w-full">
+      <div class="text-gray-400 text-lg font-semibold tracking-wide">@lifegym.io</div>
+      <div class="text-white text-lg font-bold tracking-wide flex items-center gap-2">
+        Link in Bio to join <span class="text-[#3b82f6] font-black">→</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

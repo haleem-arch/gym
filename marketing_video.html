@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Gym - Reel Video</title>
+  <!-- Outfit Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#05060f',
+            surface: '#0c1020',
+            primary: '#3b82f6',
+            success: '#22c55e',
+            danger: '#ef4444',
+          },
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- GSAP Animation Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <style type="text/css">
+    /* Global styles and ambient backgrounds */
+    body {
+      background-color: #05060f;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 960px;
+      overflow: hidden;
+    }
+
+    /* Video area styling (9:16 vertical, centered) */
+    .video-viewport {
+      width: 540px;
+      height: 960px;
+      background-color: #05060f;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      border-left: 1px solid rgba(255, 255, 255, 0.05);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Wave animation for water tracking mockup */
+    .wave-fill {
+      animation: waveMove 4s linear infinite;
+    }
+    @keyframes waveMove {
+      0% { transform: translateX(0) translateZ(0) scaleY(1); }
+      50% { transform: translateX(-25%) translateZ(0) scaleY(1.05); }
+      100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+    }
+
+    /* Trapeze/Flared cup shape for Juhayna Greek Yogurt */
+    .yogurt-cup-body {
+      clip-path: polygon(5% 0%, 95% 0%, 80% 100%, 20% 100%);
+    }
+
+    /* Premium button shine animation */
+    .btn-shine-container {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-shine-container::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 30%;
+      height: 200%;
+      background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: rotate(30deg);
+      animation: shineSweep 4s infinite ease-in-out;
+    }
+    @keyframes shineSweep {
+      0% { left: -60%; }
+      15% { left: 130%; }
+      100% { left: 130%; }
+    }
+    
+    /* Shine keyframe for foil lid */
+    @keyframes shine {
+      0% { transform: translateX(-150%) skewX(-15deg); }
+      15% { transform: translateX(150%) skewX(-15deg); }
+      100% { transform: translateX(150%) skewX(-15deg); }
+    }
+  </style>
+</head>
+<body class="font-outfit text-white">
+
+  <!-- Audio Elements for Sound Effects -->
+  <audio id="bg-music" src="https://assets.mixkit.co/active_storage/free_music/loop/mixkit-running-in-the-dark-128.mp3" loop></audio>
+  <audio id="sfx-swoosh" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav"></audio>
+  <audio id="sfx-check" src="https://assets.mixkit.co/active_storage/sfx/911/911-84.wav"></audio>
+  <audio id="sfx-splash" src="https://assets.mixkit.co/active_storage/sfx/2034/2034-84.wav"></audio>
+  <audio id="sfx-beep" src="https://assets.mixkit.co/active_storage/sfx/2190/2190-84.wav"></audio>
+
+  <!-- 9:16 Video Viewport -->
+  <div class="video-viewport flex flex-col justify-between p-10 relative">
+    
+    <!-- Video Grid Overlay -->
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-10"></div>
+    
+    <!-- Scene 1: Kinetic Stack Hook (0s - 2s) -->
+    <div id="scene-1" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20 overflow-hidden">
+
+
+      <!-- Stack Container -->
+      <div id="kinetic-stack" class="flex flex-col items-center justify-center space-y-4">
+        <h2 id="stack-1" class="text-6xl font-black tracking-tighter italic text-[#3b82f6] uppercase opacity-0">TRAIN.</h2>
+        <h2 id="stack-2" class="text-6xl font-black tracking-tighter italic text-[#22c55e] uppercase opacity-0">EAT.</h2>
+        <h2 id="stack-3" class="text-6xl font-black tracking-tighter italic text-[#a855f7] uppercase opacity-0">TRACK.</h2>
+        <h2 id="stack-4" class="text-6xl font-black tracking-tighter italic text-white uppercase drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] opacity-0">PERFORM.</h2>
+      </div>
+    </div>
+
+    <!-- Scene 2: Today Dashboard -->
+    <div id="scene-2" class="absolute inset-0 flex flex-col justify-between p-10 bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20">
+      <!-- Header -->
+      <div id="header-2" class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-400">Life Gym Athlete App</p>
+          <h3 class="font-bold text-xl">Today's Focus</h3>
+        </div>
+        <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1 rounded-full text-xs font-semibold">Today View</span>
+      </div>
+
+      <!-- Central Mockup Content -->
+      <div class="space-y-4 flex-1 flex flex-col justify-center">
+        <!-- Calories Card -->
+        <div id="calories-card" class="bg-[#0c1020]/80 border border-white/5 rounded-2xl p-4 flex justify-between items-center">
+          <div>
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-bold">Active Calories</span>
+            <span id="calories-value" class="text-2xl font-black text-white mt-1 block">0 kcal</span>
+          </div>
+          <span class="text-xs text-gray-500">Target: 2,500 kcal</span>
+        </div>
+
+        <!-- Macros Panel -->
+        <div id="macros-card" class="bg-[#0c1020]/80 border border-white/5 rounded-2xl p-4">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Nutrition Targets</h4>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <!-- Protein ring with inner values -->
+            <div class="relative flex flex-col items-center">
+              <svg class="w-16 h-16" viewBox="0 0 36 36">
+                <path class="text-white/5" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path id="macro-ring-1" class="text-primary" stroke-dasharray="0, 100" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <div id="protein-g-val" class="absolute top-[20px] left-0 right-0 text-[10px] font-black">0g</div>
+              <span class="text-[10px] block mt-1 text-gray-300">Protein</span>
+            </div>
+            <!-- Carbs ring with inner values -->
+            <div class="relative flex flex-col items-center">
+              <svg class="w-16 h-16" viewBox="0 0 36 36">
+                <path class="text-white/5" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path id="macro-ring-2" class="text-[#06b6d4]" stroke-dasharray="0, 100" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <div id="carbs-g-val" class="absolute top-[20px] left-0 right-0 text-[10px] font-black">0g</div>
+              <span class="text-[10px] block mt-1 text-gray-300">Carbs</span>
+            </div>
+            <!-- Fats ring with inner values -->
+            <div class="relative flex flex-col items-center">
+              <svg class="w-16 h-16" viewBox="0 0 36 36">
+                <path class="text-white/5" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path id="macro-ring-3" class="text-purple-500" stroke-dasharray="0, 100" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <div id="fats-g-val" class="absolute top-[20px] left-0 right-0 text-[10px] font-black">0g</div>
+              <span class="text-[10px] block mt-1 text-gray-300">Fats</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hydration Mockup -->
+        <div id="water-card" class="bg-[#0c1020]/80 border border-white/5 rounded-2xl p-4 relative overflow-hidden h-32 flex flex-col justify-between">
+          <div class="z-10">
+            <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider">Hydration tracker</h4>
+            <p id="water-intake-value" class="text-3xl font-black mt-1">0 ml</p>
+          </div>
+          <!-- Wave filling overlay -->
+          <div id="water-wave" class="absolute bottom-0 left-0 right-0 bg-blue-500/20" style="height: 0%;">
+            <svg class="absolute -top-3 left-0 w-[200%] h-4 wave-fill fill-blue-500/20" viewBox="0 0 120 28" repeatCount="indefinite">
+              <path d="M0 15 Q 30 0, 60 15 T 120 15 T 180 15 T 240 15 L 240 28 L 0 28 Z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <p id="footer-2" class="text-xs text-gray-400 text-center">Track your nutrition goals dynamically</p>
+    </div>
+
+    <!-- Scene 3: Barcode Scan Mockup (Updated Juhayna Cup) -->
+    <div id="scene-3" class="absolute inset-0 flex flex-col justify-between p-10 bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20">
+      <!-- Header -->
+      <div id="header-6" class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-400">Smart Integrations</p>
+          <h3 class="font-bold text-xl text-primary">Barcode Scanner</h3>
+        </div>
+        <span class="bg-primary/10 border border-primary/30 text-primary px-3 py-1 rounded-full text-xs font-semibold">Fast Log</span>
+      </div>
+
+      <!-- Scanner Viewfinder & Scan Animation -->
+      <div class="flex-1 flex flex-col justify-center space-y-4">
+        <div id="scanner-viewfinder" class="relative w-full aspect-square bg-black/45 border-2 border-dashed border-primary/40 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6">
+          
+          <!-- Viewfinder Corners -->
+          <div class="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-md"></div>
+          <div class="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-md"></div>
+          <div class="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-md"></div>
+          <div class="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-md"></div>
+
+          <!-- Flared Juhayna Greek Yogurt Cup and Barcode sticker -->
+          <div id="barcode-image" class="w-80 h-44 flex gap-4 items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl backdrop-blur-md">
+            
+            <!-- Real Proportion Flared Yogurt Cup -->
+            <div class="w-32 h-28 relative flex flex-col items-center justify-start scale-110">
+              <!-- Lid Pull Tab (little silver piece stick out on side) -->
+              <div class="absolute right-0 top-[6px] w-3 h-2 bg-gray-400 rounded-tr-md rounded-bl-sm rotate-12 z-20 border-r border-t border-gray-300"></div>
+              
+              <!-- Rounded Foil Lid (Wider flat oval top) -->
+              <div class="w-32 h-6 bg-gradient-to-r from-blue-900 via-blue-700 to-blue-900 rounded-full border-b border-blue-950 shadow-md z-10 flex items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-[shine_2.5s_infinite]"></div>
+                <span class="text-[6px] text-white tracking-wider font-extrabold uppercase drop-shadow-sm">JUHAYNA • GREEK</span>
+              </div>
+              
+              <!-- Flared Cup body -->
+              <div class="yogurt-cup-body w-[116px] h-20 bg-gradient-to-b from-white via-gray-50 to-gray-200 relative overflow-hidden flex flex-col items-center justify-between py-1.5 px-2 shadow-lg border-t border-gray-300">
+                <!-- Blue Wrap Label in the middle -->
+                <div class="absolute top-1 left-0 right-0 h-11 bg-[#0b3c95] border-y border-blue-800 flex flex-col items-center justify-center p-1">
+                  <!-- Green Juhayna Leaf logo -->
+                  <div class="flex items-center gap-0.5 bg-white px-1.5 py-0.5 rounded-full scale-[0.85] shadow-sm mb-0.5">
+                    <div class="w-1.5 h-1.5 bg-[#22c55e] rounded-full"></div>
+                    <span class="text-[5px] font-black text-blue-900 leading-none">Juhayna</span>
+                  </div>
+                  <!-- Greek Text -->
+                  <span class="text-[8px] text-white font-black uppercase tracking-wider leading-none">GREEK</span>
+                  <span class="text-[5px] text-blue-200 font-bold uppercase tracking-widest leading-none">Yogurt</span>
+                </div>
+                
+                <!-- Bottom label details -->
+                <div class="w-full flex justify-between items-center mt-12 z-10 px-1">
+                  <span class="bg-[#ef4444] text-white text-[4px] font-extrabold px-1 py-0.5 rounded-full leading-none">0% FAT</span>
+                  <span class="text-[5px] text-[#0b3c95] font-black">HIGH PROTEIN</span>
+                  <span class="text-[5px] text-gray-500 font-bold">150g</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Crisp, Real-looking Barcode label -->
+            <div class="bg-white p-3 rounded-lg border border-gray-200 flex flex-col items-center justify-between w-36 h-28 shadow-inner">
+              <div class="w-full flex justify-between h-16 items-stretch">
+                <!-- Exact standard EAN-13 barcode line spacing layout -->
+                <div class="w-1 bg-black"></div><div class="w-0.5 bg-white"></div>
+                <div class="w-0.5 bg-black"></div><div class="w-1 bg-white"></div>
+                <div class="w-2.5 bg-black"></div><div class="w-0.5 bg-white"></div>
+                <div class="w-1 bg-black"></div><div class="w-1.5 bg-white"></div>
+                <div class="w-0.5 bg-black"></div><div class="w-2 bg-white"></div>
+                <div class="w-1.5 bg-black"></div><div class="w-0.5 bg-white"></div>
+                <div class="w-0.5 bg-black"></div><div class="w-1 bg-white"></div>
+                <div class="w-2 bg-black"></div><div class="w-0.5 bg-white"></div>
+                <div class="w-1.5 bg-black"></div><div class="w-1 bg-white"></div>
+                <div class="w-0.5 bg-black"></div><div class="w-2 bg-white"></div>
+                <div class="w-2 bg-black"></div><div class="w-0.5 bg-white"></div>
+                <div class="w-0.5 bg-black"></div><div class="w-1 bg-white"></div>
+                <div class="w-1.5 bg-black"></div>
+              </div>
+              <span class="text-[8px] font-mono text-black font-semibold mt-1 tracking-widest">6223000456128</span>
+            </div>
+          </div>
+
+          <!-- Moving Laser Line -->
+          <div id="scanner-laser" class="absolute left-0 right-0 h-1 bg-[#ef4444] shadow-[0_0_10px_#ef4444]"></div>
+        </div>
+
+        <!-- Scanned Food Pop-up Card -->
+        <div id="scanned-food-card" class="bg-[#0c1020]/90 border border-white/5 rounded-2xl p-4 space-y-3 opacity-0">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-[10px] text-success uppercase tracking-wider block font-bold">Successfully Logged</span>
+              <h4 class="font-bold text-base">Juhayna Greek Yogurt (150g)</h4>
+            </div>
+            <span class="text-xs bg-success/15 text-success px-2.5 py-1 rounded font-bold">120 kcal</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs border-t border-white/5 pt-2">
+            <div>
+              <span class="text-gray-400 block text-[9px] uppercase">Protein</span>
+              <span class="font-bold text-primary">15g</span>
+            </div>
+            <div>
+              <span class="text-gray-400 block text-[9px] uppercase">Carbs</span>
+              <span class="font-bold text-[#06b6d4]">6g</span>
+            </div>
+            <div>
+              <span class="text-gray-400 block text-[9px] uppercase">Fats</span>
+              <span class="font-bold text-purple-500">2g</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p id="footer-6" class="text-xs text-gray-400 text-center">Scan & log meals in 1-click</p>
+    </div>
+
+    <!-- Scene 4: Workouts -->
+    <div id="scene-4" class="absolute inset-0 flex flex-col justify-between p-10 bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20">
+      <!-- Header -->
+      <div id="header-3" class="flex items-center justify-between w-full">
+        <h3 class="font-black text-2xl tracking-tight text-white">Workouts</h3>
+        <div class="flex bg-slate-800/80 border border-white/5 p-1 rounded-xl relative scale-95 origin-right">
+          <div id="btn-history-4" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-primary text-black select-none">
+            History
+          </div>
+          <div id="btn-insights-4" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-400 flex items-center space-x-1 select-none relative">
+            <svg class="w-3.5 h-3.5 mr-1 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>Insights</span>
+            <!-- Interactive tap cursor indicator -->
+            <div id="tap-cursor" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 border border-white/40 rounded-full scale-0 opacity-0 pointer-events-none z-30 flex items-center justify-center">
+              <div class="w-3 h-3 bg-white rounded-full shadow-[0_0_8px_white]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exercise Card Mockup -->
+      <div class="space-y-4 flex-1 flex flex-col justify-center">
+        <div id="workout-card" class="bg-[#0c1020]/85 border border-white/5 rounded-2xl p-5 space-y-4">
+          <div class="flex justify-between items-center border-b border-white/5 pb-3">
+            <div>
+              <h4 class="font-bold text-base">Incline Bench Press</h4>
+              <p class="text-xs text-gray-400">Target: Chest & Front Delts</p>
+            </div>
+            <span class="text-xs bg-white/5 px-2.5 py-1 rounded text-gray-300">Set 1 of 3</span>
+          </div>
+
+          <!-- Set Logs -->
+          <div class="space-y-2">
+            <div id="workout-row-1" class="flex justify-between items-center bg-[#05060f]/60 p-3 rounded-lg border border-white/5">
+              <span class="text-sm font-semibold">Set 1</span>
+              <span class="text-sm text-gray-400">80 kg x 8 reps</span>
+              <div id="workout-check-1" class="w-5 h-5 rounded-full border-2 border-white/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white opacity-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+            <div id="workout-row-2" class="flex justify-between items-center bg-[#05060f]/60 p-3 rounded-lg border border-white/5">
+              <span class="text-sm font-semibold">Set 2</span>
+              <span class="text-sm text-gray-400">80 kg x 8 reps</span>
+              <div id="workout-check-2" class="w-5 h-5 rounded-full border-2 border-white/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white opacity-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+            <div id="workout-row-3" class="flex justify-between items-center bg-[#05060f]/60 p-3 rounded-lg border border-white/5">
+              <span class="text-sm font-semibold">Set 3</span>
+              <span class="text-sm text-gray-400">80 kg x 6 reps</span>
+              <div id="workout-check-3" class="w-5 h-5 rounded-full border-2 border-white/20 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-white opacity-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p id="footer-3" class="text-xs text-gray-400 text-center">Seamless progression logging</p>
+    </div>
+
+    <!-- Scene 5: Performance Insights (New Scene) -->
+    <div id="scene-5" class="absolute inset-0 flex flex-col justify-between p-10 bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20">
+      <!-- Header -->
+      <div id="header-5" class="flex items-center justify-between w-full">
+        <h3 class="font-black text-2xl tracking-tight text-white">Workouts</h3>
+        <div class="flex bg-slate-800/80 border border-white/5 p-1 rounded-xl scale-95 origin-right">
+          <div id="btn-history-5" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-400 select-none">
+            History
+          </div>
+          <div id="btn-insights-5" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-primary text-black flex items-center space-x-1 select-none">
+            <svg class="w-3.5 h-3.5 mr-1 inline-block text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>Insights</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Cards Mockup (Mirroring App Charts) -->
+      <div class="space-y-4 flex-1 flex flex-col justify-center">
+        <!-- Volume Trends Chart Card -->
+        <div id="insights-volume-card" class="bg-white/[0.02] backdrop-blur-md rounded-2xl p-4 border border-white/[0.05] shadow-xl relative overflow-hidden">
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-white text-xs tracking-wider uppercase">Volume Trends</h4>
+              <p class="text-gray-500 text-[10px]">Total kg lifted per session</p>
+            </div>
+          </div>
+          
+          <div class="h-32 w-full relative">
+            <svg class="w-full h-full" viewBox="0 0 320 120" fill="none">
+              <defs>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <line x1="30" y1="15" x2="310" y2="15" stroke="#1e1e24" stroke-dasharray="3 3"/>
+              <line x1="30" y1="45" x2="310" y2="45" stroke="#1e1e24" stroke-dasharray="3 3"/>
+              <line x1="30" y1="75" x2="310" y2="75" stroke="#1e1e24" stroke-dasharray="3 3"/>
+              <line x1="30" y1="105" x2="310" y2="105" stroke="#1e1e24"/>
+              
+              <path d="M30,105 L30,85 Q70,70 100,45 T170,75 T240,30 T310,35 L310,105 Z" fill="url(#areaGrad)"/>
+              <path id="volume-chart-line" d="M30,85 Q70,70 100,45 T170,75 T240,30 T310,35" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+              <circle id="volume-chart-dot" cx="240" cy="30" r="3.5" fill="#3b82f6" stroke="#ffffff" stroke-width="1.5"/>
+              
+              <text x="5" y="19" fill="#71717a" font-size="8" font-weight="bold">8k</text>
+              <text x="5" y="49" fill="#71717a" font-size="8" font-weight="bold">5k</text>
+              <text x="5" y="79" fill="#71717a" font-size="8" font-weight="bold">2k</text>
+              <text x="30" y="117" fill="#71717a" font-size="8" font-weight="bold">Mar</text>
+              <text x="120" y="117" fill="#71717a" font-size="8" font-weight="bold">Apr</text>
+              <text x="210" y="117" fill="#71717a" font-size="8" font-weight="bold">May</text>
+              <text x="290" y="117" fill="#71717a" font-size="8" font-weight="bold">Jun</text>
+            </svg>
+            
+            <div id="volume-tooltip" class="absolute top-1 left-[215px] bg-[#0d0d12]/95 border border-zinc-800 p-2 rounded-xl shadow-xl backdrop-blur-sm pointer-events-none text-left">
+              <p class="text-[7px] text-zinc-400 font-bold uppercase tracking-wider">May 24</p>
+              <p class="text-[9px] text-[#3b82f6] font-black">Volume: 8,450 kg</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Run Performance Chart Card -->
+        <div id="insights-run-card" class="bg-white/[0.02] backdrop-blur-md rounded-2xl p-4 border border-white/[0.05] shadow-xl relative overflow-hidden">
+          <div class="flex items-center space-x-3 mb-4">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"/></svg>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-white text-xs tracking-wider uppercase">Run Performance</h4>
+              <p class="text-gray-500 text-[10px]">Distance vs Pace</p>
+            </div>
+          </div>
+          
+          <div class="h-32 w-full relative">
+            <svg class="w-full h-full" viewBox="0 0 320 120" fill="none">
+              <line x1="30" y1="15" x2="310" y2="15" stroke="#1e1e24" stroke-dasharray="3 3"/>
+              <line x1="30" y1="45" x2="310" y2="45" stroke="#1e1e24" stroke-dasharray="3 3"/>
+              <line x1="30" y1="75" x2="310" y2="75" stroke="#1e1e24" stroke-dasharray="3 3"/>
+              <line x1="30" y1="105" x2="310" y2="105" stroke="#1e1e24"/>
+              
+              <!-- Bars (Distance) -->
+              <rect class="run-bar" x="60" y="55" width="14" height="50" rx="2" fill="#10b981" opacity="0.8"/>
+              <rect class="run-bar" x="110" y="35" width="14" height="70" rx="2" fill="#10b981" opacity="0.8"/>
+              <rect class="run-bar" x="160" y="70" width="14" height="35" rx="2" fill="#10b981" opacity="0.8"/>
+              <rect class="run-bar" x="210" y="25" width="14" height="80" rx="2" fill="#10b981" opacity="0.8"/>
+              <rect class="run-bar" x="260" y="45" width="14" height="60" rx="2" fill="#10b981" opacity="0.8"/>
+              
+              <!-- Line (Pace) -->
+              <path id="run-chart-line" d="M67,65 L117,50 L167,60 L217,40 L267,45" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round"/>
+              <circle id="run-chart-dot" cx="217" cy="40" r="3" fill="#8b5cf6" stroke="#ffffff" stroke-width="1"/>
+              
+              <text x="5" y="19" fill="#71717a" font-size="8" font-weight="bold">15k</text>
+              <text x="5" y="59" fill="#71717a" font-size="8" font-weight="bold">8k</text>
+              <text x="30" y="117" fill="#71717a" font-size="8" font-weight="bold">Jun 1</text>
+              <text x="90" y="117" fill="#71717a" font-size="8" font-weight="bold">Jun 5</text>
+              <text x="145" y="117" fill="#71717a" font-size="8" font-weight="bold">Jun 10</text>
+              <text x="200" y="117" fill="#71717a" font-size="8" font-weight="bold">Jun 15</text>
+              <text x="255" y="117" fill="#71717a" font-size="8" font-weight="bold">Jun 20</text>
+            </svg>
+            
+            <div id="run-tooltip" class="absolute top-1 left-[142px] bg-[#0d0d12]/95 border border-zinc-800 p-2 rounded-xl shadow-xl backdrop-blur-sm pointer-events-none text-left">
+              <p class="text-[7px] text-zinc-400 font-bold uppercase tracking-wider">Jun 15</p>
+              <p class="text-[8px] text-[#10b981] font-black leading-none">Dist: 12.4 km</p>
+              <p class="text-[8px] text-[#8b5cf6] font-black leading-none mt-0.5">Pace: 4:32 /km</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p id="footer-5" class="text-xs text-gray-400 text-center">Data-driven performance feedback</p>
+    </div>
+
+    <!-- Scene 6: InBody Composition -->
+    <div id="scene-6" class="absolute inset-0 flex flex-col justify-between p-10 bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20">
+      <!-- Header -->
+      <div id="header-4" class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-400">Body Composition</p>
+          <h3 class="font-bold text-xl text-white">InBody Scans</h3>
+        </div>
+        <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1 rounded-full text-xs font-semibold">Biometrics</span>
+      </div>
+
+      <!-- Biometrics Data Cards -->
+      <div class="space-y-4 flex-1 flex flex-col justify-center">
+        <div class="grid grid-cols-2 gap-3">
+          <div id="biometric-card-1" class="bg-[#0c1020]/80 border border-white/5 rounded-2xl p-4">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block block block">Skeletal Muscle</span>
+            <span id="muscle-mass-value" class="text-xl font-black text-white mt-1 block">37.0 kg</span>
+            <span class="text-[10px] text-success font-semibold mt-1 block">+1.2 kg this month</span>
+          </div>
+          <div id="biometric-card-2" class="bg-[#0c1020]/80 border border-white/5 rounded-2xl p-4">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider block block block">Body Fat %</span>
+            <span id="body-fat-value" class="text-xl font-black text-white mt-1 block">17.7%</span>
+            <span class="text-[10px] text-[#ef4444] font-semibold mt-1 block">-3.5% this month</span>
+          </div>
+        </div>
+
+        <div id="growth-card" class="bg-[#0c1020]/80 border border-white/5 rounded-2xl p-4">
+          <h4 class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Muscle Growth Curve</h4>
+          <!-- Simulated Bar Chart -->
+          <div class="flex items-end justify-between h-20 pt-4 px-2">
+            <div id="bar-1" class="w-6 bg-white/10 rounded-t-sm h-[40%]"></div>
+            <div id="bar-2" class="w-6 bg-white/10 rounded-t-sm h-[55%]"></div>
+            <div id="bar-3" class="w-6 bg-white/10 rounded-t-sm h-[70%]"></div>
+            <div id="bar-4" class="w-6 bg-primary rounded-t-sm h-[85%] shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-gray-500 mt-2 px-1">
+            <span>Mar</span>
+            <span>Apr</span>
+            <span>May</span>
+            <span>Jun</span>
+          </div>
+        </div>
+      </div>
+
+      <p id="footer-4" class="text-xs text-gray-400 text-center">Track real, visual body changes</p>
+    </div>
+
+    <!-- Scene 7: Outro (Re-styled Button & Callout animations) -->
+    <div id="scene-7" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-[#05060f] to-[#0c1020] opacity-0 pointer-events-none z-20">
+      <!-- Logo SVG -->
+      <div id="logo-5" class="w-40 h-40 mb-10">
+        <svg viewBox="0 0 512 512" style="width: 100%; height: 100%;">
+          <g transform="translate(256 256) rotate(-45)">
+            <rect x="-120" y="-16" width="240" height="32" rx="8" fill="#1f2937" opacity="0.4" />
+            <rect x="-110" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="-150" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="-170" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+            <rect x="80" y="-60" width="30" height="120" rx="8" fill="#3b82f6" />
+            <rect x="120" y="-80" width="30" height="160" rx="10" fill="#3b82f6" />
+            <rect x="160" y="-40" width="10" height="80" rx="4" fill="#60a5fa" />
+          </g>
+        </svg>
+      </div>
+      
+      <h2 id="title-5" class="text-5xl font-black tracking-tight text-white mb-3 uppercase">
+        LIFE GYM
+      </h2>
+      <span id="pill-5" class="text-primary font-bold tracking-widest text-sm uppercase mb-10 block">Premium Fitness Portal</span>
+      
+      <p id="desc-5" class="text-gray-300 text-base max-w-xs mb-10 leading-relaxed">Built in Egypt. Engineered for Performance.</p>
+      
+      <!-- Premium Outro CTAs (Wrapped in a container to animate as a single block and avoid collision) -->
+      <div id="outro-cta-container" class="w-full max-w-xs space-y-4">
+        <button id="btn-5" class="w-full bg-[#3b82f6] text-white font-black text-sm tracking-[0.2em] uppercase py-5 rounded-2xl shadow-xl shadow-blue-500/20 transition-all btn-shine-container border border-blue-400/25 select-none">
+          JOIN THE WAITLIST
+        </button>
+        <div id="waitlist-tip" class="text-[11px] text-gray-500 tracking-[0.15em] font-extrabold uppercase flex items-center justify-center gap-2 py-1 select-none">
+          <span>Link in description to sign up</span>
+          <svg class="w-3.5 h-3.5 text-[#3b82f6] animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Synthesis sound generators & AudioContext routing
+    let audioCtx = null;
+    const routedElements = new Set();
+
+    // High quality Web Audio Synthesizer fallback for sound effects
+    function synthSfx(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'swoosh') {
+          // Swoosh sound frequency sweep
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.exponentialRampToValueAtTime(800, now + 0.3);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.exponentialRampToValueAtTime(0.3, now + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'check') {
+          // Playful bell ping checkmark sound
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.setValueAtTime(880, now + 0.08); // A5
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'splash') {
+          // Liquid splash frequency bubble
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(100, now + 0.4);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'beep') {
+          // Cash register/barcode scanner ping
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1200, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        }
+      } catch (e) {
+        console.warn("Web Audio Synthesizer blocked or failed:", e);
+      }
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      // Route audio nodes to AudioContext destination so the backend media recorder can capture them
+      const routeElement = (elId) => {
+        const el = document.getElementById(elId);
+        if (el && !routedElements.has(el)) {
+          try {
+            const source = audioCtx.createMediaElementSource(el);
+            source.connect(audioCtx.destination);
+            routedElements.add(el);
+          } catch (err) {
+            console.warn("Failed to route audio node:", elId, err);
+          }
+        }
+      };
+      routeElement("bg-music");
+      routeElement("sfx-swoosh");
+      routeElement("sfx-check");
+      routeElement("sfx-splash");
+      routeElement("sfx-beep");
+    }
+    window.initAudio = initAudio;
+
+    // Time objects to track counts dynamically
+    const caloriesObj = { val: 0 };
+    const proteinObj = { val: 0 };
+    const carbsObj = { val: 0 };
+    const fatsObj = { val: 0 };
+    const waterObj = { val: 0 };
+    const muscleObj = { val: 37.0 };
+    const fatObj = { val: 17.7 };
+
+    // Create unified GSAP timeline (speed optimized: 14 seconds total)
+    const tl = gsap.timeline({ 
+      repeat: -1,
+      onUpdate: () => {
+        // Safe DOM updates on every seek/tick to prevent desync during frame-by-frame exports
+        const caloriesVal = document.getElementById("calories-value");
+        const proteinVal = document.getElementById("protein-g-val");
+        const carbsVal = document.getElementById("carbs-g-val");
+        const fatsVal = document.getElementById("fats-g-val");
+        const waterVal = document.getElementById("water-intake-value");
+        const muscleVal = document.getElementById("muscle-mass-value");
+        const fatVal = document.getElementById("body-fat-value");
+        
+        if (caloriesVal) caloriesVal.textContent = Math.round(caloriesObj.val) + " kcal";
+        if (proteinVal) proteinVal.textContent = Math.round(proteinObj.val) + "g";
+        if (carbsVal) carbsVal.textContent = Math.round(carbsObj.val) + "g";
+        if (fatsVal) fatsVal.textContent = Math.round(fatsObj.val) + "g";
+        if (waterVal) waterVal.textContent = Math.round(waterObj.val) + " ml";
+        if (muscleVal) muscleVal.textContent = muscleObj.val.toFixed(1) + " kg";
+        if (fatVal) fatVal.textContent = fatObj.val.toFixed(1) + "%";
+      }
+    });
+    window.gsapTimeline = tl;
+
+    // Audio elements
+    const bgMusic = document.getElementById("bg-music");
+    const sfxSwoosh = document.getElementById("sfx-swoosh");
+    const sfxCheck = document.getElementById("sfx-check");
+    const sfxSplash = document.getElementById("sfx-splash");
+    const sfxBeep = document.getElementById("sfx-beep");
+
+    // Playback safety wrapper
+    function playSfx(audio, type) {
+      initAudio();
+      synthSfx(type);
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log("Audio play blocked by browser policy"));
+      }
+    }
+
+    // Expose sound starter for automated headless exports
+    function startWithSound() {
+      initAudio();
+      if (bgMusic) {
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(e => console.log("Music play blocked by browser policy"));
+      }
+      tl.play(0);
+    }
+    window.startWithSound = startWithSound;
+
+    // Play background music on start (for manual browser preview)
+    document.body.addEventListener("click", () => {
+      startWithSound();
+    }, { once: true });
+
+    // Initial resets at time 0
+    tl.set("#scene-1", { opacity: 1, pointerEvents: "auto" })
+      .set(["#scene-2", "#scene-3", "#scene-4", "#scene-5", "#scene-6", "#scene-7"], { opacity: 0, pointerEvents: "none" })
+      .set(["#macro-ring-1", "#macro-ring-2", "#macro-ring-3"], { attr: { "stroke-dasharray": "0, 100" } })
+      .set(caloriesObj, { val: 0 })
+      .set(proteinObj, { val: 0 })
+      .set(carbsObj, { val: 0 })
+      .set(fatsObj, { val: 0 })
+      .set(waterObj, { val: 0 })
+      .set("#water-wave", { height: "0%" })
+      .set(["#workout-check-1", "#workout-check-2", "#workout-check-3"], { backgroundColor: "transparent", borderColor: "rgba(255, 255, 255, 0.2)" })
+      .set(["#workout-check-1 svg", "#workout-check-2 svg", "#workout-check-3 svg"], { opacity: 0 })
+      .set(muscleObj, { val: 37.0 })
+      .set(fatObj, { val: 17.7 })
+      // Scene 1 Initial Layout Positions
+      .set("#kinetic-stack", { y: 90, scale: 1, opacity: 1 })
+      .set(["#stack-1", "#stack-2", "#stack-3", "#stack-4"], { opacity: 0, scale: 0.5, y: 30, letterSpacing: "0.3em" })
+      // Scene 2 Initial Layout Positions
+      .set("#header-2", { y: -150, opacity: 0 })
+      .set("#calories-card", { y: -200, opacity: 0 })
+      .set("#macros-card", { y: -250, opacity: 0 })
+      .set("#water-card", { y: -300, opacity: 0 })
+      .set("#footer-2", { y: -350, opacity: 0 })
+      // Scene 3 Barcode Initial Positions
+      .set("#header-6", { y: -30, opacity: 0 })
+      .set("#scanner-viewfinder", { scale: 0.9, opacity: 0 })
+      .set("#scanner-laser", { top: "0%" })
+      .set("#scanned-food-card", { y: 40, opacity: 0 })
+      .set("#footer-6", { y: 30, opacity: 0 })
+      // Scene 4 Initial Layout Positions
+      .set("#header-3", { y: -30, opacity: 0 })
+      .set("#workout-card", { scale: 0.9, opacity: 0 })
+      .set(["#workout-row-1", "#workout-row-2", "#workout-row-3"], { x: -30, opacity: 0 })
+      .set("#footer-3", { y: 30, opacity: 0 })
+      .set("#tap-cursor", { scale: 0, opacity: 0 })
+      // Scene 5 (Insights) Initial Layout Positions
+      .set("#header-5", { opacity: 0 })
+      .set("#insights-volume-card", { x: 500, opacity: 0 })
+      .set("#insights-run-card", { x: 500, opacity: 0 })
+      .set(["#volume-chart-line", "#volume-chart-dot", "#volume-tooltip"], { opacity: 0 })
+      .set(["#run-chart-line", "#run-chart-dot", "#run-tooltip", ".run-bar"], { opacity: 0 })
+      .set(".run-bar", { scaleY: 0, transformOrigin: "bottom" })
+      .set("#footer-5", { y: 30, opacity: 0 })
+      // Scene 6 Initial Layout Positions
+      .set("#header-4", { y: -30, opacity: 0 })
+      .set(["#biometric-card-1", "#biometric-card-2"], { scale: 0.8, opacity: 0 })
+      .set("#growth-card", { y: 40, opacity: 0 })
+      .set(["#bar-1", "#bar-2", "#bar-3", "#bar-4"], { scaleY: 0, transformOrigin: "bottom" })
+      .set("#footer-4", { y: 30, opacity: 0 })
+      // Scene 7 Initial Layout Positions
+      .set("#logo-5", { scale: 0.3, opacity: 0 })
+      .set("#title-5", { y: 30, opacity: 0 })
+      .set("#pill-5", { y: 20, opacity: 0 })
+      .set("#desc-5", { scale: 0.9, opacity: 0 })
+      .set("#outro-cta-container", { y: 40, opacity: 0 })
+      .set("#btn-5", { scale: 0.95 });
+
+    // --- SEQUENCING (14 seconds total: 2s per scene) ---
+
+    // Scene 1 Entrance Motion Graphics (0s - 2s)
+    // --- State 1: TRAIN ---
+    tl.to("#stack-1", { opacity: 1, scale: 1, y: 0, letterSpacing: "0em", duration: 0.35, ease: "back.out(1.5)" }, 0)
+      .to("#kinetic-stack", { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }, 0)
+      
+    // --- State 2: EAT ---
+      .to("#kinetic-stack", { y: 40, duration: 0.3, ease: "power4.out" }, 0.3)
+      .to("#stack-2", { opacity: 1, scale: 1, y: 0, letterSpacing: "0em", duration: 0.35, ease: "back.out(1.5)" }, 0.3)
+      .to("#kinetic-stack", { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }, 0.3)
+      .call(playSfx, [sfxCheck, 'check'], 0.3)
+      
+    // --- State 3: TRACK ---
+      .to("#kinetic-stack", { y: -10, duration: 0.3, ease: "power4.out" }, 0.6)
+      .to("#stack-3", { opacity: 1, scale: 1, y: 0, letterSpacing: "0em", duration: 0.35, ease: "back.out(1.5)" }, 0.6)
+      .to("#kinetic-stack", { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }, 0.6)
+      .call(playSfx, [sfxBeep, 'beep'], 0.6)
+      
+    // --- State 4: PERFORM ---
+      .to("#kinetic-stack", { y: -60, duration: 0.3, ease: "power4.out" }, 0.9)
+      .to("#stack-4", { opacity: 1, scale: 1, y: 0, letterSpacing: "0em", duration: 0.35, ease: "back.out(1.5)" }, 0.9)
+      .to("#kinetic-stack", { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }, 0.9)
+      .call(playSfx, [sfxSwoosh, 'swoosh'], 0.9)
+      
+      // Kinetic Slide-down of Stack
+      .to("#kinetic-stack", { y: 800, opacity: 0, duration: 0.45, ease: "power4.in" }, 1.25)
+      .call(playSfx, [sfxSwoosh, 'swoosh'], 1.25)
+      .set("#scene-2", { opacity: 1, pointerEvents: "auto" }, 1.3)
+      // Scene 2 Motion Graphics - Overlapped Cascade Slide-down starting at 1.3s
+      .to("#header-2", { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.1)" }, 1.3)
+      .to("#calories-card", { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.1)" }, 1.35)
+      .to("#macros-card", { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.1)" }, 1.4)
+      .to("#water-card", { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.1)" }, 1.45)
+      .to("#footer-2", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 1.55)
+      
+      // Clean clean-up of Scene 1 after it fully exits
+      .set("#scene-1", { opacity: 0, pointerEvents: "none" }, 1.75);
+
+    // Scene 2 Actions (Protein, Carbs, Fats, Calories, Water wave level rising)
+    tl.call(playSfx, [sfxSplash, 'splash'], 2.2);
+    tl.to("#macro-ring-1", { attr: { "stroke-dasharray": "82, 100" }, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to("#macro-ring-2", { attr: { "stroke-dasharray": "95, 100" }, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to("#macro-ring-3", { attr: { "stroke-dasharray": "65, 100" }, duration: 1.0, ease: "power1.out" }, 2.2);
+
+    tl.to(caloriesObj, { val: 1850, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to(proteinObj, { val: 120, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to(carbsObj, { val: 180, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to(fatsObj, { val: 45, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to(waterObj, { val: 3000, duration: 1.0, ease: "power1.out" }, 2.2)
+      .to("#water-wave", { height: "65%", duration: 1.0, ease: "power1.out" }, 2.2);
+
+    // Scene 2 Exit / Scene 3 Entrance (4s - 6s)
+    tl.call(playSfx, [sfxSwoosh, 'swoosh'], 3.7)
+      .to("#scene-2", { opacity: 0, duration: 0.3, pointerEvents: "none" }, 3.7)
+      .to("#scene-3", { opacity: 1, duration: 0.3, pointerEvents: "auto" }, 3.7)
+      // Scene 3 Entrance Layout
+      .to("#header-6", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 3.8)
+      .to("#scanner-viewfinder", { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.2)" }, 3.9)
+      .to("#footer-6", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 4.0);
+
+    // Scene 3 Laser scan and scan result popup
+    tl.to("#scanner-laser", { top: "100%", duration: 0.6, yoyo: true, repeat: 1, ease: "power1.inOut" }, 4.0);
+    tl.call(playSfx, [sfxBeep, 'beep'], 4.6);
+    tl.to("#scanned-food-card", { y: 0, opacity: 1, duration: 0.3, ease: "back.out(1.5)" }, 4.7);
+
+    // Scene 3 Exit / Scene 4 Entrance (6s - 8s)
+    tl.call(playSfx, [sfxSwoosh, 'swoosh'], 5.7)
+      .to("#scene-3", { opacity: 0, duration: 0.3, pointerEvents: "none" }, 5.7)
+      .to("#scene-4", { opacity: 1, duration: 0.3, pointerEvents: "auto" }, 5.7)
+      // Scene 4 Entrance Layout
+      .to("#header-3", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 5.8)
+      .to("#workout-card", { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.2)" }, 5.9)
+      .to(["#workout-row-1", "#workout-row-2", "#workout-row-3"], { x: 0, opacity: 1, duration: 0.3, stagger: 0.08, ease: "power2.out" }, 6.0)
+      .to("#footer-3", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 6.2);
+
+    // Scene 4 Checkmark sequential checks (Spaced tighter/faster)
+    tl.call(playSfx, [sfxCheck, 'check'], 6.3)
+      .to("#workout-check-1", { backgroundColor: "#22c55e", borderColor: "#22c55e", duration: 0.12 }, 6.3)
+      .to("#workout-check-1 svg", { opacity: 1, duration: 0.12 }, 6.3);
+
+    tl.call(playSfx, [sfxCheck, 'check'], 6.5)
+      .to("#workout-check-2", { backgroundColor: "#22c55e", borderColor: "#22c55e", duration: 0.12 }, 6.5)
+      .to("#workout-check-2 svg", { opacity: 1, duration: 0.12 }, 6.5);
+
+    tl.call(playSfx, [sfxCheck, 'check'], 6.7)
+      .to("#workout-check-3", { backgroundColor: "#22c55e", borderColor: "#22c55e", duration: 0.12 }, 6.7)
+      .to("#workout-check-3 svg", { opacity: 1, duration: 0.12 }, 6.7);
+
+    // Interactive Tap on Insights button (7.0s - 7.6s)
+    tl.to("#tap-cursor", { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.5)" }, 7.0)
+      .to("#tap-cursor", { scale: 0.7, opacity: 0.5, duration: 0.1 }, 7.3)
+      .to("#btn-insights-4", { scale: 0.9, duration: 0.1 }, 7.3)
+      .call(playSfx, [sfxBeep, 'beep'], 7.4)
+      .to("#btn-insights-4", { scale: 1, duration: 0.1 }, 7.4)
+      .to("#btn-history-4", { backgroundColor: "rgba(30, 41, 59, 0)", color: "#94a3b8", duration: 0.15 }, 7.4)
+      .to("#btn-insights-4", { backgroundColor: "#3b82f6", color: "#000000", duration: 0.15 }, 7.4)
+      .to("#tap-cursor", { scale: 0, opacity: 0, duration: 0.15 }, 7.45);
+
+    // Scene 4 Exit / Scene 5 Entrance (7.7s - 9.7s)
+    tl.call(playSfx, [sfxSwoosh, 'swoosh'], 7.7)
+      .to("#workout-card", { x: -500, opacity: 0, duration: 0.4, ease: "power2.in" }, 7.7)
+      .to("#scene-4", { opacity: 0, duration: 0.4, pointerEvents: "none" }, 7.7)
+      .to("#scene-5", { opacity: 1, duration: 0.4, pointerEvents: "auto" }, 7.7)
+      // Scene 5 (Insights) Entrance Layout
+      .set("#header-5", { opacity: 1 }, 7.7)
+      .to("#insights-volume-card", { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 7.8)
+      .to("#insights-run-card", { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 7.95)
+      .to("#footer-5", { y: 0, opacity: 1, duration: 0.3 }, 8.1);
+
+    // Scene 5 actions (Chart drawings loading)
+    tl.to(["#volume-chart-line", "#volume-chart-dot"], { opacity: 1, duration: 0.5 }, 8.3)
+      .to("#volume-tooltip", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.2)" }, 8.6)
+      .to(".run-bar", { scaleY: 1, opacity: 0.8, duration: 0.6, stagger: 0.08, ease: "back.out(1.4)" }, 8.4)
+      .to(["#run-chart-line", "#run-chart-dot"], { opacity: 1, duration: 0.5 }, 8.8)
+      .to("#run-tooltip", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.2)" }, 9.1);
+
+    // Scene 5 Exit / Scene 6 Entrance (10s - 12s)
+    tl.call(playSfx, [sfxSwoosh, 'swoosh'], 9.7)
+      .to("#scene-5", { opacity: 0, duration: 0.3, pointerEvents: "none" }, 9.7)
+      .to("#scene-6", { opacity: 1, duration: 0.3, pointerEvents: "auto" }, 9.7)
+      // Scene 6 Entrance Layout
+      .to("#header-4", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 9.8)
+      .to(["#biometric-card-1", "#biometric-card-2"], { scale: 1, opacity: 1, duration: 0.3, stagger: 0.08, ease: "back.out(1.2)" }, 9.9)
+      .to("#growth-card", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 10.1)
+      .to("#footer-4", { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" }, 10.2);
+
+    // Scene 6 InBody values and bar chart growth progress
+    tl.to(muscleObj, {
+      val: 38.2,
+      duration: 1.0,
+      ease: "power1.out"
+    }, 10.3)
+    .to(fatObj, {
+      val: 14.2,
+      duration: 1.0,
+      ease: "power1.out"
+    }, 10.3)
+    .to(["#bar-1", "#bar-2", "#bar-3", "#bar-4"], { scaleY: 1, duration: 0.8, stagger: 0.1, ease: "back.out(1.4)" }, 10.3);
+
+    // Scene 6 Exit / Scene 7 Entrance (12s - 14s)
+    tl.call(playSfx, [sfxSwoosh, 'swoosh'], 11.7)
+      .to("#scene-6", { opacity: 0, duration: 0.3, pointerEvents: "none" }, 11.7)
+      .to("#scene-7", { opacity: 1, duration: 0.3, pointerEvents: "auto" }, 11.7)
+      // Scene 7 Outro Layout (Refined smooth spring and pop entry)
+      .to("#logo-5", { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }, 11.8)
+      .to("#title-5", { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 11.9)
+      .to("#pill-5", { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 12.0)
+      .to("#desc-5", { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out" }, 12.1)
+      .to("#outro-cta-container", { y: 0, opacity: 1, duration: 0.8, ease: "power4.out" }, 12.2)
+      .to("#btn-5", { scale: 1, duration: 0.8, ease: "power4.out" }, 12.2);
+
+    // Scene 7 Outro Hold
+    tl.to({}, { duration: 1.5 }, 12.5);
+  </script>
+</body>
+</html>
