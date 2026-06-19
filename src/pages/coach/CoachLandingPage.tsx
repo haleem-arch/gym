@@ -369,9 +369,9 @@ export default function CoachLandingPage() {
 
       setShowAuthModal(false);
       if (profile && (profile.role === 'coach' || authData.user.id === OWNER_ID)) {
-        navigate('/coach-portal');
+        window.location.href = '/coach-portal';
       } else {
-        navigate('/');
+        window.location.href = '/';
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to sign in.');
@@ -533,7 +533,7 @@ export default function CoachLandingPage() {
       setShowCreationLoader(false);
 
       // Redirect automatically
-      navigate(window.innerWidth < 1024 ? '/' : '/coach-portal');
+      window.location.href = window.innerWidth < 1024 ? '/' : '/coach-portal';
     } catch (err: any) {
       setShowCreationLoader(false);
       localStorage.removeItem('signup_in_progress');
@@ -648,7 +648,7 @@ export default function CoachLandingPage() {
       await delay(600);
       setShowCreationLoader(false);
       setShowAuthModal(false);
-      navigate('/');
+      window.location.href = '/';
     } catch (err: any) {
       setShowCreationLoader(false);
       localStorage.removeItem('signup_in_progress');
