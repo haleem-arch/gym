@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Dumbbell, Activity, Calendar, Flame, Scale, Sparkles, TrendingUp, Trophy, ArrowRight, Zap, Target, Apple } from 'lucide-react';
+import { ChevronLeft, Activity, Flame, Scale, Sparkles, Trophy, Apple } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { DumbbellLoader } from '../components/DumbbellLoader';
@@ -47,7 +47,6 @@ const AnalyticsView = () => {
   const [userName, setUserName] = useState('');
   
   // Data States
-  const [totalWorkoutsCount, setTotalWorkoutsCount] = useState(0);
   const [workoutsHistory, setWorkoutsHistory] = useState<any[]>([]);
   const [runningLogs, setRunningLogs] = useState<RunLog[]>([]);
   const [prMap, setPrMap] = useState<PRData[]>([]);
@@ -275,7 +274,6 @@ const AnalyticsView = () => {
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setWorkoutsHistory(sortedWorkouts);
-        setTotalWorkoutsCount(sortedWorkouts.length);
         setTotalLiftingTonnage(runningVolumeTotal);
 
         const sortedPRList = Array.from(prsMap.values()).sort((a, b) => b.best1RM - a.best1RM);
@@ -497,7 +495,7 @@ const AnalyticsView = () => {
         </button>
         <div className="text-center font-bold text-white tracking-tight flex items-center gap-1.5 uppercase text-xs">
           <Sparkles size={16} className="text-primary animate-pulse" />
-          <span>Athlete Insights</span>
+          <span>{userName ? `${userName}'s Insights` : 'Athlete Insights'}</span>
         </div>
         <div className="w-8"></div>
       </div>
