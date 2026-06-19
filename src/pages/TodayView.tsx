@@ -624,7 +624,10 @@ const TodayView = () => {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            Dashboard
+            <span className="text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 leading-none">Beta</span>
+          </h1>
           <p className="text-sm text-gray-400 mt-1">{isHaleem ? "Haleem's HQ" : `${userDisplayName || 'Athlete'}'s HQ`}</p>
         </div>
         <div className="flex items-center gap-2">
