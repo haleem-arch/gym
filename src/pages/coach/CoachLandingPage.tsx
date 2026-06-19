@@ -341,7 +341,7 @@ export default function CoachLandingPage() {
     setErrorMessage(null);
 
     const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
