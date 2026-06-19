@@ -203,6 +203,16 @@ export const useDiet = () => {
       if (dietError) throw dietError;
 
       if (dietLog) {
+        // Auto-complete past dates (prior to today's local date) if they are not already marked completed
+        const todayStr = getLocalDateString(new Date());
+        if (dietLog.date < todayStr && !dietLog.daily_totals.completed) {
+          dietLog.daily_totals.completed = true;
+          supabase
+            .from('diet_logs')
+            .update({ daily_totals: dietLog.daily_totals })
+            .eq('id', dietLog.id)
+            .then();
+        }
         setLog(dietLog);
         
         // 2. Fetch meals for this log

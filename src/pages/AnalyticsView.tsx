@@ -1,9 +1,32 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Activity, Flame, Scale, Sparkles, Trophy, Apple } from 'lucide-react';
+import { 
+  ChevronLeft, Activity, Flame, Scale, Sparkles, Trophy, Apple, 
+  Dumbbell, ChevronDown
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { DumbbellLoader } from '../components/DumbbellLoader';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
+} from 'recharts';
 
 interface PRData {
   exerciseName: string;
@@ -61,6 +84,8 @@ const AnalyticsView = () => {
   // InBody states
   const [inbodyDeltas, setInbodyDeltas] = useState<InBodyDelta | null>(null);
   const [hasInbodyData, setHasInbodyData] = useState(false);
+  const [inbodyHistory, setInbodyHistory] = useState<any[]>([]);
+  const [dietHistory, setDietHistory] = useState<any[]>([]);
 
   // Expandable list states
   const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null);
@@ -76,6 +101,31 @@ const AnalyticsView = () => {
         }
         const userId = session.user.id;
 
+        const getTableMeta = async (table: string, userCol: string) => {
+          let query = supabase
+            .from(table)
+            .select('id, updated_at')
+            .eq(userCol, userId);
+          
+          if (table === 'workouts') {
+            query = query.eq('status', 'completed');
+          } else if (table === 'inbody_scans') {
+            query = query.is('deleted_at', null);
+          }
+          
+          const { data } = await query;
+          if (!data) return { count: 0, maxUpdated: '' };
+          
+          const count = data.length;
+          let maxUpdated = '';
+          data.forEach((row: any) => {
+            if (row.updated_at && (!maxUpdated || row.updated_at > maxUpdated)) {
+              maxUpdated = row.updated_at;
+            }
+          });
+          return { count, maxUpdated };
+        };
+
         // 1. Fetch Profile
         const { data: profile } = await supabase
           .from('profiles')
@@ -84,6 +134,43 @@ const AnalyticsView = () => {
           .maybeSingle();
         setUserName(profile?.display_name || 'Athlete');
         const userTargets = profile?.targets || { kcal: 2500, protein: 155 };
+
+        // Fetch metadata of other tables
+        const workoutsMeta = await getTableMeta('workouts', 'user_id');
+        const stravaMeta = await getTableMeta('strava_activities', 'athlete_id');
+        const inbodyMeta = await getTableMeta('inbody_scans', 'user_id');
+        const dietMeta = await getTableMeta('diet_logs', 'user_id');
+
+        const metaKey = JSON.stringify({
+          userId,
+          targets: userTargets,
+          workouts: workoutsMeta,
+          strava: stravaMeta,
+          inbody: inbodyMeta,
+          diet: dietMeta
+        });
+
+        const cachedData = localStorage.getItem(`athlete_analytics_cache_${userId}`);
+        const cachedMeta = localStorage.getItem(`athlete_analytics_meta_${userId}`);
+
+        if (cachedData && cachedMeta && cachedMeta === metaKey) {
+          const parsed = JSON.parse(cachedData);
+          setUserName(parsed.userName || 'Athlete');
+          setWorkoutsHistory(parsed.workoutsHistory);
+          setRunningLogs(parsed.runningLogs);
+          setPrMap(parsed.prMap);
+          setTotalLiftingTonnage(parsed.totalLiftingTonnage);
+          setActiveStreakCount(parsed.activeStreakCount);
+          setDietConsistencyScore(parsed.dietConsistencyScore);
+          setProteinConsistencyScore(parsed.proteinConsistencyScore);
+          setDietLogsCount(parsed.dietLogsCount);
+          setInbodyDeltas(parsed.inbodyDeltas);
+          setHasInbodyData(parsed.hasInbodyData);
+          setInbodyHistory(parsed.inbodyHistory || []);
+          setDietHistory(parsed.dietHistory || []);
+          setLoading(false);
+          return;
+        }
 
         // 2. Fetch completed lifting workouts + exercises (single join)
         const { data: workoutExercisesData } = await supabase
@@ -282,6 +369,7 @@ const AnalyticsView = () => {
         // ────────────────────────────────────────────────────────
         // PROCESSING INBODY DELTAS
         // ────────────────────────────────────────────────────────
+        let deltaObj: InBodyDelta | null = null;
         if (inbodyScansData && inbodyScansData.length > 0) {
           setHasInbodyData(true);
           const baseline = inbodyScansData[0];
@@ -296,7 +384,7 @@ const AnalyticsView = () => {
             return 0;
           };
 
-          const deltaObj: InBodyDelta = {
+          deltaObj = {
             weight: {
               current: parseVal(current.weight),
               baseline: parseVal(baseline.weight),
@@ -356,12 +444,14 @@ const AnalyticsView = () => {
         // ────────────────────────────────────────────────────────
         // PROCESSING DIET & MACRO CONSISTENCY
         // ────────────────────────────────────────────────────────
+        let kcalCompliant = 0;
+        let proteinCompliant = 0;
+        let totalDays = 1;
+
         setDietLogsCount(dietLogsData?.length || 0);
         if (dietLogsData && dietLogsData.length > 0) {
           const targetKcal = userTargets.kcal || 2500;
           const targetProtein = userTargets.protein || 155;
-          let kcalCompliant = 0;
-          let proteinCompliant = 0;
 
           dietLogsData.forEach(log => {
             const totals = log.daily_totals || { kcal: 0, protein: 0 };
@@ -378,7 +468,7 @@ const AnalyticsView = () => {
             }
           });
 
-          const totalDays = dietLogsData.filter(log => log.daily_totals?.kcal > 0).length || 1;
+          totalDays = dietLogsData.filter(log => log.daily_totals?.kcal > 0).length || 1;
           setDietConsistencyScore(Math.round((kcalCompliant / totalDays) * 100));
           setProteinConsistencyScore(Math.round((proteinCompliant / totalDays) * 100));
         }
@@ -418,6 +508,35 @@ const AnalyticsView = () => {
         }
         setActiveStreakCount(currentStreak);
 
+        const dietConsistencyScoreVal = dietLogsData && dietLogsData.length > 0
+          ? Math.round((kcalCompliant / totalDays) * 100)
+          : 0;
+        const proteinConsistencyScoreVal = dietLogsData && dietLogsData.length > 0
+          ? Math.round((proteinCompliant / totalDays) * 100)
+          : 0;
+        const hasInbodyDataVal = !!(inbodyScansData && inbodyScansData.length > 0);
+
+        setInbodyHistory(inbodyScansData || []);
+        setDietHistory(dietLogsData || []);
+
+        const dataToCache = {
+          userName: profile?.display_name || 'Athlete',
+          workoutsHistory: sortedWorkouts,
+          runningLogs: allRuns,
+          prMap: sortedPRList,
+          totalLiftingTonnage: runningVolumeTotal,
+          activeStreakCount: currentStreak,
+          dietConsistencyScore: dietConsistencyScoreVal,
+          proteinConsistencyScore: proteinConsistencyScoreVal,
+          dietLogsCount: dietLogsData?.length || 0,
+          inbodyDeltas: deltaObj,
+          hasInbodyData: hasInbodyDataVal,
+          inbodyHistory: inbodyScansData || [],
+          dietHistory: dietLogsData || []
+        };
+        localStorage.setItem(`athlete_analytics_cache_${userId}`, JSON.stringify(dataToCache));
+        localStorage.setItem(`athlete_analytics_meta_${userId}`, metaKey);
+
       } catch (err) {
         console.error("Error generating analytics:", err);
       } finally {
@@ -448,7 +567,7 @@ const AnalyticsView = () => {
 
   // Suez Canal = 193.3 km, Cairo to Alex = 220 km, Pyramid perimeter = 0.92 km
   const suezCanalsRun = totalVolumeKm / 193.3;
-  const cairoAlexPct = Math.min((totalVolumeKm / 220) * 100, 100);
+const cairoAlexPct = Math.min((totalVolumeKm / 220) * 100, 100);
 
   // InBody Frying Oil: 1 Liter Oil = 0.9 kg.
   const fatOilBottles = inbodyDeltas ? Math.abs(inbodyDeltas.bfm.deltaBase) / 0.9 : 0;
@@ -456,22 +575,22 @@ const AnalyticsView = () => {
   // Strength Tier calculation (Top 3 lift composite)
   const top3Composite = prMap.slice(0, 3).reduce((sum, pr) => sum + pr.best1RM, 0);
   let strengthTier = 'Bronze Athlete';
-  let tierColor = 'text-gray-400 border-gray-400/30 bg-gray-500/10';
+  let tierColor = 'text-slate-400 border-slate-800 bg-slate-900/10';
   if (top3Composite >= 600) {
-    strengthTier = 'Olympian Titan ⚡';
-    tierColor = 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10 shadow-lg shadow-yellow-500/10';
+    strengthTier = 'Olympian Titan';
+    tierColor = 'text-blue-400 border-blue-900/30 bg-blue-950/10 shadow-lg shadow-blue-500/5';
   } else if (top3Composite >= 450) {
-    strengthTier = 'Diamond Athlete 💎';
-    tierColor = 'text-cyan-400 border-cyan-400/30 bg-cyan-500/10';
+    strengthTier = 'Diamond Athlete';
+    tierColor = 'text-cyan-400 border-cyan-900/30 bg-cyan-950/10';
   } else if (top3Composite >= 300) {
-    strengthTier = 'Platinum Athlete 🏆';
-    tierColor = 'text-indigo-400 border-indigo-400/30 bg-indigo-500/10';
+    strengthTier = 'Platinum Athlete';
+    tierColor = 'text-slate-300 border-slate-700 bg-slate-800/15';
   } else if (top3Composite >= 200) {
-    strengthTier = 'Gold Athlete 🥇';
-    tierColor = 'text-amber-400 border-amber-400/30 bg-amber-500/10';
+    strengthTier = 'Gold Athlete';
+    tierColor = 'text-yellow-500/85 border-yellow-900/20 bg-yellow-950/5';
   } else if (top3Composite >= 100) {
-    strengthTier = 'Silver Athlete 🥈';
-    tierColor = 'text-slate-300 border-slate-300/30 bg-slate-500/10';
+    strengthTier = 'Silver Athlete';
+    tierColor = 'text-slate-400 border-slate-850 bg-slate-900/10';
   }
 
   // Format pace helper (sec to pace)
@@ -486,42 +605,146 @@ const AnalyticsView = () => {
     return parts.join(' ') || '0m';
   };
 
+  // ────────────────────────────────────────────────────────
+  // CHART DATA PREPARATION
+  // ────────────────────────────────────────────────────────
+  const inbodyChartData = inbodyHistory.map(scan => ({
+    date: new Date(scan.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    Weight: parseFloat(scan.weight) || 0,
+    Muscle: parseFloat(scan.smm) || 0,
+    Fat: parseFloat(scan.bfm) || 0
+  }));
+
+  const dietTrendData = dietHistory.slice(0, 7).reverse().map(log => ({
+    date: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    Calories: log.daily_totals?.kcal || 0
+  }));
+
+  const liftsTrendData = workoutsHistory.slice(0, 10).reverse().map(w => {
+    let volume = 0;
+    w.exercises.forEach((ex: any) => {
+      ex.sets.forEach((s: any) => {
+        volume += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+      });
+    });
+    return {
+      date: new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      Volume: volume
+    };
+  });
+
+  const runsTrendData = runningLogs.slice(0, 10).reverse().map(r => ({
+    date: new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    Distance: r.distance_km
+  }));
+
+  // Radar data calculations
+  const powerScore = Math.min(Math.round((top3Composite / 550) * 100), 100);
+  const staminaScore = Math.min(Math.round((totalVolumeKm / 100) * 100), 100);
+  const diligenceScore = Math.min(Math.round(((workoutsHistory.length + runningLogs.length) / 25) * 100), 100);
+  const radarData = [
+    { subject: 'Power (Lifts)', value: powerScore, fullMark: 100 },
+    { subject: 'Stamina (Runs)', value: staminaScore, fullMark: 100 },
+    { subject: 'Diet (Calories)', value: dietConsistencyScore, fullMark: 100 },
+    { subject: 'Fuel (Protein)', value: proteinConsistencyScore, fullMark: 100 },
+    { subject: 'Diligence (Log)', value: diligenceScore, fullMark: 100 }
+  ];
+
+  // Nutrition Pie Chart Calculations
+  let avgProtein = 0;
+  let avgCarbs = 0;
+  let avgFat = 0;
+  let hasNutritionData = false;
+  if (dietHistory && dietHistory.length > 0) {
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    let loggedDays = 0;
+    dietHistory.forEach(log => {
+      const totals = log.daily_totals;
+      if (totals && (totals.protein > 0 || totals.carbs > 0 || totals.fat > 0)) {
+        totalProtein += totals.protein || 0;
+        totalCarbs += totals.carbs || 0;
+        totalFat += totals.fat || 0;
+        loggedDays++;
+      }
+    });
+    if (loggedDays > 0) {
+      avgProtein = Math.round(totalProtein / loggedDays);
+      avgCarbs = Math.round(totalCarbs / loggedDays);
+      avgFat = Math.round(totalFat / loggedDays);
+      hasNutritionData = true;
+    }
+  }
+
+  const macroCalorieData = [
+    { name: 'Protein', value: Math.round(avgProtein * 4), grams: avgProtein, color: '#3b82f6' },
+    { name: 'Carbs', value: Math.round(avgCarbs * 4), grams: avgCarbs, color: '#94a3b8' },
+    { name: 'Fat', value: Math.round(avgFat * 9), grams: avgFat, color: '#06b6d4' }
+  ];
+  const totalMacroKcal = macroCalorieData.reduce((sum, item) => sum + item.value, 0);
+
+  // Workout Splits Pie Chart Calculations
+  const splitFrequencies: Record<string, number> = {};
+  workoutsHistory.forEach(w => {
+    const type = w.day_type || 'GYM';
+    splitFrequencies[type] = (splitFrequencies[type] || 0) + 1;
+  });
+  const splitChartData = Object.entries(splitFrequencies).map(([name, value]) => ({
+    name,
+    value
+  })).sort((a, b) => b.value - a.value);
+  const totalWorkoutSessions = splitChartData.reduce((sum, item) => sum + item.value, 0);
+
+  const splitColors: Record<string, string> = {
+    PUSH: '#3b82f6',
+    PULL: '#06b6d4',
+    LEGS: '#64748b',
+    RUN: '#f59e0b',
+    REST: '#1e293b'
+  };
+  const getSplitColor = (name: string, index: number) => {
+    if (splitColors[name.toUpperCase()]) return splitColors[name.toUpperCase()];
+    const colors = ['#3b82f6', '#06b6d4', '#64748b', '#94a3b8', '#475569'];
+    return colors[index % colors.length];
+  };
+
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background pb-28 text-gray-200">
+    <div className="flex flex-col min-h-[100dvh] bg-[#030712] pb-28 text-slate-200 font-sans selection:bg-blue-500/30">
       {/* Premium Header */}
-      <div className="bg-[#07080e]/95 backdrop-blur-md px-4 pb-4 border-b border-gray-800 sticky top-0 z-30 flex items-center justify-between shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
-        <button onClick={() => navigate('/')} className="p-2 bg-gray-900/60 border border-gray-850 hover:border-gray-700 rounded-xl transition-all active:scale-95 shrink-0 flex items-center justify-center cursor-pointer">
-          <ChevronLeft size={16} className="text-gray-400" />
+      <div className="bg-[#07080e]/95 backdrop-blur-md px-4 pb-4 border-b border-slate-900 sticky top-0 z-30 flex items-center justify-between shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
+        <button onClick={() => navigate('/')} className="p-2.5 bg-slate-950/60 border border-slate-900 hover:border-slate-800 rounded-2xl transition-all active:scale-95 shrink-0 flex items-center justify-center cursor-pointer">
+          <ChevronLeft size={16} className="text-slate-400" />
         </button>
-        <div className="text-center font-bold text-white tracking-tight flex items-center gap-1.5 uppercase text-xs">
-          <Sparkles size={16} className="text-primary animate-pulse" />
+        <div className="text-center font-black text-white tracking-widest flex items-center gap-2 uppercase text-xs">
+          <Sparkles size={14} className="text-blue-500 animate-pulse" />
           <span>{userName ? `${userName}'s Insights` : 'Athlete Insights'}</span>
         </div>
-        <div className="w-8"></div>
+        <div className="w-10"></div>
       </div>
 
       {/* Main Container */}
       <div className="px-4 pt-6 flex flex-col gap-6 w-full sm:max-w-[390px] mx-auto overflow-x-hidden">
         
         {/* Tab Navigation */}
-        <div className="flex bg-gray-950 p-1 rounded-2xl border border-gray-850 shadow-inner w-full shrink-0">
+        <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-900 shadow-inner w-full shrink-0">
           <button 
             onClick={() => setActiveTab('insights')}
-            className={`flex-1 py-3 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all ${activeTab === 'insights' ? 'bg-[#0f172a] text-primary border border-blue-900/20 shadow-md' : 'text-gray-450 hover:text-white'}`}
+            className={`flex-1 py-3.5 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'insights' ? 'bg-[#0f172a] text-blue-400 border border-blue-900/20 shadow-md' : 'text-slate-500 hover:text-white'}`}
           >
             Insights
           </button>
           <button 
             onClick={() => setActiveTab('workouts')}
-            className={`flex-1 py-3 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all ${activeTab === 'workouts' ? 'bg-[#0f172a] text-primary border border-blue-900/20 shadow-md' : 'text-gray-450 hover:text-white'}`}
+            className={`flex-1 py-3.5 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'workouts' ? 'bg-[#0f172a] text-blue-400 border border-blue-900/20 shadow-md' : 'text-slate-500 hover:text-white'}`}
           >
-            Lifts history
+            Lifts
           </button>
           <button 
             onClick={() => setActiveTab('runs')}
-            className={`flex-1 py-3 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all ${activeTab === 'runs' ? 'bg-[#0f172a] text-primary border border-blue-900/20 shadow-md' : 'text-gray-450 hover:text-white'}`}
+            className={`flex-1 py-3.5 text-center text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'runs' ? 'bg-[#0f172a] text-blue-400 border border-blue-900/20 shadow-md' : 'text-slate-500 hover:text-white'}`}
           >
-            Runs history
+            Runs
           </button>
         </div>
 
@@ -537,33 +760,60 @@ const AnalyticsView = () => {
               className="flex flex-col gap-6 w-full"
             >
               {/* Active Streak Card */}
-              <div className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-xl relative overflow-hidden flex items-center justify-between">
-                <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none text-primary">
+              <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl relative overflow-hidden flex items-center justify-between">
+                <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none text-blue-500">
                   <Flame size={120} />
                 </div>
                 <div className="flex flex-col gap-1 z-10">
-                  <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Active Habit Streak</span>
+                  <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Active Streak</span>
                   <div className="flex items-baseline gap-1 text-white font-black">
-                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-500">
+                    <span className="text-3xl font-black text-blue-400">
                       {activeStreakCount}
                     </span>
-                    <span className="text-sm font-semibold text-gray-400">days</span>
+                    <span className="text-xs font-semibold text-slate-400">days</span>
                   </div>
-                  <span className="text-[9px] text-gray-455 font-bold mt-1 uppercase">Logged workouts, diet, water or scans</span>
+                  <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Lifts, runs, diet, or scans logged</span>
                 </div>
-                <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl text-orange-500">
-                  <Flame size={24} className="animate-bounce" />
+                <div className="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400">
+                  <Flame size={20} />
+                </div>
+              </div>
+
+              {/* Athletic Radar Profile */}
+              <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
+                <div className="flex items-center gap-2 border-b border-slate-900/60 pb-3">
+                  <div className="p-2 bg-blue-500/10 text-blue-400 border border-blue-900/20 rounded-xl">
+                    <Activity size={14} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Athletic Performance Profile</span>
+                </div>
+                <div className="w-full h-64 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                      <PolarGrid stroke="#1e293b" />
+                      <PolarAngleAxis dataKey="subject" stroke="#94a3b8" fontSize={9} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#334155" fontSize={8} tickCount={6} />
+                      <Radar name="Athlete" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                        labelStyle={{ fontWeight: 'bold', color: '#fff' }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="text-[9px] text-slate-500 text-center uppercase font-bold tracking-wider leading-none">
+                  Multi-dimensional analysis based on your logged statistics
                 </div>
               </div>
 
               {/* Strength & PR Index Card */}
-              <div className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
+              <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-5">
+                <div className="flex items-center justify-between border-b border-slate-900/60 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-[#3b82f6]/10 text-primary border border-blue-900/25 rounded-lg">
-                      <Trophy size={16} />
+                    <div className="p-2 bg-blue-500/10 text-blue-400 border border-blue-900/20 rounded-xl">
+                      <Trophy size={14} />
                     </div>
-                    <span className="text-xs font-black uppercase tracking-wider">Strength Class Index</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Strength Index</span>
                   </div>
                   <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full border ${tierColor}`}>
                     {strengthTier}
@@ -571,158 +821,175 @@ const AnalyticsView = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-gray-550 uppercase font-extrabold tracking-wider leading-none">Tonnage Lifted</span>
-                    <span className="text-lg font-black text-white">{totalLiftingTonnage.toLocaleString()} <span className="text-xs font-semibold text-gray-500">kg</span></span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Tonnage Lifted</span>
+                    <span className="text-base font-black text-white">{totalLiftingTonnage.toLocaleString()} <span className="text-[10px] font-normal text-slate-500">kg</span></span>
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-gray-555 uppercase font-extrabold tracking-wider leading-none">Top 3 Lift index</span>
-                    <span className="text-lg font-black text-primary">{Math.round(top3Composite)} <span className="text-xs font-semibold text-gray-500">kg</span></span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Top 3 Index</span>
+                    <span className="text-base font-black text-blue-400">{Math.round(top3Composite)} <span className="text-[10px] font-normal text-slate-500">kg</span></span>
                   </div>
                 </div>
 
-                {/* Fun comparison statement */}
                 {totalLiftingTonnage > 0 && (
-                  <div className="bg-[#3b82f6]/5 border border-blue-900/20 rounded-2xl p-3 text-[11px] leading-relaxed text-gray-300 font-medium">
-                    🚐 **Egyptian Insight**: You've lifted a cumulative total equivalent to **{microbussesLifted.toFixed(1)} Egyptian microbusses** or **{pyramidBlocksLifted.toFixed(2)} limestone blocks** of the Great Giza Pyramid!
+                  <div className="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-[11px] leading-relaxed text-slate-300">
+                    <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-1 leading-none">Egyptian Equivalency</div>
+                    You have lifted a cumulative total equivalent to approximately <span className="text-blue-400 font-bold">{microbussesLifted.toFixed(1)}</span> Egyptian microbusses or <span className="text-blue-400 font-bold">{pyramidBlocksLifted.toFixed(2)}</span> limestone blocks of the Great Giza Pyramid.
                   </div>
-                )}
-
-                {/* Calculated PRs Quick Summary */}
-                {prMap.length > 0 ? (
-                  <div className="flex flex-col gap-2 mt-2">
-                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest pl-0.5">Best Estimated 1-Rep Maxes</span>
-                    <div className="flex flex-col gap-1.5">
-                      {prMap.slice(0, 3).map((pr, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-gray-950/60 p-2.5 rounded-xl border border-gray-900 text-xs font-semibold">
-                          <span className="text-gray-300 truncate max-w-[180px]">{pr.exerciseName}</span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-white font-extrabold">{Math.round(pr.best1RM)}kg</span>
-                            <span className="text-[9px] text-gray-550">1RM</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-500 text-center py-2 font-medium">No lift exercises logged to estimate PRs yet.</p>
                 )}
               </div>
 
               {/* Running Performance Card */}
-              <div className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
+              <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-5">
+                <div className="flex items-center justify-between border-b border-slate-900/60 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-[#10b981]/10 text-success border border-emerald-900/25 rounded-lg">
-                      <Activity size={16} />
+                    <div className="p-2 bg-blue-500/10 text-blue-400 border border-blue-900/20 rounded-xl">
+                      <Activity size={14} />
                     </div>
-                    <span className="text-xs font-black uppercase tracking-wider">Running Performance</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Running Telemetry</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-gray-555 uppercase font-extrabold tracking-wider leading-none">Total Distance</span>
-                    <span className="text-lg font-black text-success">{totalVolumeKm.toFixed(1)} <span className="text-xs font-semibold text-gray-500">km</span></span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Total Distance</span>
+                    <span className="text-base font-black text-white">{totalVolumeKm.toFixed(1)} <span className="text-[10px] font-normal text-slate-500">km</span></span>
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] text-gray-555 uppercase font-extrabold tracking-wider leading-none">Elevation Gained</span>
-                    <span className="text-lg font-black text-white">{totalElevationM} <span className="text-xs font-semibold text-gray-500">m</span></span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Elevation Gained</span>
+                    <span className="text-base font-black text-white">{totalElevationM} <span className="text-[10px] font-normal text-slate-500">m</span></span>
                   </div>
                 </div>
 
-                {/* Running fun insight */}
                 {totalVolumeKm > 0 && (
-                  <div className="bg-[#10b981]/5 border border-emerald-900/20 rounded-2xl p-3 text-[11px] leading-relaxed text-gray-300 font-medium space-y-1.5">
+                  <div className="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-[11px] leading-relaxed text-slate-300 space-y-3">
                     <div>
-                      🚢 **Suez Canal**: Your running mileage is equivalent to running **{suezCanalsRun.toFixed(2)} times the entire length** of the Suez Canal!
+                      <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-1 leading-none">Suez Canal Equivalency</div>
+                      Your running mileage is equivalent to running <span className="text-blue-400 font-bold">{suezCanalsRun.toFixed(2)}</span> times the entire length of the Suez Canal.
                     </div>
                     {cairoAlexPct > 0 && (
-                      <div className="w-full bg-gray-900 rounded-full h-1 mt-1 overflow-hidden">
-                        <div className="bg-success h-1 rounded-full" style={{ width: `${cairoAlexPct}%` }}></div>
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">
+                          <span>Cairo-Alex Highway Progress</span>
+                          <span className="text-blue-400">{Math.round(cairoAlexPct)}%</span>
+                        </div>
+                        <div className="w-full bg-slate-900 rounded-full h-1 overflow-hidden">
+                          <div className="bg-blue-500 h-1 rounded-full" style={{ width: `${cairoAlexPct}%` }}></div>
+                        </div>
                       </div>
                     )}
-                    <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold tracking-wider leading-none">
-                      {cairoAlexPct >= 100 ? "You completed the Cairo-Alexandria highway! 🛣️" : `Cairo to Alexandria progress: ${Math.round(cairoAlexPct)}%`}
-                    </div>
                   </div>
                 )}
               </div>
 
               {/* InBody Scan Progress Card */}
-              <div className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
+              <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-5">
+                <div className="flex items-center justify-between border-b border-slate-900/60 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-[#8b5cf6]/10 text-[#8b5cf6] border border-purple-900/25 rounded-lg">
-                      <Scale size={16} />
+                    <div className="p-2 bg-blue-500/10 text-blue-400 border border-blue-900/20 rounded-xl">
+                      <Scale size={14} />
                     </div>
-                    <span className="text-xs font-black uppercase tracking-wider">InBody Improvements</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">InBody Progress</span>
                   </div>
                   {hasInbodyData && (
-                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-wider">
-                      Baseline vs. Latest
+                    <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider">
+                      Baseline vs Latest
                     </span>
                   )}
                 </div>
 
                 {hasInbodyData && inbodyDeltas ? (
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-5">
                     {/* Muscle and Fat deltas */}
-                    <div className="grid grid-cols-2 gap-3.5">
-                      <div className="bg-emerald-950/20 border border-emerald-500/25 p-3 rounded-2xl flex flex-col gap-0.5">
-                        <span className="text-[8px] text-gray-400 uppercase font-black tracking-wider">Skeletal Muscle Mass</span>
-                        <span className={`text-base font-black ${inbodyDeltas.smm.deltaBase >= 0 ? 'text-success' : 'text-danger'}`}>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-slate-900/30 border border-slate-900 p-3.5 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-550 uppercase font-black tracking-wider leading-none">Skeletal Muscle</span>
+                        <span className={`text-base font-black ${inbodyDeltas.smm.deltaBase >= 0 ? 'text-blue-400' : 'text-slate-400'}`}>
                           {inbodyDeltas.smm.deltaBase >= 0 ? '+' : ''}{inbodyDeltas.smm.deltaBase} kg
                         </span>
-                        <span className="text-[8px] text-gray-500 font-bold uppercase">Base: {inbodyDeltas.smm.baseline}kg → {inbodyDeltas.smm.current}kg</span>
+                        <span className="text-[7.5px] text-slate-500 font-bold uppercase mt-0.5 leading-none">Start: {inbodyDeltas.smm.baseline} → {inbodyDeltas.smm.current}</span>
                       </div>
-                      <div className="bg-red-950/20 border border-red-500/25 p-3 rounded-2xl flex flex-col gap-0.5">
-                        <span className="text-[8px] text-gray-400 uppercase font-black tracking-wider">Body Fat Mass</span>
-                        <span className={`text-base font-black ${inbodyDeltas.bfm.deltaBase <= 0 ? 'text-success' : 'text-danger'}`}>
+                      <div className="bg-slate-900/30 border border-slate-900 p-3.5 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-550 uppercase font-black tracking-wider leading-none">Body Fat Mass</span>
+                        <span className={`text-base font-black ${inbodyDeltas.bfm.deltaBase <= 0 ? 'text-cyan-400' : 'text-slate-400'}`}>
                           {inbodyDeltas.bfm.deltaBase >= 0 ? '+' : ''}{inbodyDeltas.bfm.deltaBase} kg
                         </span>
-                        <span className="text-[8px] text-gray-500 font-bold uppercase">Base: {inbodyDeltas.bfm.baseline}kg → {inbodyDeltas.bfm.current}kg</span>
+                        <span className="text-[7.5px] text-slate-500 font-bold uppercase mt-0.5 leading-none">Start: {inbodyDeltas.bfm.baseline} → {inbodyDeltas.bfm.current}</span>
                       </div>
                     </div>
 
                     {/* Weight and BF deltas */}
-                    <div className="grid grid-cols-2 gap-3.5">
-                      <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-2xl flex flex-col gap-0.5">
-                        <span className="text-[8px] text-gray-400 uppercase font-black tracking-wider">Total Weight</span>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-slate-900/30 border border-slate-900 p-3.5 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-555 uppercase font-black tracking-wider leading-none">Total Weight</span>
                         <span className="text-base font-black text-white">
                           {inbodyDeltas.weight.deltaBase >= 0 ? '+' : ''}{inbodyDeltas.weight.deltaBase} kg
                         </span>
-                        <span className="text-[8px] text-gray-500 font-bold uppercase">Base: {inbodyDeltas.weight.baseline}kg → {inbodyDeltas.weight.current}kg</span>
+                        <span className="text-[7.5px] text-slate-500 font-bold uppercase mt-0.5 leading-none">Start: {inbodyDeltas.weight.baseline} → {inbodyDeltas.weight.current}</span>
                       </div>
-                      <div className="bg-slate-900/60 border border-slate-800 p-3 rounded-2xl flex flex-col gap-0.5">
-                        <span className="text-[8px] text-gray-400 uppercase font-black tracking-wider">Body Fat Percent</span>
-                        <span className={`text-base font-black ${inbodyDeltas.bf_percent.deltaBase <= 0 ? 'text-success' : 'text-danger'}`}>
+                      <div className="bg-slate-900/30 border border-slate-900 p-3.5 rounded-2xl flex flex-col gap-1">
+                        <span className="text-[8px] text-slate-555 uppercase font-black tracking-wider leading-none">Body Fat Percent</span>
+                        <span className={`text-base font-black ${inbodyDeltas.bf_percent.deltaBase <= 0 ? 'text-cyan-400' : 'text-slate-400'}`}>
                           {inbodyDeltas.bf_percent.deltaBase >= 0 ? '+' : ''}{inbodyDeltas.bf_percent.deltaBase}%
                         </span>
-                        <span className="text-[8px] text-gray-500 font-bold uppercase">Base: {inbodyDeltas.bf_percent.baseline}% → {inbodyDeltas.bf_percent.current}%</span>
+                        <span className="text-[7.5px] text-slate-500 font-bold uppercase mt-0.5 leading-none">Start: {inbodyDeltas.bf_percent.baseline}% → {inbodyDeltas.bf_percent.current}%</span>
                       </div>
                     </div>
 
-                    {/* Giza / Local comparisons */}
+                    {/* InBody progress chart */}
+                    {inbodyChartData.length > 1 && (
+                      <div className="w-full flex flex-col gap-2 pt-2 border-t border-slate-900/50">
+                        <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest pl-0.5 leading-none">InBody Scans History Chart</span>
+                        <div className="w-full h-36">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={inbodyChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <defs>
+                                <linearGradient id="colorMuscle" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
+                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                </linearGradient>
+                                <linearGradient id="colorFat" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.15}/>
+                                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                </linearGradient>
+                              </defs>
+                              <XAxis dataKey="date" stroke="#334155" fontSize={8} tickLine={false} />
+                              <YAxis stroke="#334155" fontSize={8} tickLine={false} />
+                              <Tooltip 
+                                contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                                labelStyle={{ fontWeight: 'bold', color: '#fff' }}
+                              />
+                              <Area type="monotone" dataKey="Weight" stroke="#94a3b8" strokeWidth={1.5} fill="none" name="Weight" />
+                              <Area type="monotone" dataKey="Muscle" stroke="#3b82f6" strokeWidth={1.5} fill="url(#colorMuscle)" name="Muscle" />
+                              <Area type="monotone" dataKey="Fat" stroke="#06b6d4" strokeWidth={1.5} fill="url(#colorFat)" name="Fat" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Local comparisons */}
                     {(Math.abs(inbodyDeltas.smm.deltaBase) > 0 || Math.abs(inbodyDeltas.bfm.deltaBase) > 0) && (
-                      <div className="bg-[#8b5cf6]/5 border border-purple-900/20 rounded-2xl p-3 text-[11px] leading-relaxed text-gray-300 font-medium space-y-1">
+                      <div className="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-[11px] leading-relaxed text-slate-300 space-y-2">
                         {inbodyDeltas.smm.deltaBase > 0 && (
                           <div>
-                            💪 **Muscle gain**: You built **{inbodyDeltas.smm.deltaBase} kg** of muscle mass! That's like adding the weight of **{(inbodyDeltas.smm.deltaBase * 2).toFixed(1)} standard gym plates** of solid granite!
+                            <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-0.5 leading-none">Muscle Mass Equivalency</div>
+                            You built <span className="text-blue-400 font-bold">{inbodyDeltas.smm.deltaBase} kg</span> of muscle mass, equivalent to adding approximately <span className="text-blue-400 font-bold">{(inbodyDeltas.smm.deltaBase * 2).toFixed(1)}</span> standard plates of granite.
                           </div>
                         )}
                         {inbodyDeltas.bfm.deltaBase < 0 && (
                           <div>
-                            🔥 **Fat loss**: You burned **{Math.abs(inbodyDeltas.bfm.deltaBase)} kg** of fat! That's equivalent to replacing **{fatOilBottles.toFixed(1)} standard bottles of frying oil** 🫗 with pure athletic engine power!
+                            <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-0.5 leading-none">Fat Loss Equivalency</div>
+                            You burned <span className="text-cyan-400 font-bold">{Math.abs(inbodyDeltas.bfm.deltaBase)} kg</span> of fat, equivalent to burning approximately <span className="text-cyan-400 font-bold">{fatOilBottles.toFixed(1)}</span> bottles of frying oil.
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="text-center py-5 bg-gray-900/40 rounded-2xl border border-gray-800/80">
-                    <p className="text-xs text-gray-400 mb-2">You need at least 1 logged scan to calculate InBody changes</p>
-                    <button onClick={() => navigate('/inbody')} className="text-xs text-primary font-bold hover:underline">
+                  <div className="text-center py-5 bg-slate-900/40 rounded-2xl border border-slate-900">
+                    <p className="text-xs text-slate-500 mb-2">At least one scan is required to calculate InBody changes</p>
+                    <button onClick={() => navigate('/inbody')} className="text-xs text-blue-400 font-bold hover:underline">
                       Log First Scan →
                     </button>
                   </div>
@@ -730,51 +997,133 @@ const AnalyticsView = () => {
               </div>
 
               {/* Diet Consistency Score Card */}
-              <div className="bg-surface border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-gray-800/80 pb-3">
+              <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-5">
+                <div className="flex items-center justify-between border-b border-slate-900/60 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-amber-500/10 text-amber-500 border border-amber-900/25 rounded-lg">
-                      <Apple size={16} />
+                    <div className="p-2 bg-blue-500/10 text-blue-400 border border-blue-900/20 rounded-xl">
+                      <Apple size={14} />
                     </div>
-                    <span className="text-xs font-black uppercase tracking-wider">Nutrition Consistency</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Nutrition Consistency</span>
                   </div>
-                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-wider">
-                    {dietLogsCount} Logs
+                  <span className="text-[8px] text-slate-550 uppercase font-black tracking-wider">
+                    {dietLogsCount} Days
                   </span>
                 </div>
 
                 {dietLogsCount > 0 ? (
-                  <div className="flex flex-col gap-4 text-xs font-semibold">
+                  <div className="flex flex-col gap-5 text-xs font-semibold">
                     {/* Calorie compliance bar */}
-                    <div>
-                      <div className="flex justify-between mb-1 text-[11px] font-bold text-gray-400">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px] font-bold text-slate-400">
                         <span>Calorie Compliance (±10% Target)</span>
-                        <span className="text-white font-black">{dietConsistencyScore}%</span>
+                        <span className="text-blue-400 font-black">{dietConsistencyScore}%</span>
                       </div>
-                      <div className="w-full bg-gray-950 rounded-full h-2 overflow-hidden border border-slate-800">
-                        <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${dietConsistencyScore}%` }}></div>
+                      <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-900">
+                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${dietConsistencyScore}%` }}></div>
                       </div>
                     </div>
 
                     {/* Protein compliance bar */}
-                    <div>
-                      <div className="flex justify-between mb-1 text-[11px] font-bold text-gray-400">
-                        <span>Protein Goal Consistency (≥90% Target)</span>
-                        <span className="text-white font-black">{proteinConsistencyScore}%</span>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                        <span>Protein Target Consistency (≥90% Target)</span>
+                        <span className="text-cyan-400 font-black">{proteinConsistencyScore}%</span>
                       </div>
-                      <div className="w-full bg-gray-950 rounded-full h-2 overflow-hidden border border-slate-800">
-                        <div className="bg-amber-400 h-2 rounded-full" style={{ width: `${proteinConsistencyScore}%` }}></div>
+                      <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-900">
+                        <div className="bg-cyan-500 h-1.5 rounded-full" style={{ width: `${proteinConsistencyScore}%` }}></div>
                       </div>
                     </div>
 
-                    <div className="bg-amber-500/5 border border-amber-900/20 rounded-2xl p-3 text-[11px] leading-relaxed text-gray-300 font-medium mt-1">
-                      🍏 **Coach Feedback**: {dietConsistencyScore >= 80 ? "Phenomenal nutritional consistency! You're providing your muscles with the perfect ratio of recovery fuel. Keep it up! 🚀" : dietConsistencyScore >= 50 ? "Decent food tracking! Try focusing on keeping your calorie intake closer to target ranges on rest days. 📈" : "Consistency is key. Logging your meals every day, even when you go off plan, helps build the habit. Let's pick it up! 🤝"}
+                    {/* Diet Trend Chart */}
+                    {dietTrendData.length > 1 && (
+                      <div className="w-full flex flex-col gap-2 pt-2 border-t border-slate-900/50">
+                        <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest pl-0.5 leading-none">Calorie Intake Trends</span>
+                        <div className="w-full h-36">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={dietTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <XAxis dataKey="date" stroke="#334155" fontSize={8} tickLine={false} />
+                              <YAxis stroke="#334155" fontSize={8} tickLine={false} />
+                              <Tooltip 
+                                contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                                labelStyle={{ fontWeight: 'bold', color: '#fff' }}
+                              />
+                              <Bar dataKey="Calories" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Calories" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Macro ratio caloric split chart */}
+                    {hasNutritionData && totalMacroKcal > 0 && (
+                      <div className="w-full flex flex-col gap-3 pt-4 border-t border-slate-900/50">
+                        <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest pl-0.5 leading-none">Average Daily Macro Ratio (Caloric Split)</span>
+                        <div className="flex items-center justify-between bg-slate-900/10 p-3 rounded-2xl border border-slate-900/40">
+                          <div className="w-[120px] h-[120px] shrink-0 relative flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={macroCalorieData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={36}
+                                  outerRadius={48}
+                                  paddingAngle={4}
+                                  dataKey="value"
+                                >
+                                  {macroCalorieData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip 
+                                  formatter={(value: any, name: any, props: any) => {
+                                    const pct = totalMacroKcal > 0 ? Math.round((Number(value) / totalMacroKcal) * 100) : 0;
+                                    return [`${value} kcal (${pct}%)`, `${name} (${props.payload.grams}g)`];
+                                  }}
+                                  contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
+                            <div className="absolute flex flex-col items-center justify-center text-center">
+                              <span className="text-[10px] font-black text-white leading-none">{Math.round(totalMacroKcal)}</span>
+                              <span className="text-[7px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">kcal/day</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 flex flex-col gap-2 pl-4 justify-center">
+                            {macroCalorieData.map((entry, idx) => {
+                              const pct = totalMacroKcal > 0 ? Math.round((entry.value / totalMacroKcal) * 100) : 0;
+                              return (
+                                <div key={idx} className="flex items-center justify-between text-[10px] font-semibold text-slate-350">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                    <span>{entry.name}</span>
+                                  </div>
+                                  <div className="flex items-baseline gap-1 text-right">
+                                    <span className="text-white font-extrabold">{entry.grams}g</span>
+                                    <span className="text-[8px] text-slate-500 font-normal">({pct}%)</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-slate-900/40 border border-slate-850 rounded-2xl p-4 text-[11px] leading-relaxed text-slate-300">
+                      <div className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-1 leading-none">Coach Feedback</div>
+                      {dietConsistencyScore >= 80 
+                        ? "Phenomenal nutritional consistency! You are providing your muscles with the perfect ratio of recovery fuel. Keep it up!" 
+                        : dietConsistencyScore >= 50 
+                          ? "Decent food tracking! Try focusing on keeping your calorie intake closer to target ranges on rest days." 
+                          : "Consistency is key. Logging your meals every day, even when you go off plan, helps build the habit. Let's pick it up."
+                      }
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-5 bg-gray-900/40 rounded-2xl border border-gray-800/80">
-                    <p className="text-xs text-gray-400 mb-2">No diet logs found in database</p>
-                    <button onClick={() => navigate('/diet')} className="text-xs text-amber-500 font-bold hover:underline">
+                  <div className="text-center py-5 bg-slate-900/40 rounded-2xl border border-slate-900">
+                    <p className="text-xs text-slate-500 mb-2">No diet logs found in database</p>
+                    <button onClick={() => navigate('/diet')} className="text-xs text-blue-400 font-bold hover:underline">
                       Log First Meal →
                     </button>
                   </div>
@@ -791,123 +1140,195 @@ const AnalyticsView = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="flex flex-col gap-4 w-full"
+              className="flex flex-col gap-6 w-full"
             >
-              <h3 className="text-[10px] text-gray-550 uppercase font-black tracking-widest pl-1 mt-1">Lifting PR Library (Estimated 1RM)</h3>
-              
-              {prMap.length > 0 ? (
-                <div className="flex flex-col gap-2.5">
-                  {prMap.map((pr, idx) => (
-                    <div key={idx} className="bg-surface rounded-2xl border border-gray-800 p-4 shadow-md flex flex-col gap-3">
-                      <div className="flex justify-between items-center border-b border-gray-800/60 pb-2">
-                        <span className="font-extrabold text-white text-sm truncate max-w-[200px]">{pr.exerciseName}</span>
-                        {pr.tier && (
-                          <span className="text-[9px] font-black bg-gray-900 text-gray-400 border border-gray-800 px-2 py-0.5 rounded-full uppercase leading-none">
-                            Tier {pr.tier}
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                        <div className="flex flex-col">
-                          <span className="text-[8px] text-gray-555 uppercase font-bold tracking-wider leading-none mb-1">Est 1-Rep Max</span>
-                          <span className="font-black text-primary text-sm">{Math.round(pr.best1RM)} kg</span>
-                          <span className="text-[7px] text-gray-500 font-semibold uppercase mt-0.5">{pr.best1RMDate}</span>
-                        </div>
-                        <div className="flex flex-col border-x border-gray-800/80">
-                          <span className="text-[8px] text-gray-555 uppercase font-bold tracking-wider leading-none mb-1">Max Weight</span>
-                          <span className="font-black text-white text-sm">{pr.maxWeight} kg</span>
-                          <span className="text-[7px] text-gray-500 font-semibold uppercase mt-0.5">{pr.maxWeightReps} reps</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] text-gray-555 uppercase font-bold tracking-wider leading-none mb-1">Total Sets / Vol</span>
-                          <span className="font-black text-gray-300 text-sm">{pr.totalSets} <span className="text-[10px] text-gray-500 font-normal">sets</span></span>
-                          <span className="text-[7px] text-gray-500 font-bold uppercase mt-0.5">{Math.round(pr.totalVolume).toLocaleString()}kg vol</span>
-                        </div>
+              {/* Lifts Tonnage Chart */}
+              {liftsTrendData.length > 1 && (
+                <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
+                  <div className="flex items-center gap-2 border-b border-slate-900/60 pb-3">
+                    <Dumbbell size={14} className="text-blue-500" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Lifting Tonnage Trend</span>
+                  </div>
+                  <div className="w-full h-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={liftsTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                        <XAxis dataKey="date" stroke="#334155" fontSize={8} tickLine={false} />
+                        <YAxis stroke="#334155" fontSize={8} tickLine={false} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                          labelStyle={{ fontWeight: 'bold', color: '#fff' }}
+                        />
+                        <Line type="monotone" dataKey="Volume" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} name="Volume (kg)" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* Workout Splits Balance */}
+              {splitChartData.length > 0 && (
+                <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
+                  <div className="flex items-center gap-2 border-b border-slate-900/60 pb-3">
+                    <Activity size={14} className="text-blue-500" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Workout Splits Balance</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-slate-900/10 p-3 rounded-2xl border border-slate-900/40">
+                    <div className="w-[120px] h-[120px] shrink-0 relative flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={splitChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={36}
+                            outerRadius={48}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {splitChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={getSplitColor(entry.name, index)} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value: any, name: any) => [`${value} sessions`, name]}
+                            contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-black text-white leading-none">{totalWorkoutSessions}</span>
+                        <span className="text-[7px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">sessions</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10 bg-surface rounded-3xl border border-gray-800">
-                  <p className="text-xs text-gray-405">No completed exercises found to calculate PRs.</p>
+                    <div className="flex-1 flex flex-col gap-2 pl-4 justify-center">
+                      {splitChartData.map((entry, idx) => {
+                        const pct = totalWorkoutSessions > 0 ? Math.round((entry.value / totalWorkoutSessions) * 100) : 0;
+                        return (
+                          <div key={idx} className="flex items-center justify-between text-[10px] font-semibold text-slate-350">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getSplitColor(entry.name, idx) }} />
+                              <span className="truncate max-w-[80px]">{entry.name}</span>
+                            </div>
+                            <div className="flex items-baseline gap-1 text-right">
+                              <span className="text-white font-extrabold">{entry.value}</span>
+                              <span className="text-[8px] text-slate-500 font-normal">({pct}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="w-full border-t border-white/10 my-4" />
-
-              <h3 className="text-[10px] text-gray-550 uppercase font-black tracking-widest pl-1">All Workouts Ever Logged</h3>
-              {workoutsHistory.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {workoutsHistory.map((workout) => {
-                    const isExpanded = expandedWorkoutId === workout.id;
-                    const totalSets = workout.exercises.reduce((sum: number, ex: any) => sum + ex.sets.length, 0);
-
-                    return (
-                      <div key={workout.id} className="bg-surface rounded-2xl border border-gray-800 overflow-hidden shadow-sm">
-                        {/* Summary Header */}
-                        <div 
-                          onClick={() => setExpandedWorkoutId(isExpanded ? null : workout.id)}
-                          className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-800/20 transition-colors"
-                        >
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[8px] text-gray-500 uppercase font-black tracking-widest leading-none">
-                              {new Date(workout.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              <div className="flex flex-col gap-3">
+                <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest pl-1">Lifting PR Library (Estimated 1RM)</span>
+                {prMap.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {prMap.map((pr, idx) => (
+                      <div key={idx} className="bg-slate-950/40 rounded-3xl border border-slate-900 p-5 shadow-md flex flex-col gap-4">
+                        <div className="flex justify-between items-center border-b border-slate-900/60 pb-2">
+                          <span className="font-extrabold text-white text-sm truncate max-w-[200px]">{pr.exerciseName}</span>
+                          {pr.tier && (
+                            <span className="text-[8px] font-black bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded-full uppercase leading-none">
+                              Tier {pr.tier}
                             </span>
-                            <span className="font-black text-white text-sm">{workout.name}</span>
-                            <span className="text-[9px] text-primary font-bold uppercase mt-0.5">{workout.day_type} session</span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold tracking-wider leading-none mb-1">Est 1-Rep Max</span>
+                            <span className="font-black text-blue-400 text-sm">{Math.round(pr.best1RM)} kg</span>
+                            <span className="text-[7.5px] text-slate-500 font-semibold uppercase mt-0.5">{pr.best1RMDate}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-col text-right">
-                              <span className="text-xs font-black text-white">{totalSets} Sets</span>
-                              <span className="text-[9px] text-gray-550 font-bold">{formatDuration(workout.duration)}</span>
-                            </div>
-                            <svg 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="16" 
-                              height="16" 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              strokeWidth="2.5" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              className={`text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                            >
-                              <path d="m6 9 6 6 6-6"/>
-                            </svg>
+                          <div className="flex flex-col gap-0.5 border-x border-slate-900/80">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold tracking-wider leading-none mb-1">Max Weight</span>
+                            <span className="font-black text-white text-sm">{pr.maxWeight} kg</span>
+                            <span className="text-[7.5px] text-slate-500 font-semibold uppercase mt-0.5">{pr.maxWeightReps} reps</span>
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] text-slate-500 uppercase font-bold tracking-wider leading-none mb-1">Total Sets / Vol</span>
+                            <span className="font-black text-slate-300 text-sm">{pr.totalSets} <span className="text-[9px] text-slate-500 font-normal">sets</span></span>
+                            <span className="text-[7.5px] text-slate-500 font-bold uppercase mt-0.5">{Math.round(pr.totalVolume).toLocaleString()}kg vol</span>
                           </div>
                         </div>
-
-                        {/* Collapsible Details */}
-                        {isExpanded && (
-                          <div className="bg-gray-950/40 border-t border-gray-900 p-3.5 flex flex-col gap-3">
-                            {workout.exercises.map((ex: any) => (
-                              <div key={ex.id} className="flex flex-col gap-1.5 bg-gray-900/30 p-2.5 rounded-xl border border-gray-900/50">
-                                <div className="flex justify-between items-center text-xs font-extrabold border-b border-gray-900/80 pb-1">
-                                  <span className="text-gray-300 truncate max-w-[220px]">{ex.exercise_name}</span>
-                                  <span className="text-[9px] text-gray-550 uppercase">Tier {ex.tier}</span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  {ex.sets.map((set: any, setIdx: number) => (
-                                    <div key={setIdx} className="flex justify-between items-center text-[11px] font-semibold text-gray-400">
-                                      <span>Set {set.setNum}</span>
-                                      <span className="text-white font-extrabold">{set.weight} kg × {set.reps} reps <span className="text-[10px] text-gray-550 font-normal">@{set.rpe} RPE</span></span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-10 bg-surface rounded-3xl border border-gray-800">
-                  <p className="text-xs text-gray-400">No lifting history logged yet.</p>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-slate-950/40 rounded-3xl border border-slate-900">
+                    <p className="text-xs text-slate-505">No completed exercises found to calculate PRs.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-full border-t border-slate-900/40 my-1" />
+
+              <div className="flex flex-col gap-3">
+                <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest pl-1">All Workouts Logged</span>
+                {workoutsHistory.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {workoutsHistory.map((workout) => {
+                      const isExpanded = expandedWorkoutId === workout.id;
+                      const totalSets = workout.exercises.reduce((sum: number, ex: any) => sum + ex.sets.length, 0);
+
+                      return (
+                        <div key={workout.id} className="bg-slate-950/40 rounded-3xl border border-slate-900 overflow-hidden shadow-sm">
+                          {/* Summary Header */}
+                          <div 
+                            onClick={() => setExpandedWorkoutId(isExpanded ? null : workout.id)}
+                            className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-900/20 transition-colors"
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest leading-none">
+                                {new Date(workout.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                              <span className="font-black text-white text-sm">{workout.name}</span>
+                              <span className="text-[9px] text-blue-400 font-bold uppercase mt-0.5">{workout.day_type} session</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex flex-col text-right">
+                                <span className="text-xs font-black text-white">{totalSets} Sets</span>
+                                <span className="text-[9px] text-slate-500 font-bold">{formatDuration(workout.duration)}</span>
+                              </div>
+                              <ChevronDown 
+                                size={16} 
+                                className={`text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-blue-400' : ''}`}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Collapsible Details */}
+                          {isExpanded && (
+                            <div className="bg-slate-950/80 border-t border-slate-900 p-4 flex flex-col gap-4">
+                              {workout.exercises.map((ex: any) => (
+                                <div key={ex.id} className="flex flex-col gap-2 bg-slate-900/20 p-3 rounded-2xl border border-slate-900/60">
+                                  <div className="flex justify-between items-center text-xs font-extrabold border-b border-slate-900/60 pb-1.5">
+                                    <span className="text-white truncate max-w-[220px]">{ex.exercise_name}</span>
+                                    <span className="text-[8px] text-slate-500 uppercase font-black">Tier {ex.tier}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1.5">
+                                    {ex.sets.map((set: any, setIdx: number) => (
+                                      <div key={setIdx} className="flex justify-between items-center text-[11px] font-semibold text-slate-400">
+                                        <span>Set {set.setNum}</span>
+                                        <span className="text-white font-extrabold">{set.weight} kg × {set.reps} reps <span className="text-[9px] text-slate-500 font-normal">@{set.rpe} RPE</span></span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-slate-950/40 rounded-3xl border border-slate-900">
+                    <p className="text-xs text-slate-505">No lifting history logged yet.</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 
@@ -919,72 +1340,96 @@ const AnalyticsView = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="flex flex-col gap-4 w-full"
+              className="flex flex-col gap-6 w-full"
             >
-              <h3 className="text-[10px] text-gray-500 uppercase font-black tracking-widest pl-1 mt-1">Completed Runs Timeline</h3>
-              
-              {runningLogs.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {runningLogs.map((run) => (
-                    <div key={run.id} className="bg-surface rounded-2xl border border-gray-800 p-4 shadow-sm flex flex-col gap-3.5">
-                      {/* Run Header */}
-                      <div className="flex justify-between items-start border-b border-gray-800/80 pb-3">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[8px] text-gray-550 uppercase font-black tracking-widest leading-none">
-                            {new Date(run.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                          <h4 className="font-black text-white text-sm leading-tight truncate max-w-[200px]">{run.name}</h4>
-                        </div>
-                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${run.source === 'strava' ? 'bg-orange-500/10 text-orange-400 border-orange-500/25' : 'bg-blue-500/10 text-blue-400 border-blue-500/25'}`}>
-                          {run.source}
-                        </span>
-                      </div>
-
-                      {/* Run Stats */}
-                      <div className="grid grid-cols-4 gap-1 text-center text-xs font-semibold text-gray-400">
-                        <div className="flex flex-col">
-                          <span className="text-[7.5px] text-gray-550 uppercase font-bold tracking-wider leading-none mb-1">Distance</span>
-                          <span className="font-black text-success text-sm leading-tight">{run.distance_km} <span className="text-[9px] font-normal text-gray-505">km</span></span>
-                        </div>
-                        <div className="flex flex-col border-l border-gray-850">
-                          <span className="text-[7.5px] text-gray-555 uppercase font-bold tracking-wider leading-none mb-1">Pace</span>
-                          <span className="font-black text-white text-sm leading-tight">{run.pace} <span className="text-[9px] font-normal text-gray-505">/km</span></span>
-                        </div>
-                        <div className="flex flex-col border-l border-gray-850">
-                          <span className="text-[7.5px] text-gray-555 uppercase font-bold tracking-wider leading-none mb-1">Duration</span>
-                          <span className="font-black text-white text-sm leading-tight">{formatDuration(run.duration)}</span>
-                        </div>
-                        <div className="flex flex-col border-l border-gray-850">
-                          <span className="text-[7.5px] text-gray-555 uppercase font-bold tracking-wider leading-none mb-1">Elevation</span>
-                          <span className="font-black text-white text-sm leading-tight">{run.elevation_m}m</span>
-                        </div>
-                      </div>
-
-                      {/* Optional Cadence / Heart rate */}
-                      {(run.average_heartrate || run.average_cadence) && (
-                        <div className="bg-gray-950/60 rounded-xl p-2.5 border border-gray-900 flex justify-around text-center text-[10px] font-bold text-gray-555 leading-none">
-                          {run.average_heartrate && (
-                            <div>
-                              <span>Heart Rate: </span>
-                              <span className="text-white font-extrabold">{run.average_heartrate} bpm</span>
-                            </div>
-                          )}
-                          {run.average_cadence && (
-                            <div>
-                              <span>Cadence: </span>
-                              <span className="text-white font-extrabold">{run.average_cadence} spm</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10 bg-surface rounded-3xl border border-gray-800">
-                  <p className="text-xs text-gray-400">No runs logged yet.</p>
+              {/* Runs Distance Chart */}
+              {runsTrendData.length > 1 && (
+                <div className="bg-slate-950/40 border border-slate-900 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
+                  <div className="flex items-center gap-2 border-b border-slate-900/60 pb-3">
+                    <Activity size={14} className="text-blue-500" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">Running Distance Trend</span>
+                  </div>
+                  <div className="w-full h-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={runsTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                        <XAxis dataKey="date" stroke="#334155" fontSize={8} tickLine={false} />
+                        <YAxis stroke="#334155" fontSize={8} tickLine={false} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '9px' }}
+                          labelStyle={{ fontWeight: 'bold', color: '#fff' }}
+                        />
+                        <Bar dataKey="Distance" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Distance (km)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               )}
+
+              <div className="flex flex-col gap-3">
+                <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest pl-1">Completed Runs Timeline</span>
+                {runningLogs.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {runningLogs.map((run) => (
+                      <div key={run.id} className="bg-slate-950/40 rounded-3xl border border-slate-900 p-5 shadow-sm flex flex-col gap-4">
+                        {/* Run Header */}
+                        <div className="flex justify-between items-start border-b border-slate-900/60 pb-3">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] text-slate-550 uppercase font-black tracking-widest leading-none">
+                              {new Date(run.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                            <h4 className="font-black text-white text-sm leading-tight truncate max-w-[200px]">{run.name}</h4>
+                          </div>
+                          <span className={`text-[8px] font-black uppercase px-2.5 py-0.5 rounded-full border ${run.source === 'strava' ? 'bg-orange-500/10 text-orange-400 border-orange-500/25' : 'bg-blue-500/10 text-blue-400 border-blue-500/25'}`}>
+                            {run.source}
+                          </span>
+                        </div>
+
+                        {/* Run Stats */}
+                        <div className="grid grid-cols-4 gap-1 text-center text-xs font-semibold text-slate-400">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[7.5px] text-slate-500 uppercase font-black tracking-wider leading-none mb-1">Distance</span>
+                            <span className="font-black text-blue-400 text-sm leading-tight">{run.distance_km} <span className="text-[9px] font-normal text-slate-505">km</span></span>
+                          </div>
+                          <div className="flex flex-col gap-0.5 border-l border-slate-900/80">
+                            <span className="text-[7.5px] text-slate-500 uppercase font-black tracking-wider leading-none mb-1">Pace</span>
+                            <span className="font-black text-white text-sm leading-tight">{run.pace} <span className="text-[9px] font-normal text-slate-505">/km</span></span>
+                          </div>
+                          <div className="flex flex-col gap-0.5 border-l border-slate-900/80">
+                            <span className="text-[7.5px] text-slate-500 uppercase font-black tracking-wider leading-none mb-1">Duration</span>
+                            <span className="font-black text-white text-sm leading-tight">{formatDuration(run.duration)}</span>
+                          </div>
+                          <div className="flex flex-col gap-0.5 border-l border-slate-900/80">
+                            <span className="text-[7.5px] text-slate-500 uppercase font-black tracking-wider leading-none mb-1">Elevation</span>
+                            <span className="font-black text-white text-sm leading-tight">{run.elevation_m}m</span>
+                          </div>
+                        </div>
+
+                        {/* Optional Cadence / Heart rate */}
+                        {(run.average_heartrate || run.average_cadence) && (
+                          <div className="bg-slate-900/30 rounded-2xl p-3 border border-slate-900 flex justify-around text-center text-[10px] font-bold text-slate-400 leading-none">
+                            {run.average_heartrate && (
+                              <div>
+                                <span>Heart Rate: </span>
+                                <span className="text-white font-extrabold">{run.average_heartrate} bpm</span>
+                              </div>
+                            )}
+                            {run.average_cadence && (
+                              <div>
+                                <span>Cadence: </span>
+                                <span className="text-white font-extrabold">{run.average_cadence} spm</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-slate-950/40 rounded-3xl border border-slate-900">
+                    <p className="text-xs text-slate-500">No runs logged yet.</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

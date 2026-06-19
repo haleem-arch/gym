@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, X, Check, Activity, Target, LogOut, WifiOff, Sparkles, Dumbbell, TrendingUp, User } from 'lucide-react';
+import { Play, Utensils, Droplets, X, Check, Activity, Target, LogOut, WifiOff, Sparkles, Dumbbell, TrendingUp, User, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -843,58 +843,48 @@ const TodayView = () => {
       {/* Monthly Summary Card */}
       <ErrorBoundary title="Monthly Summary">
         {monthlySummary.loading ? (
-          <div className="bg-surface rounded-2xl p-4 border border-gray-800 animate-pulse h-24 flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-800 rounded w-28"></div>
-              <div className="h-6 bg-gray-800 rounded w-48"></div>
+          <div className="bg-[#090d16] rounded-3xl p-5 border border-slate-900 animate-pulse h-28 flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="h-3 bg-slate-800 rounded w-24"></div>
+              <div className="h-5 bg-slate-800 rounded w-44"></div>
             </div>
-            <div className="h-8 w-8 bg-gray-800 rounded-full"></div>
+            <div className="h-8 w-8 bg-slate-800 rounded-xl"></div>
           </div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
             onClick={() => navigate('/analytics')}
-            className="bg-surface rounded-2xl p-4 border border-gray-800 hover:border-blue-900/30 hover:bg-slate-900/20 transition-all cursor-pointer shadow-lg relative overflow-hidden group flex flex-col gap-3.5 select-none"
+            className="bg-slate-950/45 backdrop-blur-md rounded-3xl p-5 border border-slate-900 hover:border-slate-800 transition-all cursor-pointer shadow-xl relative overflow-hidden group flex flex-col gap-5 select-none"
           >
-            {/* Background Accent Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent pointer-events-none" />
-            
-            <div className="flex justify-between items-center z-10">
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">Monthly Summary</span>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="14" 
-                height="14" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className="text-gray-500 group-hover:text-primary transition-colors group-hover:translate-x-0.5 duration-250"
-              >
-                <path d="m9 18 6-6-6-6"/>
-              </svg>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Activity size={14} className="text-blue-500" />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Monthly Summary</span>
+              </div>
+              <ChevronRight 
+                size={16} 
+                className="text-slate-500 group-hover:text-blue-400 transition-colors group-hover:translate-x-0.5 duration-250"
+              />
             </div>
             
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 z-10 text-xs font-semibold text-gray-400 leading-none">
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] text-gray-550 uppercase font-bold tracking-wider">Total Runs</span>
-                <span className="text-sm font-black text-white">{monthlySummary.totalRuns} <span className="text-[11px] text-gray-500 font-normal">sessions</span></span>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="flex flex-col gap-1 border-r border-slate-900/60 pr-1">
+                <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Runs</span>
+                <span className="text-sm font-black text-white">{monthlySummary.totalRuns}</span>
+              </div>
+              <div className="flex flex-col gap-1 border-r border-slate-900/60 pr-1">
+                <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Avg Pace</span>
+                <span className="text-sm font-black text-white truncate">{monthlySummary.avgPace}</span>
+              </div>
+              <div className="flex flex-col gap-1 border-r border-slate-900/60 pr-1">
+                <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Distance</span>
+                <span className="text-sm font-black text-white">{monthlySummary.distanceKm} <span className="text-[9px] text-slate-500 font-bold">km</span></span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider">Avg Pace</span>
-                <span className="text-sm font-black text-white">{monthlySummary.avgPace} <span className="text-[11px] text-gray-500 font-normal">/km</span></span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider">Distance</span>
-                <span className="text-sm font-black text-success">{monthlySummary.distanceKm} <span className="text-[11px] text-gray-500 font-normal">km</span></span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[9px] text-gray-555 uppercase font-bold tracking-wider">Active Streak</span>
-                <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-500">{monthlySummary.activeStreak} <span className="text-[11px] text-gray-500 font-normal">days</span></span>
+                <span className="text-[8px] text-slate-500 uppercase font-black tracking-wider leading-none">Streak</span>
+                <span className="text-sm font-black text-blue-400">{monthlySummary.activeStreak} <span className="text-[9px] text-slate-500 font-bold">d</span></span>
               </div>
             </div>
           </motion.div>
