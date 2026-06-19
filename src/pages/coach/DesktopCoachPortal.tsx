@@ -1211,7 +1211,8 @@ export default function DesktopCoachPortal() {
       const myTargets = myProfile?.targets || {};
       const isDeactivated = myTargets.is_deactivated === true;
       const isExpired = myTargets.subscription_end_date && nowObj >= new Date(myTargets.subscription_end_date);
-      const isPending = myTargets.subscription_start_date && nowObj < new Date(myTargets.subscription_start_date);
+      // Allow a 10-minute clock skew grace period for client-server drift
+      const isPending = myTargets.subscription_start_date && (nowObj.getTime() + 10 * 60 * 1000) < new Date(myTargets.subscription_start_date).getTime();
 
       if (session.user.id !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
         setIsCoachSuspended(true);
@@ -1764,7 +1765,8 @@ export default function DesktopCoachPortal() {
             const myTargets = payload.new.targets || {};
             const isDeactivated = myTargets.is_deactivated === true;
             const isExpired = myTargets.subscription_end_date && nowObj >= new Date(myTargets.subscription_end_date);
-            const isPending = myTargets.subscription_start_date && nowObj < new Date(myTargets.subscription_start_date);
+            // Allow a 10-minute clock skew grace period for client-server drift
+            const isPending = myTargets.subscription_start_date && (nowObj.getTime() + 10 * 60 * 1000) < new Date(myTargets.subscription_start_date).getTime();
 
             if (coachUserId !== OWNER_ID && (isDeactivated || isExpired || isPending)) {
               setIsCoachSuspended(true);
@@ -5861,7 +5863,8 @@ export default function DesktopCoachPortal() {
                               const tg = p.targets || {};
                               const isDeact = tg.is_deactivated === true;
                               const isExpired = tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date);
-                              const isPending = tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date);
+                              // Allow a 10-minute clock skew grace period
+                              const isPending = tg.subscription_start_date && (Date.now() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime();
                               return !isDeact && !isExpired && !isPending;
                             }).length}
                           </h3>
@@ -8205,7 +8208,8 @@ export default function DesktopCoachPortal() {
                           if (targets.subscription_start_date && targets.subscription_end_date) {
                             const start = new Date(targets.subscription_start_date);
                             const end = new Date(targets.subscription_end_date);
-                            isPending = now < start;
+                            // Allow a 10-minute clock skew grace period
+                            isPending = (now.getTime() + 10 * 60 * 1000) < start.getTime();
                             isExpired = now >= end;
                           }
 
@@ -8657,7 +8661,8 @@ export default function DesktopCoachPortal() {
                           const isOwner = c.id === OWNER_ID;
                           const isDeactivated = !isOwner && targets.is_deactivated === true;
                           const isExpired = !isOwner && targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
-                          const isPending = !isOwner && targets.subscription_start_date && now < new Date(targets.subscription_start_date);
+                          // Allow a 10-minute clock skew grace period
+                          const isPending = !isOwner && targets.subscription_start_date && (now.getTime() + 10 * 60 * 1000) < new Date(targets.subscription_start_date).getTime();
                           
                           let statusLabel = 'ACTIVE';
                           let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
@@ -8815,7 +8820,7 @@ export default function DesktopCoachPortal() {
                           const tg = c.targets || {};
                           const isDeact = tg.is_deactivated === true;
                           const isExpired = tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date);
-                          const isPending = tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date);
+                          const isPending = tg.subscription_start_date && (Date.now() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime();
                           return !isDeact && !isExpired && !isPending;
                         }).length,
                         icon: <UserCheck className="text-emerald-400" size={18} />,
@@ -8831,7 +8836,7 @@ export default function DesktopCoachPortal() {
                           const tg = c.targets || {};
                           const isDeact = tg.is_deactivated === true;
                           const isExpired = tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date);
-                          const isPending = tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date);
+                          const isPending = tg.subscription_start_date && (Date.now() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime();
                           return isDeact || isExpired || isPending;
                         }).length,
                         icon: <UserX className="text-rose-400" size={18} />,
@@ -8913,7 +8918,8 @@ export default function DesktopCoachPortal() {
                             
                             const now = new Date();
                             const isExpired = !isSelf && tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
-                            const isPending = !isSelf && tg.subscription_start_date && now < new Date(tg.subscription_start_date);
+                            // Allow a 10-minute clock skew grace period
+                            const isPending = !isSelf && tg.subscription_start_date && (now.getTime() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime();
                             
                             let statusLabel = 'ACTIVE';
                             let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
@@ -10656,7 +10662,7 @@ export default function DesktopCoachPortal() {
                     const tg = targetCoach?.targets || {};
                     const isCurrentlySuspended = tg.is_deactivated === true || 
                       (tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date)) ||
-                      (tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date));
+                      (tg.subscription_start_date && (Date.now() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime());
                     return isCurrentlySuspended ? 'Reactivate Coach Access' : 'Update Coach Subscription';
                   })()}
                 </h3>
@@ -10782,7 +10788,7 @@ export default function DesktopCoachPortal() {
                   const tg = targetCoach?.targets || {};
                   const isCurrentlySuspended = tg.is_deactivated === true || 
                     (tg.subscription_end_date && new Date() >= new Date(tg.subscription_end_date)) ||
-                    (tg.subscription_start_date && new Date() < new Date(tg.subscription_start_date));
+                    (tg.subscription_start_date && (Date.now() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime());
                   return isCurrentlySuspended ? 'Confirm Reactivation' : 'Update Subscription';
                 })()}
               </button>
@@ -10853,7 +10859,8 @@ export default function DesktopCoachPortal() {
           const isOwner = selectedSubClient.id === OWNER_ID;
           const isDeactivated = !isOwner && targets.is_deactivated === true;
           const isExpired = !isOwner && targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
-          const isPending = !isOwner && targets.subscription_start_date && now < new Date(targets.subscription_start_date);
+          // Allow a 10-minute clock skew grace period
+          const isPending = !isOwner && targets.subscription_start_date && (now.getTime() + 10 * 60 * 1000) < new Date(targets.subscription_start_date).getTime();
 
           let statusLabel = 'ACTIVE';
           let statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
@@ -11600,7 +11607,8 @@ export default function DesktopCoachPortal() {
                       {(() => {
                         const now = new Date();
                         const isExpired = tg.subscription_end_date && now >= new Date(tg.subscription_end_date);
-                        const isPending = tg.subscription_start_date && now < new Date(tg.subscription_start_date);
+                        // Allow a 10-minute clock skew grace period
+                        const isPending = tg.subscription_start_date && (now.getTime() + 10 * 60 * 1000) < new Date(tg.subscription_start_date).getTime();
                         const isDeact = tg.is_deactivated === true;
                         
                         let statusLabel = "ACTIVE";

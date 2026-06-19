@@ -491,7 +491,7 @@ function App() {
         } else if (targets.subscription_start_date && targets.subscription_end_date) {
           const startDate = new Date(targets.subscription_start_date);
           const endDate = new Date(targets.subscription_end_date);
-          if (now < startDate) {
+          if ((now.getTime() + 10 * 60 * 1000) < startDate.getTime()) {
             isDeactivated = true;
             const diffMs = startDate.getTime() - now.getTime();
             const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
@@ -581,7 +581,7 @@ function App() {
         if (targets.subscription_start_date && targets.subscription_end_date) {
           const startDate = new Date(targets.subscription_start_date);
           const endDate = new Date(targets.subscription_end_date);
-          if (now < startDate) {
+          if ((now.getTime() + 10 * 60 * 1000) < startDate.getTime()) {
             isDeactivated = true;
             const diffMs = startDate.getTime() - now.getTime();
             const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
