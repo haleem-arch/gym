@@ -322,7 +322,11 @@ export default function CoachLandingPage() {
     setOnboardingStep(1);
     setErrorMessage(null);
 
-    const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
+    const isWindows = typeof navigator !== 'undefined' && 
+      /Windows/i.test(navigator.userAgent) && 
+      !/Macintosh|Mac OS X/i.test(navigator.userAgent) && 
+      !/iPhone|iPad|iPod/i.test(navigator.userAgent) && 
+      !/Android/i.test(navigator.userAgent);
     if (mode === 'register' && isWindows && !isElectron) {
       setOnboardingMode('options');
     } else {
@@ -720,7 +724,11 @@ export default function CoachLandingPage() {
           type="button"
           onClick={() => {
             setAuthMode('register');
-            const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
+            const isWindows = typeof navigator !== 'undefined' && 
+              /Windows/i.test(navigator.userAgent) && 
+              !/Macintosh|Mac OS X/i.test(navigator.userAgent) && 
+              !/iPhone|iPad|iPod/i.test(navigator.userAgent) && 
+              !/Android/i.test(navigator.userAgent);
             if (isWindows && !isElectron) {
               setOnboardingMode('options');
             } else {

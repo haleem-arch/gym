@@ -259,14 +259,21 @@ export default async function handler(req: any, res: any) {
       const textWelcome = `
 Welcome to Life Gym, Athlete ${displayName.trim()}! 🦾
 
-Your self-guided athlete account has been successfully created. You can now log in using your phone to log meals, record workouts, track hydration, and analyze InBody body composition trends.
+Your self-guided athlete account has been successfully created. You can now log in using your phone browser to log meals, record workouts, track hydration, and analyze InBody body composition trends.
 
-Your Athlete Details:
+How to Get Started:
+• Workouts: Navigate to the "Workouts" tab to customize and edit your training split and workout plans.
+• Diet: Go to the "Diet" tab to log meals, customize food choices, and manage your nutrition targets.
+
+Need Support?
+• WhatsApp: Send a message to +201031449441 or click here: https://wa.me/201031449441
+• Email: Contact us at support@lifegym.app
+
+Your Account Details:
+• Portal Link: ${origin}/
 • Login Email: ${cleanEmail}
-• Targets: ${kcal} kcal (P: ${protein}g, C: ${carbs}g, F: ${fat}g)
 
-Log In on Your Phone:
-${origin}/
+Let's crush some goals! 💪🔥
       `.trim();
 
       const htmlWelcome = `
@@ -284,9 +291,20 @@ ${origin}/
             </p>
             
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px; color: #334155; margin-bottom: 24px; text-align: left; line-height: 1.6;">
-              <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Account Details</span>
+              <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">How to Get Started</span>
+              <ul style="margin: 0; padding-left: 20px; color: #4b5563; margin-bottom: 16px;">
+                <li style="margin-bottom: 8px;"><strong>Workouts:</strong> Navigate to the <strong>Workouts</strong> tab to create and edit your training split and workout plans.</li>
+                <li style="margin-bottom: 8px;"><strong>Diet:</strong> Go to the <strong>Diet</strong> tab to log your meals, customize food choices, and manage your nutrition targets.</li>
+              </ul>
+              
+              <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Need Support?</span>
+              <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+                <li style="margin-bottom: 8px;"><strong>WhatsApp:</strong> Message us at <a href="https://wa.me/201031449441" style="color: #3b82f6; font-weight: bold; text-decoration: underline;">+201031449441</a></li>
+                <li style="margin-bottom: 8px;"><strong>Email:</strong> Email us at <a href="mailto:support@lifegym.app" style="color: #3b82f6; font-weight: bold; text-decoration: underline;">support@lifegym.app</a></li>
+              </ul>
+              
+              <span style="color: #3b82f6; font-weight: bold; display: block; margin-top: 16px; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Account Details</span>
               <strong>Login Email:</strong> <code style="color: #3b82f6; font-family: monospace; font-size: 13px;">${cleanEmail}</code><br />
-              <strong>Starting Targets:</strong> <span style="color: #10b981; font-weight: bold;">${kcal} kcal</span> (Protein: ${protein}g, Carbs: ${carbs}g, Fat: ${fat}g)
             </div>
             
             <div style="text-align: center; margin-bottom: 28px;">
@@ -325,9 +343,9 @@ ${origin}/
         const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
         const waEndpoint = `${gatewayUrl}/send-text`;
 
-        const DEFAULT_TPL_ATHLETE = `*Welcome to Life Gym, Athlete {display_name}!* 🦾\n\nYour self-guided athlete account has been successfully created.\n\nYou can now log in to log meals, record your workouts, track water, and view InBody composition trends.\n\n*Your Account Details:*\n• *Portal Link:* {link}\n• *Login Email:* {username}\n• *Starting Targets:* {kcal} kcal\n\nLet's crush some goals! 💪🔥`;
+        const DEFAULT_TPL_ATHLETE = `*Welcome to Life Gym, Athlete {display_name}!* 🦾\n\nYour self-guided athlete account has been successfully created.\n\nYou can now log in using your phone browser to log meals, record workouts, track hydration, and view InBody composition trends.\n\n*How to get started:*\n• *Workouts:* Navigate to the Workouts tab to customize and edit your workout plans.\n• *Diet:* Go to the Diet tab to log meals, customize food choices, and manage your nutrition targets.\n\n*Need Support?*\n• *WhatsApp support:* Send a message to +201031449441 (https://wa.me/201031449441)\n• *Email Support:* contact us at support@lifegym.app\n\n*Your Account Details:*\n• *Portal Link:* {link}\n• *Login Email:* {username}\n\nLet's crush some goals! 💪🔥`;
 
-        const rawTemplate = ownerTargets.whatsapp_tpl_athlete_onboarding || DEFAULT_TPL_ATHLETE;
+        const rawTemplate = ownerTargets.whatsapp_tpl_athlete_self_signup || DEFAULT_TPL_ATHLETE;
         const formattedMessage = rawTemplate
           .replace(/{display_name}/g, displayName.trim())
           .replace(/{username}/g, cleanEmail)
