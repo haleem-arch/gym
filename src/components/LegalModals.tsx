@@ -19,17 +19,18 @@ export default function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
           isPlainText: true,
           content: `PRIVACY POLICY
 Life Gym Platform
-Effective Date: June 6, 2026
-Last Updated: June 6, 2026
+Effective Date: June 19, 2026
+Last Updated: June 19, 2026
 
 1. Introduction
 Life Gym ("we," "our," or "us") operates a professional fitness coaching SaaS platform that enables certified coaches to manage their athletes, track progress, and deliver personalized training programs. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our platform.
 By accessing or using Life Gym, you agree to the terms outlined in this Privacy Policy.
 
 2. Who We Are
-Life Gym is a fitness coaching management platform based in Egypt. We serve two types of users:
+Life Gym is a fitness coaching management platform based in Egypt. We serve three types of users:
 - Coaches — fitness professionals who manage athlete programs
-- Athletes — clients who track their training, nutrition, and body composition
+- Coached Athletes — clients managed by coaches who track their training, nutrition, and body composition
+- Coachless (Self-Guided) Athletes — independent clients who track their training, nutrition, and body composition using our self-guided tools
 
 3. Information We Collect
 3.1 From Coaches
@@ -67,7 +68,7 @@ We use collected data to:
 5. Data Sharing
 We do not sell, rent, or trade your personal information to third parties.
 We may share data only in the following circumstances:
-- Between coach and athlete: Coaches can view and manage their assigned athletes' data. Athletes can view data their coach has configured for them.
+- Between coach and athlete: Coaches can view and manage their assigned athletes' data. Athletes can view data their coach has configured for them. Self-guided (coachless) athletes do not share their training or diet logs with any coach, and their data remains completely private.
 - Payment verification: Transaction details submitted for subscription renewal are reviewed by our administrative team for verification purposes only.
 - Legal requirements: If required by Egyptian law or a valid legal process, we may disclose information to the appropriate authorities.
 - Service providers: We use Supabase as our secure database infrastructure. They process data on our behalf under strict confidentiality obligations.
@@ -111,16 +112,16 @@ We may update this Privacy Policy from time to time. When we do, we will update 
           icon: <FileText className="text-purple-400 w-6 h-6" />,
           isPlainText: true,
           content: `Life Gym Platform
-Effective Date: June 6, 2026
-Last Updated: June 6, 2026
+Effective Date: June 19, 2026
+Last Updated: June 19, 2026
 
 1. Acceptance of Terms
-By creating an account or using the Life Gym platform, you ("User") agree to be bound by these Terms of Use. If you do not agree to these terms, you must not access or use the platform. These terms apply to both coaches and athletes using the Life Gym platform.
+By creating an account or using the Life Gym platform, you ("User") agree to be bound by these Terms of Use. If you do not agree to these terms, you must not access or use the platform. These terms apply to coaches, coached athletes, and self-guided (coachless) athletes using the Life Gym platform.
 
 2. Description of Service
-Life Gym is a subscription-based fitness coaching management platform that provides:
+Life Gym is a fitness coaching and personal tracking platform that provides:
 - Athlete management tools for certified fitness coaches
-- Personal tracking portals for athletes
+- Personal tracking portals for coached and self-guided athletes
 - Workout planning, nutrition tracking, and body composition monitoring
 - Subscription and license management for coaching businesses
 
@@ -131,11 +132,16 @@ Life Gym is a subscription-based fitness coaching management platform that provi
 - You must notify us immediately of any unauthorized access to your account
 - One coach account is permitted per individual
 
-3.2 Athletes
-- Athlete accounts are created by their assigned coach
+3.2 Coached Athletes
+- Coached athlete accounts are created by their assigned coach
 - Athletes receive login credentials from their coach
 - Athletes are responsible for keeping their credentials confidential
 - Athletes may not share their account access with others
+
+3.3 Self-Guided (Coachless) Athletes
+- Self-guided athlete accounts are created directly by the athlete via the platform registration page
+- Self-guided athletes manage their own login credentials and are responsible for their confidentiality
+- Self-guided athletes have free unlimited access to the platform's self-guided training and tracking tools
 
 4. Subscriptions & Payments
 4.1 Coach Subscriptions
@@ -159,6 +165,9 @@ Life Gym is a subscription-based fitness coaching management platform that provi
 - When your subscription expires, access to the coach dashboard is automatically suspended
 - Your data and athlete records are retained for 30 days after expiry before being subject to deletion
 - You may renew your subscription at any time to restore full access
+
+4.5 Self-Guided (Coachless) Athletes
+- Self-guided athletes have free, unlimited access to the self-guided tracking tools and do not require paid subscriptions or renewals.
 
 5. Acceptable Use
 You agree not to:

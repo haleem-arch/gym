@@ -6388,7 +6388,18 @@ export default function DesktopCoachPortal() {
                                 </span>
                               )}
                             </p>
-                            <p className="text-[10px] text-gray-500 truncate">@{client.username}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[10px] text-gray-500 truncate">@{client.username}</p>
+                              {client.coach_id ? (
+                                <span className="text-[7px] leading-none bg-blue-500/10 border border-blue-500/30 text-blue-400 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                  Coached
+                                </span>
+                              ) : (
+                                <span className="text-[7px] leading-none bg-teal-500/10 border border-teal-500/30 text-teal-400 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                  Coachless
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <ChevronRight size={13} className="text-gray-600 shrink-0" />
                         </div>
@@ -6442,8 +6453,27 @@ export default function DesktopCoachPortal() {
                                 #{selectedClientProfile.user.targets.client_code}
                               </span>
                             )}
+                            {selectedClientProfile.user?.coach_id ? (
+                              <span className="text-[9px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                                Coached Athlete
+                              </span>
+                            ) : (
+                              <span className="text-[9px] bg-teal-500/10 border border-teal-500/20 text-teal-400 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                                Coachless Athlete
+                              </span>
+                            )}
                           </h2>
-                          <p className="text-xs text-gray-500">Handle: @{selectedClientProfile.user?.username || 'no-username'}</p>
+                          <div className="text-xs text-gray-550 flex items-center gap-1.5 mt-0.5">
+                            <span>Handle: @{selectedClientProfile.user?.username || 'no-username'}</span>
+                            {selectedClientProfile.user?.coach_id && (() => {
+                              const coach = profiles.find(p => p.id === selectedClientProfile.user.coach_id);
+                              return (
+                                <span className="text-gray-500 font-medium">
+                                  • Coached by: <strong className="text-violet-400">{coach?.display_name || 'Unknown Coach'}</strong>
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
 

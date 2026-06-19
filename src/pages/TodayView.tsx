@@ -104,14 +104,15 @@ const TodayView = () => {
             setUserDisplayName(profile.display_name);
           }
           
-          if (profile?.targets?.show_first_time_message === true) {
-            setShowFirstTimeMessage(true);
-          }
-
           // Read target locks
           const userTargets = profile?.targets || {};
           const { data: ownerProfile } = await supabase.from('profiles').select('targets').eq('id', 'ef685819-cdb3-4cd7-811d-4e6f7fff423c').maybeSingle();
           const ownerTargets = ownerProfile?.targets || {};
+
+          const globalTutorialEnabled = ownerTargets.enable_walkthrough_tutorial !== false;
+          if (profile?.targets?.show_first_time_message === true && globalTutorialEnabled) {
+            setShowFirstTimeMessage(true);
+          }
           
           let disableNutrition = true;
           if (profile && !profile.coach_id) {

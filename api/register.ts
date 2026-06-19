@@ -316,7 +316,7 @@ Let's crush some goals! 💪🔥
         }
 
         // Check if WhatsApp triggers are enabled
-        const isTriggered = ownerTargets.whatsapp_trigger_athlete_onboarding !== false;
+        const isTriggered = ownerTargets.whatsapp_trigger_athlete_self_signup !== false;
         if (!isTriggered) return;
 
         const cleanedPhone = formatWhatsAppPhone(phone);

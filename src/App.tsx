@@ -520,9 +520,13 @@ function App() {
 
         const isNewSignup = localStorage.getItem('is_new_signup') === 'true';
 
+        const globalSplashEnabled = ownerData?.targets?.enable_welcome_splash !== false;
+
         if (profile?.targets?.show_welcome_animation === true) {
-          setWelcomeName(profile.display_name || '');
-          setShowWelcomeSplash(true);
+          if (globalSplashEnabled) {
+            setWelcomeName(profile.display_name || '');
+            setShowWelcomeSplash(true);
+          }
 
           const cleanTargets = { ...profile.targets };
           delete cleanTargets.show_welcome_animation;
