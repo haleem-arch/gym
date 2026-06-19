@@ -267,7 +267,7 @@ How to Get Started:
 
 Need Support?
 • WhatsApp: Send a message to +201031449441 or click here: https://wa.me/201031449441
-• Email: Contact us at support@lifegym.app
+• Email: Contact us at life.gym.team@gmail.com
 
 Your Account Details:
 • Portal Link: ${origin}/
@@ -300,7 +300,7 @@ Let's crush some goals! 💪🔥
               <span style="color: #3b82f6; font-weight: bold; display: block; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Need Support?</span>
               <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
                 <li style="margin-bottom: 8px;"><strong>WhatsApp:</strong> Message us at <a href="https://wa.me/201031449441" style="color: #3b82f6; font-weight: bold; text-decoration: underline;">+201031449441</a></li>
-                <li style="margin-bottom: 8px;"><strong>Email:</strong> Email us at <a href="mailto:support@lifegym.app" style="color: #3b82f6; font-weight: bold; text-decoration: underline;">support@lifegym.app</a></li>
+                <li style="margin-bottom: 8px;"><strong>Email:</strong> Email us at <a href="mailto:life.gym.team@gmail.com" style="color: #3b82f6; font-weight: bold; text-decoration: underline;">life.gym.team@gmail.com</a></li>
               </ul>
               
               <span style="color: #3b82f6; font-weight: bold; display: block; margin-top: 16px; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Your Account Details</span>
@@ -343,7 +343,7 @@ Let's crush some goals! 💪🔥
         const gatewayUrl = ownerTargets.whatsapp_gateway_url.trim().replace(/\/$/, '');
         const waEndpoint = `${gatewayUrl}/send-text`;
 
-        const DEFAULT_TPL_ATHLETE = `*Welcome to Life Gym, Athlete {display_name}!* 🦾\n\nYour self-guided athlete account has been successfully created.\n\nYou can now log in using your phone browser to log meals, record workouts, track hydration, and view InBody composition trends.\n\n*How to get started:*\n• *Workouts:* Navigate to the Workouts tab to customize and edit your workout plans.\n• *Diet:* Go to the Diet tab to log meals, customize food choices, and manage your nutrition targets.\n\n*Need Support?*\n• *WhatsApp support:* Send a message to +201031449441 (https://wa.me/201031449441)\n• *Email Support:* contact us at support@lifegym.app\n\n*Your Account Details:*\n• *Portal Link:* {link}\n• *Login Email:* {username}\n\nLet's crush some goals! 💪🔥`;
+        const DEFAULT_TPL_ATHLETE = `*Welcome to Life Gym, Athlete {display_name}!* 🦾\n\nYour self-guided athlete account has been successfully created.\n\nYou can now log in using your phone browser to log meals, record workouts, track hydration, and view InBody composition trends.\n\n*How to get started:*\n• *Workouts:* Navigate to the Workouts tab to customize and edit your workout plans.\n• *Diet:* Go to the Diet tab to log meals, customize food choices, and manage your nutrition targets.\n\n*Need Support?*\n• *Email Support:* Reply to this message, or email us at life.gym.team@gmail.com\n\n*Your Account Details:*\n• *Portal Link:* {link}\n• *Login Email:* {username}\n\nLet's crush some goals! 💪🔥`;
 
         const rawTemplate = ownerTargets.whatsapp_tpl_athlete_self_signup || DEFAULT_TPL_ATHLETE;
         const formattedMessage = rawTemplate
