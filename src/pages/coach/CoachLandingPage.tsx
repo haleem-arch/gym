@@ -184,19 +184,14 @@ export default function CoachLandingPage() {
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
 
   // Form states (Athlete)
-  const [athleteStep, setAthleteStep] = useState(1);
   const [athleteName, setAthleteName] = useState('');
+  const [athletePhone, setAthletePhone] = useState('');
   const [athleteEmail, setAthleteEmail] = useState('');
   const [athletePassword, setAthletePassword] = useState('');
   const [athleteShowPassword, setAthleteShowPassword] = useState(false);
   const [athleteAge, setAthleteAge] = useState('');
   const [athleteHeight, setAthleteHeight] = useState('');
   const [athleteGender, setAthleteGender] = useState<'male' | 'female'>('male');
-  const [athleteWeight, setAthleteWeight] = useState('');
-  const [athleteBfPercent, setAthleteBfPercent] = useState('');
-  const [athleteMuscleMass, setAthleteMuscleMass] = useState('');
-  const [athleteBmr, setAthleteBmr] = useState('');
-  const [athleteInbodyScore, setAthleteInbodyScore] = useState('70');
   const [athleteAcceptedTerms, setAthleteAcceptedTerms] = useState(false);
   const [athleteAttemptedSubmit, setAthleteAttemptedSubmit] = useState(false);
   const [athleteEmailTaken, setAthleteEmailTaken] = useState(false);
@@ -543,9 +538,9 @@ export default function CoachLandingPage() {
       !athleteName.trim() || 
       !athleteEmail.trim() || 
       athletePassword.length < 6 || 
+      !athletePhone.trim() ||
       !athleteAge.trim() || 
       !athleteHeight.trim() || 
-      !athleteWeight.trim() || 
       !athleteAcceptedTerms
     ) {
       toast.error('Please fill in all profile details and accept the terms.');
@@ -578,14 +573,10 @@ export default function CoachLandingPage() {
             email: athleteEmail.trim(),
             password: athletePassword,
             displayName: athleteName.trim(),
+            phone: athletePhone.trim(),
             age: athleteAge,
             height: athleteHeight,
-            gender: athleteGender,
-            weight: athleteWeight,
-            bfPercent: athleteBfPercent,
-            muscleMass: athleteMuscleMass,
-            bmr: athleteBmr,
-            inbodyScore: athleteInbodyScore
+            gender: athleteGender
           })
         });
 
@@ -703,7 +694,6 @@ export default function CoachLandingPage() {
           type="button"
           onClick={() => {
             setAuthMode('athlete_signup');
-            setAthleteStep(1);
             setAthleteAttemptedSubmit(false);
           }}
           className="w-full text-left p-5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl transition-all hover:scale-[1.01] cursor-pointer group flex items-start gap-4"
@@ -757,321 +747,222 @@ export default function CoachLandingPage() {
 
   const renderAthleteSignup = () => (
     <form onSubmit={e => e.preventDefault()} className="space-y-4">
-      {/* STEP 1 */}
-      {athleteStep === 1 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="h-1.5 flex-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
-            <div className="h-1.5 flex-1 rounded-full bg-zinc-900" />
-          </div>
+      <div className="space-y-4">
+        {/* Full Name */}
+        <div className="space-y-1.5 text-left font-sans">
+          <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Full Name</label>
+          <input 
+            type="text" 
+            required 
+            value={athleteName} 
+            onChange={e => setAthleteName(e.target.value)} 
+            placeholder="e.g. John Doe"
+            className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+              athleteAttemptedSubmit && !athleteName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+            }`} 
+          />
+        </div>
 
-          <div className="space-y-1.5 text-left font-sans">
-            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Full Name</label>
+        {/* Phone Number */}
+        <div className="space-y-1.5 text-left font-sans">
+          <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Phone Number</label>
+          <input 
+            type="tel" 
+            required 
+            value={athletePhone} 
+            onChange={e => setAthletePhone(e.target.value)} 
+            placeholder="e.g. +201012345678"
+            className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+              athleteAttemptedSubmit && !athletePhone.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+            }`} 
+          />
+        </div>
+
+        {/* Email Address */}
+        <div className="space-y-1.5 text-left font-sans">
+          <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Email Address</label>
+          <input 
+            type="email" 
+            required 
+            value={athleteEmail} 
+            onChange={e => setAthleteEmail(e.target.value.replace(/\s/g, ''))} 
+            placeholder="name@example.com"
+            className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+              (athleteAttemptedSubmit && !athleteEmail.trim()) || athleteEmailTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-850'
+            }`} 
+          />
+          {athleteEmailChecking && <p className="text-[8px] text-zinc-500 mt-0.5 animate-pulse">Checking availability...</p>}
+          {athleteEmailTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">This email is already registered.</p>}
+        </div>
+
+        {/* Password */}
+        <div className="space-y-1.5 text-left font-sans">
+          <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Password</label>
+          <div className="relative">
             <input 
-              type="text" 
+              type={athleteShowPassword ? "text" : "password"} 
               required 
-              value={athleteName} 
-              onChange={e => setAthleteName(e.target.value)} 
-              placeholder="e.g. John Doe"
-              className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                athleteAttemptedSubmit && !athleteName.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+              value={athletePassword} 
+              onChange={e => setAthletePassword(e.target.value)} 
+              placeholder="Minimum 6 characters"
+              className={`w-full bg-zinc-900/60 border rounded-xl pl-3 pr-10 py-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                athleteAttemptedSubmit && athletePassword.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
               }`} 
             />
-          </div>
-
-          <div className="space-y-1.5 text-left font-sans">
-            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Email Address</label>
-            <input 
-              type="email" 
-              required 
-              value={athleteEmail} 
-              onChange={e => setAthleteEmail(e.target.value.replace(/\s/g, ''))} 
-              placeholder="name@example.com"
-              className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                (athleteAttemptedSubmit && !athleteEmail.trim()) || athleteEmailTaken ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-850'
-              }`} 
-            />
-            {athleteEmailChecking && <p className="text-[8px] text-zinc-500 mt-0.5 animate-pulse">Checking availability...</p>}
-            {athleteEmailTaken && <p className="text-[8px] text-red-400 font-bold mt-0.5">This email is already registered.</p>}
-          </div>
-
-          <div className="space-y-1.5 text-left font-sans">
-            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Password</label>
-            <div className="relative">
-              <input 
-                type={athleteShowPassword ? "text" : "password"} 
-                required 
-                value={athletePassword} 
-                onChange={e => setAthletePassword(e.target.value)} 
-                placeholder="Minimum 6 characters"
-                className={`w-full bg-zinc-900/60 border rounded-xl pl-3 pr-10 py-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                  athleteAttemptedSubmit && athletePassword.length < 6 ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
-                }`} 
-              />
-              <button
-                type="button"
-                onClick={() => setAthleteShowPassword(!athleteShowPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
-              >
-                {athleteShowPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 text-left font-sans">
-              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Age</label>
-              <input 
-                type="text" 
-                inputMode="numeric" 
-                pattern="[0-9]*" 
-                required 
-                value={athleteAge} 
-                onChange={e => setAthleteAge(e.target.value.replace(/\D/g, ''))} 
-                placeholder="e.g. 25"
-                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                  athleteAttemptedSubmit && !athleteAge.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
-                }`} 
-              />
-            </div>
-
-            <div className="space-y-1.5 text-left font-sans">
-              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Height (cm)</label>
-              <input 
-                type="text" 
-                inputMode="numeric" 
-                pattern="[0-9]*" 
-                required 
-                value={athleteHeight} 
-                onChange={e => setAthleteHeight(e.target.value.replace(/\D/g, ''))} 
-                placeholder="e.g. 175"
-                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                  athleteAttemptedSubmit && !athleteHeight.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
-                }`} 
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5 text-left font-sans">
-            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Gender</label>
-            <div className="grid grid-cols-2 p-1 bg-zinc-900/60 border border-zinc-900 rounded-2xl relative">
-              <button
-                type="button"
-                onClick={() => setAthleteGender('male')}
-                className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${athleteGender === 'male' ? 'text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
-              >
-                Male
-                {athleteGender === 'male' && (
-                  <motion.div
-                    layoutId="modal-athlete-gender-pill"
-                    className="absolute inset-0 bg-zinc-800 border border-zinc-700 rounded-xl z-[-1]"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setAthleteGender('female')}
-                className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${athleteGender === 'female' ? 'text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
-              >
-                Female
-                {athleteGender === 'female' && (
-                  <motion.div
-                    layoutId="modal-athlete-gender-pill"
-                    className="absolute inset-0 bg-zinc-800 border border-zinc-700 rounded-xl z-[-1]"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setAuthMode('choose_role')}
-              className="px-6 py-3.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-450 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95"
+              onClick={() => setAthleteShowPassword(!athleteShowPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors cursor-pointer bg-transparent border-none"
             >
-              Back
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAthleteAttemptedSubmit(true);
-                if (!athleteName.trim() || !athleteEmail.trim() || athletePassword.length < 6 || !athleteAge.trim() || !athleteHeight.trim()) {
-                  if (athletePassword.length > 0 && athletePassword.length < 6) {
-                    toast.error('Password must be at least 6 characters.');
-                  } else {
-                    toast.error('Please fill in all empty fields.');
-                  }
-                  return;
-                }
-                if (athleteEmailTaken) {
-                  toast.error('Email is already registered. Please use another email.');
-                  return;
-                }
-                setAthleteStep(2);
-              }}
-              className="flex-1 bg-white hover:bg-zinc-200 text-black font-extrabold text-xs uppercase py-3.5 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-            >
-              <span>Continue</span>
-              <ArrowRight size={12} />
+              {athleteShowPassword ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
         </div>
-      )}
 
-      {/* STEP 2 */}
-      {athleteStep === 2 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="h-1.5 flex-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
-            <div className="h-1.5 flex-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 text-left font-sans">
-              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Weight (kg)</label>
-              <input 
-                type="text" 
-                inputMode="decimal" 
-                required 
-                value={athleteWeight} 
-                onChange={e => setAthleteWeight(e.target.value.replace(/[^0-9.]/g, ''))} 
-                placeholder="e.g. 78.5"
-                className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
-                  athleteAttemptedSubmit && !athleteWeight.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-805'
-                }`} 
-              />
-            </div>
-
-            <div className="space-y-1.5 text-left font-sans">
-              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Body Fat %</label>
-              <input 
-                type="text" 
-                inputMode="decimal" 
-                value={athleteBfPercent} 
-                onChange={e => setAthleteBfPercent(e.target.value.replace(/[^0-9.]/g, ''))} 
-                placeholder="e.g. 14.5"
-                className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-800 rounded-xl p-3 text-xs text-white outline-none" 
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 text-left font-sans">
-              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Muscle Mass (kg)</label>
-              <input 
-                type="text" 
-                inputMode="decimal" 
-                value={athleteMuscleMass} 
-                onChange={e => setAthleteMuscleMass(e.target.value.replace(/[^0-9.]/g, ''))} 
-                placeholder="e.g. 35.8"
-                className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-800 rounded-xl p-3 text-xs text-white outline-none" 
-              />
-            </div>
-
-            <div className="space-y-1.5 text-left font-sans">
-              <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">BMR (kcal)</label>
-              <input 
-                type="text" 
-                inputMode="numeric" 
-                pattern="[0-9]*" 
-                value={athleteBmr} 
-                onChange={e => setAthleteBmr(e.target.value.replace(/\D/g, ''))} 
-                placeholder="e.g. 1750"
-                className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-800 rounded-xl p-3 text-xs text-white outline-none" 
-              />
-            </div>
-          </div>
-
+        {/* Age & Height */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5 text-left font-sans">
-            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">InBody Score</label>
+            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Age</label>
             <input 
               type="text" 
               inputMode="numeric" 
               pattern="[0-9]*" 
-              value={athleteInbodyScore} 
-              onChange={e => setAthleteInbodyScore(e.target.value.replace(/\D/g, ''))} 
-              placeholder="e.g. 70"
-              className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-800 rounded-xl p-3 text-xs text-white outline-none" 
+              required 
+              value={athleteAge} 
+              onChange={e => setAthleteAge(e.target.value.replace(/\D/g, ''))} 
+              placeholder="e.g. 25"
+              className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                athleteAttemptedSubmit && !athleteAge.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+              }`} 
             />
           </div>
 
-          {/* Terms Acceptance */}
-          <div 
-            onClick={() => setAthleteAcceptedTerms(!athleteAcceptedTerms)}
-            className="flex items-start gap-3 my-3 text-left cursor-pointer group"
-          >
-            <div className="relative mt-0.5 shrink-0">
-              <input 
-                type="checkbox" 
-                checked={athleteAcceptedTerms} 
-                onChange={() => {}} 
-                className="sr-only"
-              />
-              <motion.div 
-                animate={{
-                  backgroundColor: athleteAcceptedTerms ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.01)",
-                  borderColor: athleteAcceptedTerms ? "#ffffff" : (athleteAttemptedSubmit && !athleteAcceptedTerms ? "#ef4444" : "rgba(255, 255, 255, 0.08)")
-                }}
-                className="w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-200"
-                style={{ borderWidth: athleteAttemptedSubmit && !athleteAcceptedTerms ? '2px' : '1px' }}
-              >
-                {athleteAcceptedTerms && (
-                  <motion.svg 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="w-2.5 h-2.5 text-white"
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="3.5" 
-                    viewBox="0 0 24 24"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </motion.svg>
-                )}
-              </motion.div>
-            </div>
-            <span className={`text-[10px] font-medium leading-normal select-none ${athleteAttemptedSubmit && !athleteAcceptedTerms ? 'text-red-400 font-bold' : 'text-zinc-450'}`}>
-              I agree to the{' '}
-              <button 
-                type="button"
-                onClick={(e) => { e.stopPropagation(); openLegalModal('privacy'); }}
-                className="text-zinc-200 hover:text-white underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
-              >
-                Privacy Policy
-              </button>{' '}
-              and{' '}
-              <button 
-                type="button"
-                onClick={(e) => { e.stopPropagation(); openLegalModal('terms'); }}
-                className="text-zinc-200 hover:text-white underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
-              >
-                Terms of Use
-              </button>.
-            </span>
+          <div className="space-y-1.5 text-left font-sans">
+            <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Height (cm)</label>
+            <input 
+              type="text" 
+              inputMode="numeric" 
+              pattern="[0-9]*" 
+              required 
+              value={athleteHeight} 
+              onChange={e => setAthleteHeight(e.target.value.replace(/\D/g, ''))} 
+              placeholder="e.g. 175"
+              className={`w-full bg-zinc-900/60 border rounded-xl p-3 text-xs text-white outline-none focus:outline-none transition-all ${
+                athleteAttemptedSubmit && !athleteHeight.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-zinc-900 focus:border-zinc-800'
+              }`} 
+            />
           </div>
+        </div>
 
-          <div className="flex gap-3 pt-2">
+        {/* Gender */}
+        <div className="space-y-1.5 text-left font-sans">
+          <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-black pl-1">Gender</label>
+          <div className="grid grid-cols-2 p-1 bg-zinc-900/60 border border-zinc-900 rounded-2xl relative">
             <button
-              type="button" 
-              onClick={() => setAthleteStep(1)}
-              className="px-6 py-4 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-450 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95"
+              type="button"
+              onClick={() => setAthleteGender('male')}
+              className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${athleteGender === 'male' ? 'text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
             >
-              Back
+              Male
+              {athleteGender === 'male' && (
+                <motion.div
+                  layoutId="modal-athlete-gender-pill"
+                  className="absolute inset-0 bg-zinc-800 border border-zinc-700 rounded-xl z-[-1]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
             </button>
             <button
-              type="button" 
-              disabled={loading} 
-              onClick={handleAthleteSignup}
-              className="flex-1 bg-white hover:bg-zinc-200 disabled:bg-zinc-900 disabled:text-zinc-550 text-black font-extrabold text-xs uppercase py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+              type="button"
+              onClick={() => setAthleteGender('female')}
+              className={`py-3 text-xs font-black rounded-xl transition-all relative z-10 flex items-center justify-center gap-1.5 cursor-pointer ${athleteGender === 'female' ? 'text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
             >
-              {loading ? 'Registering...' : <><CheckCircle2 size={13} /> Complete Registration</>}
+              Female
+              {athleteGender === 'female' && (
+                <motion.div
+                  layoutId="modal-athlete-gender-pill"
+                  className="absolute inset-0 bg-zinc-800 border border-zinc-700 rounded-xl z-[-1]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
             </button>
           </div>
         </div>
-      )}
+
+        {/* Terms Acceptance */}
+        <div 
+          onClick={() => setAthleteAcceptedTerms(!athleteAcceptedTerms)}
+          className="flex items-start gap-3 my-3 text-left cursor-pointer group"
+        >
+          <div className="relative mt-0.5 shrink-0">
+            <input 
+              type="checkbox" 
+              checked={athleteAcceptedTerms} 
+              onChange={() => {}} 
+              className="sr-only"
+            />
+            <motion.div 
+              animate={{
+                backgroundColor: athleteAcceptedTerms ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.01)",
+                borderColor: athleteAcceptedTerms ? "#ffffff" : (athleteAttemptedSubmit && !athleteAcceptedTerms ? "#ef4444" : "rgba(255, 255, 255, 0.08)")
+              }}
+              className="w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-200"
+              style={{ borderWidth: athleteAttemptedSubmit && !athleteAcceptedTerms ? '2px' : '1px' }}
+            >
+              {athleteAcceptedTerms && (
+                <motion.svg 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="w-2.5 h-2.5 text-white"
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="3.5" 
+                  viewBox="0 0 24 24"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </motion.svg>
+              )}
+            </motion.div>
+          </div>
+          <span className={`text-[10px] font-medium leading-normal select-none ${athleteAttemptedSubmit && !athleteAcceptedTerms ? 'text-red-400 font-bold' : 'text-zinc-450'}`}>
+            I agree to the{' '}
+            <button 
+              type="button"
+              onClick={(e) => { e.stopPropagation(); openLegalModal('privacy'); }}
+              className="text-zinc-200 hover:text-white underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
+            >
+              Privacy Policy
+            </button>{' '}
+            and{' '}
+            <button 
+              type="button"
+              onClick={(e) => { e.stopPropagation(); openLegalModal('terms'); }}
+              className="text-zinc-200 hover:text-white underline bg-transparent border-none p-0 cursor-pointer inline font-bold"
+            >
+              Terms of Use
+            </button>.
+          </span>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setAuthMode('choose_role')}
+            className="px-6 py-4 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-450 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95"
+          >
+            Back
+          </button>
+          <button
+            type="button" 
+            disabled={loading} 
+            onClick={handleAthleteSignup}
+            className="flex-1 bg-white hover:bg-zinc-200 disabled:bg-zinc-900 disabled:text-zinc-550 text-black font-extrabold text-xs uppercase py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+          >
+            {loading ? 'Registering...' : <><CheckCircle2 size={13} /> Complete Registration</>}
+          </button>
+        </div>
+      </div>
     </form>
   );
 

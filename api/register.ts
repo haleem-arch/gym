@@ -49,6 +49,7 @@ export default async function handler(req: any, res: any) {
         email, 
         password, 
         displayName, 
+        phone,
         age, 
         height, 
         gender, 
@@ -63,7 +64,7 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      if (email.length > 100 || password.length > 100 || displayName.length > 100) {
+      if (email.length > 100 || password.length > 100 || displayName.length > 100 || (phone && phone.length > 30)) {
         return res.status(400).json({ error: 'Input fields exceed allowed character limits' });
       }
 
@@ -128,6 +129,7 @@ export default async function handler(req: any, res: any) {
         onboarding_completed: true,
         show_first_time_message: true,
         water_goal_ml: 3000,
+        phone_number: phone ? phone.trim() : null,
         day_nutrition: dayNutritionMap,
         kcal, protein, carbs, fat
       };
