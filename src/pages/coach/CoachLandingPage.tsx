@@ -1,6 +1,5 @@
 // Revert: Rolled back email implementation to restore registration functionality
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import LegalModal from '../../components/LegalModals';
@@ -145,7 +144,6 @@ const FAQ_CATEGORIES = [
 ];
 
 export default function CoachLandingPage() {
-  const navigate = useNavigate();
   const isElectron = typeof window !== 'undefined' && (!!(window as any).electronAPI || navigator.userAgent.includes('Electron'));
   
   // Auth modal states
