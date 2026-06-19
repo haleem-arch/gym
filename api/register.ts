@@ -128,6 +128,7 @@ export default async function handler(req: any, res: any) {
       const updatedTargets = {
         onboarding_completed: true,
         show_first_time_message: true,
+        show_welcome_animation: true,
         water_goal_ml: 3000,
         phone_number: phone ? phone.trim() : null,
         day_nutrition: dayNutritionMap,
@@ -230,28 +231,7 @@ export default async function handler(req: any, res: any) {
       });
       await Promise.all(planPromises);
 
-      // 5. Insert initial InBody composition scan
-      await supabaseAdmin.from('inbody_scans').insert({
-        user_id: userId,
-        date: new Date().toISOString().split('T')[0],
-        weight: weightVal,
-        smm: smmVal,
-        bfm: bfmVal,
-        bf_percent: bfVal,
-        bmr: bmrVal,
-        score: scoreVal,
-        segmental: {
-          visceralFat: 6,
-          tbw: Math.round(weightVal * 0.6),
-          protein: Math.round(weightVal * 0.18),
-          minerals: Math.round(weightVal * 0.05),
-          raLean: Math.round(weightVal * 0.05),
-          laLean: Math.round(weightVal * 0.05),
-          trunkLean: Math.round(weightVal * 0.28),
-          rlLean: Math.round(weightVal * 0.12),
-          llLean: Math.round(weightVal * 0.12)
-        }
-      });
+      // 5. Skip initial InBody composition scan (athlete starts fresh)
 
       // 6. Send welcome email to athlete asynchronously
       const origin = req.headers.origin || (req.headers.host ? 'https://' + req.headers.host : 'https://lifegym.app');

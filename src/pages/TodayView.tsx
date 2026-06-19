@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, WifiOff, Sparkles } from 'lucide-react';
+import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, WifiOff, Sparkles, Dumbbell, TrendingUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
@@ -8,11 +8,48 @@ import { supabase } from '../lib/supabase';
 
 import { useSchedule } from '../hooks/useSchedule';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
-import { exportHistoryToCsv } from '../utils/exportHistory';
 import { BioStatusRing } from '../components/BioStatusRing';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PlanCardSkeleton, NutritionCardSkeleton, HydrationCardSkeleton, InBodyCardSkeleton } from '../components/SkeletonLoaders';
 
+
+const TUTORIAL_SLIDES = [
+  {
+    title: "Welcome to Life Gym! 👋",
+    icon: <Sparkles className="text-blue-400" size={32} />,
+    badge: "Today Dashboard",
+    description: "This is your HQ! Track your daily water intake, view macro targets (protein, carbs, fats), and monitor your active gym sessions and cardiorespiratory progress.",
+    tip: "Stay hydrated by hitting the rapid logging buttons for water!"
+  },
+  {
+    title: "Custom Workouts 🦾",
+    icon: <Dumbbell className="text-emerald-400" size={32} />,
+    badge: "Workouts Split",
+    description: "Build, log, and custom design your training programs. Prescribe custom splits like PUSH/PULL/LEGS, log sets, reps, rest timers, and see automatic history logs.",
+    tip: "You can swipe/tap to edit or delete exercises at any time!"
+  },
+  {
+    title: "Nutrition & Diet 🍎",
+    icon: <Utensils className="text-amber-400" size={32} />,
+    badge: "Diet & Meals",
+    description: "Log your daily meals, search and select from thousands of foods, configure custom food items, and track your daily BMR/calorie thresholds dynamically.",
+    tip: "Hit the add button in the diet page to search the database!"
+  },
+  {
+    title: "InBody Scan Trends 📈",
+    icon: <TrendingUp className="text-cyan-400" size={32} />,
+    badge: "InBody Composition",
+    description: "Log your body scans, manage skeletal muscle mass, body fat percentage, and overall weight logs. Review premium graphs showing your historical compositions.",
+    tip: "No default data is added. Log your first scan to generate graphs!"
+  },
+  {
+    title: "Profile & Settings 👤",
+    icon: <User className="text-indigo-400" size={32} />,
+    badge: "Athlete Profile",
+    description: "Change your account password, check your coach's contact card, or log out of your session. Coachless accounts enjoy permanent free premium access.",
+    tip: "Need support? Tap the WhatsApp coach button or email us!"
+  }
+];
 
 const TodayView = () => {
   const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
@@ -38,6 +75,7 @@ const TodayView = () => {
   const [disableNutritionTargets, setDisableNutritionTargets] = useState(true);
   const [showWaterModal, setShowWaterModal] = useState(false);
   const [showFirstTimeMessage, setShowFirstTimeMessage] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   const handleDismissFirstTime = async () => {
     setShowFirstTimeMessage(false);
@@ -117,17 +155,7 @@ const TodayView = () => {
   };
   const isToday = activeDate.toDateString() === new Date().toDateString();
 
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [startDateStr, setStartDateStr] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  });
-  const [endDateStr, setEndDateStr] = useState(() => {
-    const d = new Date();
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  });
+
 
   const [workoutStatus, setWorkoutStatus] = useState<number>(0.0);
   const [completedWorkoutsList, setCompletedWorkoutsList] = useState<any[]>([]);
@@ -437,15 +465,6 @@ const TodayView = () => {
           <p className="text-sm text-gray-400 mt-1">{isHaleem ? "Haleem's HQ" : `${userDisplayName || 'Athlete'}'s HQ`}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowExportModal(true)} 
-            className="flex items-center gap-1.5 bg-surface hover:bg-gray-800 border border-gray-800 text-[10px] font-bold px-3 py-2 rounded-xl text-primary hover:text-blue-400 hover:border-blue-900 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-          >
-            <FileSpreadsheet size={14} className="text-primary" />
-            Export
-          </button>
-
-
           <button 
             onClick={() => {
               if (window.confirm("Are you sure you want to sign out?")) {
@@ -852,100 +871,7 @@ const TodayView = () => {
 
       {/* Date Range Export Modal */}
       <AnimatePresence>
-        {showExportModal && (
-          <>
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowExportModal(false)}
-              className="fixed inset-0 bg-black z-[100] backdrop-blur-sm"
-            />
-            {/* Modal Bottom Sheet */}
-            <motion.div 
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface border-t border-gray-800 rounded-t-3xl p-6 z-[101] flex flex-col gap-5 shadow-2xl"
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-950 text-primary rounded-lg border border-blue-900">
-                    <FileSpreadsheet size={18} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white text-base">Export History</h3>
-                    <p className="text-[10px] text-gray-400">Download Excel compatible CSV</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowExportModal(false)}
-                  className="p-2 hover:bg-gray-800 rounded-xl transition-colors text-gray-400 hover:text-white cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Start Date</span>
-                  <input 
-                    type="date" 
-                    value={startDateStr} 
-                    onChange={(e) => setStartDateStr(e.target.value)}
-                    max={endDateStr}
-                    className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors cursor-pointer"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">End Date</span>
-                  <input 
-                    type="date" 
-                    value={endDateStr} 
-                    onChange={(e) => setEndDateStr(e.target.value)}
-                    min={startDateStr}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="bg-gray-800 border border-gray-700 text-white font-bold rounded-xl px-3 py-2.5 text-xs outline-none focus:border-primary transition-colors cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <button 
-                disabled={exporting}
-                onClick={async () => {
-                  setExporting(true);
-                  const res = await exportHistoryToCsv(startDateStr, endDateStr);
-                  setExporting(false);
-                  if (res.success) {
-                    setShowExportModal(false);
-                  } else {
-                    alert(`Failed to export: ${res.error}`);
-                  }
-                }}
-                className="w-full bg-primary hover:bg-blue-600 disabled:bg-gray-800 disabled:text-gray-600 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-white text-xs cursor-pointer"
-              >
-                {exporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    GENERATING SPREADSHEET...
-                  </>
-                ) : (
-                  <>
-                    <Download size={14} />
-                    GENERATE & DOWNLOAD
-                  </>
-                )}
-              </button>
-
-              <div className="text-[9px] text-gray-500 text-center leading-normal">
-                ✓ Fully optimized for Microsoft Excel & Google Sheets<br />
-                ✓ Arabic presets and detailed sets are preserved in UTF-8
-              </div>
-            </motion.div>
-          </>
-        )}
 
         {showTargetsModal && (
           <>
@@ -1221,23 +1147,80 @@ const TodayView = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="w-full max-w-sm bg-[#0e1222] border border-blue-900/35 rounded-3xl p-6 shadow-2xl relative text-center"
+                className="w-full max-w-sm bg-[#0e1222]/90 backdrop-blur-xl border border-blue-900/30 rounded-[32px] p-7 shadow-2xl relative text-center flex flex-col justify-between min-h-[430px]"
               >
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 mb-4 animate-bounce">
-                  <Sparkles size={24} />
-                </div>
-                <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Welcome to Life Gym! 👋</h3>
-                <p className="text-gray-300 text-xs leading-relaxed font-semibold mb-6">
-                  You are registered as a self-guided athlete. You have full access to log meals, track water, build custom workout programs, and record your training sessions.
-                  <br /><br />
-                  💡 <span className="text-primary font-bold">Tip:</span> Go to the <span className="text-primary font-bold">InBody</span> tab to add scan logs and track body composition!
-                </p>
-                <button
+                {/* Close/Skip Button */}
+                <button 
                   onClick={handleDismissFirstTime}
-                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md active:scale-95 cursor-pointer"
+                  className="absolute right-5 top-5 p-1 text-gray-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors z-20 cursor-pointer"
+                  title="Skip Walkthrough"
                 >
-                  Let's Get Started!
+                  <X size={16} />
                 </button>
+
+                <div className="flex-1 flex flex-col justify-center items-center py-4">
+                  {/* Icon */}
+                  <div className="w-16 h-16 rounded-[22px] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-5 shadow-inner">
+                    {TUTORIAL_SLIDES[tutorialStep].icon}
+                  </div>
+                  
+                  {/* Badge */}
+                  <span className="text-[9px] font-black tracking-widest text-blue-500 uppercase bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full mb-3">
+                    {TUTORIAL_SLIDES[tutorialStep].badge}
+                  </span>
+
+                  {/* Title */}
+                  <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">
+                    {TUTORIAL_SLIDES[tutorialStep].title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-gray-300 text-xs leading-relaxed font-semibold mb-4 px-2">
+                    {TUTORIAL_SLIDES[tutorialStep].description}
+                  </p>
+
+                  {/* Tip Box */}
+                  <div className="bg-blue-950/20 border border-blue-900/15 rounded-2xl p-3 text-[11px] text-gray-400 text-left w-full">
+                    💡 <span className="text-blue-400 font-bold">Pro-Tip:</span> {TUTORIAL_SLIDES[tutorialStep].tip}
+                  </div>
+                </div>
+
+                {/* Footer Controls */}
+                <div className="flex flex-col gap-4 w-full mt-2 select-none">
+                  {/* Dots indicator */}
+                  <div className="flex justify-center gap-1.5">
+                    {TUTORIAL_SLIDES.map((_, idx) => (
+                      <div 
+                        key={idx}
+                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === tutorialStep ? 'bg-blue-500 w-4' : 'bg-gray-700'}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2.5 w-full">
+                    {tutorialStep > 0 && (
+                      <button
+                        onClick={() => setTutorialStep(prev => prev - 1)}
+                        className="px-5 py-3.5 bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-400 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95 flex-1"
+                      >
+                        Back
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (tutorialStep < TUTORIAL_SLIDES.length - 1) {
+                          setTutorialStep(prev => prev + 1);
+                        } else {
+                          handleDismissFirstTime();
+                        }
+                      }}
+                      className="py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md active:scale-95 cursor-pointer flex-1"
+                    >
+                      {tutorialStep === TUTORIAL_SLIDES.length - 1 ? "Let's Go!" : "Next"}
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             </div>
           </>

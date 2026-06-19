@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield, MessageSquare, Lightbulb, Star, AlertTriangle } from 'lucide-react';
+import { User, Lock, Clock, CheckCircle, AlertCircle, ExternalLink, Shield, MessageSquare, Lightbulb, Star, AlertTriangle, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProfileSkeleton } from '../components/SkeletonLoaders';
 
@@ -211,7 +211,24 @@ export default function ProfileView() {
   // Calculate remaining subscription days
   const OWNER_ID = 'ef685819-cdb3-4cd7-811d-4e6f7fff423c';
   const isOwner = profile?.id === OWNER_ID;
-  const subEndDateStr = isOwner ? null : profile?.targets?.subscription_end_date;
+  const isCoachUser = profile?.role === 'coach' || profile?.role === 'owner' || profile?.role === 'admin' || profile?.role === 'superadmin';
+
+  let subEndDateStr = null;
+  let isCoachTrial = false;
+
+  if (!isOwner) {
+    if (isCoachUser) {
+      if (profile?.targets?.subscription_status === 'trial' && profile?.targets?.trial_end_date) {
+        subEndDateStr = profile.targets.trial_end_date;
+        isCoachTrial = true;
+      } else {
+        subEndDateStr = profile?.targets?.subscription_end_date;
+      }
+    } else {
+      subEndDateStr = profile?.targets?.subscription_end_date;
+    }
+  }
+
   let remainingDays: number | null = null;
   let isExpired = false;
 
@@ -221,8 +238,6 @@ export default function ProfileView() {
     remainingDays = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
     isExpired = remainingDays === 0;
   }
-
-  const isCoachUser = profile?.role === 'coach' || profile?.role === 'owner' || profile?.role === 'admin' || profile?.role === 'superadmin';
 
   return (
     <div className="p-5 flex flex-col gap-6 min-h-full pb-28 text-gray-200">
@@ -266,45 +281,46 @@ export default function ProfileView() {
       </motion.div>
 
       {/* Subscription Countdown Status Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-gradient-to-r from-blue-950/60 to-[#0d1117] border border-blue-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden"
-      >
-        {/* Glow */}
-        <div className="absolute -top-12 -right-12 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+      {(isCoachUser || profile?.coach_id) && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gradient-to-r from-blue-950/60 to-[#0d1117] border border-blue-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden"
+        >
+          {/* Glow */}
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2 mb-4">
-          <Clock size={14} /> {isCoachUser ? 'Website Subscription' : 'Subscription Status'}
-        </h3>
+          <h3 className="text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-2 mb-4">
+            <Clock size={14} /> {isCoachUser ? (isCoachTrial ? 'Free Trial Status' : 'Website Subscription') : 'Subscription Status'}
+          </h3>
 
-        {subEndDateStr ? (
-          <div className="space-y-4">
-            <div className="flex items-baseline gap-2">
-              <span className={`text-4xl font-black tracking-tighter ${isExpired ? 'text-red-400' : 'text-white'}`}>
-                {remainingDays}
-              </span>
-              <span className="text-sm font-bold text-gray-400">
-                {remainingDays === 1 ? 'day remaining' : 'days remaining'}
-              </span>
-            </div>
-
-            <div className="text-[11px] text-gray-500 leading-normal font-bold">
-              Expires on: <span className="text-gray-300 font-mono">{new Date(subEndDateStr).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
-            </div>
-
-            {isExpired && (
-              <div className="bg-red-950/40 border border-red-500/20 rounded-xl p-3 flex items-center gap-2 text-red-400 text-xs">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>
-                  {isCoachUser 
-                    ? 'Your platform subscription has expired. Please renew your plan from the coach portal.' 
-                    : 'Your subscription has expired. Please contact your coach to renew your plan.'}
+          {subEndDateStr ? (
+            <div className="space-y-4">
+              <div className="flex items-baseline gap-2">
+                <span className={`text-4xl font-black tracking-tighter ${isExpired ? 'text-red-400' : 'text-white'}`}>
+                  {remainingDays}
+                </span>
+                <span className="text-sm font-bold text-gray-400">
+                  {remainingDays === 1 ? 'day remaining' : 'days remaining'}
                 </span>
               </div>
-            )}
-          </div>
+
+              <div className="text-[11px] text-gray-500 leading-normal font-bold">
+                {isCoachTrial ? 'Trial ends on: ' : 'Expires on: '}<span className="text-gray-300 font-mono">{new Date(subEndDateStr).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+              </div>
+
+              {isExpired && (
+                <div className="bg-red-950/40 border border-red-500/20 rounded-xl p-3 flex items-center gap-2 text-red-400 text-xs">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>
+                    {isCoachUser 
+                      ? (isCoachTrial ? 'Your free trial has expired. Please subscribe to keep access.' : 'Your platform subscription has expired. Please renew your plan.') 
+                      : 'Your subscription has expired. Please contact your coach to renew your plan.'}
+                  </span>
+                </div>
+              )}
+            </div>
         ) : (
           <div className="space-y-2">
             <span className="text-lg font-black text-white">Lifetime Access</span>
@@ -340,6 +356,7 @@ export default function ProfileView() {
           </div>
         )}
       </motion.div>
+      )}
 
       {/* Change Password Security Card */}
       <motion.div
@@ -575,6 +592,26 @@ export default function ProfileView() {
             </motion.div>
           )}
         </AnimatePresence>
+      </motion.div>
+
+      {/* Log Out Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+      >
+        <button
+          onClick={() => {
+            if (window.confirm("Are you sure you want to sign out?")) {
+              localStorage.removeItem('bypass_launch_control');
+              supabase.auth.signOut();
+            }
+          }}
+          className="w-full py-3.5 bg-red-950/20 hover:bg-red-900/30 border border-red-900/30 hover:border-red-500/50 text-red-400 hover:text-red-300 font-black text-xs uppercase tracking-wider rounded-2xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <LogOut size={14} />
+          <span>Log Out</span>
+        </button>
       </motion.div>
     </div>
   );

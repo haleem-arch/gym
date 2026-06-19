@@ -76,6 +76,20 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
 
   if (!show) return null;
 
+  const phraseLength = randomPhrase.length;
+  let textFontSize = '15px';
+  let textLetterSpacing = '0.22em';
+  if (phraseLength > 50) {
+    textFontSize = '10px';
+    textLetterSpacing = '0.08em';
+  } else if (phraseLength > 35) {
+    textFontSize = '12px';
+    textLetterSpacing = '0.14em';
+  } else if (phraseLength > 25) {
+    textFontSize = '13.5px';
+    textLetterSpacing = '0.18em';
+  }
+
   return (
     <div id="splash-root" style={{
       position: 'fixed',
@@ -244,12 +258,15 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
         {/* Text Container (slides and fades in below the dumbbell as it lifts) */}
         {!hideText && (
           <div style={{
-            height: 36,
+            minHeight: 36,
+            height: 'auto',
             marginTop: 12,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            overflow: 'hidden',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            maxWidth: '280px',
             transform: `translateY(${shiftUp ? '-10px' : '0px'})`,
             transition: 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)',
           }}>
@@ -259,11 +276,12 @@ export function SplashOverlay({ show, onComplete, hideText = false, welcomeName,
               transition: 'opacity 0.55s ease-out, transform 0.55s cubic-bezier(0.25, 1, 0.5, 1)',
               color: '#ffffff',
               fontWeight: 900,
-              fontSize: '15px',
+              fontSize: textFontSize,
               textTransform: 'uppercase',
-              letterSpacing: '0.22em',
+              letterSpacing: textLetterSpacing,
               textAlign: 'center',
-              whiteSpace: 'nowrap',
+              whiteSpace: 'normal',
+              lineHeight: '1.4',
             }}>
               {randomPhrase}
             </div>
