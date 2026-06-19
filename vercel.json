@@ -16,6 +16,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/register-coach",
+      "destination": "/api/register?type=coach"
+    },
+    {
+      "source": "/api/register-athlete",
+      "destination": "/api/register?type=athlete"
+    },
+    {
       "source": "/api/request-password-reset",
       "destination": "/api/password-reset?action=request"
     },

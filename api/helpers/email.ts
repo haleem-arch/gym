@@ -110,7 +110,7 @@ interface SendBulkEmailParams {
   smtpHost?: string;
   smtpPort?: number;
   smtpSecure?: boolean;
-  templateId?: 'coach_signup' | 'client_welcome' | 'maillist';
+  templateId?: 'coach_signup' | 'client_welcome' | 'maillist' | 'athlete_signup';
   templateVariables?: Record<string, string>;
 }
 
