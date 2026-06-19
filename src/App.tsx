@@ -804,8 +804,8 @@ function App() {
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/" element={<CoachLandingPage />} />
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/client-login" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={<CoachLandingPage />} />
+          <Route path="/client-login" element={<CoachLandingPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       ) : needsOnboarding ? (
