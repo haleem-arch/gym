@@ -115,11 +115,9 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
     if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
       if (isElectron) {
         navigate('/coach-portal', { replace: true });
-      } else if (!isMobile) {
-        navigate('/coach-portal', { replace: true });
       }
     }
-  }, [isCoachOrOwner, location.pathname, isCoachPortal, isMobile]);
+  }, [isCoachOrOwner, location.pathname, isCoachPortal]);
 
   let direction = 1;
   if (currentIndex > prevIndex.current) direction = 1;
@@ -243,7 +241,7 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
         <div id="modal-portal" className="absolute inset-0 pointer-events-none z-[90]" />
 
         {/* Bottom nav — hidden while any full-screen overlay is active */}
-        {!anyOverlayActive && (!isCoachOrOwner || (isMobile && !isElectron)) && <BottomNav />}
+        {!anyOverlayActive && !isCoachPortal && <BottomNav />}
       </div>
 
       {/* ── Full-screen overlays rendered OUTSIDE the clipped shell ── */}

@@ -368,7 +368,11 @@ export default function CoachLandingPage() {
       }
 
       setShowAuthModal(false);
-      navigate('/');
+      if (profile && (profile.role === 'coach' || authData.user.id === OWNER_ID)) {
+        navigate('/coach-portal');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to sign in.');
     } finally {
