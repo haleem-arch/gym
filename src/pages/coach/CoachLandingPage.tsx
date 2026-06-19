@@ -150,7 +150,7 @@ export default function CoachLandingPage() {
   
   // Auth modal states
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'athlete_signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'athlete_signup' | 'choose_role'>('login');
   
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingMode, setOnboardingMode] = useState<'options' | 'download_instructions' | 'form'>('form');
@@ -321,18 +321,12 @@ export default function CoachLandingPage() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const openAuth = (mode: 'login' | 'register' | 'athlete_signup', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
+  const openAuth = (mode: 'login' | 'register' | 'athlete_signup' | 'choose_role', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
     setAuthMode(mode);
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
     setErrorMessage(null);
-
-    const isWindows = typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent);
-    if (mode === 'register' && isWindows && !isElectron) {
-      setOnboardingMode('options');
-    } else {
-      setOnboardingMode('form');
-    }
+    setOnboardingMode('form');
     setShowAuthModal(true);
   };
 
@@ -696,6 +690,71 @@ export default function CoachLandingPage() {
 
   // MODAL RENDERS
 
+  const renderChooseRole = () => (
+    <div className="space-y-6 text-center py-2 font-sans">
+      <div className="space-y-2">
+        <h5 className="text-sm font-black text-white uppercase tracking-wider">Create Account</h5>
+        <p className="text-xs text-zinc-400 font-medium">Choose your account type to get started</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 pt-2">
+        {/* Athlete Option */}
+        <button
+          type="button"
+          onClick={() => {
+            setAuthMode('athlete_signup');
+            setAthleteStep(1);
+            setAthleteAttemptedSubmit(false);
+          }}
+          className="w-full text-left p-5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl transition-all hover:scale-[1.01] cursor-pointer group flex items-start gap-4"
+        >
+          <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 group-hover:bg-blue-600/20 group-hover:text-blue-300 transition-all">
+            <Dumbbell size={20} />
+          </div>
+          <div className="space-y-1">
+            <h6 className="text-xs font-black text-white uppercase tracking-wider">Athlete Account</h6>
+            <p className="text-[11px] text-zinc-450 leading-normal font-medium">
+              Log meals, record workouts, track daily hydration, and view InBody scans.
+            </p>
+          </div>
+        </button>
+
+        {/* Coach Option */}
+        <button
+          type="button"
+          onClick={() => {
+            setAuthMode('register');
+            setOnboardingMode('form');
+            setOnboardingStep(1);
+            setAttemptedStep1Submit(false);
+          }}
+          className="w-full text-left p-5 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl transition-all hover:scale-[1.01] cursor-pointer group flex items-start gap-4"
+        >
+          <div className="w-10 h-10 rounded-xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 group-hover:bg-emerald-600/20 group-hover:text-emerald-300 transition-all">
+            <Users size={20} />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h6 className="text-xs font-black text-white uppercase tracking-wider">Coach Portal</h6>
+              <span className="text-[8px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold uppercase px-1.5 py-0.5 rounded-md tracking-wider">
+                Start Free Trial
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-450 leading-normal font-medium">
+              Manage athletes, prescribe training splits, set nutrition targets, and track progress.
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <div className="text-center pt-2">
+        <p className="text-[10px] text-zinc-550 font-medium">
+          Already have an account? <span onClick={() => setAuthMode('login')} className="text-zinc-305 hover:text-white font-black cursor-pointer underline">Log In</span>
+        </p>
+      </div>
+    </div>
+  );
+
   const renderAthleteSignup = () => (
     <form onSubmit={e => e.preventDefault()} className="space-y-4">
       {/* STEP 1 */}
@@ -830,7 +889,7 @@ export default function CoachLandingPage() {
           <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setAuthMode('login')}
+              onClick={() => setAuthMode('choose_role')}
               className="px-6 py-3.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-450 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95"
             >
               Back
@@ -1039,7 +1098,7 @@ export default function CoachLandingPage() {
         </nav>
         <div className="flex items-center gap-3 sm:gap-6">
           <button
-            onClick={() => openAuth('athlete_signup')}
+            onClick={() => openAuth('choose_role')}
             className="flex items-center justify-center px-4 py-2 bg-white hover:bg-zinc-100 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
           >
             Create Account
@@ -1050,19 +1109,6 @@ export default function CoachLandingPage() {
           >
             Login
           </button>
-          {!isElectron && (
-            <a
-              href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
-              download
-              className="hidden lg:flex items-center gap-3 px-5 py-3 border border-blue-950/60 hover:border-blue-900/80 bg-blue-950/30 hover:bg-blue-950/60 text-xs font-extrabold uppercase tracking-widest text-blue-400 rounded-xl transition-all whitespace-nowrap shadow-md cursor-pointer active:scale-95 group"
-              title="Download Life Gym Coach App for Windows"
-            >
-              <svg className="w-3.5 h-3.5 text-blue-500/80 group-hover:text-blue-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
-              </svg>
-              <span>Download for Windows</span>
-            </a>
-          )}
         </div>
       </header>
 
@@ -1087,41 +1133,38 @@ export default function CoachLandingPage() {
             Design training splits, build day-type nutrition targets, track segmental InBody scans, and sync metrics to the athlete portal in real-time.
           </p>
 
-          <div className="pt-4 flex flex-col items-center justify-center gap-6">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
               <button
-                onClick={() => openAuth('register')}
+                onClick={() => openAuth('choose_role')}
                 className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 border border-blue-500/30"
               >
-                <span>Start 14-Day Free Trial</span>
+                <span>Create Account</span>
                 <ArrowRight size={14} />
               </button>
 
               <button
-                onClick={() => openAuth('athlete_signup')}
+                onClick={() => openAuth('login')}
                 className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 hover:border-zinc-700 font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
               >
-                <span>Create Athlete Account</span>
+                <span>Login</span>
                 <ArrowRight size={14} />
               </button>
             </div>
 
             <div className="flex flex-col items-center gap-4">
+              <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">
+                Coaches get a 14-day free trial on signup
+              </p>
               {!isMobile && !isElectron && (
                 <a
                   href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
                   download
-                  className="bg-white hover:bg-zinc-100 text-black font-black text-[10px] uppercase tracking-wider px-6 py-3 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
+                  className="text-[10px] text-zinc-400 hover:text-white underline font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
-                  <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
-                    <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
-                  </svg>
-                  <span>Download Coach App for Windows</span>
+                  Download Coach App for Windows
                 </a>
               )}
-              <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-350 hover:text-white cursor-pointer underline font-extrabold">Log In</span></p>
             </div>
-          </div>
         </motion.div>
       </section>
 
@@ -1624,13 +1667,15 @@ export default function CoachLandingPage() {
                   <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">
                     {authMode === 'login' 
                       ? 'Authentication' 
-                      : authMode === 'athlete_signup'
-                        ? 'Athlete Registration'
-                          : onboardingMode === 'options' 
-                            ? 'Choose Workspace' 
-                            : onboardingMode === 'download_instructions'
-                              ? 'Setup Instructions'
-                              : `Start Free Trial: Step ${onboardingStep} of 2`}
+                      : authMode === 'choose_role'
+                        ? 'Create Account'
+                        : authMode === 'athlete_signup'
+                          ? 'Athlete Registration'
+                            : onboardingMode === 'options' 
+                              ? 'Choose Workspace' 
+                              : onboardingMode === 'download_instructions'
+                                ? 'Setup Instructions'
+                                : `Start Free Trial: Step ${onboardingStep} of 2`}
                   </p>
                 </div>
               </div>
@@ -1806,10 +1851,12 @@ export default function CoachLandingPage() {
                         {loading ? 'Logging in...' : <><Lock size={12} /> Sign In to Portal</>}
                       </button>
                       <p className="text-[10px] text-zinc-505 text-center mt-3 font-medium">
-                        Don't have an account? <span onClick={() => { setAuthMode('athlete_signup'); }} className="text-zinc-300 hover:text-white font-black cursor-pointer underline">Create Account</span>
+                        Don't have an account? <span onClick={() => { setAuthMode('choose_role'); }} className="text-zinc-300 hover:text-white font-black cursor-pointer underline">Create Account</span>
                       </p>
                     </form>
                   )
+                ) : authMode === 'choose_role' ? (
+                  renderChooseRole()
                 ) : authMode === 'athlete_signup' ? (
                   renderAthleteSignup()
                 ) : (
@@ -1963,29 +2010,38 @@ export default function CoachLandingPage() {
                                 </button>
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAttemptedStep1Submit(true);
-                                if (!displayName.trim() || !email.trim() || password.length < 6) {
-                                  if (password.length > 0 && password.length < 6) {
-                                    toast.error('Password must be at least 6 characters.');
-                                  } else {
-                                    toast.error('Please fill in all empty fields.');
+                            <div className="flex gap-3 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setAuthMode('choose_role')}
+                                className="px-6 py-3.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-450 hover:text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer active:scale-95"
+                              >
+                                Back
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAttemptedStep1Submit(true);
+                                  if (!displayName.trim() || !email.trim() || password.length < 6) {
+                                    if (password.length > 0 && password.length < 6) {
+                                      toast.error('Password must be at least 6 characters.');
+                                    } else {
+                                      toast.error('Please fill in all empty fields.');
+                                    }
+                                    return;
                                   }
-                                  return;
-                                }
-                                if (isEmailTaken) {
-                                  toast.error('Email is already registered. Please use another email.');
-                                  return;
-                                }
-                                setOnboardingStep(2);
-                              }}
-                              className="w-full bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer mt-4 flex items-center justify-center gap-1.5"
-                            >
-                              <span>Continue to Profile Setup</span>
-                              <ArrowRight size={12} />
-                            </button>
+                                  if (isEmailTaken) {
+                                    toast.error('Email is already registered. Please use another email.');
+                                    return;
+                                  }
+                                  setOnboardingStep(2);
+                                }}
+                                className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-black font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                              >
+                                <span>Continue</span>
+                                <ArrowRight size={12} />
+                              </button>
+                            </div>
                           </div>
                         )}
 
