@@ -150,7 +150,7 @@ export default function CoachLandingPage() {
   
   // Auth modal states
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'signup_choice' | 'athlete_signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'athlete_signup'>('login');
   
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingMode, setOnboardingMode] = useState<'options' | 'download_instructions' | 'form'>('form');
@@ -321,15 +321,7 @@ export default function CoachLandingPage() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path === '/login' || path === '/client-login') {
-      openAuth('login');
-      window.history.replaceState({}, '', '/');
-    }
-  }, []);
-
-  const openAuth = (mode: 'login' | 'register' | 'signup_choice' | 'athlete_signup', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
+  const openAuth = (mode: 'login' | 'register' | 'athlete_signup', plan?: '2_weeks' | '1_month' | '3_months' | '6_months') => {
     setAuthMode(mode);
     if (plan) setSelectedPlan(plan);
     setOnboardingStep(1);
@@ -703,47 +695,6 @@ export default function CoachLandingPage() {
   ];
 
   // MODAL RENDERS
-  const renderSignupChoice = () => (
-    <div className="space-y-5 text-center py-2">
-      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-850 flex items-center justify-center mx-auto text-blue-500 shadow-md animate-pulse">
-        <Dumbbell size={26} />
-      </div>
-      <div className="space-y-2">
-        <h5 className="text-sm font-black text-white uppercase tracking-wider font-sans">Choose Your Profile</h5>
-        <p className="text-xs text-zinc-400 leading-relaxed max-w-[300px] mx-auto font-medium">
-          Are you training as an athlete or managing a gym as a coach?
-        </p>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        <button
-          type="button"
-          onClick={() => {
-            setAthleteStep(1);
-            setAthleteAttemptedSubmit(false);
-            setAuthMode('athlete_signup');
-          }}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2.5"
-        >
-          <Dumbbell size={14} />
-          <span>I am an Athlete</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setAuthMode('register');
-            setOnboardingStep(1);
-            setOnboardingMode(typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent) ? 'options' : 'form');
-          }}
-          className="w-full bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 hover:border-zinc-800 text-zinc-300 font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2.5"
-        >
-          <Users size={14} />
-          <span>I am a Coach</span>
-        </button>
-      </div>
-    </div>
-  );
 
   const renderAthleteSignup = () => (
     <form onSubmit={e => e.preventDefault()} className="space-y-4">
@@ -879,7 +830,7 @@ export default function CoachLandingPage() {
           <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setAuthMode('signup_choice')}
+              onClick={() => setAuthMode('login')}
               className="px-6 py-3.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-450 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer active:scale-95"
             >
               Back
@@ -1086,11 +1037,16 @@ export default function CoachLandingPage() {
           <a href="#pricing" className="hover:text-white transition-colors">Pricing Plans</a>
           <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
-        <div className="flex items-center gap-6">
-          {/* Mobile Login Button */}
+        <div className="flex items-center gap-3 sm:gap-6">
+          <button
+            onClick={() => openAuth('athlete_signup')}
+            className="flex items-center justify-center px-4 py-2 bg-white hover:bg-zinc-100 text-black text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+          >
+            Create Account
+          </button>
           <button
             onClick={() => openAuth('login')}
-            className="flex md:hidden items-center justify-center px-5 py-2 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 hover:border-blue-500/40 text-blue-400 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
+            className="flex items-center justify-center px-4 py-2 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 hover:border-blue-500/40 text-blue-400 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md"
           >
             Login
           </button>
@@ -1107,15 +1063,6 @@ export default function CoachLandingPage() {
               <span>Download for Windows</span>
             </a>
           )}
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-            <span>Already a coach?</span>
-            <button 
-              onClick={() => openAuth('login')}
-              className="text-zinc-350 hover:text-white bg-transparent border-none p-0 cursor-pointer font-black underline"
-            >
-              Log In
-            </button>
-          </div>
         </div>
       </header>
 
@@ -1143,39 +1090,37 @@ export default function CoachLandingPage() {
           <div className="pt-4 flex flex-col items-center justify-center gap-6">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
               <button
-                onClick={() => openAuth('signup_choice')}
+                onClick={() => openAuth('register')}
                 className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 border border-blue-500/30"
               >
                 <span>Start 14-Day Free Trial</span>
                 <ArrowRight size={14} />
               </button>
-              
-              {isMobile ? (
-                <button
-                  onClick={() => openAuth('login')}
-                  className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
-                >
-                  <span>Login</span>
-                  <ArrowRight size={14} />
-                </button>
-              ) : (
-                !isElectron && (
-                  <a
-                    href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
-                    download
-                    className="w-full sm:w-auto bg-white hover:bg-zinc-100 text-black font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
-                  >
-                    <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
-                      <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
-                    </svg>
-                    <span>Download for Windows</span>
-                  </a>
-                )
-              )}
+
+              <button
+                onClick={() => openAuth('athlete_signup')}
+                className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 hover:border-zinc-700 font-black text-xs uppercase tracking-wider px-8 py-4 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md"
+              >
+                <span>Create Athlete Account</span>
+                <ArrowRight size={14} />
+              </button>
             </div>
-            {!isMobile && (
+
+            <div className="flex flex-col items-center gap-4">
+              {!isMobile && !isElectron && (
+                <a
+                  href="https://github.com/haleem-arch/gym/releases/latest/download/Life-Gym-Coach-Portal-Setup.exe"
+                  download
+                  className="bg-white hover:bg-zinc-100 text-black font-black text-[10px] uppercase tracking-wider px-6 py-3 rounded-xl transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-3 shadow-md group"
+                >
+                  <svg className="w-4 h-4 fill-current text-blue-600 transition-colors" viewBox="0 0 24 24">
+                    <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+                  </svg>
+                  <span>Download Coach App for Windows</span>
+                </a>
+              )}
               <p className="text-[10px] text-zinc-500 font-bold tracking-wide uppercase">Already have an account? <span onClick={() => openAuth('login')} className="text-zinc-350 hover:text-white cursor-pointer underline font-extrabold">Log In</span></p>
-            )}
+            </div>
           </div>
         </motion.div>
       </section>
@@ -1345,7 +1290,7 @@ export default function CoachLandingPage() {
             </div>
             <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
-                onClick={() => openAuth('signup_choice', '2_weeks')}
+                onClick={() => openAuth('register', '2_weeks')}
                 className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
               >
                 Start Free Trial
@@ -1382,7 +1327,7 @@ export default function CoachLandingPage() {
             </div>
             <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
-                onClick={() => openAuth('signup_choice', '1_month')}
+                onClick={() => openAuth('register', '1_month')}
                 className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl shadow-lg shadow-blue-500/20 transition-all cursor-pointer border border-blue-500/30"
               >
                 Start Free Trial
@@ -1416,7 +1361,7 @@ export default function CoachLandingPage() {
             </div>
             <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
-                onClick={() => openAuth('signup_choice', '3_months')}
+                onClick={() => openAuth('register', '3_months')}
                 className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
               >
                 Start Free Trial
@@ -1450,7 +1395,7 @@ export default function CoachLandingPage() {
             </div>
             <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2 w-full">
               <button 
-                onClick={() => openAuth('signup_choice', '6_months')}
+                onClick={() => openAuth('register', '6_months')}
                 className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-700 active:scale-98 text-zinc-100 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-700/60 transition-all cursor-pointer shadow-md"
               >
                 Start Free Trial
@@ -1679,10 +1624,8 @@ export default function CoachLandingPage() {
                   <p className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">
                     {authMode === 'login' 
                       ? 'Authentication' 
-                      : authMode === 'signup_choice'
-                        ? 'Choose Profile'
-                        : authMode === 'athlete_signup'
-                          ? 'Athlete Registration'
+                      : authMode === 'athlete_signup'
+                        ? 'Athlete Registration'
                           : onboardingMode === 'options' 
                             ? 'Choose Workspace' 
                             : onboardingMode === 'download_instructions'
@@ -1863,12 +1806,10 @@ export default function CoachLandingPage() {
                         {loading ? 'Logging in...' : <><Lock size={12} /> Sign In to Portal</>}
                       </button>
                       <p className="text-[10px] text-zinc-505 text-center mt-3 font-medium">
-                        Don't have an account? <span onClick={() => { setAuthMode('signup_choice'); }} className="text-zinc-300 hover:text-white font-black cursor-pointer underline">Create Account</span>
+                        Don't have an account? <span onClick={() => { setAuthMode('athlete_signup'); }} className="text-zinc-300 hover:text-white font-black cursor-pointer underline">Create Account</span>
                       </p>
                     </form>
                   )
-                ) : authMode === 'signup_choice' ? (
-                  renderSignupChoice()
                 ) : authMode === 'athlete_signup' ? (
                   renderAthleteSignup()
                 ) : (

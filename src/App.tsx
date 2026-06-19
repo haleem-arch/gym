@@ -804,8 +804,22 @@ function App() {
           <Route path="/download-blueprint" element={<DownloadBlueprintPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/" element={<CoachLandingPage />} />
-          <Route path="/login" element={<CoachLandingPage />} />
-          <Route path="/client-login" element={<CoachLandingPage />} />
+          <Route path="/login" element={
+            <OnboardingFlow 
+              initialStep={1} 
+              onSessionConfigured={setSession} 
+            />
+          } />
+          <Route path="/client-login" element={
+            isElectron ? (
+              <Navigate to="/" replace />
+            ) : (
+              <OnboardingFlow 
+                initialStep={1} 
+                onSessionConfigured={setSession} 
+              />
+            )
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       ) : needsOnboarding ? (
