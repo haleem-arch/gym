@@ -115,9 +115,11 @@ const AppContent = ({ userRole, session, onCheckLaunch, showWelcomeSplash }: { u
     if (isCoachOrOwner && !location.pathname.startsWith('/coach') && !isCoachPortal) {
       if (isElectron) {
         navigate('/coach-portal', { replace: true });
+      } else if (!isMobile) {
+        navigate('/coach-portal', { replace: true });
       }
     }
-  }, [isCoachOrOwner, location.pathname, isCoachPortal]);
+  }, [isCoachOrOwner, location.pathname, isCoachPortal, isMobile]);
 
   let direction = 1;
   if (currentIndex > prevIndex.current) direction = 1;
