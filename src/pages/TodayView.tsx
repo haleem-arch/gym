@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Droplets, FileSpreadsheet, Download, X, Check, Activity, Target, LogOut, WifiOff, Sparkles, Dumbbell, TrendingUp, User } from 'lucide-react';
+import { Play, Utensils, Droplets, X, Check, Activity, Target, LogOut, WifiOff, Sparkles, Dumbbell, TrendingUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkout } from '../hooks/useActiveWorkout';
 import { useDiet } from '../hooks/useDiet';
