@@ -381,7 +381,8 @@ const DietHome = () => {
       currentDayType={dayType}
       allDayTypes={allDayTypes}
       dayNutrition={dayNutrition}
-      onSave={async (map) => { await saveDayNutrition(map); }}
+      waterGoalMl={waterGoalMl}
+      onSave={async (map, newWaterGoal) => { await saveDayNutrition(map, newWaterGoal); }}
     />
     </>
   );

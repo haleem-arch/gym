@@ -158,7 +158,7 @@ export const useDiet = () => {
   }, [fetchAndAdjustTargets]);
 
   // Save updated day_nutrition map to Supabase
-  const saveDayNutrition = async (map: Record<string, MacroTarget>) => {
+  const saveDayNutrition = async (map: Record<string, MacroTarget>, newWaterGoalMl?: number) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -169,13 +169,21 @@ export const useDiet = () => {
       .maybeSingle();
 
     const currentTargets = profile?.targets || {};
+    const updatedTargets = { ...currentTargets, day_nutrition: map };
+    if (newWaterGoalMl !== undefined) {
+      updatedTargets.water_goal_ml = newWaterGoalMl;
+    }
+
     await supabase
       .from('profiles')
-      .update({ targets: { ...currentTargets, day_nutrition: map } })
+      .update({ targets: updatedTargets })
       .eq('id', session.user.id);
 
     // Update local state immediately
     setDayNutrition(map);
+    if (newWaterGoalMl !== undefined) {
+      setWaterGoalMl(newWaterGoalMl);
+    }
     const matchedType = allDayTypes.find(t => t.toLowerCase().replace(/\s+/g, '') === dayType.toLowerCase().replace(/\s+/g, ''));
     if (matchedType && map[matchedType]) {
       setTargets({ ...map[matchedType] });

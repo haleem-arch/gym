@@ -42,12 +42,14 @@ interface Props {
   currentDayType: string;
   allDayTypes: string[];
   dayNutrition: Record<string, MacroTarget>;
-  onSave: (map: Record<string, MacroTarget>) => Promise<void>;
+  onSave: (map: Record<string, MacroTarget>, waterGoalMl?: number) => Promise<void>;
+  waterGoalMl: number;
 }
 
-export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTypes, dayNutrition, onSave }: Props) => {
+export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTypes, dayNutrition, onSave, waterGoalMl }: Props) => {
   const [activeTab, setActiveTab] = useState<string>(currentDayType || 'REST');
   const [draft, setDraft] = useState<Record<string, MacroTarget>>({});
+  const [waterGoal, setWaterGoal] = useState<number>(waterGoalMl || 3500);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -61,6 +63,12 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
       setActiveTab(allDayTypes.includes(currentDayType) ? currentDayType : allDayTypes[0]);
     }
   }, [open, dayNutrition, currentDayType, allDayTypes]);
+
+  useEffect(() => {
+    if (open) {
+      setWaterGoal(waterGoalMl || 3500);
+    }
+  }, [open, waterGoalMl]);
 
   const updateField = (field: keyof MacroTarget, value: string) => {
     const num = parseInt(value, 10);
@@ -80,7 +88,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(draft);
+    await onSave(draft, waterGoal);
     setSaving(false);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
@@ -266,6 +274,36 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                   </div>
                 </motion.div>
               </AnimatePresence>
+
+              {/* Global Hydration Target */}
+              <div className="mt-6 pt-6 border-t border-blue-950/20">
+                <div className="rounded-2xl p-5 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md relative overflow-hidden group hover:border-blue-900/40 transition-colors">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">
+                      💧 Daily Water Target
+                    </label>
+                  </div>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <input
+                      type="number"
+                      value={waterGoal}
+                      onChange={e => {
+                        const num = parseInt(e.target.value, 10);
+                        if (!isNaN(num) && num >= 0) setWaterGoal(num);
+                      }}
+                      className="bg-transparent text-3xl font-black text-white outline-none border-none max-w-[140px] p-0 font-mono"
+                    />
+                    <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">ml</span>
+                  </div>
+                  {/* Premium Blue Progress Line */}
+                  <div className="h-1 rounded-full mt-4 bg-zinc-950 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-blue-500 transition-all duration-300 shadow-[0_0_8px_rgba(56,189,248,0.4)]"
+                      style={{ width: `${Math.min((waterGoal / 6000) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Save Button */}
@@ -274,9 +312,9 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                 whileTap={{ scale: 0.97 }}
                 onClick={handleSave}
                 disabled={saving}
-                className={`w-full font-black py-4 rounded-2xl flex items-center justify-center gap-2 text-white transition-all uppercase tracking-widest text-xs cursor-pointer border ${
+                className={`w-full font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-xs cursor-pointer border ${
                   savedFlash 
-                    ? 'bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-500/10' 
+                    ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/10' 
                     : 'bg-white hover:bg-zinc-100 text-black border-white shadow-lg shadow-white/5'
                 }`}
               >

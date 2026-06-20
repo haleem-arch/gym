@@ -626,7 +626,7 @@ const TodayView = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             Dashboard
-            <span className="text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 leading-none flex items-center gap-1">Beta <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span></span>
+            <span className="text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 leading-none">Beta</span>
           </h1>
           <p className="text-sm text-gray-400 mt-1">{isHaleem ? "Haleem's HQ" : `${userDisplayName || 'Athlete'}'s HQ`}</p>
         </div>
