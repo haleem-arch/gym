@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Database, Globe, ChevronLeft } from 'lucide-react';
+import { Database, ChevronLeft, Barcode } from 'lucide-react';
 import { SwipeToDeleteRow } from '../components/SwipeToDeleteRow';
 import { DumbbellLoader } from '../components/DumbbellLoader';
 
@@ -51,7 +51,7 @@ const FoodInventory = () => {
 
       <div className="p-4 flex-1 overflow-y-auto">
         <p className="text-xs text-gray-400 mb-6 leading-relaxed">
-          These are the custom foods you've manually created or saved from the Global API. Swipe left to delete them permanently.
+          These are the custom foods you've manually created or saved from the barcode database. Swipe left to delete them permanently.
         </p>
 
         {loading ? (
@@ -70,7 +70,7 @@ const FoodInventory = () => {
                       {food.name}
                       {food.source === 'barcode' && food.barcode && (
                         <span className="text-[10px] text-purple-400 font-mono mt-1 flex items-center gap-1">
-                          <Globe size={10} /> API Saved ({food.barcode})
+                          <Barcode size={10} /> Barcode: {food.barcode}
                         </span>
                       )}
                     </h3>
