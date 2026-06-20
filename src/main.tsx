@@ -82,3 +82,22 @@ createRoot(document.getElementById('root')!).render(
     <VercelConsentWrapper />
   </StrictMode>,
 )
+
+// 5. Automatic PWA Updates without logging out
+if ('serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+
+  navigator.serviceWorker.ready.then((registration) => {
+    // Check for updates when page gains focus
+    window.addEventListener('focus', () => {
+      registration.update().catch(() => {});
+    });
+  });
+}
+
