@@ -16,7 +16,14 @@ export interface SmtpConfig {
   secure?: boolean;
 }
 
+let cachedSMTP: SmtpConfig | null = null;
+let cacheTime = 0;
+
 export async function getOwnerSMTP(): Promise<SmtpConfig> {
+  const now = Date.now();
+  if (cachedSMTP && now - cacheTime < 60000) {
+    return cachedSMTP;
+  }
   try {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false }
@@ -28,21 +35,26 @@ export async function getOwnerSMTP(): Promise<SmtpConfig> {
       .maybeSingle();
 
     if (data && data.smtp_email && data.smtp_password) {
-      return {
+      cachedSMTP = {
         user: data.smtp_email,
         pass: data.smtp_password,
         host: data.smtp_host || undefined,
         port: data.smtp_port ? Number(data.smtp_port) : undefined,
         secure: data.smtp_secure !== null ? !!data.smtp_secure : undefined
       };
+      cacheTime = now;
+      return cachedSMTP;
     }
   } catch (err) {
     console.error('Failed to load owner SMTP settings from DB:', err);
   }
-  return { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD };
+  const fallback = { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD };
+  cachedSMTP = fallback;
+  cacheTime = now;
+  return fallback;
 }
 
-export async function validateEmailAddress(email: string): Promise<{ valid: boolean; reason?: string }> {
+export async function validateEmailAddress(email: string, skipMx = false): Promise<{ valid: boolean; reason?: string }> {
   const cleanEmail = email.trim();
   
   // 1. Syntax Regex Check (Level 1)
@@ -63,6 +75,10 @@ export async function validateEmailAddress(email: string): Promise<{ valid: bool
   
   if (disposableDomains.has(domain)) {
     return { valid: false, reason: 'Temporary or disposable email domains are not allowed.' };
+  }
+
+  if (skipMx) {
+    return { valid: true };
   }
 
   // 3. MX Record Lookup Check (Level 3) with 2.5s Timeout
@@ -233,7 +249,7 @@ export async function sendBulkEmails({
       }
 
       // Validate recipient address first
-      const validation = await validateEmailAddress(finalRecipient);
+      const validation = await validateEmailAddress(finalRecipient, true);
       if (!validation.valid) {
         results.push({ email: finalRecipient, success: false, error: validation.reason });
         continue;

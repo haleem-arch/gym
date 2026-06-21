@@ -76,7 +76,7 @@ export default async function handler(req: any, res: any) {
                 if (!fromMe && igToken) {
                   try {
                     const profileRes = await fetch(
-                      `https://graph.instagram.com/v20.0/${senderId}?fields=username,name&access_token=${igToken}`
+                      `https://graph.facebook.com/v20.0/${senderId}?fields=username,name&access_token=${igToken}`
                     );
                     if (profileRes.ok) {
                       const profileData: any = await profileRes.json();

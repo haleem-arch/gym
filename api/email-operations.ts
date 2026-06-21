@@ -45,7 +45,7 @@ export default async function handler(req: any, res: any) {
       const recipientList = Array.isArray(to) ? to : to.split(',').map((e: string) => e.trim()).filter(Boolean);
       if (recipientList.length === 1) {
         const singleRecipient = recipientList[0];
-        const validation = await validateEmailAddress(singleRecipient);
+        const validation = await validateEmailAddress(singleRecipient, true);
         if (!validation.valid) {
           return res.status(400).json({ error: validation.reason });
         }
