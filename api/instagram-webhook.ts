@@ -18,8 +18,60 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  // 1. GET: Webhook Verification
+  // 1. GET: Webhook Verification or Analytics Proxy
   if (req.method === 'GET') {
+    const action = req.query.action;
+    if (action === 'analytics') {
+      const token = req.query.token;
+      const accountId = req.query.accountId;
+      if (!token || !accountId) {
+        return res.status(400).json({ error: 'Missing token or accountId' });
+      }
+      try {
+        // 1. Fetch user data
+        const userRes = await fetch(
+          `https://graph.instagram.com/v20.0/${accountId}?fields=id,username,name,media_count,profile_picture_url&access_token=${token}`
+        );
+        let userData = {};
+        if (userRes.ok) {
+          userData = await userRes.json();
+        } else {
+          console.error('Error fetching user data in proxy:', await userRes.text());
+        }
+
+        // 2. Fetch insights
+        const insightsRes = await fetch(
+          `https://graph.instagram.com/v20.0/${accountId}/insights?metric=reach&period=day&access_token=${token}`
+        );
+        let insightsData = {};
+        if (insightsRes.ok) {
+          insightsData = await insightsRes.json();
+        } else {
+          console.error('Error fetching insights in proxy:', await insightsRes.text());
+        }
+
+        // 3. Fetch media
+        const mediaRes = await fetch(
+          `https://graph.instagram.com/v20.0/${accountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&access_token=${token}`
+        );
+        let mediaData = {};
+        if (mediaRes.ok) {
+          mediaData = await mediaRes.json();
+        } else {
+          console.error('Error fetching media in proxy:', await mediaRes.text());
+        }
+
+        return res.status(200).json({
+          user: userData,
+          insights: insightsData,
+          media: mediaData
+        });
+      } catch (err: any) {
+        console.error('Instagram Analytics proxy error:', err);
+        return res.status(500).json({ error: err.message || 'Internal server error' });
+      }
+    }
+
     const mode = req.query['hub.mode'];
     const verifyTokenQuery = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
