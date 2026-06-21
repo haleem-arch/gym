@@ -1218,6 +1218,124 @@ ${origin}/client-login
         return res.status(200).json({ success: true, message: 'Ignored message from warm-up phone to prevent loops' });
       }
 
+      // Check if there is an active visual WhatsApp Bot flow
+      let handledByVisualBot = false;
+      try {
+        const { data: activeFlow, error: flowErr } = await supabaseAdmin
+          .from('whatsapp_bot_flows')
+          .select('*')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!flowErr && activeFlow) {
+          const { data: userState, error: stateErr } = await supabaseAdmin
+            .from('whatsapp_bot_states')
+            .select('*')
+            .eq('phone_number', senderPhone)
+            .maybeSingle();
+
+          const nodes = activeFlow.nodes || [];
+          const connections = activeFlow.connections || [];
+          const greetingNode = nodes.find((n: any) => n.type === 'greeting' || n.is_greeting);
+
+          if (greetingNode) {
+            if (!userState) {
+              // First time user: Send Greeting message and save state
+              const sendRes = await sendWhatsAppMessageHelper({
+                to: senderPhone,
+                text: greetingNode.text_body || greetingNode.message || 'Welcome!',
+                ownerTargets,
+                supabaseAdmin
+              });
+
+              if (sendRes.success) {
+                await supabaseAdmin
+                  .from('whatsapp_bot_states')
+                  .upsert({
+                    phone_number: senderPhone,
+                    active_flow_id: activeFlow.id,
+                    current_node_id: greetingNode.id,
+                    last_interaction: new Date().toISOString()
+                  });
+              }
+              handledByVisualBot = true;
+            } else {
+              // Traverse choices based on current node
+              const currentNodeId = userState.current_node_id;
+              const currentNode = nodes.find((n: any) => n.id === currentNodeId);
+
+              if (currentNode) {
+                const inputText = messageText.toLowerCase().trim();
+
+                // Find matching link trigger
+                const matchedConn = connections.find((c: any) => 
+                  c.source_node_id === currentNodeId && 
+                  String(c.trigger_value).toLowerCase().trim() === inputText
+                );
+
+                let targetNode = null;
+
+                if (matchedConn) {
+                  targetNode = nodes.find((n: any) => n.id === matchedConn.target_node_id);
+                } else if (inputText === '5' || inputText === 'back') {
+                  // Fallback: search for a connection that links back, or traverse to parent
+                  const incomingConn = connections.find((c: any) => c.target_node_id === currentNodeId);
+                  if (incomingConn) {
+                    targetNode = nodes.find((n: any) => n.id === incomingConn.source_node_id);
+                  }
+                }
+
+                if (targetNode) {
+                  const sendRes = await sendWhatsAppMessageHelper({
+                    to: senderPhone,
+                    text: targetNode.text_body || targetNode.message || '',
+                    ownerTargets,
+                    supabaseAdmin
+                  });
+
+                  if (sendRes.success) {
+                    await supabaseAdmin
+                      .from('whatsapp_bot_states')
+                      .upsert({
+                        phone_number: senderPhone,
+                        active_flow_id: activeFlow.id,
+                        current_node_id: targetNode.id,
+                        last_interaction: new Date().toISOString()
+                      });
+                  }
+                  handledByVisualBot = true;
+                } else {
+                  // Invalid option: send options reminder
+                  const validOptions = connections
+                    .filter((c: any) => c.source_node_id === currentNodeId)
+                    .map((c: any) => c.trigger_value);
+
+                  let responseText = "Invalid option.";
+                  if (validOptions.length > 0) {
+                    responseText += ` Please reply with one of the following options: ${validOptions.join(', ')}.`;
+                  }
+                  responseText += "\nReply '5' or 'back' to return to the previous menu.";
+
+                  await sendWhatsAppMessageHelper({
+                    to: senderPhone,
+                    text: responseText,
+                    ownerTargets,
+                    supabaseAdmin
+                  });
+                  handledByVisualBot = true;
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error running WhatsApp Visual Bot flow:', err);
+      }
+
+      if (handledByVisualBot) {
+        return res.status(200).json({ success: true, visualBotHandled: true });
+      }
+
       // Check greeting message logic first
       let sentGreeting = false;
       if (ownerTargets.whatsapp_greeting_enabled && ownerTargets.whatsapp_greeting_message) {
