@@ -8483,14 +8483,14 @@ export default function DesktopCoachPortal() {
 
           {/* TAB 5: SUBSCRIPTIONS */}
           {activeTab === 'subscriptions' && (
-            <div id="tutorial-subscriptions-container" className="space-y-6">
+            <div id="tutorial-subscriptions-container" className="space-y-6 animate-fade-in">
               {/* Header */}
-              <div className="flex justify-between items-center bg-[#0c1020]/40 p-6 border border-gray-850 rounded-3xl">
+              <div className="flex justify-between items-center bg-[#0c1020]/40 p-6 border border-gray-800 rounded-2xl">
                 <div>
-                  <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2">
                     <CreditCard className="text-blue-500" /> Subscriptions Manager
                   </h2>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1 font-sans">
                     Track statuses, expiration countdowns, and manage reactivations for all athletes.
                   </p>
                   <p className="text-[10px] text-blue-400 mt-1.5 font-bold uppercase tracking-wider">
@@ -8526,46 +8526,46 @@ export default function DesktopCoachPortal() {
 
                   return (
                     <>
-                      <Card className="p-5 flex items-center gap-4 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                      <div className="p-5 flex items-center gap-4 bg-[#0c1020]/30 border border-gray-800 rounded-2xl">
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                           <Users size={18} />
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Tracked Clients</p>
-                          <p className="text-xl font-black text-white mt-0.5">{total}</p>
+                          <p className="text-xl font-bold text-white mt-0.5">{total}</p>
                         </div>
-                      </Card>
+                      </div>
                       
-                      <Card className="p-5 flex items-center gap-4 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                      <div className="p-5 flex items-center gap-4 bg-[#0c1020]/30 border border-gray-800 rounded-2xl">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                           <CheckCircle size={18} />
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active Client Access</p>
-                          <p className="text-xl font-black text-emerald-400 mt-0.5">{active}</p>
+                          <p className="text-xl font-bold text-emerald-400 mt-0.5">{active}</p>
                         </div>
-                      </Card>
+                      </div>
 
-                      <Card className="p-5 flex items-center gap-4 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+                      <div className="p-5 flex items-center gap-4 bg-[#0c1020]/30 border border-gray-800 rounded-2xl">
                         <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
                           <AlertTriangle size={18} />
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Suspended / Expired</p>
-                          <p className="text-xl font-black text-red-400 mt-0.5">{suspendedOrExpired}</p>
+                          <p className="text-xl font-bold text-red-400 mt-0.5">{suspendedOrExpired}</p>
                         </div>
-                      </Card>
+                      </div>
                     </>
                   );
                 })()}
               </div>
 
               {/* Clients Table Card */}
-              <Card className="p-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
+              <div className="p-6 bg-[#0c1020]/30 border border-gray-800 rounded-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-gray-850 text-[10px] uppercase tracking-wider text-gray-500 font-black">
+                      <tr className="border-b border-gray-800 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
                         <th className="pb-3.5 pl-2">Athlete</th>
                         <th className="pb-3.5">Subscription Tier</th>
                         <th className="pb-3.5">Started At</th>
@@ -8575,10 +8575,10 @@ export default function DesktopCoachPortal() {
                         <th className="pb-3.5 text-right pr-2">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-850/60 text-xs">
+                    <tbody className="divide-y divide-gray-800/60 text-xs">
                       {activeClientsList.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center text-gray-550">
+                          <td colSpan={7} className="py-8 text-center text-gray-500 font-medium font-sans">
                             No clients deployed under your account.
                           </td>
                         </tr>
@@ -8615,14 +8615,14 @@ export default function DesktopCoachPortal() {
                               className="hover:bg-gray-900/40 transition-colors cursor-pointer"
                             >
                               <td className="py-4 pl-2 flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-500/25 flex items-center justify-center font-black text-xs text-blue-400 uppercase">
+                                <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-500/25 flex items-center justify-center font-bold text-xs text-blue-400 uppercase">
                                   {c.full_name?.substring(0, 2) || 'AT'}
                                 </div>
                                 <div>
-                                  <p className="font-black text-white flex items-center gap-1.5">
+                                  <p className="font-bold text-white flex items-center gap-1.5">
                                     {c.full_name}
                                     {targets.client_code && (
-                                      <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                                      <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-bold tracking-normal">
                                         #{targets.client_code}
                                       </span>
                                     )}
@@ -8642,7 +8642,7 @@ export default function DesktopCoachPortal() {
                                   })()}
                                 </div>
                               </td>
-                              <td className="py-4 font-bold text-gray-400">
+                              <td className="py-4 font-semibold text-gray-400">
                                 {(!targets.subscription_end_date && (targets.subscription_duration || 'none').toLowerCase() === 'none') 
                                   ? 'unlimited' 
                                   : (targets.subscription_duration || 'No Expiry')}
@@ -8653,11 +8653,11 @@ export default function DesktopCoachPortal() {
                               <td className="py-4 text-gray-500">
                                 {targets.subscription_end_date ? new Date(targets.subscription_end_date).toLocaleDateString() : 'N/A'}
                               </td>
-                              <td className="py-4 font-black font-mono text-blue-400">
+                              <td className="py-4 font-bold font-mono text-blue-400">
                                 {calculateActiveDays(targets)}d
                               </td>
                               <td className="py-4">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${statusColor}`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColor}`}>
                                   {statusLabel}
                                 </span>
                               </td>
@@ -8693,9 +8693,9 @@ export default function DesktopCoachPortal() {
                                       );
                                     }
                                   }}
-                                  className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer mr-2 ${
+                                  className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-colors cursor-pointer mr-2 ${
                                     (isDeactivated || isExpired)
-                                      ? 'bg-blue-600 hover:bg-blue-500 border-blue-500/25 text-white'
+                                      ? 'bg-blue-600 hover:bg-blue-500 border-transparent text-white'
                                       : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                                   }`}
                                 >
@@ -8707,7 +8707,7 @@ export default function DesktopCoachPortal() {
                                     fetchManagementClientDetails(c.id);
                                     setActiveTab('management');
                                   }}
-                                  className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-gray-400 bg-gray-900/60 border border-gray-800 hover:text-white hover:border-gray-700 transition-all cursor-pointer"
+                                  className="px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider text-gray-400 bg-gray-900/60 border border-gray-800 hover:text-white hover:border-gray-700 transition-colors cursor-pointer"
                                 >
                                   Manage
                                 </button>
@@ -8719,7 +8719,7 @@ export default function DesktopCoachPortal() {
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </div>
             </div>
           )}
 
@@ -10831,7 +10831,7 @@ export default function DesktopCoachPortal() {
         />
       )}
       <div 
-        className={`fixed inset-y-0 right-0 w-full sm:w-[480px] bg-[#0d111d] border-l border-gray-850 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
+        className={`fixed inset-y-0 right-0 w-full sm:w-[480px] bg-[#090d16] border-l border-gray-850 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${
           selectedSubClient ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -10841,7 +10841,6 @@ export default function DesktopCoachPortal() {
           const isOwner = selectedSubClient.id === OWNER_ID;
           const isDeactivated = !isOwner && targets.is_deactivated === true;
           const isExpired = !isOwner && targets.subscription_end_date && now >= new Date(targets.subscription_end_date);
-          // Allow a 10-minute clock skew grace period
           const isPending = !isOwner && targets.subscription_start_date && (now.getTime() + 10 * 60 * 1000) < new Date(targets.subscription_start_date).getTime();
 
           let statusLabel = 'ACTIVE';
@@ -10874,10 +10873,6 @@ export default function DesktopCoachPortal() {
           }
           history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-          // Analytics
-          const firstAct = history.length > 0 ? history[history.length - 1] : null;
-          const lastAct = history.length > 1 ? history[0] : null;
-
           let cumulativeDays = 0;
           history.forEach((h: any) => {
             if (h.start_date && h.end_date) {
@@ -10895,14 +10890,14 @@ export default function DesktopCoachPortal() {
               {/* Header */}
               <div className="p-6 border-b border-gray-850 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-500/25 flex items-center justify-center font-black text-sm text-blue-400 uppercase">
+                  <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-500/25 flex items-center justify-center font-bold text-xs text-blue-400 uppercase">
                     {selectedSubClient.full_name?.substring(0, 2) || 'AT'}
                   </div>
                   <div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-wider flex items-center gap-1.5">
+                    <h3 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
                       {selectedSubClient.full_name}
                       {targets.client_code && (
-                        <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-black tracking-normal">
+                        <span className="text-[9px] bg-blue-950/60 border border-blue-800/40 text-blue-400 px-1 py-0.5 rounded font-bold tracking-normal">
                           #{targets.client_code}
                         </span>
                       )}
@@ -10913,9 +10908,9 @@ export default function DesktopCoachPortal() {
                       const contactEmail = targets?.contact_email;
                       if (isVirtual) {
                         return contactEmail ? (
-                          <p className="text-[10px] text-gray-400 lowercase mt-0.5">Resolved Email: {contactEmail} (Virtual: {email})</p>
+                          <p className="text-[10px] text-gray-400 lowercase mt-0.5 font-sans">Resolved Email: {contactEmail} (Virtual: {email})</p>
                         ) : (
-                          <p className="text-[10px] text-red-400 font-semibold mt-0.5">No Contact Email (Virtual: {email})</p>
+                          <p className="text-[10px] text-red-400 font-semibold mt-0.5 font-sans font-medium">No Contact Email (Virtual: {email})</p>
                         );
                       }
                       return <p className="text-[10px] text-gray-500 lowercase mt-0.5">{email}</p>;
@@ -10924,106 +10919,84 @@ export default function DesktopCoachPortal() {
                 </div>
                 <button 
                   onClick={() => setSelectedSubClient(null)}
-                  className="w-8 h-8 rounded-full bg-gray-900 border border-gray-800 hover:border-gray-700 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer transition-all"
+                  className="w-8 h-8 rounded-full bg-gray-900 border border-gray-800 hover:border-gray-700 flex items-center justify-center text-gray-400 hover:text-white cursor-pointer transition-colors"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              {/* Drawer Content - Scrollable */}
+              {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
-                {/* Status card */}
-                <div className="bg-gray-900/40 p-4 border border-gray-850 rounded-2xl flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Access Status</p>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border mt-1.5 ${statusColor}`}>
+                
+                {/* Status Panel */}
+                <div className="border border-gray-800 bg-[#0c1020]/20 rounded-xl p-5 space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Access Status</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColor}`}>
                       {statusLabel}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Remaining Days</p>
-                    <p className="text-xs font-black text-white mt-1">
-                      {(() => {
-                        if (!targets.subscription_end_date) return 'Unlimited';
-                        const diff = new Date(targets.subscription_end_date).getTime() - Date.now();
-                        if (diff <= 0) return '0 Days';
-                        return `${Math.ceil(diff / (24 * 60 * 60 * 1000))} Days`;
-                      })()}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Grid stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-900/30 p-3.5 border border-gray-850/50 rounded-xl space-y-1">
-                    <p className="text-[9px] text-gray-500 font-bold uppercase">First Activation</p>
-                    <p className="text-xs font-black text-white">
-                      {firstAct ? new Date(firstAct.timestamp).toLocaleDateString() : 'N/A'}
-                    </p>
-                    <p className="text-[8px] text-gray-500">
-                      Tier: {firstAct?.duration || 'None'}
-                    </p>
-                  </div>
-                  <div className="bg-gray-900/30 p-3.5 border border-gray-850/50 rounded-xl space-y-1">
-                    <p className="text-[9px] text-gray-500 font-bold uppercase">Last Reactivated</p>
-                    <p className="text-xs font-black text-white">
-                      {lastAct ? new Date(lastAct.timestamp).toLocaleDateString() : 'Never'}
-                    </p>
-                    <p className="text-[8px] text-gray-500">
-                      Tier: {lastAct?.duration || 'None'}
-                    </p>
-                  </div>
-                  <div className="bg-gray-900/30 p-3.5 border border-gray-850/50 rounded-xl col-span-2 flex justify-between items-center">
-                    <div>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase">Cumulative Days Active</p>
-                      <p className="text-xs font-black text-indigo-400 mt-0.5">{cumulativeDays} Days total</p>
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-850/50 text-xs">
+                    <div className="space-y-1">
+                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Plan duration</p>
+                      <p className="text-white font-bold uppercase">
+                        {isOwner ? 'Unlimited' : (targets.subscription_duration || 'No Expiry')}
+                      </p>
                     </div>
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                      <Calendar size={14} />
+                    <div className="space-y-1">
+                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Cumulative Active</p>
+                      <p className="text-blue-400 font-bold font-mono">{cumulativeDays} Days</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Timeline section */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <History size={12} className="text-blue-400" /> Subscription History Timeline
-                  </h4>
+                {/* Date Ranges Card */}
+                {targets.subscription_start_date && targets.subscription_end_date && (
+                  <div className="border border-gray-800 bg-[#0c1020]/20 rounded-xl p-5 space-y-3 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Start Date</span>
+                      <span className="text-white font-mono">{new Date(targets.subscription_start_date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Expiry Date</span>
+                      <span className="text-white font-mono">{new Date(targets.subscription_end_date).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                )}
 
+                {/* Log History */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Activation Log History</h4>
+                  
                   {history.length === 0 ? (
-                    <div className="bg-[#121624]/20 border border-gray-850/40 rounded-2xl p-6 text-center text-gray-500 text-xs">
-                      No subscription log entries recorded yet.
-                    </div>
+                    <p className="text-xs text-gray-500 italic">No logs recorded for this client.</p>
                   ) : (
-                    <div className="relative border-l border-gray-850 ml-2.5 pl-6 space-y-6 py-1">
+                    <div className="relative border-l border-gray-850 ml-2 pl-4 space-y-5">
                       {history.map((h: any, idx: number) => {
                         const hStart = h.start_date ? new Date(h.start_date) : null;
                         const hEnd = h.end_date ? new Date(h.end_date) : null;
-                        const hNow = new Date();
-                        const isHistActive = hStart && hEnd && hNow >= hStart && hNow < hEnd;
-
                         return (
-                          <div key={idx} className="relative group">
-                            {/* Point on timeline */}
-                            <span className={`absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full border-2 ${
-                              isHistActive
-                                ? 'bg-emerald-400 border-emerald-950 ring-4 ring-emerald-500/15'
-                                : 'bg-gray-800 border-gray-900'
+                          <div key={idx} className="relative animate-fade-in">
+                            <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 bg-gray-950 ${
+                              h.action === 'initial_activation'
+                                ? 'border-emerald-500'
+                                : 'border-blue-500'
                             }`} />
                             
                             <div className="space-y-1">
                               <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-black text-white uppercase tracking-wider">
+                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">
                                   {h.action === 'initial_activation' ? 'INITIAL ACTIVATION' : 'PLAN REACTIVATION'}
                                 </span>
                                 <span className="text-[8px] text-gray-500">
                                   {new Date(h.timestamp).toLocaleDateString()}
                                 </span>
                               </div>
-                              <p className="text-xs font-bold text-gray-400">
+                              <p className="text-xs font-medium text-gray-400 font-sans">
                                 Duration: {h.duration || 'custom'} ({h.delay_days > 0 ? `${h.delay_days}d delay` : 'No delay'})
                               </p>
-                              <p className="text-[9px] text-gray-500">
+                              <p className="text-[9px] text-gray-550 font-mono">
                                 Range: {hStart ? hStart.toLocaleDateString() : 'N/A'} - {hEnd ? hEnd.toLocaleDateString() : 'N/A'}
                               </p>
                             </div>
@@ -11035,31 +11008,32 @@ export default function DesktopCoachPortal() {
                 </div>
               </div>
 
-              {/* Footer action buttons */}
-              <div className="p-6 border-t border-gray-850 bg-gray-900/10 flex gap-3">
+              {/* Action Buttons Panel */}
+              <div className="p-6 border-t border-gray-850 bg-slate-900/10 flex gap-3">
                 <button
+                  type="button"
                   onClick={() => {
                     setReactivateClientId(selectedSubClient.id);
                     setReactivateClientName(selectedSubClient.full_name || 'Client');
                     setReactivatePeriod(targets.subscription_duration || '1 month');
                     setReactivateDelay('0');
-                    setSelectedSubClient(null);
                     setReactivateModalOpen(true);
                   }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-xl transition-colors cursor-pointer"
                 >
-                  Extend / Reactivate
+                  Renew / Upgrade Plan
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setManagementSelectedClientId(selectedSubClient.id);
                     fetchManagementClientDetails(selectedSubClient.id);
-                    setSelectedSubClient(null);
                     setActiveTab('management');
+                    setSelectedSubClient(null);
                   }}
-                  className="flex-1 bg-gray-900 border border-gray-850 hover:border-gray-800 text-gray-300 font-black py-3 rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer text-center"
+                  className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
                 >
-                  Manage Profile
+                  Manage Controls
                 </button>
               </div>
             </>
