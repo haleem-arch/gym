@@ -8020,16 +8020,16 @@ export default function DesktopCoachPortal() {
 
           {/* TAB: ATHLETE CONTROL */}
           {activeTab === 'management' && (
-            <div id="tutorial-management-container" className="space-y-8 max-w-5xl">
+            <div id="tutorial-management-container" className="space-y-6 max-w-5xl animate-fade-in">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
                 <div>
-                  <h2 className="text-xl font-black text-white uppercase tracking-wider">Athlete Control Center</h2>
-                  <p className="text-xs text-gray-500 mt-1">Manage athlete access, security credentials, quotas, and feature permissions.</p>
+                  <h2 className="text-xl font-bold text-white uppercase tracking-wider">Athlete Control Center</h2>
+                  <p className="text-xs text-gray-400 mt-1 font-sans">Manage athlete access, security credentials, quotas, and feature permissions.</p>
                 </div>
                 
                 {/* Select Client Dropdown with Search */}
-                <div className="flex flex-wrap items-center gap-3 bg-gray-900/60 border border-gray-800 rounded-xl px-4 py-2">
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-3 bg-[#0c1020]/40 border border-gray-800 rounded-xl px-4 py-2">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1">
                     <Search size={10} /> Search/Select Athlete:
                   </span>
                   
@@ -8038,13 +8038,13 @@ export default function DesktopCoachPortal() {
                     value={managementSearchQuery}
                     onChange={e => setManagementSearchQuery(e.target.value)}
                     placeholder="Search code, name..."
-                    className="bg-transparent text-xs text-white outline-none border-b border-gray-850/60 focus:border-blue-500/60 w-32 pb-0.5"
+                    className="bg-transparent text-xs text-white outline-none border-b border-gray-850/60 w-32 pb-0.5 font-sans"
                   />
 
                   <select
                     value={managementSelectedClientId}
                     onChange={e => setManagementSelectedClientId(e.target.value)}
-                    className="bg-transparent text-xs font-black text-white outline-none cursor-pointer max-w-[320px]"
+                    className="bg-transparent text-xs font-bold text-white outline-none cursor-pointer max-w-[320px]"
                   >
                     <option value="" disabled className="bg-[#0b0c16]">Select client...</option>
                     {activeClientsList
@@ -8066,23 +8066,23 @@ export default function DesktopCoachPortal() {
               </div>
 
               {!managementClientProfile ? (
-                <div className="bg-[#0b0c16] border border-gray-800 rounded-3xl p-12 text-center text-gray-500">
-                  <p className="text-sm font-bold">No Client Selected or Loaded</p>
-                  <p className="text-xs text-gray-400 mt-2">Please select an athlete from the dropdown above to load management controls.</p>
+                <div className="bg-[#0c1020]/20 border border-gray-800 rounded-2xl p-12 text-center text-gray-500">
+                  <p className="text-sm font-bold text-gray-300">No Client Selected or Loaded</p>
+                  <p className="text-xs text-gray-400 mt-2 font-sans">Please select an athlete from the dropdown above to load management controls.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Selected Client Dossier Header Banner */}
-                  <div className="bg-gradient-to-r from-blue-950/20 to-indigo-950/20 border border-blue-900/30 p-4 rounded-3xl flex flex-wrap items-center justify-between gap-4">
+                  <div className="bg-[#0c1020]/40 border border-gray-800 p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-900/40 text-blue-300 font-black flex items-center justify-center text-sm uppercase">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-bold flex items-center justify-center text-sm uppercase">
                         {managementClientProfile.user?.display_name?.charAt(0) || '?'}
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-white flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
                           {managementClientProfile.user?.display_name || 'Unnamed Athlete'}
                           {managementClientProfile.user?.targets?.client_code && (
-                            <span className="text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-black tracking-normal">
+                            <span className="text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-bold tracking-normal">
                               #{managementClientProfile.user.targets.client_code}
                             </span>
                           )}
@@ -8094,12 +8094,12 @@ export default function DesktopCoachPortal() {
                       {(() => {
                         const activeDays = calculateActiveDays(managementClientProfile.user?.targets);
                         return activeDays > 0 ? (
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400">
                             {activeDays} Active Days
                           </span>
                         ) : null;
                       })()}
-                      <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
                         managementClientProfile.user?.targets?.is_deactivated === true 
                           ? 'bg-red-500/10 text-red-400 border-red-500/20' 
                           : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -8109,373 +8109,368 @@ export default function DesktopCoachPortal() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   
-                  {/* Column 1: Credentials & Subscription */}
-                  <div className="space-y-6">
-                    {/* Card 1: Credentials & Status */}
-                    <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
-                        <Shield size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black uppercase text-yellow-500">Security &amp; Account Status</h3>
-                        <p className="text-[10px] text-gray-500">Suspend access, update passcodes, or delete the profile.</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* Current Status Info */}
-                      <div className="flex justify-between items-center bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl">
-                        {(() => {
-                          const targets = managementClientProfile.user?.targets || {};
-                          const now = new Date();
-                          const isManualDeactivated = targets.is_deactivated === true;
-                          
-                          let isExpired = false;
-                          let isPending = false;
-                          if (targets.subscription_start_date && targets.subscription_end_date) {
-                            const start = new Date(targets.subscription_start_date);
-                            const end = new Date(targets.subscription_end_date);
-                            // Allow a 10-minute clock skew grace period
-                            isPending = (now.getTime() + 10 * 60 * 1000) < start.getTime();
-                            isExpired = now >= end;
-                          }
-
-                          let statusText = '✓ ACTIVE ACCESS';
-                          let statusColorClass = 'text-emerald-400';
-                          if (isManualDeactivated) {
-                            statusText = '🚨 SUSPENDED (MANUAL)';
-                            statusColorClass = 'text-red-400';
-                          } else if (isExpired) {
-                            statusText = '🚨 SUSPENDED (EXPIRED)';
-                            statusColorClass = 'text-red-400';
-                          } else if (isPending) {
-                            statusText = '⏳ PENDING (INACTIVE)';
-                            statusColorClass = 'text-blue-400';
-                          }
-
-                          return (
-                            <>
-                              <div>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Account Access</p>
-                                <p className={`text-xs font-black mt-1 ${statusColorClass}`}>
-                                  {statusText}
-                                </p>
-                              </div>
-                              {isExpired ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const element = document.getElementById('subscription-edit-card');
-                                    if (element) {
-                                      element.scrollIntoView({ behavior: 'smooth' });
-                                      element.classList.add('ring-2', 'ring-blue-500');
-                                      setTimeout(() => {
-                                        element.classList.remove('ring-2', 'ring-blue-500');
-                                      }, 3000);
-                                    }
-                                  }}
-                                  disabled={deletingClient}
-                                  className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border bg-blue-600 hover:bg-blue-500 border-blue-500/25 text-white transition-all active:scale-95 cursor-pointer disabled:bg-gray-800 disabled:text-gray-500 disabled:border-gray-800"
-                                >
-                                  Reactivate
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={handleToggleManagementSuspension}
-                                  disabled={managementUpdatingSuspension || deletingClient}
-                                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer ${
-                                    isManualDeactivated
-                                      ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 text-white'
-                                      : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
-                                  } disabled:bg-gray-800 disabled:text-gray-500 disabled:border-gray-800 disabled:cursor-not-allowed`}
-                                >
-                                  {managementUpdatingSuspension ? 'Updating...' : (isManualDeactivated ? 'Reactivate' : 'Suspend')}
-                                </button>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-
-                      {/* Password Reset */}
-                      <form onSubmit={handleUpdateManagementPassword} className="bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl space-y-3">
-                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Reset Access Passcode</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={managementNewPassword}
-                            onChange={e => setManagementNewPassword(e.target.value)}
-                            disabled={managementUpdatingPassword || deletingClient}
-                            placeholder="New passcode (Min 6 chars)"
-                            className="flex-1 bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500 disabled:opacity-50"
-                          />
-                          <button
-                            type="submit"
-                            disabled={managementUpdatingPassword || deletingClient || !managementNewPassword.trim()}
-                            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] uppercase px-4 py-2 rounded-xl transition-all cursor-pointer disabled:bg-gray-850 disabled:text-gray-500 disabled:cursor-not-allowed"
-                          >
-                            Update
-                          </button>
+                    {/* Column 1: Credentials & Subscription */}
+                    <div className="space-y-6">
+                      {/* Card 1: Credentials & Status */}
+                      <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-gray-800/80">
+                          <div className="flex items-center gap-2.5 mb-1.5">
+                            <Shield size={16} className="text-yellow-500" />
+                            <h3 className="text-xs font-bold uppercase text-yellow-500">Security & Account Status</h3>
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-sans">Suspend access, update passcodes, or delete the profile.</p>
                         </div>
-                        {managementClientProfile.generated_passcode && (
-                          <p className="text-[9px] text-gray-500">
-                            Current passcode in database: <span className="text-yellow-500 font-mono font-bold">{managementClientProfile.generated_passcode}</span>
-                          </p>
-                        )}
-                      </form>
-
-                      {/* Wipe/Delete */}
-                      <div className="bg-red-950/5 border border-red-950/20 p-4 rounded-2xl space-y-3">
-                        <h4 className="text-[10px] text-red-400 font-black uppercase">Dangerous Actions</h4>
-                        <p className="text-[9px] text-red-400/60 leading-relaxed">
-                          Permanently delete the user's login, workouts list, InBody scans, and nutrition logs. This cannot be undone.
-                        </p>
-                        <button
-                          onClick={handleDeleteManagementClient}
-                          disabled={deletingClient}
-                          className="w-full bg-red-650 hover:bg-red-650 text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 cursor-pointer transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Trash2 size={13} /> {deletingClient ? 'Deleting...' : 'Complete Cascade Wipe'}
-                        </button>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Subscription Details & Expiry Management */}
-                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        <Clock size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black uppercase text-indigo-400 font-sans">Subscription &amp; Validity</h3>
-                        <p className="text-[10px] text-gray-500 font-sans">Monitor validity ranges, delay starts, or extend client subscription plans.</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* Current Subscription Status */}
-                      <div 
-                        onClick={() => setShowDetailedSubscriptionTime(!showDetailedSubscriptionTime)}
-                        className="bg-gray-900/40 p-3.5 border border-gray-850 rounded-2xl cursor-pointer hover:border-gray-700 transition-all select-none"
-                      >
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Plan Duration</p>
-                        <p className="text-xs font-black text-white mt-1">
-                          {(() => {
-                            const targets = managementClientProfile.user?.targets;
-                            const duration = targets?.subscription_duration;
-                            const hasNoExpiry = !targets?.subscription_end_date;
-                            if (duration) {
-                              if (hasNoExpiry && duration.toLowerCase() === 'none') {
-                                return 'UNLIMITED';
+                        
+                        <div className="p-5 space-y-4">
+                          {/* Current Status Info */}
+                          <div className="flex justify-between items-center bg-gray-900/40 p-3.5 border border-gray-850 rounded-xl">
+                            {(() => {
+                              const targets = managementClientProfile.user?.targets || {};
+                              const now = new Date();
+                              const isManualDeactivated = targets.is_deactivated === true;
+                              
+                              let isExpired = false;
+                              let isPending = false;
+                              if (targets.subscription_start_date && targets.subscription_end_date) {
+                                const start = new Date(targets.subscription_start_date);
+                                const end = new Date(targets.subscription_end_date);
+                                isPending = (now.getTime() + 10 * 60 * 1000) < start.getTime();
+                                isExpired = now >= end;
                               }
-                              return duration.toUpperCase();
-                            }
-                            return 'NO EXPIRY (UNLIMITED)';
-                          })()}
-                        </p>
-                        
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-3">Time Remaining</p>
-                        <p className="text-xs font-bold text-indigo-400 mt-1 flex items-center gap-1">
-                          {(() => {
-                            const targets = managementClientProfile.user?.targets || {};
-                            if (!targets.subscription_start_date || !targets.subscription_end_date) {
-                              return 'Unlimited access';
-                            }
-                            const now = new Date();
-                            const start = new Date(targets.subscription_start_date);
-                            const end = new Date(targets.subscription_end_date);
-                            
-                            if (now < start) {
-                              const diffMs = start.getTime() - now.getTime();
-                              const formatted = formatTimeLeft(diffMs, showDetailedSubscriptionTime);
-                              return `Pending (Starts in ${formatted})`;
-                            } else if (now >= end) {
-                              return 'Expired (Access Suspended)';
-                            } else {
-                              const diffMs = end.getTime() - now.getTime();
-                              const formatted = formatTimeLeft(diffMs, showDetailedSubscriptionTime);
-                              return `${formatted} remaining`;
-                            }
-                          })()}
-                        </p>
-                        <p className="text-[8px] text-gray-550 italic mt-1.5">
-                          {showDetailedSubscriptionTime ? 'Click to show simple countdown' : 'Click to show exact details (years, months, days, minutes)'}
-                        </p>
-                      </div>
 
-                      {/* Update Subscription Plan Form */}
-                      <div id="subscription-edit-card" className="bg-[#121624]/40 p-4 border border-gray-850 rounded-2xl space-y-4">
-                        <label className="text-[10px] text-gray-400 font-black uppercase tracking-wider block">Update Client Subscription</label>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[8px] text-gray-500 font-bold uppercase">Duration</label>
-                            <select 
-                              value={editSubscriptionPeriod} 
-                              onChange={e => setEditSubscriptionPeriod(e.target.value)} 
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none"
-                            >
-                              <option value="none">No Expiry</option>
-                              <option value="2 weeks">2 Weeks</option>
-                              <option value="1 month">1 Month</option>
-                              <option value="3 months">3 Months</option>
-                              <option value="6 months">6 Months</option>
-                              <option value="12 months">12 Months</option>
-                              <option value="2 years">2 Years</option>
-                              <option value="custom">Custom Date &amp; Time (Calendar)</option>
-                            </select>
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <label className="text-[8px] text-gray-500 font-bold uppercase">Start Delay (Days)</label>
-                            <input 
-                              type="number" 
-                              min="0"
-                              value={editSubscriptionDelay} 
-                              onChange={e => setEditSubscriptionDelay(e.target.value)} 
-                              placeholder="e.g. 0" 
-                              className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none" 
-                            />
+                              let statusText = 'ACTIVE ACCESS';
+                              let statusColorClass = 'text-emerald-400';
+                              if (isManualDeactivated) {
+                                statusText = 'SUSPENDED (MANUAL)';
+                                statusColorClass = 'text-red-400';
+                              } else if (isExpired) {
+                                statusText = 'SUSPENDED (EXPIRED)';
+                                statusColorClass = 'text-red-400';
+                              } else if (isPending) {
+                                statusText = 'PENDING (INACTIVE)';
+                                statusColorClass = 'text-blue-400';
+                              }
+
+                              return (
+                                <>
+                                  <div>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Account Access</p>
+                                    <p className={`text-xs font-bold mt-1 ${statusColorClass}`}>
+                                      {statusText}
+                                    </p>
+                                  </div>
+                                  {isExpired ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const element = document.getElementById('subscription-edit-card');
+                                        if (element) {
+                                          element.scrollIntoView({ behavior: 'smooth' });
+                                          element.classList.add('ring-1', 'ring-blue-500');
+                                          setTimeout(() => {
+                                            element.classList.remove('ring-1', 'ring-blue-500');
+                                          }, 3000);
+                                        }
+                                      }}
+                                      disabled={deletingClient}
+                                      className="px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer disabled:bg-gray-800 disabled:text-gray-500"
+                                    >
+                                      Reactivate
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={handleToggleManagementSuspension}
+                                      disabled={managementUpdatingSuspension || deletingClient}
+                                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-colors cursor-pointer ${
+                                        isManualDeactivated
+                                          ? 'bg-emerald-600 hover:bg-emerald-500 border-transparent text-white'
+                                          : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                                      } disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent`}
+                                    >
+                                      {managementUpdatingSuspension ? 'Updating...' : (isManualDeactivated ? 'Reactivate' : 'Suspend')}
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
 
-                          {editSubscriptionPeriod === 'custom' && (
-                            <div className="space-y-1 col-span-2 mt-1 animate-fadeIn">
-                              <label className="text-[8px] text-indigo-400 font-bold uppercase">Custom End Date &amp; Time (Includes Seconds)</label>
-                              <input 
-                                type="datetime-local" 
-                                step="1"
-                                value={editCustomSubscriptionEnd} 
-                                onChange={e => setEditCustomSubscriptionEnd(e.target.value)} 
-                                className="w-full bg-[#121624] border border-indigo-500/30 rounded-xl p-2.5 text-xs text-white outline-none focus:border-indigo-500 transition-colors" 
+                          {/* Password Reset */}
+                          <form onSubmit={handleUpdateManagementPassword} className="bg-gray-900/40 p-3.5 border border-gray-850 rounded-xl space-y-3">
+                            <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Reset Access Passcode</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={managementNewPassword}
+                                onChange={e => setManagementNewPassword(e.target.value)}
+                                disabled={managementUpdatingPassword || deletingClient}
+                                placeholder="New passcode (Min 6 chars)"
+                                className="flex-1 bg-[#121624]/60 border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors disabled:opacity-50 font-mono"
                               />
+                              <button
+                                type="submit"
+                                disabled={managementUpdatingPassword || deletingClient || !managementNewPassword.trim()}
+                                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] uppercase px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-gray-850 disabled:text-gray-500"
+                              >
+                                Update
+                              </button>
                             </div>
-                          )}
-                        </div>
+                            {managementClientProfile.generated_passcode && (
+                              <p className="text-[9px] text-gray-500 font-medium">
+                                Current passcode: <span className="text-yellow-500 font-mono font-bold">{managementClientProfile.generated_passcode}</span>
+                              </p>
+                            )}
+                          </form>
 
-                        <button
-                          type="button"
-                          onClick={handleUpdateSubscription}
-                          disabled={updatingSubscriptionState}
-                          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          {updatingSubscriptionState ? 'Updating Plan...' : 'Save Subscription Plan'}
-                        </button>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Column 2: Feature Toggles & Profile Info */}
-                <div className="space-y-6">
-                  {/* Card: Profile Information */}
-                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                        <UserCheck size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black uppercase text-blue-400 font-sans">Profile Details</h3>
-                        <p className="text-[10px] text-gray-550 font-sans">Update display name, contact email, and phone number.</p>
-                      </div>
-                    </div>
-
-                    <form onSubmit={handleUpdateProfileDetails} className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-gray-450 font-bold uppercase block">Display Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={editClientDisplayName}
-                          onChange={e => setEditClientDisplayName(e.target.value)}
-                          className="w-full bg-[#121624] border border-gray-800 focus:border-blue-500 rounded-xl p-2.5 text-xs text-white outline-none"
-                          placeholder="Display Name"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-gray-450 font-bold uppercase block">Contact Email (Real Email)</label>
-                        <input
-                          type="email"
-                          value={editClientContactEmail}
-                          onChange={e => setEditClientContactEmail(e.target.value.trim())}
-                          className="w-full bg-[#121624] border border-gray-800 focus:border-blue-500 rounded-xl p-2.5 text-xs text-white outline-none"
-                          placeholder="Contact Email (Real)"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-gray-455 font-bold uppercase block">Phone Number</label>
-                        <input
-                          type="text"
-                          value={editClientPhoneNumber}
-                          onChange={e => setEditClientPhoneNumber(e.target.value)}
-                          className="w-full bg-[#121624] border border-gray-800 focus:border-blue-500 rounded-xl p-2.5 text-xs text-white outline-none"
-                          placeholder="Phone Number"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={updatingProfileDetails}
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-2.5 rounded-xl transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
-                      >
-                        {updatingProfileDetails ? 'Saving...' : 'Save Profile Details'}
-                      </button>
-                    </form>
-                  </Card>
-
-                  {/* Card 2: Feature Toggles */}
-                  <Card className="p-6 space-y-6 bg-gradient-to-br from-[#0c1020] to-[#0d1222]">
-                    <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        <Activity size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black uppercase text-indigo-400">Feature Access Toggles</h3>
-                        <p className="text-[10px] text-gray-500">Enable or disable specific features inside the athlete PWA workspace.</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {([
-                        { key: 'disable_workout_templates', label: 'Hide Workout Templates', desc: 'Removes templates & programs button for clients.' },
-                        { key: 'disable_nutrition_targets', label: 'Hide Nutrition Targets', desc: 'Removes daily targets setup menu for clients.' },
-                      ] as const).map(({ key, label, desc }) => {
-                        const ownerProfile = profiles.find(p => p.id === OWNER_ID);
-                        const ownerTargets = ownerProfile?.targets || {};
-                        const isHidden = managementClientProfile.user?.targets?.[key] !== undefined
-                          ? !!managementClientProfile.user?.targets?.[key]
-                          : !!ownerTargets[key];
-                        return (
-                          <div key={key} className="flex items-center justify-between bg-gray-900/40 p-4 border border-gray-850 rounded-2xl gap-4">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-white">{label}</p>
-                              <p className="text-[9px] text-gray-500 mt-0.5 leading-normal">{desc}</p>
-                            </div>
+                          {/* Wipe/Delete */}
+                          <div className="bg-red-950/5 border border-red-950/20 p-4 rounded-xl space-y-2.5">
+                            <h4 className="text-[10px] text-red-400 font-bold uppercase">Dangerous Actions</h4>
+                            <p className="text-[9px] text-red-400/60 leading-relaxed font-sans font-medium">
+                              Permanently delete the user's login, workouts list, InBody scans, and nutrition logs. This cannot be undone.
+                            </p>
                             <button
-                              onClick={() => handleToggleManagementFeature(key, isHidden)}
-                              disabled={managementUpdatingFeatures}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
-                                isHidden
-                                  ? 'bg-red-950/20 border-red-900/25 text-red-400'
-                                  : 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400'
-                              }`}
+                              onClick={handleDeleteManagementClient}
+                              disabled={deletingClient}
+                              className="w-full bg-red-900/10 hover:bg-red-900/20 border border-red-900/30 text-red-400 disabled:bg-gray-800 disabled:text-gray-500 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-1.5"
                             >
-                              {isHidden ? 'HIDDEN' : 'VISIBLE'}
+                              <Trash2 size={13} /> {deletingClient ? 'Deleting...' : 'Complete Cascade Wipe'}
                             </button>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
+                        </div>
+                      </div>
 
-                </div>
-                </div>
+                      {/* Subscription Details & Expiry Management */}
+                      <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-gray-800/80">
+                          <div className="flex items-center gap-2.5 mb-1.5">
+                            <Clock size={16} className="text-indigo-400" />
+                            <h3 className="text-xs font-bold uppercase text-indigo-400 font-sans">Subscription & Validity</h3>
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-sans">Monitor validity ranges, delay starts, or extend client subscription plans.</p>
+                        </div>
+                        
+                        <div className="p-5 space-y-4">
+                          {/* Current Subscription Status */}
+                          <div 
+                            onClick={() => setShowDetailedSubscriptionTime(!showDetailedSubscriptionTime)}
+                            className="bg-gray-900/40 p-3.5 border border-gray-850 rounded-xl cursor-pointer hover:border-gray-700 transition-all select-none"
+                          >
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Plan Duration</p>
+                            <p className="text-xs font-bold text-white mt-1">
+                              {(() => {
+                                const targets = managementClientProfile.user?.targets;
+                                const duration = targets?.subscription_duration;
+                                const hasNoExpiry = !targets?.subscription_end_date;
+                                if (duration) {
+                                  if (hasNoExpiry && duration.toLowerCase() === 'none') {
+                                    return 'UNLIMITED';
+                                  }
+                                  return duration.toUpperCase();
+                                }
+                                return 'NO EXPIRY (UNLIMITED)';
+                              })()}
+                            </p>
+                            
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-3">Time Remaining</p>
+                            <p className="text-xs font-bold text-indigo-400 mt-1 flex items-center gap-1">
+                              {(() => {
+                                const targets = managementClientProfile.user?.targets || {};
+                                if (!targets.subscription_start_date || !targets.subscription_end_date) {
+                                  return 'Unlimited access';
+                                }
+                                const now = new Date();
+                                const start = new Date(targets.subscription_start_date);
+                                const end = new Date(targets.subscription_end_date);
+                                
+                                if (now < start) {
+                                  const diffMs = start.getTime() - now.getTime();
+                                  const formatted = formatTimeLeft(diffMs, showDetailedSubscriptionTime);
+                                  return `Pending (Starts in ${formatted})`;
+                                } else if (now >= end) {
+                                  return 'Expired (Access Suspended)';
+                                } else {
+                                  const diffMs = end.getTime() - now.getTime();
+                                  const formatted = formatTimeLeft(diffMs, showDetailedSubscriptionTime);
+                                  return `${formatted} remaining`;
+                                }
+                              })()}
+                            </p>
+                            <p className="text-[8px] text-gray-500 italic mt-1.5 font-sans">
+                              {showDetailedSubscriptionTime ? 'Click to show simple countdown' : 'Click to show exact details (years, months, days, minutes)'}
+                            </p>
+                          </div>
+
+                          {/* Update Subscription Plan Form */}
+                          <div id="subscription-edit-card" className="bg-[#121624]/40 p-4 border border-gray-850 rounded-xl space-y-4">
+                            <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Update Client Subscription</label>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className="text-[8px] text-gray-500 font-bold uppercase">Duration</label>
+                                <select 
+                                  value={editSubscriptionPeriod} 
+                                  onChange={e => setEditSubscriptionPeriod(e.target.value)} 
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none cursor-pointer"
+                                >
+                                  <option value="none">No Expiry</option>
+                                  <option value="2 weeks">2 Weeks</option>
+                                  <option value="1 month">1 Month</option>
+                                  <option value="3 months">3 Months</option>
+                                  <option value="6 months">6 Months</option>
+                                  <option value="12 months">12 Months</option>
+                                  <option value="2 years">2 Years</option>
+                                  <option value="custom">Custom Date &amp; Time (Calendar)</option>
+                                </select>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <label className="text-[8px] text-gray-500 font-bold uppercase">Start Delay (Days)</label>
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  value={editSubscriptionDelay} 
+                                  onChange={e => setEditSubscriptionDelay(e.target.value)} 
+                                  placeholder="e.g. 0" 
+                                  className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none" 
+                                />
+                              </div>
+
+                              {editSubscriptionPeriod === 'custom' && (
+                                <div className="space-y-1 col-span-2 mt-1 animate-fadeIn">
+                                  <label className="text-[8px] text-indigo-400 font-bold uppercase">Custom End Date &amp; Time</label>
+                                  <input 
+                                    type="datetime-local" 
+                                    step="1"
+                                    value={editCustomSubscriptionEnd} 
+                                    onChange={e => setEditCustomSubscriptionEnd(e.target.value)} 
+                                    className="w-full bg-[#121624] border border-indigo-500/30 rounded-xl p-2.5 text-xs text-white outline-none focus:border-indigo-500 transition-colors" 
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={handleUpdateSubscription}
+                              disabled={updatingSubscriptionState}
+                              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase py-2.5 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              {updatingSubscriptionState ? 'Updating Plan...' : 'Save Subscription Plan'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Feature Toggles & Profile Info */}
+                    <div className="space-y-6">
+                      {/* Card: Profile Information */}
+                      <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-gray-800/80">
+                          <div className="flex items-center gap-2.5 mb-1.5">
+                            <UserCheck size={16} className="text-blue-500" />
+                            <h3 className="text-xs font-bold uppercase text-blue-400 font-sans">Profile Details</h3>
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-sans">Update display name, contact email, and phone number.</p>
+                        </div>
+                        
+                        <div className="p-5">
+                          <form onSubmit={handleUpdateProfileDetails} className="space-y-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-gray-400 font-bold uppercase block">Display Name</label>
+                              <input
+                                type="text"
+                                required
+                                value={editClientDisplayName}
+                                onChange={e => setEditClientDisplayName(e.target.value)}
+                                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl p-2.5 text-xs text-white outline-none transition-colors"
+                                placeholder="Display Name"
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-gray-400 font-bold uppercase block">Contact Email (Real Email)</label>
+                              <input
+                                type="email"
+                                value={editClientContactEmail}
+                                onChange={e => setEditClientContactEmail(e.target.value.trim())}
+                                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl p-2.5 text-xs text-white outline-none transition-colors"
+                                placeholder="Contact Email (Real)"
+                              />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-gray-400 font-bold uppercase block">Phone Number</label>
+                              <input
+                                type="text"
+                                value={editClientPhoneNumber}
+                                onChange={e => setEditClientPhoneNumber(e.target.value)}
+                                className="w-full bg-[#121624]/60 border border-gray-800 focus:border-blue-500 rounded-xl p-2.5 text-xs text-white outline-none transition-colors"
+                                placeholder="Phone Number"
+                              />
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                              <button
+                                type="submit"
+                                disabled={updatingProfileDetails}
+                                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase px-6 py-2.5 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {updatingProfileDetails ? 'Saving...' : 'Save Profile Details'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Feature Toggles */}
+                      <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-gray-800/80">
+                          <div className="flex items-center gap-2.5 mb-1.5">
+                            <Activity size={16} className="text-indigo-400" />
+                            <h3 className="text-xs font-bold uppercase text-indigo-400">Feature Access Toggles</h3>
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-sans">Enable or disable specific features inside the athlete PWA workspace.</p>
+                        </div>
+                        
+                        <div className="p-5 space-y-4">
+                          {([
+                            { key: 'disable_workout_templates', label: 'Hide Workout Templates', desc: 'Removes templates & programs button for clients.' },
+                            { key: 'disable_nutrition_targets', label: 'Hide Nutrition Targets', desc: 'Removes daily targets setup menu for clients.' },
+                          ] as const).map(({ key, label, desc }) => {
+                            const ownerProfile = profiles.find(p => p.id === OWNER_ID);
+                            const ownerTargets = ownerProfile?.targets || {};
+                            const isHidden = managementClientProfile.user?.targets?.[key] !== undefined
+                              ? !!managementClientProfile.user?.targets?.[key]
+                              : !!ownerTargets[key];
+                            return (
+                              <div key={key} className="flex items-center justify-between bg-gray-900/40 p-4 border border-gray-850 rounded-xl gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-white">{label}</p>
+                                  <p className="text-[9px] text-gray-500 mt-0.5 leading-normal font-sans font-medium">{desc}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleToggleManagementFeature(key, isHidden)}
+                                  disabled={managementUpdatingFeatures}
+                                  className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-colors cursor-pointer whitespace-nowrap ${
+                                    isHidden
+                                      ? 'bg-red-950/20 border-red-900/25 text-red-400'
+                                      : 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400'
+                                  }`}
+                                >
+                                  {isHidden ? 'HIDDEN' : 'VISIBLE'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
