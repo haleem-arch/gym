@@ -150,10 +150,14 @@ const formatDateTime = (dateString: string | Date) => {
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+    <div className="w-full h-2 bg-slate-950/70 border border-white/[0.02] rounded-full overflow-hidden p-[2px]">
       <div
-        className="h-full rounded-full transition-all duration-700"
-        style={{ width: `${pct}%`, backgroundColor: color }}
+        className="h-full rounded-full transition-all duration-700 ease-out shadow-inner"
+        style={{ 
+          width: `${pct}%`, 
+          backgroundColor: color,
+          boxShadow: pct > 0 ? `0 0 6px ${color}80` : 'none'
+        }}
       />
     </div>
   );
@@ -164,15 +168,29 @@ function StatCard({ label, value, max, unit, color, emoji }: {
 }) {
   const pct = max > 0 ? Math.min(Math.round((value / max) * 100), 100) : 0;
   return (
-    <div className="bg-[#121624] border border-gray-850 p-3.5 rounded-2xl flex flex-col gap-2">
+    <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/50 to-slate-950/60 border border-white/[0.04] p-4 rounded-2xl flex flex-col gap-3 shadow-lg group hover:border-white/[0.08] transition-all duration-300">
+      {/* Premium glow line at the top */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] opacity-70 transition-opacity group-hover:opacity-100" style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }} />
+      
       <div className="flex justify-between items-center">
-        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{emoji} {label}</span>
-        <span className="text-[10px] font-black" style={{ color }}>{pct}%</span>
+        <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+          <span>{emoji}</span>
+          <span>{label}</span>
+        </span>
+        <span className="text-xs font-black font-mono" style={{ color }}>{pct}%</span>
       </div>
+      
       <ProgressBar value={value} max={max} color={color} />
-      <div className="flex justify-between text-[9px] text-gray-500 font-bold">
-        <span style={{ color }}>{value.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
-        <span>/ {max.toFixed(unit === 'L' ? 1 : 0)}{unit}</span>
+      
+      <div className="flex justify-between items-baseline text-[10px] font-mono">
+        <span className="font-extrabold" style={{ color }}>
+          {value.toFixed(unit === 'L' ? 1 : 0)}
+          <span className="text-[9px] text-gray-500 font-bold ml-0.5">{unit}</span>
+        </span>
+        <span className="text-gray-500 font-semibold">
+          / {max.toFixed(unit === 'L' ? 1 : 0)}
+          <span className="text-[9px] text-gray-600 ml-0.5">{unit}</span>
+        </span>
       </div>
     </div>
   );
@@ -6533,65 +6551,70 @@ export default function DesktopCoachPortal() {
                       <div className="space-y-6">
                         {/* Biometrics row */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Scale size={11} className="text-gray-500" /> Weight</p>
-                            <p className="text-sm font-black text-white mt-1.5">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
+                          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.03] p-5 rounded-2xl text-center shadow-lg group hover:border-white/[0.08] transition-all duration-300">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
+                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest flex items-center justify-center gap-1.5"><Scale size={12} className="text-blue-400 shrink-0" /> Weight</p>
+                            <p className="text-base font-mono font-black text-white mt-2">{latestWeight ? `${latestWeight} kg` : 'N/A'}</p>
                           </div>
-                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Ruler size={11} className="text-gray-500" /> Height</p>
-                            <p className="text-sm font-black text-white mt-1.5">{selectedClientProfile.height ? `${selectedClientProfile.height} cm` : 'N/A'}</p>
+                          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.03] p-5 rounded-2xl text-center shadow-lg group hover:border-white/[0.08] transition-all duration-300">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/20 to-emerald-500/35" />
+                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest flex items-center justify-center gap-1.5"><Ruler size={12} className="text-emerald-400 shrink-0" /> Height</p>
+                            <p className="text-base font-mono font-black text-white mt-2">{selectedClientProfile.height ? `${selectedClientProfile.height} cm` : 'N/A'}</p>
                           </div>
-                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Calendar size={11} className="text-gray-500" /> Age</p>
-                            <p className="text-sm font-black text-white mt-1.5">{selectedClientProfile.age ? `${selectedClientProfile.age} yrs` : 'N/A'}</p>
+                          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.03] p-5 rounded-2xl text-center shadow-lg group hover:border-white/[0.08] transition-all duration-300">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500/20 to-purple-500/35" />
+                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest flex items-center justify-center gap-1.5"><Calendar size={12} className="text-purple-400 shrink-0" /> Age</p>
+                            <p className="text-base font-mono font-black text-white mt-2">{selectedClientProfile.age ? `${selectedClientProfile.age} yrs` : 'N/A'}</p>
                           </div>
-                          <div className="bg-[#111326]/50 border border-white/[0.04] p-4 rounded-2xl text-center shadow-md">
-                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-1"><Lock size={11} className="text-yellow-500/70" /> Passcode</p>
-                            <p className="text-sm font-black text-yellow-500 font-mono mt-1.5">{selectedClientProfile.generated_passcode || 'N/A'}</p>
+                          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.03] p-5 rounded-2xl text-center shadow-lg group hover:border-white/[0.08] transition-all duration-300">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500/20 to-amber-500/35" />
+                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest flex items-center justify-center gap-1.5"><Lock size={12} className="text-amber-400 shrink-0" /> Passcode</p>
+                            <p className="text-base font-mono font-black text-amber-400 mt-2 tracking-wide">{selectedClientProfile.generated_passcode || 'N/A'}</p>
                           </div>
                         </div>
 
                         {/* Nutrition targets editor */}
                         <div className="flex flex-col gap-6">
-                          <div className="p-6 bg-[#111326]/50 border border-white/[0.04] rounded-[22px] space-y-5 shadow-lg">
-                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-white/[0.05] pb-3 flex items-center gap-2">
-                              <Activity size={14} /> Nutrition Target Benchmarks
+                          <div className="relative overflow-hidden p-6 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[24px] space-y-6 shadow-xl">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 via-blue-500/40 to-blue-500/20" />
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-white/[0.05] pb-4 flex items-center gap-2">
+                              <Activity size={14} className="text-blue-400" /> Nutrition Target Benchmarks
                             </h3>
                             
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              <div className="space-y-1.5">
-                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Daily Calories (kcal)</label>
+                              <div className="space-y-2">
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🔥 Daily Calories (kcal)</label>
                                 <input 
                                   type="number" value={targetKcal} onChange={e => setTargetKcal(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
+                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
-                              <div className="space-y-1.5">
-                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Protein (g)</label>
+                              <div className="space-y-2">
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🥩 Protein (g)</label>
                                 <input 
                                   type="number" value={targetProtein} onChange={e => setTargetProtein(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
+                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
-                              <div className="space-y-1.5">
-                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Carbs (g)</label>
+                              <div className="space-y-2">
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🍚 Carbs (g)</label>
                                 <input 
                                   type="number" value={targetCarbs} onChange={e => setTargetCarbs(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
+                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
-                              <div className="space-y-1.5">
-                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Fat (g)</label>
+                              <div className="space-y-2">
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🥑 Fat (g)</label>
                                 <input 
                                   type="number" value={targetFat} onChange={e => setTargetFat(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
+                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
-                              <div className="space-y-1.5 col-span-2">
-                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Water Goal (Liters)</label>
+                              <div className="space-y-2 col-span-2">
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">💧 Water Goal (Liters)</label>
                                 <input 
                                   type="number" step="0.1" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-[#0a0b16]/60 border border-white/[0.05] focus:border-blue-500/50 rounded-2xl p-3 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.15)] transition-all font-bold"
+                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
                             </div>
@@ -6599,37 +6622,38 @@ export default function DesktopCoachPortal() {
                             <button
                               onClick={handleSaveTargets}
                               disabled={savingTargets}
-                              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                              className="w-full bg-blue-600 hover:bg-blue-500 border border-blue-500/20 disabled:bg-slate-800 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
                             >
                               {savingTargets ? 'Saving Targets...' : <><Save size={13} /> Save Nutrition Targets</>}
                             </button>
                           </div>
 
                           {/* Nutrition by day type */}
-                          <div className="bg-[#111326]/50 border border-white/[0.04] rounded-[22px] p-6 space-y-5 shadow-lg">
-                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-white/[0.05] pb-3 flex items-center gap-2">
-                              <Activity size={14} /> Day-Type Custom Targets
+                          <div className="relative overflow-hidden p-6 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[24px] space-y-6 shadow-xl">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 via-sky-500/40 to-sky-500/20" />
+                            <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 border-b border-white/[0.05] pb-4 flex items-center gap-2">
+                              <Activity size={14} className="text-sky-400" /> Day-Type Custom Targets
                             </h3>
-                            <div className="space-y-3.5 max-h-[480px] overflow-y-auto pr-1 no-scrollbar">
+                            <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1 no-scrollbar">
                               {athleteDayTypes.map(dt => {
                                 const dn = dayNutrition[dt];
                                 const isEditing = editingDayType === dt;
                                 return (
-                                  <div key={dt} className="bg-[#0a0b16]/40 border border-white/[0.04] rounded-2xl overflow-hidden shadow-sm hover:border-white/[0.08] transition-all">
+                                  <div key={dt} className="bg-slate-950/30 border border-white/[0.03] rounded-2xl overflow-hidden hover:border-white/[0.07] transition-all shadow-md">
                                     <button
                                       onClick={() => isEditing ? setEditingDayType(null) : handleOpenDayEdit(dt)}
-                                      className="w-full flex items-center justify-between py-4 px-5 hover:bg-white/[0.01] transition-colors"
+                                      className="w-full flex items-center justify-between py-4 px-5 hover:bg-white/[0.02] transition-colors cursor-pointer"
                                     >
-                                      <span className={`text-[10px] font-black px-2.5 py-1 rounded border uppercase tracking-wider ${dayColor(dt)}`}>{dt}</span>
+                                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl border uppercase tracking-widest ${dayColor(dt)}`}>{dt}</span>
                                       {dn ? (
-                                        <span className="text-xs md:text-sm text-gray-300 font-bold font-mono">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
+                                        <span className="text-xs md:text-sm text-zinc-300 font-black font-mono">{dn.kcal} kcal · P{dn.protein}g · C{dn.carbs}g · F{dn.fat}g</span>
                                       ) : (
-                                        <span className="text-xs text-gray-500 italic font-medium">Default Work Macros</span>
+                                        <span className="text-xs text-gray-500 italic font-semibold">Default Work Macros</span>
                                       )}
                                     </button>
 
                                     {isEditing && (
-                                      <div className="border-t border-white/[0.05] p-6 space-y-5 bg-[#0a0b16]/60">
+                                      <div className="border-t border-white/[0.04] p-5 space-y-5 bg-slate-950/50">
                                         <div className="grid grid-cols-4 gap-4">
                                           {[
                                             { label: 'Kcal', val: editDayKcal, set: setEditDayKcal },
@@ -6641,14 +6665,14 @@ export default function DesktopCoachPortal() {
                                               <label className="text-[10px] text-gray-400 block mb-1.5 font-bold uppercase tracking-wider">{label}</label>
                                               <input
                                                 type="number" value={val} onChange={e => set(parseInt(e.target.value) || 0)}
-                                                className="w-full bg-[#111326]/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white text-center font-extrabold shadow-inner focus:border-blue-500/50 outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all"
+                                                className="w-full bg-slate-900/60 border border-white/[0.05] rounded-xl p-3 text-xs text-white text-center font-black font-mono shadow-inner focus:border-blue-500/50 outline-none focus:shadow-[0_0_12px_rgba(59,130,246,0.1)] transition-all"
                                               />
                                             </div>
                                           ))}
                                         </div>
                                         <div className="flex gap-3">
-                                          <button onClick={handleSaveDayNutrition} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-3 rounded-xl transition-all shadow-md">Save Changes</button>
-                                          <button onClick={() => setEditingDayType(null)} className="px-4 bg-gray-800 text-gray-400 font-bold text-xs rounded-xl transition-all">Cancel</button>
+                                          <button onClick={handleSaveDayNutrition} className="flex-1 bg-blue-600 hover:bg-blue-500 border border-blue-500/20 text-white font-extrabold text-xs uppercase py-3 rounded-xl transition-all shadow-md cursor-pointer active:scale-95">Save Changes</button>
+                                          <button onClick={() => setEditingDayType(null)} className="px-4 bg-slate-850 hover:bg-slate-800 text-gray-300 border border-white/[0.03] font-bold text-xs rounded-xl transition-all cursor-pointer">Cancel</button>
                                         </div>
                                       </div>
                                     )}
@@ -6665,10 +6689,10 @@ export default function DesktopCoachPortal() {
                     {clientActiveTab === 'diet' && (
                       <div className="space-y-6">
                         {/* Date Navigator */}
-                        <div className="flex items-center justify-between bg-[#121624] border border-gray-850 p-3 rounded-2xl">
-                          <button onClick={() => shiftClientDate(-1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronLeft size={16} /></button>
-                          <span className="text-xs font-bold text-white flex items-center gap-1.5"><Calendar size={13} className="text-blue-400" /> {clientActiveDateStr}</span>
-                          <button onClick={() => shiftClientDate(1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronRight size={16} /></button>
+                        <div className="flex items-center justify-between bg-gradient-to-r from-slate-900/40 to-slate-950/45 border border-white/[0.04] p-3 rounded-[20px] shadow-lg backdrop-blur-md">
+                          <button onClick={() => shiftClientDate(-1)} className="p-2 hover:bg-white/[0.04] hover:text-white rounded-xl text-gray-400 transition-colors cursor-pointer active:scale-90"><ChevronLeft size={16} /></button>
+                          <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2 bg-white/[0.02] border border-white/[0.03] px-4 py-2 rounded-xl"><Calendar size={13} className="text-blue-400" /> {clientActiveDateStr}</span>
+                          <button onClick={() => shiftClientDate(1)} className="p-2 hover:bg-white/[0.04] hover:text-white rounded-xl text-gray-400 transition-colors cursor-pointer active:scale-90"><ChevronRight size={16} /></button>
                         </div>
 
                         {/* Nutrition indicators */}
@@ -6682,45 +6706,50 @@ export default function DesktopCoachPortal() {
                         {/* Custom food logger & meals table */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                           {/* Log Meal Form */}
-                          <Card className="p-5 space-y-4">
-                            <div className="flex justify-between items-center border-b border-gray-850 pb-2">
-                              <h3 className="text-xs font-black uppercase text-blue-400">Log Custom Meal</h3>
+                          <div className="bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[22px] p-6 shadow-xl space-y-4 relative overflow-hidden flex flex-col justify-between">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
+                            <div className="flex justify-between items-center border-b border-white/[0.05] pb-3">
+                              <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5 leading-none">Log Custom Meal</h3>
                             </div>
 
-                            <div className="space-y-3">
-                              <input 
-                                type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
-                                placeholder="Meal Name (e.g. Oatmeal & Eggs)"
-                                className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
-                              />
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="text-[8px] text-gray-500 uppercase font-black">Calories (kcal)</label>
-                                  <input type="number" value={newMealKcal} onChange={e => setNewMealKcal(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                            <div className="space-y-4 flex-1 mt-2">
+                              <div className="space-y-1.5">
+                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Meal Name</label>
+                                <input 
+                                  type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
+                                  placeholder="e.g. Oatmeal & Eggs"
+                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all focus:shadow-[0_0_12px_rgba(59,130,246,0.08)]"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-3.5">
+                                <div className="space-y-1">
+                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Calories (kcal)</label>
+                                  <input type="number" value={newMealKcal} onChange={e => setNewMealKcal(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
                                 </div>
-                                <div>
-                                  <label className="text-[8px] text-gray-500 uppercase font-black">Protein (g)</label>
-                                  <input type="number" value={newMealProtein} onChange={e => setNewMealProtein(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                                <div className="space-y-1">
+                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Protein (g)</label>
+                                  <input type="number" value={newMealProtein} onChange={e => setNewMealProtein(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
                                 </div>
-                                <div>
-                                  <label className="text-[8px] text-gray-500 uppercase font-black">Carbs (g)</label>
-                                  <input type="number" value={newMealCarbs} onChange={e => setNewMealCarbs(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                                <div className="space-y-1">
+                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Carbs (g)</label>
+                                  <input type="number" value={newMealCarbs} onChange={e => setNewMealCarbs(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
                                 </div>
-                                <div>
-                                  <label className="text-[8px] text-gray-500 uppercase font-black">Fat (g)</label>
-                                  <input type="number" value={newMealFat} onChange={e => setNewMealFat(parseInt(e.target.value) || 0)} className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2 text-xs text-white outline-none focus:border-blue-500" />
+                                <div className="space-y-1">
+                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Fat (g)</label>
+                                  <input type="number" value={newMealFat} onChange={e => setNewMealFat(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
                                 </div>
                               </div>
-                              <button onClick={handleAddMealLog} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase py-3 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer">Save Meal Entry</button>
+                              <button onClick={handleAddMealLog} className="w-full bg-blue-600 hover:bg-blue-500 border border-blue-500/20 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-2">Save Meal Entry</button>
                             </div>
-                          </Card>
+                          </div>
 
                           {/* Logged Meals List */}
-                          <div className="lg:col-span-2 bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
-                            <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Meals Logged Timeline</h3>
-                            <div className="divide-y divide-gray-850 mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                          <div className="lg:col-span-2 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[22px] p-6 shadow-xl flex flex-col justify-start relative overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
+                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3 flex items-center gap-1.5 leading-none">Meals Logged Timeline</h3>
+                            <div className="divide-y divide-white/[0.04] mt-3 max-h-[320px] overflow-y-auto pr-1 no-scrollbar">
                               {clientMeals.length === 0 ? (
-                                <p className="text-xs text-gray-500 italic py-8 text-center">No meals recorded for this date.</p>
+                                <p className="text-xs text-gray-500 italic py-16 text-center">No meals recorded for this date.</p>
                               ) : (
                                 clientMeals.map(meal => {
                                   const mm = meal.items?.reduce((t: any, i: any) => ({
@@ -6731,47 +6760,52 @@ export default function DesktopCoachPortal() {
                                   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
                                   const isExpanded = expandedMealId === meal.id;
                                   return (
-                                    <div key={meal.id} className="py-3 border-b border-gray-850/40 last:border-0">
+                                    <div key={meal.id} className="py-4 border-b border-white/[0.04] last:border-0 relative group">
                                       <div className="flex justify-between items-center gap-4">
                                         <div 
                                           onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
                                           className="flex-1 cursor-pointer hover:opacity-85 transition-opacity"
                                         >
-                                          <div className="flex items-center gap-2">
-                                            <p className="text-xs font-bold text-white hover:text-blue-400 transition-colors">{meal.name}</p>
-                                            {meal.items && meal.items.length > 0 && (
-                                              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                                                {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'}
-                                              </span>
-                                            )}
+                                          <div className="flex items-center gap-3">
+                                            <span className="text-sm p-1.5 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">🍽️</span>
+                                            <div>
+                                              <div className="flex items-center gap-2">
+                                                <p className="text-xs font-black text-white hover:text-blue-400 transition-colors">{meal.name}</p>
+                                                {meal.items && meal.items.length > 0 && (
+                                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-450 tracking-wider">
+                                                    {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <p className="text-[10px] text-gray-400 mt-1 font-mono font-black">
+                                                {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
+                                              </p>
+                                            </div>
                                           </div>
-                                          <p className="text-[10px] text-gray-500 mt-0.5">
-                                            {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
-                                          </p>
                                         </div>
                                         <button 
                                           onClick={() => handleDeleteMeal(meal.id)} 
-                                          className="p-2 text-gray-500 hover:text-red-400 rounded-xl transition-colors shrink-0 active:scale-95"
+                                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0 active:scale-95 cursor-pointer"
                                         >
-                                          <Trash2 size={14} />
+                                          <Trash2 size={13} />
                                         </button>
                                       </div>
 
                                       {isExpanded && meal.items && meal.items.length > 0 && (
-                                        <div className="mt-2.5 pl-3 border-l border-blue-500/30 space-y-1.5">
+                                        <div className="mt-3 pl-4 border-l-2 border-blue-500/20 space-y-2">
                                           {meal.items.map((item: any, idx: number) => (
-                                            <div key={item.id || idx} className="bg-white/[0.01] border border-white/[0.02] p-2 rounded-xl flex justify-between items-center text-[10px] text-gray-300">
+                                            <div key={item.id || idx} className="bg-slate-950/40 border border-white/[0.02] p-3 rounded-xl flex justify-between items-center text-[10px] text-gray-300 hover:border-white/[0.05] transition-all">
                                               <div>
                                                 <p className="font-bold text-gray-200">{item.name}</p>
-                                                <p className="text-[9px] text-gray-500 mt-0.5">
+                                                <p className="text-[9px] text-gray-500 mt-0.5 font-medium">
                                                   {item.serving_type === 'per_item' 
                                                     ? (item.grams === 1 ? '1 serving' : `${item.grams} servings`) 
                                                     : `${item.grams}g`}
                                                 </p>
                                               </div>
-                                              <div className="text-right shrink-0 font-medium">
+                                              <div className="text-right shrink-0 font-mono font-black">
                                                 <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
-                                                <p className="text-[8px] text-gray-500 mt-0.5 font-mono">
+                                                <p className="text-[8px] text-gray-500 mt-0.5">
                                                   P{Math.round(item.macros?.protein || 0)}g · C{Math.round(item.macros?.carbs || 0)}g · F{Math.round(item.macros?.fat || 0)}g
                                                 </p>
                                               </div>
@@ -6793,27 +6827,28 @@ export default function DesktopCoachPortal() {
                     {clientActiveTab === 'water' && (
                       <div className="space-y-6">
                         {/* Date Navigator */}
-                        <div className="flex items-center justify-between bg-[#121624] border border-gray-850 p-3 rounded-2xl">
-                          <button onClick={() => shiftClientDate(-1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronLeft size={16} /></button>
-                          <span className="text-xs font-bold text-white flex items-center gap-1.5"><Calendar size={13} className="text-blue-400" /> {clientActiveDateStr}</span>
-                          <button onClick={() => shiftClientDate(1)} className="p-2 hover:bg-gray-800 rounded-xl text-gray-400"><ChevronRight size={16} /></button>
+                        <div className="flex items-center justify-between bg-gradient-to-r from-slate-900/40 to-slate-950/45 border border-white/[0.04] p-3 rounded-[20px] shadow-lg backdrop-blur-md">
+                          <button onClick={() => shiftClientDate(-1)} className="p-2 hover:bg-white/[0.04] hover:text-white rounded-xl text-gray-400 transition-colors cursor-pointer active:scale-90"><ChevronLeft size={16} /></button>
+                          <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2 bg-white/[0.02] border border-white/[0.03] px-4 py-2 rounded-xl"><Calendar size={13} className="text-blue-400" /> {clientActiveDateStr}</span>
+                          <button onClick={() => shiftClientDate(1)} className="p-2 hover:bg-white/[0.04] hover:text-white rounded-xl text-gray-400 transition-colors cursor-pointer active:scale-90"><ChevronRight size={16} /></button>
                         </div>
 
                         {/* Hydration Goal Status */}
-                        <div className="bg-[#121624] border border-gray-850 p-5 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-6">
+                        <div className="bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] p-6 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 to-sky-500/45" />
                           <div className="flex items-center gap-3">
-                            <span className="text-2xl">💧</span>
+                            <span className="text-sm p-2 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 shadow-inner">💧</span>
                             <div>
-                              <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Water Consumed Progress</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-lg font-black text-white">{(waterTotalMl / 1000).toFixed(2)}L</span>
-                                <span className="text-xs text-gray-500">/ {targetWaterLiters}L Goal</span>
+                              <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Water Consumed Progress</p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-lg font-black text-white font-mono">{(waterTotalMl / 1000).toFixed(2)}L</span>
+                                <span className="text-xs text-gray-500 font-bold ml-1.5">/ {targetWaterLiters}L Goal</span>
                               </div>
                             </div>
                           </div>
                           
                           {/* Inline Edit Daily Goal */}
-                          <div className="flex items-center gap-2 bg-[#090b11] border border-gray-850 rounded-xl px-3 py-1.5 w-full lg:w-auto justify-between lg:justify-start">
+                          <div className="flex items-center gap-3 bg-slate-950/50 border border-white/[0.04] rounded-xl px-4 py-2 w-full lg:w-auto justify-between lg:justify-start">
                             <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider whitespace-nowrap">Edit Goal:</span>
                             <div className="flex items-center gap-2">
                               <input 
@@ -6822,32 +6857,33 @@ export default function DesktopCoachPortal() {
                                 min="0.1"
                                 value={targetWaterLiters} 
                                 onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                                className="w-16 bg-[#121624] border border-gray-800 rounded-lg p-1 text-xs text-white text-center font-bold outline-none focus:border-sky-500"
+                                className="w-16 bg-slate-900/60 border border-white/[0.05] rounded-lg p-1.5 text-xs text-white text-center font-mono font-black outline-none focus:border-sky-500"
                               />
-                              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">L</span>
+                              <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">L</span>
                             </div>
                             <button
                               onClick={handleSaveTargets}
                               disabled={savingTargets}
-                              className="bg-sky-600 hover:bg-sky-500 disabled:bg-gray-800 text-white font-black text-[9px] uppercase px-3 py-1.5 rounded-lg active:scale-95 transition-all cursor-pointer shadow-md"
+                              className="bg-sky-600 hover:bg-sky-500 border border-sky-500/20 disabled:bg-slate-800 text-white font-black text-[9px] uppercase px-3 py-2 rounded-lg active:scale-95 transition-all cursor-pointer shadow-md shadow-sky-500/10"
                             >
                               {savingTargets ? 'Saving...' : 'Save Target'}
                             </button>
                           </div>
 
                           <div className="w-full lg:w-48">
-                            <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#38bdf8" />
+                            <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#0284c7" />
                           </div>
                         </div>
 
                         {/* Logger inputs & timeline logs */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                           {/* Log Water presets */}
-                          <Card className="p-5 space-y-4">
-                            <div className="flex justify-between items-center border-b border-gray-850 pb-2">
-                              <h3 className="text-xs font-black uppercase text-blue-400">Log Hydration</h3>
+                          <div className="bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-2xl p-6 shadow-xl space-y-4 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 to-sky-500/35" />
+                            <div className="flex justify-between items-center border-b border-white/[0.05] pb-3">
+                              <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-1.5 leading-none">Log Hydration</h3>
                               {clientWaterLogs.length > 0 && (
-                                <button onClick={handleClearWater} className="text-[9px] font-black uppercase text-red-400">Clear Day</button>
+                                <button onClick={handleClearWater} className="text-[9px] font-black uppercase text-red-400 hover:underline cursor-pointer">Clear Day</button>
                               )}
                             </div>
                             <div className="flex gap-2 flex-wrap">
@@ -6859,7 +6895,7 @@ export default function DesktopCoachPortal() {
                                     setNewWaterAmount(ml); 
                                     handleAddWater(ml); 
                                   }}
-                                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border ${newWaterAmount === ml ? 'bg-sky-600 border-sky-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400'}`}
+                                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border cursor-pointer ${newWaterAmount === ml ? 'bg-sky-600/10 border-sky-500 text-sky-400 shadow-md shadow-sky-500/5' : 'bg-slate-950/40 border-white/[0.04] text-gray-400 hover:border-sky-500/30'}`}
                                 >
                                   {ml}ml
                                 </button>
@@ -6868,31 +6904,32 @@ export default function DesktopCoachPortal() {
                             <div className="flex flex-col gap-2 mt-2">
                               <input 
                                 type="number" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
-                                className="w-full bg-[#121624] border border-gray-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500 text-center font-bold"
+                                className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-sky-500/50 rounded-xl p-2.5 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(56,189,248,0.08)] transition-all text-center font-black font-mono"
                               />
-                              <button onClick={() => handleAddWater()} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all">+ Log Custom Amount</button>
+                              <button onClick={() => handleAddWater()} className="w-full bg-sky-600 hover:bg-sky-500 border border-sky-500/20 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer">+ Log Custom Amount</button>
                             </div>
-                          </Card>
+                          </div>
 
                           {/* Water log timeline */}
-                          <div className="lg:col-span-2 bg-[#121624]/30 border border-gray-800 rounded-2xl p-5 flex flex-col justify-start">
-                            <h3 className="text-xs font-black uppercase text-gray-400 border-b border-gray-850 pb-2">Daily Timeline logs</h3>
-                            <div className="divide-y divide-gray-850 mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                          <div className="lg:col-span-2 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-2xl p-6 shadow-xl flex flex-col justify-start relative overflow-hidden">
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 to-sky-500/35" />
+                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3 flex items-center gap-1.5 leading-none">Daily Timeline logs</h3>
+                            <div className="divide-y divide-white/[0.04] mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
                               {clientWaterLogs.length === 0 ? (
-                                <p className="text-xs text-gray-500 italic py-8 text-center">No water logged for this date.</p>
+                                <p className="text-xs text-gray-500 italic py-16 text-center">No water logged for this date.</p>
                               ) : (
                                 clientWaterLogs.map(log => (
-                                  <div key={log.id} className="flex justify-between items-center py-3">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm">💧</span>
+                                  <div key={log.id} className="flex justify-between items-center py-3.5 relative group">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm p-1.5 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">💧</span>
                                       <div>
                                         <p className="text-xs font-black text-white">{log.amount_ml} ml</p>
-                                        <p className="text-[9px] text-gray-500 flex items-center gap-0.5 mt-0.5">
+                                        <p className="text-[9px] text-gray-500 flex items-center gap-1 mt-1 font-semibold font-mono">
                                           <Clock size={8} /> {log.time?.includes('T') ? new Date(log.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : log.time}
                                         </p>
                                       </div>
                                     </div>
-                                    <button onClick={() => handleDeleteWater(log.id)} className="p-2 text-gray-500 hover:text-red-400"><Trash2 size={13} /></button>
+                                    <button onClick={() => handleDeleteWater(log.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0 active:scale-95 cursor-pointer"><Trash2 size={13} /></button>
                                   </div>
                                 ))
                               )}

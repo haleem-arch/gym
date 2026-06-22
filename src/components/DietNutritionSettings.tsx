@@ -225,19 +225,40 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
+                      disabled={saving}
+                      onClick={async () => {
                         const currentTarget = draft[activeTab];
-                        if (currentTarget && window.confirm(`Copy targets from ${activeLabel} to all other day types?`)) {
-                          const updated = { ...draft };
+                        if (currentTarget && window.confirm(`Copy targets from ${activeLabel} to all other day types and save?`)) {
+                          setSaving(true);
+                          const cleanedDraft: Record<string, MacroTarget> = {};
+                          const copiedTarget = {
+                            kcal: typeof currentTarget.kcal === 'number' ? currentTarget.kcal : 0,
+                            protein: typeof currentTarget.protein === 'number' ? currentTarget.protein : 0,
+                            carbs: typeof currentTarget.carbs === 'number' ? currentTarget.carbs : 0,
+                            fat: typeof currentTarget.fat === 'number' ? currentTarget.fat : 0,
+                          };
+
                           allDayTypes.forEach(dt => {
-                            updated[dt] = { ...currentTarget };
+                            cleanedDraft[dt] = { ...copiedTarget };
                           });
-                          setDraft(updated);
+
+                          const cleanedWater = typeof waterGoal === 'number' ? waterGoal : 3500;
+                          
+                          const localDraft: Record<string, { kcal: number | ''; protein: number | ''; carbs: number | ''; fat: number | '' }> = {};
+                          allDayTypes.forEach(dt => {
+                            localDraft[dt] = { ...copiedTarget };
+                          });
+                          setDraft(localDraft);
+
+                          await onSave(cleanedDraft, cleanedWater);
+                          setSaving(false);
+                          setSavedFlash(true);
+                          setTimeout(() => setSavedFlash(false), 2000);
                         }
                       }}
-                      className="flex-shrink-0 text-[10px] font-black text-white bg-blue-600 hover:bg-blue-500 uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95 shadow-md shadow-blue-500/20 border border-blue-400/20"
+                      className="flex-shrink-0 text-[10px] font-black text-white bg-blue-600 hover:bg-blue-500 uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95 shadow-md shadow-blue-500/20 border border-blue-400/20 disabled:opacity-50"
                     >
-                      Sync Now
+                      {saving ? 'Saving...' : 'Sync Now'}
                     </button>
                   </div>
 
