@@ -146,6 +146,7 @@ Your unique Telegram Chat ID is:
           subscription_end_date: newEndDate.toISOString(),
           is_deactivated: false,
           is_free_trial: false,
+          subscription_status: 'active',
           last_payment_result: {
             status: 'approved',
             payment_id: pendingPayment.id,

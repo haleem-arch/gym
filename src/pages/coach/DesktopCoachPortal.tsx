@@ -4764,6 +4764,8 @@ export default function DesktopCoachPortal() {
         subscription_end_date: endDate.toISOString(),
         subscription_duration: duration,
         subscription_history: history,
+        is_free_trial: false,
+        subscription_status: 'active',
         last_payment_result: {
           status: 'approved',
           timestamp: now.toISOString(),
