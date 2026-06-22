@@ -156,18 +156,18 @@ const PWAInstallationAnimation = () => {
 
 const TUTORIAL_SLIDES = [
   {
-    title: "Welcome to Life Gym! 👋",
-    icon: <Sparkles className="text-blue-400" size={32} />,
-    badge: "Today Dashboard",
-    description: "This is your HQ! Track your daily water intake, view macro targets (protein, carbs, fats), and monitor your active gym sessions and cardiorespiratory progress.",
-    tip: "Stay hydrated by hitting the rapid logging buttons for water!"
-  },
-  {
     title: "Install Mobile App 📱",
     icon: <PWAInstallationAnimation />,
     badge: "PWA Setup",
     description: "Install Life Gym on your phone as a standalone app! It takes seconds and works offline, without downloading from the App Store.",
     tip: "iOS: Tap Share [↑] then 'Add to Home Screen'. Android: Tap Chrome Menu [⋮] then 'Install App'."
+  },
+  {
+    title: "Welcome to Life Gym! 👋",
+    icon: <Sparkles className="text-blue-400" size={32} />,
+    badge: "Today Dashboard",
+    description: "This is your HQ! Track your daily water intake, view macro targets (protein, carbs, fats), and monitor your active gym sessions and cardiorespiratory progress.",
+    tip: "Stay hydrated by hitting the rapid logging buttons for water!"
   },
   {
     title: "Custom Workouts 🦾",
@@ -200,6 +200,14 @@ const TUTORIAL_SLIDES = [
 ];
 
 const TodayView = () => {
+  const isRunningStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches || 
+    (navigator as any).standalone === true
+  );
+
+  const slides = isRunningStandalone 
+    ? TUTORIAL_SLIDES.filter(slide => slide.badge !== 'PWA Setup')
+    : TUTORIAL_SLIDES;
   const debugLoading = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug_loading') === 'true';
   // Instant Offline Reconnect state
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -1526,27 +1534,27 @@ const TodayView = () => {
                 <div className="flex-1 flex flex-col justify-center items-center py-4">
                   {/* Icon */}
                   <div className="w-16 h-16 rounded-[22px] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-5 shadow-inner">
-                    {TUTORIAL_SLIDES[tutorialStep].icon}
+                    {slides[tutorialStep]?.icon || null}
                   </div>
                   
                   {/* Badge */}
                   <span className="text-[9px] font-black tracking-widest text-blue-500 uppercase bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full mb-3">
-                    {TUTORIAL_SLIDES[tutorialStep].badge}
+                    {slides[tutorialStep]?.badge}
                   </span>
 
                   {/* Title */}
                   <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">
-                    {TUTORIAL_SLIDES[tutorialStep].title}
+                    {slides[tutorialStep]?.title}
                   </h3>
 
                   {/* Description */}
                   <p className="text-gray-300 text-xs leading-relaxed font-semibold mb-4 px-2">
-                    {TUTORIAL_SLIDES[tutorialStep].description}
+                    {slides[tutorialStep]?.description}
                   </p>
 
                   {/* Tip Box */}
                   <div className="bg-blue-950/20 border border-blue-900/15 rounded-2xl p-3 text-[11px] text-gray-400 text-left w-full">
-                    💡 <span className="text-blue-400 font-bold">Pro-Tip:</span> {TUTORIAL_SLIDES[tutorialStep].tip}
+                    💡 <span className="text-blue-400 font-bold">Pro-Tip:</span> {slides[tutorialStep]?.tip}
                   </div>
                 </div>
 
@@ -1554,7 +1562,7 @@ const TodayView = () => {
                 <div className="flex flex-col gap-4 w-full mt-2 select-none">
                   {/* Dots indicator */}
                   <div className="flex justify-center gap-1.5">
-                    {TUTORIAL_SLIDES.map((_, idx) => (
+                    {slides.map((_, idx) => (
                       <div 
                         key={idx}
                         className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === tutorialStep ? 'bg-blue-500 w-4' : 'bg-gray-700'}`}
@@ -1574,7 +1582,7 @@ const TodayView = () => {
                     )}
                     <button
                       onClick={() => {
-                        if (tutorialStep < TUTORIAL_SLIDES.length - 1) {
+                        if (tutorialStep < slides.length - 1) {
                           setTutorialStep(prev => prev + 1);
                         } else {
                           handleDismissFirstTime();
@@ -1582,7 +1590,7 @@ const TodayView = () => {
                       }}
                       className="py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md active:scale-95 cursor-pointer flex-1"
                     >
-                      {tutorialStep === TUTORIAL_SLIDES.length - 1 ? "Let's Go!" : "Next"}
+                      {tutorialStep === slides.length - 1 ? "Let's Go!" : "Next"}
                     </button>
                   </div>
                 </div>
