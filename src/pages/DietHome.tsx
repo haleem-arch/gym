@@ -222,19 +222,27 @@ const DietHome = () => {
                 : ''
             }`}
           >
-            {/* Edit Target Indicator Badge */}
-            {(userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && (
-              <div className="absolute top-3 right-3 text-[9px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-0.5 opacity-60 hover:opacity-100 transition-opacity">
-                <span>Edit Targets</span>
-                <span className="text-[10px]">✏️</span>
-              </div>
-            )}
             {totals.completed && (
               <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider border-l border-b border-[#0c1020]/50">
                 COMPLETED
               </div>
             )}
             <div className="flex flex-col gap-4">
+              {/* Nutrient Summary Header with Edit Button */}
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-550 select-none">Nutrient Summary</span>
+                {(userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSettings(true);
+                    }}
+                    className="text-[9px] font-black text-zinc-450 hover:text-white uppercase tracking-widest px-2.5 py-1.5 rounded bg-zinc-900/40 border border-zinc-800 transition-all cursor-pointer hover:border-zinc-700 active:scale-95 flex items-center gap-1 shadow-sm"
+                  >
+                    Edit Targets ✏️
+                  </button>
+                )}
+              </div>
               <MacroProgressBar 
                 label="Calories" 
                 current={totals.kcal} 
@@ -273,7 +281,7 @@ const DietHome = () => {
                           e.stopPropagation();
                           setShowSettings(true);
                         }}
-                        className="text-[9px] font-black text-sky-400 hover:text-white uppercase tracking-widest px-2 py-0.5 rounded bg-sky-900/20 hover:bg-sky-900/40 border border-sky-500/20 transition-all cursor-pointer ml-1 active:scale-95"
+                        className="text-[9px] font-black text-zinc-455 hover:text-white uppercase tracking-widest px-2.5 py-1.5 rounded bg-zinc-900/40 border border-zinc-800 transition-all cursor-pointer ml-1.5 hover:border-zinc-700 active:scale-95 flex items-center gap-1 shadow-sm"
                       >
                         Edit Target ✏️
                       </button>

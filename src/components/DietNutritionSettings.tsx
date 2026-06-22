@@ -48,14 +48,14 @@ interface Props {
 
 export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTypes, dayNutrition, onSave, waterGoalMl }: Props) => {
   const [activeTab, setActiveTab] = useState<string>(currentDayType || 'REST');
-  const [draft, setDraft] = useState<Record<string, MacroTarget>>({});
-  const [waterGoal, setWaterGoal] = useState<number>(waterGoalMl || 3500);
+  const [draft, setDraft] = useState<Record<string, { kcal: number | ''; protein: number | ''; carbs: number | ''; fat: number | '' }>>({});
+  const [waterGoal, setWaterGoal] = useState<number | ''>(waterGoalMl || 3500);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
   useEffect(() => {
     if (open && allDayTypes.length > 0) {
-      const merged: Record<string, MacroTarget> = {};
+      const merged: Record<string, { kcal: number | ''; protein: number | ''; carbs: number | ''; fat: number | '' }> = {};
       allDayTypes.forEach(dt => {
         merged[dt] = dayNutrition[dt] ? { ...dayNutrition[dt] } : getDefaultTarget(dt);
       });
@@ -71,6 +71,13 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
   }, [open, waterGoalMl]);
 
   const updateField = (field: keyof MacroTarget, value: string) => {
+    if (value === '') {
+      setDraft(prev => ({
+        ...prev,
+        [activeTab]: { ...prev[activeTab], [field]: '' }
+      }));
+      return;
+    }
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 0) return;
     setDraft(prev => ({
@@ -88,13 +95,29 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(draft, waterGoal);
+    const cleanedDraft: Record<string, MacroTarget> = {};
+    allDayTypes.forEach(dt => {
+      const target = draft[dt] ?? getDefaultTarget(dt);
+      cleanedDraft[dt] = {
+        kcal: typeof target.kcal === 'number' ? target.kcal : 0,
+        protein: typeof target.protein === 'number' ? target.protein : 0,
+        carbs: typeof target.carbs === 'number' ? target.carbs : 0,
+        fat: typeof target.fat === 'number' ? target.fat : 0,
+      };
+    });
+    const cleanedWater = typeof waterGoal === 'number' ? waterGoal : 3500;
+    await onSave(cleanedDraft, cleanedWater);
     setSaving(false);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
   };
 
   const active = draft[activeTab] ?? getDefaultTarget(activeTab);
+  const kcalVal = typeof active.kcal === 'number' ? active.kcal : 0;
+  const proteinVal = typeof active.protein === 'number' ? active.protein : 0;
+  const carbsVal = typeof active.carbs === 'number' ? active.carbs : 0;
+  const fatVal = typeof active.fat === 'number' ? active.fat : 0;
+  const waterGoalVal = typeof waterGoal === 'number' ? waterGoal : 0;
   const portalRoot = document.getElementById('modal-portal');
 
   const activeLabel = DAY_META[activeTab]?.label || activeTab;
@@ -226,16 +249,16 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                           type="number"
                           value={active.kcal}
                           onChange={e => updateField('kcal', e.target.value)}
-                          className="bg-transparent text-2xl font-black text-white outline-none border-none max-w-[120px] p-0 font-mono"
+                          className="bg-transparent text-2xl font-black text-white outline-none border-none max-w-[120px] p-0 font-sans"
                         />
                         <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider mr-1">kcal</span>
-                        <Pencil size={12} className="text-zinc-550" />
+                        <Pencil size={12} className="text-zinc-555" />
                       </div>
                       {/* Premium Blue Progress Line */}
                       <div className="h-1 rounded-full mt-4 bg-zinc-950 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
-                          style={{ width: `${Math.min((active.kcal / 4000) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((kcalVal / 4000) * 100, 100)}%` }}
                         />
                       </div>
                     </div>
@@ -257,10 +280,10 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                               type="number"
                               value={active[key]}
                               onChange={e => updateField(key, e.target.value)}
-                              className="w-full bg-transparent text-base font-black text-white outline-none border-none p-0 font-mono"
+                              className="w-full bg-transparent text-base font-black text-white outline-none border-none p-0 font-sans"
                             />
                             <span className="text-[10px] text-zinc-500 font-bold mr-1">g</span>
-                            <Pencil size={10} className="text-zinc-550 flex-shrink-0" />
+                            <Pencil size={10} className="text-zinc-555 flex-shrink-0" />
                           </div>
                         </div>
                       ))}
@@ -271,16 +294,16 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                       <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mb-3.5">Calorie Split Preview</p>
                       
                       <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-zinc-950 p-0.5">
-                        <div className="rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.round((active.protein * 4 / Math.max(active.kcal, 1)) * 100)}%` }} />
-                        <div className="rounded-full transition-all duration-300 bg-emerald-500" style={{ width: `${Math.round((active.carbs * 4 / Math.max(active.kcal, 1)) * 100)}%` }} />
-                        <div className="rounded-full transition-all duration-300 bg-amber-500" style={{ width: `${Math.round((active.fat * 9 / Math.max(active.kcal, 1)) * 100)}%` }} />
+                        <div className="rounded-full transition-all duration-300 bg-blue-500" style={{ width: `${Math.round((proteinVal * 4 / Math.max(kcalVal, 1)) * 100)}%` }} />
+                        <div className="rounded-full transition-all duration-300 bg-emerald-500" style={{ width: `${Math.round((carbsVal * 4 / Math.max(kcalVal, 1)) * 100)}%` }} />
+                        <div className="rounded-full transition-all duration-300 bg-amber-500" style={{ width: `${Math.round((fatVal * 9 / Math.max(kcalVal, 1)) * 100)}%` }} />
                       </div>
                       
                       <div className="grid grid-cols-3 gap-2 mt-4 text-center">
                         {[
-                          { label: 'Protein', pct: Math.round((active.protein * 4 / Math.max(active.kcal, 1)) * 100), kcal: active.protein * 4, color: 'text-blue-400' },
-                          { label: 'Carbs', pct: Math.round((active.carbs * 4 / Math.max(active.kcal, 1)) * 100), kcal: active.carbs * 4, color: 'text-emerald-400' },
-                          { label: 'Fat', pct: Math.round((active.fat * 9 / Math.max(active.kcal, 1)) * 100), kcal: active.fat * 9, color: 'text-amber-400' },
+                          { label: 'Protein', pct: Math.round((proteinVal * 4 / Math.max(kcalVal, 1)) * 100), kcal: proteinVal * 4, color: 'text-blue-400' },
+                          { label: 'Carbs', pct: Math.round((carbsVal * 4 / Math.max(kcalVal, 1)) * 100), kcal: carbsVal * 4, color: 'text-emerald-400' },
+                          { label: 'Fat', pct: Math.round((fatVal * 9 / Math.max(kcalVal, 1)) * 100), kcal: fatVal * 9, color: 'text-amber-400' },
                         ].map(({ label, pct, kcal, color }) => (
                           <div key={label} className="bg-zinc-950/40 py-2 rounded-lg border border-zinc-900/40">
                             <span className="text-[8px] text-zinc-500 font-black uppercase tracking-wider block">{label}</span>
@@ -292,8 +315,8 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                       
                       <div className="flex items-center justify-between mt-4 pt-3.5 border-t border-zinc-950 text-xs font-bold">
                         <span className="text-zinc-500 uppercase text-[8px] tracking-wider font-black">Summed Calorie Total</span>
-                        <span className="text-zinc-300 font-black font-mono text-xs">
-                          {Math.round(active.protein * 4 + active.carbs * 4 + active.fat * 9)} / {active.kcal} kcal
+                        <span className="text-zinc-300 font-black font-sans text-xs">
+                          {Math.round(proteinVal * 4 + carbsVal * 4 + fatVal * 9)} / {kcalVal} kcal
                         </span>
                       </div>
                     </div>
@@ -314,19 +337,24 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                       type="number"
                       value={waterGoal}
                       onChange={e => {
-                        const num = parseInt(e.target.value, 10);
-                        if (!isNaN(num) && num >= 0) setWaterGoal(num);
+                        const val = e.target.value;
+                        if (val === '') {
+                          setWaterGoal('');
+                        } else {
+                          const num = parseInt(val, 10);
+                          if (!isNaN(num) && num >= 0) setWaterGoal(num);
+                        }
                       }}
-                      className="bg-transparent text-2xl font-black text-white outline-none border-none max-w-[120px] p-0 font-mono"
+                      className="bg-transparent text-2xl font-black text-white outline-none border-none max-w-[120px] p-0 font-sans"
                     />
                     <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider mr-1">ml</span>
-                    <Pencil size={12} className="text-zinc-550" />
+                    <Pencil size={12} className="text-zinc-555" />
                   </div>
                   {/* Premium Blue Progress Line */}
                   <div className="h-1 rounded-full mt-4 bg-zinc-950 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-sky-500 to-blue-500 transition-all duration-300 shadow-[0_0_8px_rgba(56,189,248,0.4)]"
-                      style={{ width: `${Math.min((waterGoal / 6000) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((waterGoalVal / 6000) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
