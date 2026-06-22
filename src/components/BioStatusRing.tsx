@@ -23,22 +23,22 @@ export const BioStatusRing = ({
   const strokeWidth = compact ? 3.5 : 9.5;
 
   const rOuter = compact ? 34 : 60;
-  const circOuter = 2 * Math.PI * rOuter;
+  const circOuter = Math.round(2 * Math.PI * rOuter);
   
   const rMiddle = compact ? 26.5 : 47.5;
-  const circMiddle = 2 * Math.PI * rMiddle;
+  const circMiddle = Math.round(2 * Math.PI * rMiddle);
   
   const rInner = compact ? 19 : 35;
-  const circInner = 2 * Math.PI * rInner;
+  const circInner = Math.round(2 * Math.PI * rInner);
 
   // Premium flat unified blue scale (human designed feel)
   const colorNutrition = '#3b82f6';  // Solid Blue
   const colorHydration = '#60a5fa';  // Light Blue
   const colorTraining = '#1d4ed8';   // Deep Blue
 
-  const trackNutrition = 'rgba(59, 130, 246, 0.08)';
-  const trackHydration = 'rgba(96, 165, 250, 0.08)';
-  const trackTraining = 'rgba(29, 78, 216, 0.08)';
+  const trackNutrition = 'rgba(59, 130, 246, 0.15)';
+  const trackHydration = 'rgba(96, 165, 250, 0.15)';
+  const trackTraining = 'rgba(29, 78, 216, 0.15)';
 
   const effectiveWorkoutStatus = isRestDay ? 1.0 : workoutStatus;
 
@@ -67,11 +67,11 @@ export const BioStatusRing = ({
 
       {/* Centered Compact SVG Ring */}
       <div className="relative flex items-center justify-center flex-shrink-0" style={{ width: `${size}px`, height: `${size}px` }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}>
           {/* Outer Ring: Nutrition */}
           <circle cx={center} cy={center} r={rOuter} fill="transparent" stroke={trackNutrition} strokeWidth={strokeWidth} />
           <motion.circle
-            cx={center} cy={center} r={rOuter} fill="transparent" stroke={colorNutrition} strokeWidth={strokeWidth}
+            cx={center} cy={center} r={rOuter} fill="transparent" stroke={kcalPct > 0 ? colorNutrition : "transparent"} strokeWidth={strokeWidth}
             strokeDasharray={circOuter} strokeLinecap="round"
             initial={{ strokeDashoffset: circOuter }}
             animate={{ strokeDashoffset: circOuter * (1 - Math.min(kcalPct, 1)) }}
@@ -81,7 +81,7 @@ export const BioStatusRing = ({
           {/* Middle Ring: Hydration */}
           <circle cx={center} cy={center} r={rMiddle} fill="transparent" stroke={trackHydration} strokeWidth={strokeWidth} />
           <motion.circle
-            cx={center} cy={center} r={rMiddle} fill="transparent" stroke={colorHydration} strokeWidth={strokeWidth}
+            cx={center} cy={center} r={rMiddle} fill="transparent" stroke={waterPct > 0 ? colorHydration : "transparent"} strokeWidth={strokeWidth}
             strokeDasharray={circMiddle} strokeLinecap="round"
             initial={{ strokeDashoffset: circMiddle }}
             animate={{ strokeDashoffset: circMiddle * (1 - Math.min(waterPct, 1)) }}
@@ -91,7 +91,7 @@ export const BioStatusRing = ({
           {/* Inner Ring: Training */}
           <circle cx={center} cy={center} r={rInner} fill="transparent" stroke={trackTraining} strokeWidth={strokeWidth} />
           <motion.circle
-            cx={center} cy={center} r={rInner} fill="transparent" stroke={colorTraining} strokeWidth={strokeWidth}
+            cx={center} cy={center} r={rInner} fill="transparent" stroke={effectiveWorkoutStatus > 0 ? colorTraining : "transparent"} strokeWidth={strokeWidth}
             strokeDasharray={circInner} strokeLinecap="round"
             initial={{ strokeDashoffset: circInner }}
             animate={{ strokeDashoffset: circInner * (1 - effectiveWorkoutStatus) }}
@@ -123,7 +123,7 @@ export const BioStatusRing = ({
                   {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Active' : 'Pending'}
                 </span>
                 <span className="text-[10px] text-zinc-500 font-bold">•</span>
-                <span className="text-xs font-black text-blue-450">{Math.round(kcalPct * 100)}%</span>
+                <span className="text-xs font-black text-blue-400">{Math.round(kcalPct * 100)}%</span>
               </div>
             </div>
           </div>
@@ -138,7 +138,7 @@ export const BioStatusRing = ({
                   {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Active' : 'Pending'}
                 </span>
                 <span className="text-[10px] text-zinc-500 font-bold">•</span>
-                <span className="text-xs font-black text-sky-400">{Math.round(waterPct * 100)}%</span>
+                <span className="text-xs font-black text-blue-400">{Math.round(waterPct * 100)}%</span>
               </div>
             </div>
           </div>

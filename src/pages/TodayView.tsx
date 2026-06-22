@@ -185,7 +185,7 @@ const TUTORIAL_SLIDES = [
   },
   {
     title: "InBody Scan Trends 📈",
-    icon: <TrendingUp className="text-cyan-400" size={32} />,
+    icon: <TrendingUp className="text-blue-400" size={32} />,
     badge: "InBody Composition",
     description: "Log your body scans, manage skeletal muscle mass, body fat percentage, and overall weight logs. Review premium graphs showing your historical compositions.",
     tip: "No default data is added. Log your first scan to generate graphs!"
@@ -1306,7 +1306,7 @@ const TodayView = () => {
 
                   {/* Hydration Progress */}
                   <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#475569] uppercase tracking-widest mb-3 flex items-center justify-between">
+                    <h5 className="text-[10px] font-black text-[#60a5fa] uppercase tracking-widest mb-3 flex items-center justify-between">
                       <span>Hydration Target</span>
                       <span>{Math.round((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100)}%</span>
                     </h5>
@@ -1316,14 +1316,14 @@ const TodayView = () => {
                         <span className="text-white font-black">{parseFloat((waterTotalMl / 1000).toFixed(2))} / {parseFloat(waterTarget.toFixed(2))} L</span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#475569] h-2 rounded-full" style={{ width: `${Math.min((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100, 100)}%` }}></div>
+                        <div className="bg-[#60a5fa] h-2 rounded-full" style={{ width: `${Math.min((waterTarget > 0 ? (waterTotalMl / (waterTarget * 1000)) : 0) * 100, 100)}%` }}></div>
                       </div>
                     </div>
                   </div>
 
                   {/* Training Progress */}
                   <div className="bg-slate-950/30 border border-slate-800 p-4 rounded-2xl">
-                    <h5 className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-3 flex items-center justify-between">
+                    <h5 className="text-[10px] font-black text-[#1d4ed8] uppercase tracking-widest mb-3 flex items-center justify-between">
                       <span>Training Compliance</span>
                       <span>{Math.round((dayType === 'REST' ? 1.0 : workoutStatus) * 100)}%</span>
                     </h5>
@@ -1335,7 +1335,7 @@ const TodayView = () => {
                         </span>
                       </div>
                       <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/50">
-                        <div className="bg-[#94a3b8] h-2 rounded-full" style={{ width: `${Math.min((dayType === 'REST' ? 1.0 : workoutStatus) * 100, 100)}%` }}></div>
+                        <div className="bg-[#1d4ed8] h-2 rounded-full" style={{ width: `${Math.min((dayType === 'REST' ? 1.0 : workoutStatus) * 100, 100)}%` }}></div>
                       </div>
                     </div>
                   </div>
