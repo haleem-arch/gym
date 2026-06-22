@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendOwnerPushNotification } from '../helpers/push.js'
+import { waitUntil } from '@vercel/functions'
 
 const globalProcess = (globalThis as any).process || { env: {} };
 
@@ -249,6 +251,16 @@ export default async function handler(req: any, res: any) {
         console.error('Telegram sendMessage error:', errText);
       }
     }
+
+    // Trigger push notification to owner
+    waitUntil(
+      sendOwnerPushNotification(
+        'New Payment Submitted! 💰',
+        `Coach ${profile.display_name || 'N/A'} submitted a payment of ${planPrice} for ${period} via ${method}.`,
+        { userId: user.id, name: profile.display_name, amount: planPrice, method },
+        'payment'
+      ).catch(pushErr => console.error('Payment push notification failed:', pushErr))
+    );
 
     return res.status(200).json({ success: true });
   } catch (err: any) {

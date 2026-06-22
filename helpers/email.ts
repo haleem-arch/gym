@@ -126,7 +126,7 @@ interface SendBulkEmailParams {
   smtpHost?: string;
   smtpPort?: number;
   smtpSecure?: boolean;
-  templateId?: 'coach_signup' | 'client_welcome' | 'maillist' | 'athlete_signup';
+  templateId?: 'coach_signup' | 'client_welcome' | 'maillist' | 'athlete_signup' | 'password_reset';
   templateVariables?: Record<string, string>;
 }
 
@@ -302,4 +302,3 @@ export async function sendBulkEmails({
 
   return results;
 }
-

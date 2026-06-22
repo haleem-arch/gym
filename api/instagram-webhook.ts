@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
       try {
         // 1. Fetch user data
         const userRes = await fetch(
-          `https://graph.instagram.com/v20.0/${accountId}?fields=id,username,name,media_count,profile_picture_url&access_token=${token}`
+          `https://graph.facebook.com/v20.0/${accountId}?fields=id,username,name,media_count,profile_picture_url&access_token=${token}`
         );
         let userData = {};
         if (userRes.ok) {
@@ -41,7 +41,7 @@ export default async function handler(req: any, res: any) {
 
         // 2. Fetch insights
         const insightsRes = await fetch(
-          `https://graph.instagram.com/v20.0/${accountId}/insights?metric=reach&period=day&access_token=${token}`
+          `https://graph.facebook.com/v20.0/${accountId}/insights?metric=reach&period=day&access_token=${token}`
         );
         let insightsData = {};
         if (insightsRes.ok) {
@@ -52,7 +52,7 @@ export default async function handler(req: any, res: any) {
 
         // 3. Fetch media
         const mediaRes = await fetch(
-          `https://graph.instagram.com/v20.0/${accountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&access_token=${token}`
+          `https://graph.facebook.com/v20.0/${accountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&access_token=${token}`
         );
         let mediaData = {};
         if (mediaRes.ok) {

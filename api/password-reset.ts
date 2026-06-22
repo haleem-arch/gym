@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { sendBulkEmails } from './helpers/email.js';
+import { sendBulkEmails } from '../helpers/email.js';
 import { waitUntil } from '@vercel/functions';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
@@ -133,93 +133,13 @@ export default async function handler(req: any, res: any) {
       const sendResults = await sendBulkEmails({
         to: cleanEmail,
         subject: 'Reset Your Password | Life Gym 🔐',
-        html: `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body {
-      background-color: #07080f;
-      color: #ffffff;
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 40px 20px;
-      margin: 0;
-      text-align: center;
-    }
-    .card {
-      background: rgba(12, 16, 32, 0.82);
-      border: 1px solid rgba(59, 130, 246, 0.18);
-      border-radius: 24px;
-      padding: 40px;
-      max-width: 480px;
-      margin: 0 auto;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-      text-align: left;
-    }
-    .logo {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: 0.2em;
-      color: #3b82f6;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #ffffff;
-      text-align: center;
-    }
-    p {
-      color: #8a99ad;
-      font-size: 15px;
-      line-height: 1.6;
-      margin-bottom: 30px;
-    }
-    .btn-container {
-      text-align: center;
-      margin: 30px 0;
-    }
-    .btn {
-      background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
-      color: #ffffff !important;
-      text-decoration: none;
-      padding: 14px 28px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: bold;
-      display: inline-block;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
-    }
-    .footer {
-      font-size: 12px;
-      color: #4b5563;
-      margin-top: 40px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 20px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="logo">LIFE GYM</div>
-    <h1>Password Reset Request 🔐</h1>
-    <p>Hello ${profile.display_name || 'there'},<br><br>We received a request to reset the password for your Life Gym account.<br><br><strong style="color: #f59e0b;">Note: This reset link is only valid for 10 minutes.</strong></p>
-    <div class="btn-container">
-      <a href="${resetLink}" class="btn">Reset Password</a>
-    </div>
-    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-    <div class="footer">
-      © 2026 Life Gym. All rights reserved.
-    </div>
-  </div>
-</body>
-</html>`,
+        html: '',
+        text: '',
+        templateId: 'password_reset',
+        templateVariables: {
+          display_name: profile.display_name || 'there',
+          reset_link: resetLink
+        },
         fromName: 'Life Gym'
       });
 

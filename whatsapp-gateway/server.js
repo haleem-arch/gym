@@ -103,6 +103,14 @@ client.on('message', async (msg) => {
     const text = msg.body;
     console.log(`Received message from ${sender}: ${text}`);
     try {
+      let pushname = '';
+      try {
+        const contact = await msg.getContact();
+        pushname = contact.pushname || contact.name || '';
+      } catch (contactErr) {
+        console.warn('Failed to fetch contact details:', contactErr);
+      }
+      
       const webhookUrl = 'https://gym-kappa-three.vercel.app/api/user-management?action=whatsapp-incoming';
       await fetch(webhookUrl, {
         method: 'POST',
@@ -111,7 +119,8 @@ client.on('message', async (msg) => {
         },
         body: JSON.stringify({
           from: sender.split('@')[0],
-          text: text
+          text: text,
+          pushname: pushname
         })
       });
     } catch (err) {

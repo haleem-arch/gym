@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { sendBulkEmails } from './helpers/email.js';
+import { sendBulkEmails } from '../helpers/email.js';
 import { waitUntil } from '@vercel/functions';
+import { sendOwnerPushNotification } from '../helpers/push.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hppzxppssmhhaefwqffg.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
@@ -378,7 +379,13 @@ Let's crush some goals! 💪🔥
           }),
           sendWhatsAppPromise.catch(waErr => {
             console.error('Failed to send athlete onboarding WhatsApp:', waErr);
-          })
+          }),
+          sendOwnerPushNotification(
+            'New Athlete Signup! 🏋️',
+            `${displayName.trim()} has registered as an athlete.`,
+            { id: userId, name: displayName, email: cleanEmail },
+            'registration'
+          ).catch(pushErr => console.error('Athlete register push failed:', pushErr))
         ])
       );
 
@@ -582,7 +589,13 @@ ${origin}/login
           }),
           sendWhatsAppPromise.catch(waErr => {
             console.error('Failed to send coach onboarding WhatsApp:', waErr);
-          })
+          }),
+          sendOwnerPushNotification(
+            'New Coach Signup! 👑',
+            `${displayName.trim()} has registered as a coach.`,
+            { id: userId, name: displayName, email: cleanEmail },
+            'registration'
+          ).catch(pushErr => console.error('Coach register push failed:', pushErr))
         ])
       );
 

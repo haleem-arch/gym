@@ -57,9 +57,15 @@ export const BioStatusRing = ({
       style={{ backgroundColor: compact ? 'transparent' : '#121624' }}
       className={compact 
         ? `rounded-2xl p-4 border border-slate-800/80 flex flex-col items-center justify-between gap-3 w-full min-h-[150px] bg-slate-900/60 ${onClick ? 'cursor-pointer hover:border-slate-700/80 transition-colors' : ''}` 
-        : `rounded-2xl p-5 border border-slate-800/80 flex items-center justify-between gap-6 w-full ${onClick ? 'cursor-pointer hover:border-slate-700/80 transition-colors' : ''}`
+        : `relative rounded-2xl p-5 border border-slate-800/80 flex items-center justify-between gap-6 w-full ${onClick ? 'cursor-pointer hover:border-slate-700/80 transition-colors' : ''}`
       }
     >
+      {onClick && !compact && (
+        <div className="absolute top-2.5 right-3 text-[8px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-0.5 opacity-70">
+          <span>Manage Targets</span>
+          <span className="text-[10px]">✏️</span>
+        </div>
+      )}
       {compact && (
         <div className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center w-full">
           Compliance

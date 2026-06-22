@@ -12,6 +12,147 @@ import { BioStatusRing } from '../components/BioStatusRing';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PlanCardSkeleton, NutritionCardSkeleton, HydrationCardSkeleton, InBodyCardSkeleton } from '../components/SkeletonLoaders';
 
+const PWAInstallationAnimation = () => {
+  return (
+    <div className="relative w-20 h-20 flex items-center justify-center overflow-hidden">
+      <style>{`
+        @keyframes phone-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        @keyframes cursor-move {
+          0% { top: 70px; left: 60px; opacity: 0; }
+          10% { opacity: 1; }
+          30% { top: 62px; left: 36px; } /* Hover share */
+          40% { top: 62px; left: 36px; transform: scale(0.8); } /* Tap share */
+          45% { transform: scale(1); }
+          60% { top: 48px; left: 40px; } /* Hover Add to home */
+          70% { top: 48px; left: 40px; transform: scale(0.8); } /* Tap Add to home */
+          75% { transform: scale(1); opacity: 1; }
+          85% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+        @keyframes menu-slide {
+          0%, 35% { bottom: -45px; opacity: 0; }
+          40%, 65% { bottom: 0px; opacity: 1; }
+          70%, 100% { bottom: -45px; opacity: 0; }
+        }
+        @keyframes home-screen-show {
+          0%, 68% { background-color: #05060f; }
+          75%, 95% { background-color: #1e1b4b; } /* Wallpaper change */
+          100% { background-color: #05060f; }
+        }
+        @keyframes icon-pop {
+          0%, 72% { transform: scale(0); opacity: 0; }
+          78% { transform: scale(1.2); opacity: 1; }
+          82%, 95% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(0); opacity: 0; }
+        }
+        @keyframes browser-content-hide {
+          0%, 70% { opacity: 1; }
+          75%, 95% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .phone-mockup {
+          animation: phone-pulse 4s infinite ease-in-out;
+        }
+        .animated-cursor {
+          animation: cursor-move 8s infinite ease-in-out;
+        }
+        .animated-menu {
+          animation: menu-slide 8s infinite ease-in-out;
+        }
+        .mock-screen {
+          animation: home-screen-show 8s infinite ease-in-out;
+        }
+        .browser-content {
+          animation: browser-content-hide 8s infinite ease-in-out;
+        }
+        .app-icon-pop {
+          animation: icon-pop 8s infinite cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+      `}</style>
+      
+      {/* Phone Mockup Frame */}
+      <div className="phone-mockup w-[54px] h-[90px] border-2 border-slate-700 rounded-xl bg-slate-950 relative overflow-hidden flex flex-col justify-between p-0.5 shadow-2xl">
+        {/* Screen */}
+        <div className="mock-screen w-full h-full rounded-[9px] relative overflow-hidden bg-slate-950 flex flex-col justify-between">
+          {/* Top Notch */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-5 h-1 bg-slate-900 rounded-b-md z-30"></div>
+
+          {/* Browser Content */}
+          <div className="browser-content w-full h-full flex flex-col justify-between p-1 pt-3 z-10">
+            {/* Mock website header */}
+            <div className="flex justify-between items-center border-b border-white/[0.04] pb-1">
+              <div className="w-10 h-1 rounded-full bg-slate-800"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            </div>
+
+            {/* Mock website body */}
+            <div className="flex-1 flex flex-col justify-center items-center gap-1.5">
+              {/* Central dumbbell logo */}
+              <div className="w-5 h-5 rounded-md bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shadow-md">
+                <svg width="10" height="10" viewBox="0 0 512 512" fill="#3b82f6">
+                  <g transform="translate(256 256) rotate(-45)">
+                    <rect x="-120" y="-16" width="240" height="32" rx="8" />
+                    <rect x="-110" y="-60" width="30" height="120" rx="8" />
+                    <rect x="-150" y="-80" width="30" height="160" rx="10" />
+                    <rect x="80" y="-60" width="30" height="120" rx="8" />
+                    <rect x="120" y="-80" width="30" height="160" rx="10" />
+                  </g>
+                </svg>
+              </div>
+              <div className="w-7 h-1 rounded-full bg-slate-700"></div>
+              <div className="w-5 h-0.5 rounded-full bg-slate-800"></div>
+            </div>
+
+            {/* Bottom Browser Bar */}
+            <div className="border-t border-white/[0.05] pt-1 flex justify-around items-center bg-slate-950/80 backdrop-blur-sm">
+              <div className="w-2.5 h-2.5 rounded-sm bg-slate-800"></div>
+              {/* Safari Share Button Mock */}
+              <div className="w-3.5 h-3.5 rounded bg-blue-500/20 border border-blue-500/40 flex items-center justify-center relative">
+                <div className="w-1.5 h-1.5 border-t border-x border-blue-400 absolute bottom-0.5"></div>
+                <div className="w-0.5 h-2 bg-blue-400 absolute top-0.5"></div>
+              </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+            </div>
+          </div>
+
+          {/* iOS Share Sheet Menu */}
+          <div className="animated-menu absolute left-0 right-0 h-[45px] bg-[#121624] border-t border-slate-800 rounded-t-lg p-1 px-1.5 flex flex-col justify-around z-20 shadow-lg">
+            <div className="w-full h-2 rounded bg-slate-800/40 flex items-center justify-between px-1">
+              <div className="w-10 h-0.5 bg-slate-600 rounded"></div>
+              <div className="w-1.5 h-1.5 rounded-sm bg-slate-700"></div>
+            </div>
+            {/* Add to Home Screen Button */}
+            <div className="w-full h-4 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-between px-1">
+              <span className="text-[4px] font-black text-blue-400 uppercase tracking-widest">Add to Home Screen</span>
+              <span className="text-[5px] text-blue-400">➕</span>
+            </div>
+          </div>
+
+          {/* Home Screen View (pops up) */}
+          <div className="app-icon-pop absolute inset-0 flex items-center justify-center z-25 pointer-events-none">
+            <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/40 border border-blue-400/30">
+              <svg width="12" height="12" viewBox="0 0 512 512" fill="#ffffff">
+                <g transform="translate(256 256) rotate(-45)">
+                  <rect x="-120" y="-16" width="240" height="32" rx="8" />
+                  <rect x="-110" y="-60" width="30" height="120" rx="8" />
+                  <rect x="-150" y="-80" width="30" height="160" rx="10" />
+                  <rect x="80" y="-60" width="30" height="120" rx="8" />
+                  <rect x="120" y="-80" width="30" height="160" rx="10" />
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          {/* Clicking Finger Cursor */}
+          <div className="animated-cursor absolute w-3 h-3 bg-white/70 border border-black/35 rounded-full pointer-events-none z-40 shadow-md"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TUTORIAL_SLIDES = [
   {
@@ -20,6 +161,13 @@ const TUTORIAL_SLIDES = [
     badge: "Today Dashboard",
     description: "This is your HQ! Track your daily water intake, view macro targets (protein, carbs, fats), and monitor your active gym sessions and cardiorespiratory progress.",
     tip: "Stay hydrated by hitting the rapid logging buttons for water!"
+  },
+  {
+    title: "Install Mobile App 📱",
+    icon: <PWAInstallationAnimation />,
+    badge: "PWA Setup",
+    description: "Install Life Gym on your phone as a standalone app! It takes seconds and works offline, without downloading from the App Store.",
+    tip: "iOS: Tap Share [↑] then 'Add to Home Screen'. Android: Tap Chrome Menu [⋮] then 'Install App'."
   },
   {
     title: "Custom Workouts 🦾",

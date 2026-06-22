@@ -215,8 +215,20 @@ const DietHome = () => {
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ delay: 0.1 }}
-            className="bg-[#0c1020]/40 backdrop-blur-md rounded-2xl p-5 border border-blue-900/20 shadow-2xl relative overflow-hidden"
+            onClick={() => (userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && setShowSettings(true)}
+            className={`bg-[#0c1020]/40 backdrop-blur-md rounded-2xl p-5 border border-blue-900/20 shadow-2xl relative overflow-hidden transition-all ${
+              (userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets)
+                ? 'cursor-pointer hover:border-blue-500/40 hover:bg-[#0c1020]/60 active:scale-[0.99]' 
+                : ''
+            }`}
           >
+            {/* Edit Target Indicator Badge */}
+            {(userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && (
+              <div className="absolute top-3 right-3 text-[9px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-0.5 opacity-60 hover:opacity-100 transition-opacity">
+                <span>Edit Targets</span>
+                <span className="text-[10px]">✏️</span>
+              </div>
+            )}
             {totals.completed && (
               <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-wider border-l border-b border-[#0c1020]/50">
                 COMPLETED
@@ -255,6 +267,17 @@ const DietHome = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm">💧</span>
                     <h2 className="text-xs font-black uppercase tracking-wider text-blue-400">Hydration Logger</h2>
+                    {(userId === 'ef685819-cdb3-4cd7-811d-4e6f7fff423c' || !disableNutritionTargets) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSettings(true);
+                        }}
+                        className="text-[9px] font-black text-sky-400 hover:text-white uppercase tracking-widest px-2 py-0.5 rounded bg-sky-900/20 hover:bg-sky-900/40 border border-sky-500/20 transition-all cursor-pointer ml-1 active:scale-95"
+                      >
+                        Edit Target ✏️
+                      </button>
+                    )}
                   </div>
                   {waterLogs && waterLogs.length > 0 && (
                     <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">

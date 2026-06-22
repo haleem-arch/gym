@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, RotateCcw, Flame } from 'lucide-react';
+import { X, Save, RotateCcw, Flame, Pencil } from 'lucide-react';
 
 export const FIXED_DAY_TYPES = ['REST', 'RUN', 'RUN+GYM'] as const;
 export const DAY_TYPES = ['REST', 'RUN', 'PUSH', 'PULL', 'LEGS', 'RUN+GYM'] as const;
@@ -167,7 +167,7 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                   transition={{ duration: 0.15 }}
                   className="space-y-6"
                 >
-                  {/* Day Label + Reset */}
+                  {/* Day Label + Action Buttons */}
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-xs font-black text-zinc-400 uppercase tracking-widest block">Selected Target Group</span>
@@ -178,17 +178,41 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={resetTab}
-                      className="text-[10px] text-zinc-500 font-black hover:text-white uppercase tracking-wider flex items-center gap-1 bg-[#070709]/85 hover:bg-zinc-900/85 px-3 py-2 rounded-xl border border-zinc-900 transition-all cursor-pointer"
-                    >
-                      <RotateCcw size={11} />
-                      Reset
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentTarget = draft[activeTab];
+                          if (currentTarget && window.confirm(`Copy targets from ${activeLabel} to all other day types?`)) {
+                            const updated = { ...draft };
+                            allDayTypes.forEach(dt => {
+                              updated[dt] = { ...currentTarget };
+                            });
+                            setDraft(updated);
+                          }
+                        }}
+                        className="text-[10px] text-blue-400 font-black hover:text-white uppercase tracking-wider flex items-center gap-1.5 bg-blue-600/10 hover:bg-blue-600/20 px-3 py-2 rounded-xl border border-blue-500/20 transition-all cursor-pointer active:scale-95"
+                      >
+                        Apply to All Days
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetTab}
+                        className="text-[10px] text-zinc-500 font-black hover:text-white uppercase tracking-wider flex items-center gap-1 bg-[#070709]/85 hover:bg-zinc-900/85 px-3 py-2 rounded-xl border border-zinc-900 transition-all cursor-pointer"
+                      >
+                        <RotateCcw size={11} />
+                        Reset
+                      </button>
+                    </div>
                   </div>
 
                   {/* Inputs Section */}
                   <div className="space-y-4">
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Pencil size={11} className="text-blue-400" />
+                      Tap any number to edit its target value directly.
+                    </p>
+
                     {/* Calories Card (Blue Accent) */}
                     <div className="rounded-2xl p-5 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md relative overflow-hidden group hover:border-blue-900/40 transition-colors">
                       <div className="flex items-center justify-between mb-1">
@@ -197,14 +221,15 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                         </label>
                         <Flame size={12} className="text-blue-500" />
                       </div>
-                      <div className="flex items-baseline gap-1 mt-1">
+                      <div className="flex items-center gap-2 mt-2 bg-[#07080e]/60 border border-blue-900/30 rounded-xl px-3.5 py-2.5 focus-within:border-blue-500/60 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all w-fit">
                         <input
                           type="number"
                           value={active.kcal}
                           onChange={e => updateField('kcal', e.target.value)}
-                          className="bg-transparent text-3xl font-black text-white outline-none border-none max-w-[140px] p-0 font-mono"
+                          className="bg-transparent text-2xl font-black text-white outline-none border-none max-w-[120px] p-0 font-mono"
                         />
-                        <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">kcal</span>
+                        <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider mr-1">kcal</span>
+                        <Pencil size={12} className="text-zinc-550" />
                       </div>
                       {/* Premium Blue Progress Line */}
                       <div className="h-1 rounded-full mt-4 bg-zinc-950 overflow-hidden">
@@ -222,19 +247,20 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                         { key: 'carbs'   as const, label: 'Carbs',   emoji: '🍚', dotColor: 'bg-emerald-500' },
                         { key: 'fat'     as const, label: 'Fat',     emoji: '🥑', dotColor: 'bg-amber-500' },
                       ]).map(({ key, label, dotColor }) => (
-                        <div key={key} className="rounded-xl p-4 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md flex flex-col gap-1 hover:border-blue-900/40 transition-colors">
+                        <div key={key} className="rounded-xl p-3.5 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md flex flex-col gap-1 hover:border-blue-900/40 transition-colors">
                           <div className="flex items-center gap-1.5 mb-1">
                             <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
                             <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest block">{label}</span>
                           </div>
-                          <div className="flex items-baseline gap-0.5 mt-0.5">
+                          <div className="flex items-center gap-1 mt-1 bg-[#07080e]/60 border border-blue-900/25 rounded-xl px-2.5 py-2 focus-within:border-blue-500/40 transition-all">
                             <input
                               type="number"
                               value={active[key]}
                               onChange={e => updateField(key, e.target.value)}
-                              className="w-full bg-transparent text-xl font-black text-white outline-none border-none p-0 font-mono"
+                              className="w-full bg-transparent text-base font-black text-white outline-none border-none p-0 font-mono"
                             />
-                            <span className="text-[9px] text-zinc-500 font-bold">g</span>
+                            <span className="text-[10px] text-zinc-500 font-bold mr-1">g</span>
+                            <Pencil size={10} className="text-zinc-550 flex-shrink-0" />
                           </div>
                         </div>
                       ))}
@@ -280,10 +306,10 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                 <div className="rounded-2xl p-5 border border-blue-950/20 bg-[#0c1020]/30 backdrop-blur-md relative overflow-hidden group hover:border-blue-900/40 transition-colors">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">
-                      💧 Daily Water Target
+                      💧 Daily Water Target (Applies to all days)
                     </label>
                   </div>
-                  <div className="flex items-baseline gap-1 mt-1">
+                  <div className="flex items-center gap-2 mt-2 bg-[#07080e]/60 border border-blue-900/30 rounded-xl px-3.5 py-2.5 focus-within:border-blue-500/60 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all w-fit">
                     <input
                       type="number"
                       value={waterGoal}
@@ -291,9 +317,10 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                         const num = parseInt(e.target.value, 10);
                         if (!isNaN(num) && num >= 0) setWaterGoal(num);
                       }}
-                      className="bg-transparent text-3xl font-black text-white outline-none border-none max-w-[140px] p-0 font-mono"
+                      className="bg-transparent text-2xl font-black text-white outline-none border-none max-w-[120px] p-0 font-mono"
                     />
-                    <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">ml</span>
+                    <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider mr-1">ml</span>
+                    <Pencil size={12} className="text-zinc-550" />
                   </div>
                   {/* Premium Blue Progress Line */}
                   <div className="h-1 rounded-full mt-4 bg-zinc-950 overflow-hidden">

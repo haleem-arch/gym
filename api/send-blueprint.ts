@@ -1,4 +1,4 @@
-import { validateEmailAddress, sendBulkEmails } from './helpers/email.js';
+import { validateEmailAddress, sendBulkEmails } from '../helpers/email.js';
 import { waitUntil } from '@vercel/functions';
 
 export default async function handler(req: any, res: any) {

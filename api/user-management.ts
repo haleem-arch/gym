@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
-import { validateEmailAddress, sendBulkEmails } from './helpers/email.js'
+import { validateEmailAddress, sendBulkEmails } from '../helpers/email.js'
 import { waitUntil } from '@vercel/functions'
+import { sendOwnerPushNotification } from '../helpers/push.js'
 
 function formatWhatsAppPhone(phone: string): string {
   let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
@@ -1200,7 +1201,7 @@ ${origin}/client-login
         }
       }
 
-      const { from, phone, sender, text, message, body } = req.body;
+      const { from, phone, sender, text, message, body, pushname } = req.body;
       const rawSender = phone || from || sender;
       const rawText = text || message || body || '';
 
@@ -1406,6 +1407,58 @@ ${origin}/client-login
           break; // Stop at first match
         }
       }
+
+      // Dispatch push notification to owner in the background
+      waitUntil((async () => {
+        let senderName = pushname || from || 'Unknown';
+        let senderRoleLabel = 'Unknown Contact';
+
+        try {
+          const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('id, display_name, role')
+            .or(`phone_number.eq.${senderPhone},targets->>phone_number.eq.${senderPhone}`)
+            .maybeSingle();
+
+          if (profile) {
+            if (profile.display_name) {
+              senderName = profile.display_name;
+            }
+            if (profile.role === 'coach') {
+              senderRoleLabel = 'Coach';
+            } else if (profile.role === 'owner') {
+              senderRoleLabel = 'Owner';
+            } else if (profile.role === 'admin') {
+              senderRoleLabel = 'Admin';
+            } else if (profile.role === 'client') {
+              const { data: clientProf } = await supabaseAdmin
+                .from('client_profiles')
+                .select('coach_id')
+                .eq('user_id', profile.id)
+                .maybeSingle();
+              
+              if (clientProf?.coach_id) {
+                senderRoleLabel = 'Coached Athlete';
+              } else {
+                senderRoleLabel = 'Coachless Athlete';
+              }
+            }
+          }
+        } catch (lookupErr) {
+          console.error('Error looking up sender profile:', lookupErr);
+        }
+
+        try {
+          await sendOwnerPushNotification(
+            `${senderName} (${senderRoleLabel})`,
+            messageText,
+            { jid: `${senderPhone}@c.us` },
+            'whatsapp'
+          );
+        } catch (pushErr) {
+          console.error('Error dispatching WhatsApp push notification:', pushErr);
+        }
+      })());
 
       return res.status(200).json({
         success: true,

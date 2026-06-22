@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
-import { sendBulkEmails } from './helpers/email.js'
+import { sendBulkEmails } from '../helpers/email.js'
 import { waitUntil } from '@vercel/functions'
+import { sendOwnerPushNotification } from '../helpers/push.js'
 
 const globalProcess = (globalThis as any).process || { env: {} };
 
@@ -206,7 +207,7 @@ export default async function handler(req: any, res: any) {
       });
     })();
 
-    // 5. Run both promises in the background via Vercel waitUntil
+    // 5. Run promises in the background via Vercel waitUntil
     waitUntil(
       Promise.all([
         sendWhatsAppPromise.catch(waErr => {
@@ -214,6 +215,14 @@ export default async function handler(req: any, res: any) {
         }),
         sendEmailPromise.catch(emailErr => {
           console.error('Waitlist email send failed:', emailErr);
+        }),
+        sendOwnerPushNotification(
+          'New Waitlist Signup! 🚀',
+          `${name.trim()} (${phone.trim()}) has joined the waitlist.`,
+          { name, email, phone },
+          'waitlist'
+        ).catch(pushErr => {
+          console.error('Waitlist push notification failed:', pushErr);
         })
       ])
     );
