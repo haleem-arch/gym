@@ -225,7 +225,7 @@ const isRunningInElectron = typeof window !== 'undefined' && (!!(window as any).
 
 export default function DesktopCoachPortal() {
   // Navigation & Tabs
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials' | 'subscriptions-faq'>('overview');
   const [financialsSearchQuery, setFinancialsSearchQuery] = useState('');
   const [financialsStatusFilter, setFinancialsStatusFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
   const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
@@ -1491,7 +1491,7 @@ export default function DesktopCoachPortal() {
     }
   };
 
-  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials', force = false) => {
+  const handleSidebarTabClick = (newTab: 'overview' | 'clients' | 'deploy' | 'management' | 'system' | 'subscriptions' | 'profile' | 'financials' | 'subscriptions-faq', force = false) => {
     if (showTutorial && !force) return;
     if (hasUnsavedChanges) {
       setUnsavedChangesPendingAction({ type: 'sidebar', payload: newTab });
@@ -4431,7 +4431,7 @@ export default function DesktopCoachPortal() {
                     <p className="text-gray-400 font-medium font-sans">Calculations of body fat percentage, lean mass ratios, and uploaded InBody assessment charts.</p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
-                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">💳 Billing & Transactions</h4>
+                    <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">Billing & Transactions</h4>
                     <p className="text-gray-400 font-medium font-sans">Payment sender names, transfer telephone numbers, and uploaded transaction receipts. Receipt files are handled locally and are deleted immediately after verification.</p>
                   </div>
                 </div>
@@ -4581,7 +4581,7 @@ export default function DesktopCoachPortal() {
 
               {/* Privileges */}
               <div className="mt-4 p-3 rounded-xl bg-[#090b14]/60 border border-gray-800/80 space-y-1 text-[10px] leading-relaxed text-gray-400 font-medium font-sans">
-                <p className="font-extrabold text-white text-xs uppercase tracking-wider">🌟 PREMIUM COACH LICENSE PRIVILEGES:</p>
+                <p className="font-extrabold text-white text-xs uppercase tracking-wider">PREMIUM COACH LICENSE PRIVILEGES:</p>
                 <ul className="list-disc pl-4 space-y-1">
                   <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all client feeds, workouts, diet plans, and body composition logs.</li>
                   <li>Allows hosting and managing <span className="text-white font-bold">up to 50 active athletes</span>.</li>
@@ -4602,7 +4602,7 @@ export default function DesktopCoachPortal() {
 
               {myCoachProfile?.targets?.last_payment_result?.status === 'rejected' && (
                 <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
-                  <p className="font-extrabold uppercase mb-0.5">❌ Request Rejected</p>
+                  <p className="font-extrabold uppercase mb-0.5">Request Rejected</p>
                   <p className="text-gray-400 font-sans font-medium text-[10px] leading-relaxed">
                     Reason: {myCoachProfile.targets.last_payment_result.reason || 'Invalid verification / receipt details.'}
                   </p>
@@ -5660,12 +5660,12 @@ export default function DesktopCoachPortal() {
           <button 
             onClick={() => handleSidebarTabClick('subscriptions')}
             className={`w-full relative flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left cursor-pointer border ${
-              activeTab === 'subscriptions' 
+              (activeTab === 'subscriptions' || activeTab === 'subscriptions-faq')
                 ? 'border-transparent text-white font-black' 
                 : 'bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-950/20'
             }`}
           >
-            {activeTab === 'subscriptions' && (
+            {(activeTab === 'subscriptions' || activeTab === 'subscriptions-faq') && (
               <motion.div 
                 layoutId="activeTabBackground"
                 className="absolute inset-0 bg-blue-600 border border-blue-500 rounded-xl z-0 shadow-lg shadow-blue-500/10"
@@ -6519,7 +6519,7 @@ export default function DesktopCoachPortal() {
                               </div>
                               <div className="space-y-2 col-span-2">
                                 <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider flex items-center gap-1.5">
-                                  <Droplets size={11} className="text-sky-400 shrink-0" />
+                                  <Droplets size={11} className="text-blue-400 shrink-0" />
                                   <span>Water Goal (Liters)</span>
                                 </label>
                                 <input 
@@ -6540,9 +6540,9 @@ export default function DesktopCoachPortal() {
 
                           {/* Nutrition by day type */}
                           <div className="relative overflow-hidden p-6 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[24px] space-y-6 shadow-xl">
-                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 via-sky-500/40 to-sky-500/20" />
-                            <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 border-b border-white/[0.05] pb-4 flex items-center gap-2">
-                              <Activity size={14} className="text-sky-400" /> Day-Type Custom Targets
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 via-blue-500/40 to-blue-500/20" />
+                            <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 border-b border-white/[0.05] pb-4 flex items-center gap-2">
+                              <Activity size={14} className="text-blue-400" /> Day-Type Custom Targets
                             </h3>
                             <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1 no-scrollbar">
                               {athleteDayTypes.map(dt => {
@@ -8008,7 +8008,7 @@ export default function DesktopCoachPortal() {
                         disabled={deployLoading || showTutorial}
                         className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-xs uppercase font-black shadow-lg shadow-blue-500/20"
                       >
-                        {deployLoading ? '⏳ Deploying...' : '🚀 Deploy Athlete'}
+                        {deployLoading ? 'Deploying...' : 'Deploy Athlete'}
                       </button>
                     )}
                   </div>
@@ -8495,14 +8495,12 @@ export default function DesktopCoachPortal() {
                   </p>
                   <p className="text-[10px] text-blue-400 mt-1.5 font-bold uppercase tracking-wider">
                     Need help? View our{' '}
-                    <a 
-                      href="/#faq-billing" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="underline hover:text-blue-300 transition-colors"
+                    <button 
+                      onClick={() => setActiveTab('subscriptions-faq')}
+                      className="underline hover:text-blue-300 transition-colors font-bold uppercase cursor-pointer bg-transparent border-none p-0 inline"
                     >
                       Subscriptions FAQ
-                    </a>
+                    </button>
                   </p>
                 </div>
               </div>
@@ -8722,6 +8720,73 @@ export default function DesktopCoachPortal() {
                   </table>
                 </div>
               </Card>
+            </div>
+          )}
+
+          {/* TAB: SUBSCRIPTIONS FAQ */}
+          {activeTab === 'subscriptions-faq' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Header */}
+              <div className="border-b border-gray-800 pb-6">
+                <button 
+                  onClick={() => setActiveTab('subscriptions')}
+                  className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors mb-4 cursor-pointer bg-transparent border-none p-0"
+                >
+                  <ChevronLeft size={16} />
+                  Back to Subscriptions
+                </button>
+                <h2 className="text-2xl font-bold text-white uppercase tracking-wider">
+                  Subscriptions FAQ
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  Frequently asked questions about your subscription plans, payments, and billing cycles.
+                </p>
+              </div>
+
+              {/* FAQ List */}
+              <div className="space-y-4 max-w-3xl">
+                <div className="bg-[#0c1020]/40 border border-gray-800 rounded-2xl p-5">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">How do I pay for my subscription?</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    You can pay via mobile wallet (Vodafone Cash, etc.) or Telda app. After completing the transfer, you upload a screenshot receipt through the renewal portal and our team verifies it.
+                  </p>
+                </div>
+
+                <div className="bg-[#0c1020]/40 border border-gray-800 rounded-2xl p-5">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">How long does verification take?</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    Typically within a few hours. You'll see your status update in real time — pending, approved, or rejected — without needing to refresh the page.
+                  </p>
+                </div>
+
+                <div className="bg-[#0c1020]/40 border border-gray-800 rounded-2xl p-5">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">What happens when my subscription expires?</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    Your data and all athlete records are kept safe. Once you renew, everything is restored instantly.
+                  </p>
+                </div>
+
+                <div className="bg-[#0c1020]/40 border border-gray-800 rounded-2xl p-5">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Are payments refundable?</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    No. All payments are strictly non-refundable once a subscription is activated.
+                  </p>
+                </div>
+
+                <div className="bg-[#0c1020]/40 border border-gray-800 rounded-2xl p-5">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Can I renew before my subscription expires?</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    Yes. You can upgrade or extend your plan at any time from within your dashboard.
+                  </p>
+                </div>
+
+                <div className="bg-[#0c1020]/40 border border-gray-800 rounded-2xl p-5">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">What subscription plans are available?</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    We offer plans for 2 Weeks, 1 Month, 3 Months, and 6 Months.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -9012,33 +9077,33 @@ export default function DesktopCoachPortal() {
           )}
 
           {activeTab === 'profile' && (
-            <div id="tutorial-profile-container" className="space-y-8 max-w-4xl">
-              <div className="border-b border-gray-800/80 pb-6">
-                <h2 className="text-3xl font-black text-white uppercase tracking-wider bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                  Coach Portal Profile Settings
+            <div id="tutorial-profile-container" className="space-y-6 max-w-4xl animate-fade-in">
+              <div className="border-b border-gray-800 pb-6">
+                <h2 className="text-2xl font-bold text-white uppercase tracking-wider">
+                  Profile & Account Settings
                 </h2>
-                <p className="text-sm text-gray-400 mt-2">Review your administrative access credentials, manage your portal account password, and check subscription licenses.</p>
+                <p className="text-xs text-gray-400 mt-1 font-sans">Review your login credentials, manage your password, and check subscription status.</p>
               </div>
 
               {/* Pending Payment Verification Banner */}
               {myCoachProfile?.targets?.pending_payment && (
-                <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg shadow-amber-500/5 animate-fade-in">
+                <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5 flex-shrink-0 animate-pulse text-amber-500" />
                     <div>
-                      <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Subscription Pending Approval</h4>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">Subscription Pending Approval</h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5 font-medium font-sans">
                         You submitted a request for <span className="font-bold text-white">{myCoachProfile.targets.pending_payment.period}</span> ({myCoachProfile.targets.pending_payment.amount}) on {new Date(myCoachProfile.targets.pending_payment.submitted_at).toLocaleString()}. We are verifying the payment.
                       </p>
                     </div>
                   </div>
-                  <span className="self-start sm:self-center px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider">Pending Verification</span>
+                  <span className="self-start sm:self-center px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold uppercase tracking-wider">Pending Verification</span>
                 </div>
               )}
 
               {/* Approval/Rejection Notice Banner */}
               {myCoachProfile?.targets?.last_payment_result && (
-                <div className={`p-5 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg animate-fade-in ${
+                <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg ${
                   myCoachProfile.targets.last_payment_result.status === 'approved'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-emerald-500/5'
                     : 'bg-red-500/10 border-red-500/20 text-red-400 shadow-red-500/5'
@@ -9050,10 +9115,10 @@ export default function DesktopCoachPortal() {
                       <ShieldAlert className="w-5 h-5 flex-shrink-0 text-red-400" />
                     )}
                     <div>
-                      <h4 className="text-xs font-black uppercase tracking-wider">
+                      <h4 className="text-xs font-bold uppercase tracking-wider">
                         Subscription {myCoachProfile.targets.last_payment_result.status === 'approved' ? 'Approved' : 'Refused'}
                       </h4>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <p className="text-[11px] text-gray-400 mt-0.5 font-medium font-sans">
                         {myCoachProfile.targets.last_payment_result.status === 'approved'
                           ? `Your subscription of ${myCoachProfile.targets.last_payment_result.period} has been approved. Thank you!`
                           : `Your subscription request was rejected. Reason: ${myCoachProfile.targets.last_payment_result.reason || 'Verification failed.'}`
@@ -9064,132 +9129,205 @@ export default function DesktopCoachPortal() {
                   <button
                     type="button"
                     onClick={handleClearPaymentResult}
-                    className="self-start sm:self-center px-3.5 py-1.5 rounded-xl bg-gray-900/60 hover:bg-gray-800 border border-gray-800 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                    className="self-start sm:self-center px-3.5 py-1.5 rounded-xl bg-gray-900/60 hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider cursor-pointer"
                   >
                     Clear Notification
                   </button>
                 </div>
               )}
 
-              {/* Login Credentials & Info Card */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Stacked Panels */}
+              <div className="space-y-6">
                 
-                {/* Visual Glassmorphic Credentials Card */}
-                <div className="relative overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#0c1024]/95 via-[#0d1228]/90 to-[#0b0c1b]/98 p-8 shadow-2xl backdrop-blur-md">
-                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-                  <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
-                  
-                  <div className="flex items-center gap-4 border-b border-gray-800/80 pb-5 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner flex-shrink-0">
-                      <Key size={20} />
+                {/* PANEL 1: Security & Credentials */}
+                <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-gray-800/80">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Key size={16} className="text-blue-500" />
+                      <h3 className="text-sm font-bold uppercase text-white tracking-wider">Account Credentials</h3>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-black uppercase text-blue-400 tracking-wider">Web Portal Login Credentials</h3>
-                      <p className="text-xs text-gray-400 mt-0.5">Your credentials to access the LIFE GYM system.</p>
-                    </div>
+                    <p className="text-[11px] text-gray-400 font-sans">Manage your password and view login email/passcode credentials.</p>
                   </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-400 block">Login User Email</span>
-                      <div className="flex items-center justify-between bg-[#080910] border border-gray-800/80 px-4 py-3 rounded-2xl transition-all duration-300 hover:border-blue-500/40">
-                        <span className="text-sm font-mono font-bold text-white select-all break-all pr-3">
-                          {myCoachProfile?.email || 'Loading email...'}
-                        </span>
-                        {myCoachProfile?.email && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(myCoachProfile.email);
-                              setCopiedEmail(true);
-                              setTimeout(() => setCopiedEmail(false), 2000);
-                              toast.success('Email copied to clipboard');
-                            }}
-                            className="p-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all flex-shrink-0 cursor-pointer"
-                            title="Copy email"
-                          >
-                            {copiedEmail ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-400 block">Access Passcode / Password</span>
-                      <div className="flex items-center justify-between bg-[#080910] border border-gray-800/80 px-4 py-3 rounded-2xl transition-all duration-300 hover:border-blue-500/40">
-                        <span className="text-sm font-mono font-extrabold text-yellow-500 tracking-wider select-all">
-                          {showPasscode 
-                            ? (myCoachProfile?.targets?.generated_passcode || '******')
-                            : '••••••••'}
-                        </span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setShowPasscode(!showPasscode)}
-                            className="p-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all cursor-pointer"
-                            title={showPasscode ? "Hide Passcode" : "Show Passcode"}
-                          >
-                            {showPasscode ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                          {myCoachProfile?.targets?.generated_passcode && (
+                  
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Login User Email</span>
+                        <div className="flex items-center justify-between bg-[#080910] border border-gray-800 px-4 py-2.5 rounded-xl">
+                          <span className="text-xs font-mono text-gray-300 select-all break-all pr-3">
+                            {myCoachProfile?.email || 'Loading email...'}
+                          </span>
+                          {myCoachProfile?.email && (
                             <button
                               type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(myCoachProfile.targets.generated_passcode);
-                                setCopiedPasscode(true);
-                                setTimeout(() => setCopiedPasscode(false), 2000);
-                                toast.success('Passcode copied to clipboard');
+                                navigator.clipboard.writeText(myCoachProfile.email);
+                                setCopiedEmail(true);
+                                setTimeout(() => setCopiedEmail(false), 2000);
+                                toast.success('Email copied to clipboard');
                               }}
-                              className="p-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all cursor-pointer"
-                              title="Copy passcode"
+                              className="p-1.5 rounded-lg bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all flex-shrink-0 cursor-pointer"
+                              title="Copy email"
                             >
-                              {copiedPasscode ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                              {copiedEmail ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                             </button>
                           )}
                         </div>
                       </div>
+
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Access Passcode</span>
+                        <div className="flex items-center justify-between bg-[#080910] border border-gray-800 px-4 py-2.5 rounded-xl">
+                          <span className="text-xs font-mono text-gray-300 tracking-wider select-all font-semibold">
+                            {showPasscode 
+                              ? (myCoachProfile?.targets?.generated_passcode || '******')
+                              : '••••••••'}
+                          </span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setShowPasscode(!showPasscode)}
+                              className="p-1.5 rounded-lg bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all cursor-pointer"
+                              title={showPasscode ? "Hide Passcode" : "Show Passcode"}
+                            >
+                              {showPasscode ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            {myCoachProfile?.targets?.generated_passcode && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(myCoachProfile.targets.generated_passcode);
+                                  setCopiedPasscode(true);
+                                  setTimeout(() => setCopiedPasscode(false), 2000);
+                                  toast.success('Passcode copied to clipboard');
+                                }}
+                                className="p-1.5 rounded-lg bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white transition-all cursor-pointer"
+                                title="Copy passcode"
+                              >
+                                {copiedPasscode ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-800/80 pt-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Lock size={16} className="text-blue-500" />
+                        <h4 className="text-xs font-bold uppercase text-white tracking-wider">Change Password</h4>
+                      </div>
+                      
+                      <form onSubmit={handleUpdateOwnPassword} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">New Password</label>
+                            <input
+                              type="password"
+                              value={ownNewPassword}
+                              onChange={e => setOwnNewPassword(e.target.value)}
+                              placeholder="Minimum 6 characters"
+                              className="w-full bg-[#121624]/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Confirm Password</label>
+                            <input
+                              type="password"
+                              value={ownConfirmPassword}
+                              onChange={e => setOwnConfirmPassword(e.target.value)}
+                              placeholder="Confirm your password"
+                              className="w-full bg-[#121624]/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                          <button
+                            type="submit"
+                            disabled={updatingOwnPassword || !ownNewPassword || !ownConfirmPassword}
+                            className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            {updatingOwnPassword ? 'Updating Password...' : <><Save size={13} /> Update Password</>}
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   </div>
                 </div>
 
-                {/* Subscription Card */}
-                <div className="relative overflow-hidden rounded-3xl border border-gray-800/80 bg-[#0d1222]/40 p-8 shadow-xl backdrop-blur-sm flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-                  
-                  <div>
-                    <div className="flex items-center gap-4 border-b border-gray-800/80 pb-5 mb-6">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shadow-inner flex-shrink-0">
-                        <CreditCard size={20} />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black uppercase text-emerald-400 tracking-wider">Subscription Plan Details</h3>
-                        <p className="text-xs text-gray-400 mt-0.5">Details about your active coaching subscription plan.</p>
-                      </div>
+                {/* PANEL 2: WhatsApp Contact Integration */}
+                <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-gray-800/80">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Phone size={16} className="text-emerald-500" />
+                      <h3 className="text-sm font-bold uppercase text-white tracking-wider">WhatsApp Redirection Settings</h3>
                     </div>
+                    <p className="text-[11px] text-gray-400 font-sans">Set the phone number that athletes will use to contact you via WhatsApp.</p>
+                  </div>
+                  
+                  <div className="p-6 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">WhatsApp Phone Number</label>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                          type="text"
+                          value={ownWhatsAppNumber}
+                          onChange={e => setOwnWhatsAppNumber(e.target.value)}
+                          placeholder="e.g. 201234567890 (include country code without + or spaces)"
+                          className="flex-1 bg-[#121624]/60 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-blue-500 font-mono transition-colors"
+                        />
+                        <button
+                          type="button"
+                          disabled={savingWhatsAppNumber}
+                          onClick={handleSaveWhatsAppNumber}
+                          className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800/80 disabled:text-gray-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          {savingWhatsAppNumber ? 'Saving...' : <><Save size={13} /> Save Contact Number</>}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-500 leading-normal font-sans">
+                        Please enter the phone number with country code, without spaces, +, or symbols (e.g. 201234567890) so the redirect link works perfectly for your clients.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-6 text-sm">
-                      <div className="space-y-1.5">
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Account License</p>
-                        <p className="text-white font-extrabold text-base">
+                {/* PANEL 3: Subscription Plan Details */}
+                <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-gray-800/80">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CreditCard size={16} className="text-blue-500" />
+                      <h3 className="text-sm font-bold uppercase text-white tracking-wider">Subscription Details</h3>
+                    </div>
+                    <p className="text-[11px] text-gray-400 font-sans">View and manage your active coaching subscription license.</p>
+                  </div>
+                  
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Account License</p>
+                        <p className="text-white font-black text-sm uppercase tracking-wide">
                           {coachUserId === OWNER_ID ? (
-                            <span className="text-indigo-400 font-mono font-black uppercase tracking-wider">Lifetime Creator Admin</span>
+                            <span className="text-indigo-400 font-mono">Lifetime Creator Admin</span>
                           ) : isTrialActive ? (
-                            <span className="text-yellow-500 font-black uppercase tracking-wider">Free Trial Mode</span>
+                            <span className="text-yellow-500">Free Trial Mode</span>
                           ) : myCoachProfile?.targets?.subscription_end_date ? (
-                            <span className="text-emerald-400 font-black uppercase tracking-wider">Premium License</span>
+                            <span className="text-emerald-400">Premium License</span>
                           ) : (
-                            <span className="text-gray-500 font-black uppercase tracking-wider">No Active Plan</span>
+                            <span className="text-gray-500">No Active Plan</span>
                           )}
                         </p>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Remaining Duration</p>
-                        <p className="text-white font-bold font-mono text-base">
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Remaining Duration</p>
+                        <p className="text-white font-bold font-mono text-sm">
                           {coachUserId === OWNER_ID ? (
-                            <span className="text-indigo-400 font-extrabold">Never Expires</span>
+                            <span className="text-indigo-400">Never Expires</span>
                           ) : (
-                            <span className="text-white font-extrabold">
+                            <span>
                               {(() => {
                                 if (!myCoachProfile?.targets?.subscription_end_date) return 'No Active Plan';
                                 const expiry = new Date(myCoachProfile.targets.subscription_end_date);
@@ -9206,9 +9344,37 @@ export default function DesktopCoachPortal() {
                       </div>
                     </div>
 
+                    {coachUserId !== OWNER_ID && myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+                          <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
+                          <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-600 rounded-full"
+                            style={{
+                              width: `${(() => {
+                                const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
+                                const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
+                                const now = new Date().getTime();
+                                if (now >= end) return 0;
+                                if (now <= start) return 100;
+                                const total = end - start;
+                                const remaining = end - now;
+                                return Math.max(0, Math.min(100, (remaining / total) * 100));
+                              })()}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {coachUserId !== OWNER_ID && (
-                      <div className="mt-6 p-4 rounded-2xl bg-[#090b14]/60 border border-gray-800/80 space-y-1.5 text-[11px] leading-relaxed text-gray-400 font-medium font-sans">
-                        <p className="font-extrabold text-white text-xs uppercase tracking-wider">🌟 Premium Coach License Privileges:</p>
+                      <div className="p-4 rounded-xl bg-[#090b14]/60 border border-gray-800 space-y-2 text-[10px] leading-relaxed text-gray-400 font-medium font-sans">
+                        <p className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
+                          <ShieldCheck size={14} className="text-blue-500" /> Premium Coach License Privileges:
+                        </p>
                         <ul className="list-disc pl-4 space-y-1">
                           <li>Guarantees <span className="text-white font-bold">full administrative access</span> to all client feeds, workouts, diet plans, and body composition logs.</li>
                           <li>Allows hosting and managing <span className="text-white font-bold">up to 50 active athletes</span>.</li>
@@ -9216,302 +9382,188 @@ export default function DesktopCoachPortal() {
                         </ul>
                       </div>
                     )}
-                  </div>
 
-                  {/* Nice visual bar for remaining time (Coach only, Owner doesn't need it) */}
-                  {coachUserId !== OWNER_ID && myCoachProfile?.targets?.subscription_start_date && myCoachProfile?.targets?.subscription_end_date ? (
-                    <div className="space-y-3 mt-8">
-                      <div className="flex justify-between text-xs text-gray-400 font-mono">
-                        <span>Start: {new Date(myCoachProfile.targets.subscription_start_date).toLocaleDateString()}</span>
-                        <span>End: {new Date(myCoachProfile.targets.subscription_end_date).toLocaleDateString()}</span>
+                    {coachUserId === OWNER_ID && (
+                      <div className="p-4 rounded-xl bg-indigo-950/10 border border-indigo-900/20 text-[10px] text-indigo-400 font-bold flex items-center gap-1.5">
+                        <ShieldCheck size={14} /> Unlimited Premium Creator Privileges Activated
                       </div>
-                      <div className="h-1.5 bg-gray-800/80 border border-gray-700/50 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.4)]"
-                          style={{
-                            width: `${(() => {
-                              const start = new Date(myCoachProfile.targets.subscription_start_date).getTime();
-                              const end = new Date(myCoachProfile.targets.subscription_end_date).getTime();
-                              const now = new Date().getTime();
-                              if (now >= end) return 0;
-                              if (now <= start) return 100;
-                              const total = end - start;
-                              const remaining = end - now;
-                              return Math.max(0, Math.min(100, (remaining / total) * 100));
-                            })()}%`
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : coachUserId !== OWNER_ID ? (
-                    <div className="text-xs text-amber-500/90 bg-amber-500/5 border border-amber-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
-                      No Active Subscription
-                    </div>
-                  ) : (
-                    <div className="text-xs text-indigo-400/90 bg-indigo-500/5 border border-indigo-500/10 px-4 py-3 rounded-2xl mt-8 font-bold flex items-center justify-center gap-2">
-                      👑 Unlimited Premium Admin Privileges
-                    </div>
-                  )}
+                    )}
 
-                  {/* Renew/Upgrade and Ledger Buttons Section */}
-                  {coachUserId !== OWNER_ID && (
-                    <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-5 border-t border-gray-800/40">
-                      <button
-                        type="button"
-                        disabled={!!myCoachProfile?.targets?.pending_payment}
-                        onClick={() => setShowSubscriptionOverlay(true)}
-                        className={`flex-1 text-[10px] font-black uppercase tracking-wider py-2.5 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
-                          myCoachProfile?.targets?.pending_payment
-                            ? 'bg-gray-800/40 text-gray-500 border-transparent cursor-not-allowed'
-                            : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white shadow-lg shadow-emerald-500/10'
-                        }`}
-                      >
-                        <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
-                        {(() => {
-                          if (myCoachProfile?.targets?.pending_payment) return 'Verification Pending';
-                          
-                          const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
-                          const now = new Date();
-                          const isExpired = expiry && now >= expiry;
-                          
-                          return isExpired ? 'Renew Subscription' : 'Upgrade Subscription';
-                        })()}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => setShowHistoryModal(true)}
-                        className="px-4 py-2.5 rounded-xl bg-[#090b14] hover:bg-gray-900 border border-gray-800 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <History size={12} />
-                        Last Subscriptions
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* WhatsApp Contact Settings Card */}
-              <div className="rounded-3xl border border-gray-800/80 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-8 shadow-xl space-y-6">
-                <div className="flex items-center gap-4 border-b border-gray-800/60 pb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-inner flex-shrink-0">
-                    <Phone size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase text-emerald-500 tracking-wider">WhatsApp Contact Number</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Set the phone number that athletes will use to contact you via WhatsApp.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">WhatsApp Phone Number</label>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <input
-                        type="text"
-                        value={ownWhatsAppNumber}
-                        onChange={e => setOwnWhatsAppNumber(e.target.value)}
-                        placeholder="e.g. 201234567890 (include country code without + or spaces)"
-                        className="flex-1 bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-600 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)]"
-                      />
-                      <button
-                        type="button"
-                        disabled={savingWhatsAppNumber}
-                        onClick={handleSaveWhatsAppNumber}
-                        className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-emerald-500 text-white font-extrabold px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg hover:shadow-emerald-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        {savingWhatsAppNumber ? 'Saving...' : <><Save size={14} /> Save Contact Number</>}
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-gray-500">Note: Please enter the phone number with country code, without spaces, +, or symbols (e.g. 201234567890) so the WhatsApp redirect link works perfectly for your clients.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Password Editing Form Card */}
-              <div className="rounded-3xl border border-gray-800/80 bg-gradient-to-br from-[#0c1020] to-[#0d1222] p-8 shadow-xl space-y-6">
-                <div className="flex items-center gap-4 border-b border-gray-800/60 pb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-inner flex-shrink-0">
-                    <Shield size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase text-yellow-500 tracking-wider">Change Portal Access Password</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Update the administrative password used to log in to your coach account.</p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleUpdateOwnPassword} className="space-y-6 font-bold">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">New Access Password</label>
-                      <input
-                        type="password"
-                        value={ownNewPassword}
-                        onChange={e => setOwnNewPassword(e.target.value)}
-                        placeholder="Minimum 6 characters"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-650 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)]"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block">Confirm Password</label>
-                      <input
-                        type="password"
-                        value={ownConfirmPassword}
-                        onChange={e => setOwnConfirmPassword(e.target.value)}
-                        placeholder="Confirm your new password"
-                        className="w-full bg-[#121624] border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 font-mono font-bold transition-all placeholder-gray-655 focus:shadow-[0_0_12px_rgba(59,130,246,0.12)]"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={updatingOwnPassword || !ownNewPassword || !ownConfirmPassword}
-                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-4 rounded-2xl text-sm uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    {updatingOwnPassword ? 'Updating Password...' : <><Save size={15} /> Update Password</>}
-                  </button>
-                </form>
-              </div>
-
-                            {/* Send Feedback or Report Problem (Glassmorphism design) */}
-              <div className="rounded-3xl border border-white/[0.06] bg-zinc-950/40 backdrop-blur-xl p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] space-y-6 relative overflow-hidden">
-                <AnimatePresence mode="wait">
-                  {feedbackSuccessShow ? (
-                    <motion.div
-                      key="thanks"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex flex-col items-center justify-center py-12 text-center space-y-4"
-                    >
-                      <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                        <CheckCircle size={32} />
-                      </div>
-                      <h3 className="text-lg font-black uppercase text-emerald-400 tracking-wider">Thank You!</h3>
-                      <p className="text-xs text-gray-300 max-w-sm">Your feedback helps us make the platform better. We have received your submission.</p>
-                      <button
-                        type="button"
-                        onClick={() => setFeedbackSuccessShow(false)}
-                        className="mt-6 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                      >
-                        Close
-                      </button>
-                    </motion.div>
-                  ) : lastFeedbackTime && (Date.now() - lastFeedbackTime < 60 * 60 * 1000) ? (
-                    <motion.div
-                      key="locked"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex flex-col items-center justify-center py-12 text-center space-y-4"
-                    >
-                      <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                        <Clock size={30} />
-                      </div>
-                      <h3 className="text-lg font-black uppercase text-blue-400 tracking-wider">Form Locked</h3>
-                      <p className="text-xs text-gray-300 max-w-sm">To prevent spam, you can submit feedback once per hour.</p>
-                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl px-5 py-3 text-xs text-gray-400 font-mono mt-2">
-                        Try again in: <span className="text-blue-400 font-bold">{lockMinutesLeft} minutes</span>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="form"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-6"
-                    >
-                      <div className="flex items-center gap-4 border-b border-white/[0.06] pb-5">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shadow-inner flex-shrink-0">
-                          <Mail size={20} />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-black uppercase text-blue-500 tracking-wider">Send Feedback or Report Problem</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">Let us know what went wrong, suggest improvements, or share your thoughts.</p>
-                        </div>
-                      </div>
-
-                      <form onSubmit={handleSubmitFeedback} className="space-y-5">
-                        {/* Submission Category */}
-                        <div className="space-y-2">
-                          <label className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">Submission Type</label>
-                          <div className="grid grid-cols-2 gap-4">
-                            <button
-                              type="button"
-                              onClick={() => setFeedbackCategory('feedback')}
-                              className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                                feedbackCategory === 'feedback'
-                                  ? 'bg-blue-600/15 border-blue-500/30 text-blue-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
-                                  : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 hover:border-white/[0.1] hover:bg-white/[0.04]'
-                              }`}
-                            >
-                              <Lightbulb size={13} className="shrink-0" />
-                              <span>General Feedback</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFeedbackCategory('bug')}
-                              className={`py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                                feedbackCategory === 'bug'
-                                  ? 'bg-red-600/15 border-red-500/30 text-red-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]'
-                                  : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 hover:border-white/[0.1] hover:bg-white/[0.04]'
-                              }`}
-                            >
-                              <AlertTriangle size={13} className="shrink-0" />
-                              <span>Report a Bug</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {feedbackCategory !== 'bug' && (
-                          <div className="space-y-2">
-                            <label className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">Rating (Optional)</label>
-                            <div className="flex gap-2.5">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                  key={star}
-                                  type="button"
-                                  onClick={() => setFeedbackRating(star)}
-                                  className="transition-transform hover:scale-120 duration-150 p-1 cursor-pointer focus:outline-none"
-                                >
-                                  <Star
-                                    size={24}
-                                    className={`transition-colors duration-150 ${
-                                      star <= feedbackRating
-                                        ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-                                        : 'text-zinc-655 hover:text-zinc-400'
-                                    }`}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          <label className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">Your Message</label>
-                          <textarea
-                            value={feedbackMessage}
-                            onChange={e => setFeedbackMessage(e.target.value)}
-                            placeholder="Type your message here..."
-                            rows={5}
-                            required
-                            className="w-full bg-[#121624]/60 border border-white/[0.06] rounded-2xl px-5 py-3.5 text-sm text-white outline-none focus:border-blue-500 transition-all placeholder-gray-650 focus:shadow-[0_0_12px_rgba(59,130,246,0.08)] resize-none"
-                          />
-                        </div>
-
+                    {coachUserId !== OWNER_ID && (
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-850">
                         <button
-                          type="submit"
-                          disabled={submittingFeedback || !feedbackMessage.trim()}
-                          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 disabled:border-transparent border border-blue-500 text-white font-extrabold py-4 rounded-2xl text-sm uppercase tracking-wider shadow-lg hover:shadow-blue-500/10 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                          type="button"
+                          disabled={!!myCoachProfile?.targets?.pending_payment}
+                          onClick={() => setShowSubscriptionOverlay(true)}
+                          className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
+                            myCoachProfile?.targets?.pending_payment
+                              ? 'bg-gray-850 text-gray-500 border-transparent cursor-not-allowed'
+                              : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white'
+                          }`}
                         >
-                          {submittingFeedback ? 'Submitting...' : <><Save size={14} /> Submit Feedback</>}
+                          <RefreshCw size={12} className={myCoachProfile?.targets?.pending_payment ? '' : 'animate-spin-slow'} />
+                          {(() => {
+                            if (myCoachProfile?.targets?.pending_payment) return 'Verification Pending';
+                            const expiry = myCoachProfile?.targets?.subscription_end_date ? new Date(myCoachProfile.targets.subscription_end_date) : null;
+                            const now = new Date();
+                            const isExpired = expiry && now >= expiry;
+                            return isExpired ? 'Renew Subscription' : 'Upgrade Subscription';
+                          })()}
                         </button>
-                      </form>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        
+                        <button
+                          type="button"
+                          onClick={() => setShowHistoryModal(true)}
+                          className="px-4 py-2.5 rounded-xl bg-[#090b14] hover:bg-gray-900 border border-gray-800 hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <History size={12} />
+                          Last Subscriptions
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* PANEL 4: Send Feedback or Report Problem */}
+                <div className="border border-gray-800 bg-[#0c1020]/30 rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-gray-800/80">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Mail size={16} className="text-blue-500" />
+                      <h3 className="text-sm font-bold uppercase text-white tracking-wider">Send Feedback or Report Bug</h3>
+                    </div>
+                    <p className="text-[11px] text-gray-400 font-sans font-medium">Let us know what went wrong, suggest improvements, or share your thoughts.</p>
+                  </div>
+                  
+                  <div className="p-6">
+                    <AnimatePresence mode="wait">
+                      {feedbackSuccessShow ? (
+                        <motion.div
+                          key="thanks"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="flex flex-col items-center justify-center py-6 text-center space-y-4"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                            <CheckCircle size={24} />
+                          </div>
+                          <h3 className="text-sm font-bold uppercase text-emerald-400 tracking-wider">Thank You!</h3>
+                          <p className="text-xs text-gray-300 max-w-sm font-sans font-medium">Your feedback helps us make the platform better. We have received your submission.</p>
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackSuccessShow(false)}
+                            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                          >
+                            Close
+                          </button>
+                        </motion.div>
+                      ) : lastFeedbackTime && (Date.now() - lastFeedbackTime < 60 * 60 * 1000) ? (
+                        <motion.div
+                          key="locked"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex flex-col items-center justify-center py-6 text-center space-y-4"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                            <Clock size={22} />
+                          </div>
+                          <h3 className="text-sm font-bold uppercase text-blue-400 tracking-wider">Form Locked</h3>
+                          <p className="text-xs text-gray-300 max-w-sm font-sans font-medium">To prevent spam, you can submit feedback once per hour.</p>
+                          <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-2 text-xs text-gray-400 font-mono">
+                            Try again in: <span className="text-blue-400 font-bold">{lockMinutesLeft} minutes</span>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="form"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="space-y-4"
+                        >
+                          <form onSubmit={handleSubmitFeedback} className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Submission Type</label>
+                              <div className="grid grid-cols-2 gap-4">
+                                <button
+                                  type="button"
+                                  onClick={() => setFeedbackCategory('feedback')}
+                                  className={`py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                                    feedbackCategory === 'feedback'
+                                      ? 'bg-blue-650/10 border-blue-500/20 text-blue-400'
+                                      : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 hover:border-white/[0.1] hover:bg-white/[0.04]'
+                                  }`}
+                                >
+                                  <Lightbulb size={13} className="shrink-0" />
+                                  <span>General Feedback</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFeedbackCategory('bug')}
+                                  className={`py-2 px-4 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                                    feedbackCategory === 'bug'
+                                      ? 'bg-red-650/10 border-red-500/20 text-red-400'
+                                      : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 hover:border-white/[0.1] hover:bg-white/[0.04]'
+                                  }`}
+                                >
+                                  <AlertTriangle size={13} className="shrink-0" />
+                                  <span>Report a Bug</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {feedbackCategory !== 'bug' && (
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Rating (Optional)</label>
+                                <div className="flex gap-2">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      onClick={() => setFeedbackRating(star)}
+                                      className="transition-transform hover:scale-110 duration-150 p-0.5 cursor-pointer focus:outline-none"
+                                    >
+                                      <Star
+                                        size={20}
+                                        className={`transition-colors duration-150 ${
+                                          star <= feedbackRating
+                                            ? 'text-amber-400 fill-amber-400'
+                                            : 'text-zinc-650 hover:text-zinc-400'
+                                        }`}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Your Message</label>
+                              <textarea
+                                value={feedbackMessage}
+                                onChange={e => setFeedbackMessage(e.target.value)}
+                                placeholder="Type your message here..."
+                                rows={4}
+                                required
+                                className="w-full bg-[#121624]/60 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-blue-500 transition-colors resize-none"
+                              />
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                              <button
+                                type="submit"
+                                disabled={submittingFeedback || !feedbackMessage.trim()}
+                                className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800/80 disabled:text-gray-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                              >
+                                {submittingFeedback ? 'Submitting...' : <><Save size={13} /> Submit Feedback</>}
+                              </button>
+                            </div>
+                          </form>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
@@ -10355,7 +10407,7 @@ export default function DesktopCoachPortal() {
                   <p className="text-gray-400 font-medium font-sans">Calculations of body fat percentage, lean mass ratios, and uploaded InBody assessment charts.</p>
                 </div>
                 <div className="p-3.5 rounded-xl bg-[#121624]/60 border border-gray-800">
-                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">💳 Billing & Transactions</h4>
+                  <h4 className="text-white text-[11px] uppercase tracking-wider font-extrabold mb-1">Billing & Transactions</h4>
                   <p className="text-gray-400 font-medium font-sans">Payment sender names, transfer telephone numbers, and uploaded transaction receipts. Receipt files are handled locally and are deleted immediately after verification.</p>
                 </div>
               </div>
@@ -10732,7 +10784,7 @@ export default function DesktopCoachPortal() {
         <div className="fixed inset-0 bg-[#05050b]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div id="tutorial-unsaved-modal" className="bg-[#0d1220] border border-gray-800 rounded-3xl p-6 max-w-sm w-full space-y-6 shadow-2xl">
             <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5 text-yellow-500">
-              ⚠️ Unsaved Nutrition Changes
+              <AlertTriangle size={15} /> Unsaved Nutrition Changes
             </h3>
             <p className="text-xs text-gray-400 leading-relaxed">
               You have modified this athlete's nutrition targets but have not saved them yet. Do you want to save them now, discard the changes, or cancel navigation?
@@ -10962,7 +11014,7 @@ export default function DesktopCoachPortal() {
                             <div className="space-y-1">
                               <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black text-white uppercase tracking-wider">
-                                  {h.action === 'initial_activation' ? '🚀 INITIAL ACTIVATION' : '⚡ PLAN REACTIVATION'}
+                                  {h.action === 'initial_activation' ? 'INITIAL ACTIVATION' : 'PLAN REACTIVATION'}
                                 </span>
                                 <span className="text-[8px] text-gray-500">
                                   {new Date(h.timestamp).toLocaleDateString()}
