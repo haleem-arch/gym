@@ -1570,7 +1570,7 @@ export default function DesktopCoachPortal() {
         .from('client_profiles')
         .select(`
           *,
-          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, created_at)
+          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, coach_id, created_at)
         `)
         .eq('user_id', clientId)
         .maybeSingle();
@@ -2514,7 +2514,7 @@ export default function DesktopCoachPortal() {
         .from('client_profiles')
         .select(`
           *,
-          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, created_at)
+          user:profiles!client_profiles_user_id_fkey(id, username, email, display_name, targets, coach_id, created_at)
         `)
         .eq('user_id', clientId)
         .maybeSingle();
