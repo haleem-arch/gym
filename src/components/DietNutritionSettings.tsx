@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, RotateCcw, Flame, Pencil } from 'lucide-react';
+import { X, Save, RotateCcw, Flame, Pencil, Copy } from 'lucide-react';
 
 export const FIXED_DAY_TYPES = ['REST', 'RUN', 'RUN+GYM'] as const;
 export const DAY_TYPES = ['REST', 'RUN', 'PUSH', 'PULL', 'LEGS', 'RUN+GYM'] as const;
@@ -193,40 +193,52 @@ export const DietNutritionSettings = ({ open, onClose, currentDayType, allDayTyp
                   {/* Day Label + Action Buttons */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-black text-zinc-400 uppercase tracking-widest block">Selected Target Group</span>
+                      <span className="text-xs font-black text-zinc-500 uppercase tracking-widest block">Selected Target Group</span>
                       <h3 className="text-lg font-black text-white uppercase tracking-tight mt-0.5">{activeLabel}</h3>
                       {currentDayType === activeTab && (
-                        <span className="inline-block text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#0c1020]/40 border border-blue-900/20 text-emerald-400 mt-1.5">
+                        <span className="inline-block text-[8px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mt-1.5">
                           Active Today
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentTarget = draft[activeTab];
-                          if (currentTarget && window.confirm(`Copy targets from ${activeLabel} to all other day types?`)) {
-                            const updated = { ...draft };
-                            allDayTypes.forEach(dt => {
-                              updated[dt] = { ...currentTarget };
-                            });
-                            setDraft(updated);
-                          }
-                        }}
-                        className="text-[10px] text-blue-400 font-black hover:text-white uppercase tracking-wider flex items-center gap-1.5 bg-blue-600/10 hover:bg-blue-600/20 px-3 py-2 rounded-xl border border-blue-500/20 transition-all cursor-pointer active:scale-95"
-                      >
-                        Apply to All Days
-                      </button>
-                      <button
-                        type="button"
-                        onClick={resetTab}
-                        className="text-[10px] text-zinc-500 font-black hover:text-white uppercase tracking-wider flex items-center gap-1 bg-[#070709]/85 hover:bg-zinc-900/85 px-3 py-2 rounded-xl border border-zinc-900 transition-all cursor-pointer"
-                      >
-                        <RotateCcw size={11} />
-                        Reset
-                      </button>
+                    <button
+                      type="button"
+                      onClick={resetTab}
+                      className="text-[10px] text-zinc-400 font-black hover:text-white uppercase tracking-wider flex items-center gap-1 bg-[#070709]/85 hover:bg-zinc-900/85 px-3 py-2 rounded-xl border border-zinc-900 transition-all cursor-pointer"
+                    >
+                      <RotateCcw size={11} />
+                      Reset
+                    </button>
+                  </div>
+
+                  {/* Bulk Save / Sync Targets Banner */}
+                  <div className="rounded-2xl p-4 border border-blue-500/20 bg-gradient-to-r from-blue-950/30 to-indigo-950/20 backdrop-blur-md flex items-center justify-between gap-4 shadow-lg shadow-blue-950/20">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/10 flex items-center justify-center shrink-0">
+                        <Copy size={16} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block leading-none">Bulk Settings</span>
+                        <h4 className="text-xs font-black text-white uppercase tracking-tight mt-1 leading-none">Sync Targets to All Days</h4>
+                        <p className="text-[9px] text-zinc-400 font-medium uppercase tracking-wider mt-1 leading-none">Copy these macros to other split days</p>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentTarget = draft[activeTab];
+                        if (currentTarget && window.confirm(`Copy targets from ${activeLabel} to all other day types?`)) {
+                          const updated = { ...draft };
+                          allDayTypes.forEach(dt => {
+                            updated[dt] = { ...currentTarget };
+                          });
+                          setDraft(updated);
+                        }
+                      }}
+                      className="flex-shrink-0 text-[10px] font-black text-white bg-blue-600 hover:bg-blue-500 uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95 shadow-md shadow-blue-500/20 border border-blue-400/20"
+                    >
+                      Sync Now
+                    </button>
                   </div>
 
                   {/* Inputs Section */}

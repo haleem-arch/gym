@@ -18,17 +18,17 @@ export const BioStatusRing = ({
   onClick
 }: BioStatusRingProps) => {
   // SVG Geometry Settings dynamically scaled
-  const size = compact ? 80 : 90;
+  const size = compact ? 80 : 135;
   const center = size / 2;
-  const strokeWidth = compact ? 3.0 : 3.5;
+  const strokeWidth = compact ? 3.5 : 9.5;
 
-  const rOuter = compact ? 34 : 38;
+  const rOuter = compact ? 34 : 60;
   const circOuter = 2 * Math.PI * rOuter;
   
-  const rMiddle = compact ? 26 : 29;
+  const rMiddle = compact ? 26.5 : 47.5;
   const circMiddle = 2 * Math.PI * rMiddle;
   
-  const rInner = compact ? 18 : 20;
+  const rInner = compact ? 19 : 35;
   const circInner = 2 * Math.PI * rInner;
 
   // Premium flat unified blue scale (human designed feel)
@@ -54,10 +54,9 @@ export const BioStatusRing = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      style={{ backgroundColor: compact ? 'transparent' : '#121624' }}
       className={compact 
         ? `rounded-2xl p-4 border border-slate-800/80 flex flex-col items-center justify-between gap-3 w-full min-h-[150px] bg-slate-900/60 ${onClick ? 'cursor-pointer hover:border-slate-700/80 transition-colors' : ''}` 
-        : `rounded-2xl p-5 border border-slate-800/80 flex items-center justify-between gap-6 w-full ${onClick ? 'cursor-pointer hover:border-slate-700/80 transition-colors' : ''}`
+        : `rounded-2xl p-5 border border-blue-900/20 bg-[#0c1020]/40 backdrop-blur-md flex items-center justify-start gap-12 w-full ${onClick ? 'cursor-pointer hover:border-blue-900/40 transition-colors' : ''}`
       }
     >
       {compact && (
@@ -101,7 +100,7 @@ export const BioStatusRing = ({
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-center">
-          <span className="text-[11px] font-bold text-white tracking-tight leading-none">
+          <span className={`${compact ? 'text-[11px] font-bold' : 'text-xl font-black'} text-white tracking-tight leading-none`}>
             {dailyBioScore}%
           </span>
         </div>
@@ -113,37 +112,53 @@ export const BioStatusRing = ({
         </span>
       ) : (
         /* Redesigned Legend: Dynamic vertical list with color-anchor dots */
-        <div className="flex-1 flex flex-col gap-3 justify-center pl-4 border-l border-slate-800/60">
+        <div className="flex-grow flex flex-col gap-3.5 justify-center pl-8 border-l border-blue-900/20">
           {/* Nutrition */}
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorNutrition }} />
-            <div className="flex flex-col leading-none">
-              <span className="text-[9px] font-medium text-gray-400 uppercase tracking-wider">Nutrition</span>
-              <span className="text-xs font-bold text-gray-200 mt-0.5">
-                {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Active' : 'Pending'}
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nutrition</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs font-bold text-white">
+                  {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Active' : 'Pending'}
+                </span>
+                <span className="text-[10px] text-zinc-500 font-bold">•</span>
+                <span className="text-xs font-black text-blue-450">{Math.round(kcalPct * 100)}%</span>
+              </div>
             </div>
           </div>
 
           {/* Hydration */}
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorHydration }} />
-            <div className="flex flex-col leading-none">
-              <span className="text-[9px] font-medium text-gray-400 uppercase tracking-wider">Hydration</span>
-              <span className="text-xs font-bold text-gray-200 mt-0.5">
-                {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Active' : 'Pending'}
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorHydration }} />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hydration</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs font-bold text-white">
+                  {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Active' : 'Pending'}
+                </span>
+                <span className="text-[10px] text-zinc-500 font-bold">•</span>
+                <span className="text-xs font-black text-sky-400">{Math.round(waterPct * 100)}%</span>
+              </div>
             </div>
           </div>
 
           {/* Training */}
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colorTraining }} />
-            <div className="flex flex-col leading-none">
-              <span className="text-[9px] font-medium text-gray-400 uppercase tracking-wider">Training</span>
-              <span className="text-xs font-bold text-gray-200 mt-0.5">
-                {isRestDay ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorTraining }} />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Training</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs font-bold text-white">
+                  {isRestDay ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
+                </span>
+                {!isRestDay && (
+                  <>
+                    <span className="text-[10px] text-zinc-500 font-bold">•</span>
+                    <span className="text-xs font-black text-indigo-400">{Math.round(workoutStatus * 100)}%</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
