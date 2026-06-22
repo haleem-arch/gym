@@ -56,7 +56,7 @@ export const BioStatusRing = ({
       transition={{ duration: 0.3, ease: "easeOut" }}
       className={compact 
         ? `rounded-2xl p-4 border border-slate-800/80 flex flex-col items-center justify-between gap-3 w-full min-h-[150px] bg-slate-900/60 ${onClick ? 'cursor-pointer hover:border-slate-700/80 transition-colors' : ''}` 
-        : `rounded-2xl p-5 border border-blue-900/20 bg-[#0c1020]/40 backdrop-blur-md flex items-center justify-start gap-12 w-full ${onClick ? 'cursor-pointer hover:border-blue-900/40 transition-colors' : ''}`
+        : `rounded-2xl p-4 sm:p-5 border border-blue-900/20 bg-[#0c1020]/40 backdrop-blur-md flex items-center justify-between gap-4 sm:gap-8 w-full ${onClick ? 'cursor-pointer hover:border-blue-900/40 transition-colors' : ''}`
       }
     >
       {compact && (
@@ -112,50 +112,50 @@ export const BioStatusRing = ({
         </span>
       ) : (
         /* Redesigned Legend: Dynamic vertical list with color-anchor dots */
-        <div className="flex-grow flex flex-col gap-3.5 justify-center pl-8 border-l border-blue-900/20">
+        <div className="flex-grow flex flex-col gap-3.5 justify-center pl-4 sm:pl-6 border-l border-blue-900/20 min-w-0">
           {/* Nutrition */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorNutrition }} />
-            <div className="flex flex-col leading-tight">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nutrition</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-xs font-bold text-white">
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">Nutrition</span>
+              <div className="flex flex-wrap items-center gap-1 mt-0.5 text-[11px] sm:text-xs">
+                <span className="font-bold text-white whitespace-nowrap">
                   {kcalPct >= 0.95 ? 'Completed' : kcalPct >= 0.75 ? 'On Track' : kcalPct > 0 ? 'Active' : 'Pending'}
                 </span>
-                <span className="text-[10px] text-zinc-500 font-bold">•</span>
-                <span className="text-xs font-black text-blue-400">{Math.round(kcalPct * 100)}%</span>
+                <span className="text-[10px] text-zinc-550 font-bold">•</span>
+                <span className="font-black text-blue-400">{Math.round(kcalPct * 100)}%</span>
               </div>
             </div>
           </div>
 
           {/* Hydration */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorHydration }} />
-            <div className="flex flex-col leading-tight">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hydration</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-xs font-bold text-white">
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">Hydration</span>
+              <div className="flex flex-wrap items-center gap-1 mt-0.5 text-[11px] sm:text-xs">
+                <span className="font-bold text-white whitespace-nowrap">
                   {waterPct >= 0.95 ? 'Completed' : waterPct >= 0.5 ? 'On Track' : waterPct > 0 ? 'Active' : 'Pending'}
                 </span>
-                <span className="text-[10px] text-zinc-500 font-bold">•</span>
-                <span className="text-xs font-black text-blue-400">{Math.round(waterPct * 100)}%</span>
+                <span className="text-[10px] text-zinc-550 font-bold">•</span>
+                <span className="font-black text-blue-400">{Math.round(waterPct * 100)}%</span>
               </div>
             </div>
           </div>
 
           {/* Training */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorTraining }} />
-            <div className="flex flex-col leading-tight">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Training</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-xs font-bold text-white">
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate">Training</span>
+              <div className="flex flex-wrap items-center gap-1 mt-0.5 text-[11px] sm:text-xs">
+                <span className="font-bold text-white whitespace-nowrap">
                   {isRestDay ? 'Rest Day' : workoutStatus === 1.0 ? 'Completed' : workoutStatus === 0.5 ? 'Active' : 'Pending'}
                 </span>
                 {!isRestDay && (
                   <>
-                    <span className="text-[10px] text-zinc-500 font-bold">•</span>
-                    <span className="text-xs font-black text-indigo-400">{Math.round(workoutStatus * 100)}%</span>
+                    <span className="text-[10px] text-zinc-550 font-bold">•</span>
+                    <span className="font-black text-indigo-400">{Math.round(workoutStatus * 100)}%</span>
                   </>
                 )}
               </div>
