@@ -163,8 +163,8 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
   );
 }
 
-function StatCard({ label, value, max, unit, color, emoji }: {
-  label: string; value: number; max: number; unit: string; color: string; emoji: string;
+function StatCard({ label, value, max, unit, color, icon }: {
+  label: string; value: number; max: number; unit: string; color: string; icon: React.ReactNode;
 }) {
   const pct = max > 0 ? Math.min(Math.round((value / max) * 100), 100) : 0;
   return (
@@ -174,7 +174,7 @@ function StatCard({ label, value, max, unit, color, emoji }: {
       
       <div className="flex justify-between items-center">
         <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-          <span>{emoji}</span>
+          {icon}
           <span>{label}</span>
         </span>
         <span className="text-xs font-black font-mono" style={{ color }}>{pct}%</span>
@@ -244,6 +244,7 @@ export default function DesktopCoachPortal() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNotCoach, setIsNotCoach] = useState(false);
+  const [activeDayDropdownDate, setActiveDayDropdownDate] = useState<string | null>(null);
 
   // Profile Card Toggles
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -506,15 +507,6 @@ export default function DesktopCoachPortal() {
   const [registerCoachSubDelay, setRegisterCoachSubDelay] = useState('0');
   const [registerCoachSubIsFreeTrial, setRegisterCoachSubIsFreeTrial] = useState(false);
   const [registerCoachSubCustomEnd, setRegisterCoachSubCustomEnd] = useState(getLocalDateTimeString());
-
-  const [newWaterAmount, setNewWaterAmount] = useState(500);
-
-  // Preset/Form states
-  const [newMealName, setNewMealName] = useState('');
-  const [newMealKcal, setNewMealKcal] = useState(400);
-  const [newMealProtein, setNewMealProtein] = useState(30);
-  const [newMealCarbs, setNewMealCarbs] = useState(45);
-  const [newMealFat, setNewMealFat] = useState(10);
 
   // InBody scan form states
   const [newScanDate, setNewScanDate] = useState(() => getLocalDateString());
@@ -1891,44 +1883,6 @@ export default function DesktopCoachPortal() {
   };
 
   // ─── DIET LOGGER OPERATIONS ────────────────────────────────
-  const handleAddMealLog = async () => {
-    if (!newMealName.trim() || !selectedClientId) { toast.error('Enter a meal name'); return; }
-    try {
-      let logId = clientDietLog?.id;
-      if (!logId) {
-        const { data: newLog, error: le } = await supabase.from('diet_logs').insert({
-          user_id: selectedClientId, date: clientActiveDateStr,
-          daily_totals: { kcal: 0, protein: 0, carbs: 0, fat: 0, water: 0, completed: false }
-        }).select().single();
-        if (le) throw le;
-        logId = newLog.id;
-        setClientDietLog(newLog);
-      }
-      const item = { id: `ci-${Date.now()}`, food_id: 'custom', name: newMealName, grams: 100, macros: { kcal: newMealKcal, protein: newMealProtein, carbs: newMealCarbs, fat: newMealFat } };
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:00`;
-      const { data: nm, error: me } = await supabase.from('diet_meals').insert({
-        diet_log_id: logId, name: newMealName,
-        time: timeStr,
-        items: [item]
-      }).select().single();
-      if (me) throw me;
-
-      const allMeals = [...clientMeals, nm];
-      const totals = allMeals.reduce((t, m) => {
-        m.items?.forEach((i: any) => { t.kcal += i.macros.kcal || 0; t.protein += i.macros.protein || 0; t.carbs += i.macros.carbs || 0; t.fat += i.macros.fat || 0; });
-        return t;
-      }, { kcal: 0, protein: 0, carbs: 0, fat: 0, water: clientDietLog?.daily_totals?.water || 0, completed: false });
-      await supabase.from('diet_logs').update({ daily_totals: totals }).eq('id', logId);
-
-      toast.success('Meal logged for athlete!');
-      setNewMealName('');
-      fetchClientData(selectedClientId, clientActiveDateStr, true);
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Unable to log meal. Please try again.');
-    }
-  };
 
   const handleDeleteMeal = async (mealId: string) => {
     try {
@@ -1949,47 +1903,6 @@ export default function DesktopCoachPortal() {
   };
 
   // ─── WATER LOGGER OPERATIONS ───────────────────────────────
-  const handleAddWater = async (amountOverride?: number) => {
-    if (!selectedClientId) return;
-    const amount = amountOverride !== undefined ? amountOverride : newWaterAmount;
-    
-    // Safety limit check: 10 Liters (10000 ml)
-    const currentTotalMl = clientWaterLogs.reduce((sum: number, entry: any) => sum + (entry.amount_ml || 0), 0);
-    if (currentTotalMl + amount > 10000) {
-      toast.error("Water intake cannot exceed 10 liters per day!");
-      return;
-    }
-
-    if (selectedClientId.startsWith('fake_')) {
-      const now = new Date();
-      const newEntry = {
-        id: 'fake_water_' + Math.random().toString(36).substr(2, 9),
-        user_id: selectedClientId,
-        date: clientActiveDateStr,
-        time: now.toISOString(),
-        amount_ml: amount
-      };
-      setClientWaterLogs(prev => [...(prev || []), newEntry]);
-      setClientHistoryWater(prev => [...(prev || []), newEntry]);
-      toast.success(`${amount}ml logged!`);
-      return;
-    }
-    try {
-      const now = new Date();
-      const { error } = await supabase.from('water_logs').insert({
-        user_id: selectedClientId,
-        date: clientActiveDateStr,
-        time: now.toISOString(),
-        amount_ml: amount
-      });
-      if (error) throw error;
-      toast.success(`${amount}ml logged!`);
-      fetchClientData(selectedClientId, clientActiveDateStr, true);
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Unable to log water intake.');
-    }
-  };
 
   const handleDeleteWater = async (id: string) => {
     if (selectedClientId && selectedClientId.startsWith('fake_')) {
@@ -2007,24 +1920,6 @@ export default function DesktopCoachPortal() {
     fetchClientData(selectedClientId!, clientActiveDateStr, true);
   };
 
-  const handleClearWater = async () => {
-    if (!selectedClientId) return;
-    if (selectedClientId.startsWith('fake_')) {
-      setClientWaterLogs([]);
-      setClientHistoryWater(prev => prev.filter(w => w.user_id !== selectedClientId || w.date !== clientActiveDateStr));
-      toast.success('Water logs cleared');
-      return;
-    }
-    try {
-      const { error } = await supabase.from('water_logs').delete().eq('user_id', selectedClientId).eq('date', clientActiveDateStr);
-      if (error) throw error;
-      toast.success('Water logs cleared');
-      fetchClientData(selectedClientId!, clientActiveDateStr, true);
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Unable to clear water logs.');
-    }
-  };
 
   // ─── INBODY SCAN OPERATIONS ────────────────────────────────
   const handleAddInBodyScan = async (e: React.FormEvent) => {
@@ -6583,35 +6478,50 @@ export default function DesktopCoachPortal() {
                             
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                               <div className="space-y-2">
-                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🔥 Daily Calories (kcal)</label>
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+                                  <Flame size={11} className="text-orange-500 shrink-0" />
+                                  <span>Daily Calories (kcal)</span>
+                                </label>
                                 <input 
                                   type="number" value={targetKcal} onChange={e => setTargetKcal(parseInt(e.target.value) || 0)}
                                   className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🥩 Protein (g)</label>
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+                                  <Dumbbell size={11} className="text-blue-450 shrink-0" />
+                                  <span>Protein (g)</span>
+                                </label>
                                 <input 
                                   type="number" value={targetProtein} onChange={e => setTargetProtein(parseInt(e.target.value) || 0)}
                                   className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🍚 Carbs (g)</label>
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+                                  <Apple size={11} className="text-amber-400 shrink-0" />
+                                  <span>Carbs (g)</span>
+                                </label>
                                 <input 
                                   type="number" value={targetCarbs} onChange={e => setTargetCarbs(parseInt(e.target.value) || 0)}
                                   className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">🥑 Fat (g)</label>
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+                                  <Droplet size={11} className="text-red-400 shrink-0" />
+                                  <span>Fat (g)</span>
+                                </label>
                                 <input 
                                   type="number" value={targetFat} onChange={e => setTargetFat(parseInt(e.target.value) || 0)}
                                   className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
                                 />
                               </div>
                               <div className="space-y-2 col-span-2">
-                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider block">💧 Water Goal (Liters)</label>
+                                <label className="text-[10px] text-zinc-400 font-black uppercase tracking-wider flex items-center gap-1.5">
+                                  <Droplets size={11} className="text-sky-400 shrink-0" />
+                                  <span>Water Goal (Liters)</span>
+                                </label>
                                 <input 
                                   type="number" step="0.1" value={targetWaterLiters} onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
                                   className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-4 py-3 text-sm text-white outline-none focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all font-mono font-black"
@@ -6697,127 +6607,88 @@ export default function DesktopCoachPortal() {
 
                         {/* Nutrition indicators */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
-                          <StatCard label="Calories" value={consumedMacros.kcal} max={targetKcal} unit=" kcal" color="#f97316" emoji="🔥" />
-                          <StatCard label="Protein" value={consumedMacros.protein} max={targetProtein} unit="g" color="#60a5fa" emoji="🍳" />
-                          <StatCard label="Carbs" value={consumedMacros.carbs} max={targetCarbs} unit="g" color="#fbbf24" emoji="🍯" />
-                          <StatCard label="Fat" value={consumedMacros.fat} max={targetFat} unit="g" color="#f87171" emoji="🥑" />
+                          <StatCard label="Calories" value={consumedMacros.kcal} max={targetKcal} unit=" kcal" color="#f97316" icon={<Flame size={12} className="text-orange-500 shrink-0" />} />
+                          <StatCard label="Protein" value={consumedMacros.protein} max={targetProtein} unit="g" color="#60a5fa" icon={<Dumbbell size={12} className="text-blue-400 shrink-0" />} />
+                          <StatCard label="Carbs" value={consumedMacros.carbs} max={targetCarbs} unit="g" color="#fbbf24" icon={<Apple size={12} className="text-amber-500 shrink-0" />} />
+                          <StatCard label="Fat" value={consumedMacros.fat} max={targetFat} unit="g" color="#f87171" icon={<Droplet size={12} className="text-red-400 shrink-0" />} />
                         </div>
 
-                        {/* Custom food logger & meals table */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-                          {/* Log Meal Form */}
-                          <div className="bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[22px] p-6 shadow-xl space-y-4 relative overflow-hidden flex flex-col justify-between">
-                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
-                            <div className="flex justify-between items-center border-b border-white/[0.05] pb-3">
-                              <h3 className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5 leading-none">Log Custom Meal</h3>
-                            </div>
+                        {/* Logged Meals List (Full width, no inputs for coach) */}
+                        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[22px] p-6 shadow-xl flex flex-col justify-start">
+                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
+                          <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3 flex items-center gap-1.5 leading-none">Meals Logged Timeline</h3>
+                          <div className="divide-y divide-white/[0.04] mt-3 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
+                            {clientMeals.length === 0 ? (
+                              <p className="text-xs text-gray-500 italic py-16 text-center">No meals recorded for this date.</p>
+                            ) : (
+                              clientMeals.map(meal => {
+                                const mm = meal.items?.reduce((t: any, i: any) => ({
+                                  kcal: t.kcal + (i.macros?.kcal || 0),
+                                  protein: t.protein + (i.macros?.protein || 0),
+                                  carbs: t.carbs + (i.macros?.carbs || 0),
+                                  fat: t.fat + (i.macros?.fat || 0),
+                                }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+                                const isExpanded = expandedMealId === meal.id;
+                                return (
+                                  <div key={meal.id} className="py-4 border-b border-white/[0.04] last:border-0 relative group">
+                                    <div className="flex justify-between items-center gap-4">
+                                      <div 
+                                        onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
+                                        className="flex-1 cursor-pointer hover:opacity-85 transition-opacity"
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <span className="text-sm p-1.5 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
+                                            <Apple size={12} />
+                                          </span>
+                                          <div>
+                                            <div className="flex items-center gap-2">
+                                              <p className="text-xs font-black text-white hover:text-blue-400 transition-colors">{meal.name}</p>
+                                              {meal.items && meal.items.length > 0 && (
+                                                <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-450 tracking-wider">
+                                                  {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 mt-1 font-mono font-black">
+                                              {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <button 
+                                        onClick={() => handleDeleteMeal(meal.id)} 
+                                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0 active:scale-95 cursor-pointer"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
 
-                            <div className="space-y-4 flex-1 mt-2">
-                              <div className="space-y-1.5">
-                                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Meal Name</label>
-                                <input 
-                                  type="text" value={newMealName} onChange={e => setNewMealName(e.target.value)}
-                                  placeholder="e.g. Oatmeal & Eggs"
-                                  className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl px-3 py-2.5 text-xs text-white outline-none transition-all focus:shadow-[0_0_12px_rgba(59,130,246,0.08)]"
-                                />
-                              </div>
-                              <div className="grid grid-cols-2 gap-3.5">
-                                <div className="space-y-1">
-                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Calories (kcal)</label>
-                                  <input type="number" value={newMealKcal} onChange={e => setNewMealKcal(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Protein (g)</label>
-                                  <input type="number" value={newMealProtein} onChange={e => setNewMealProtein(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Carbs (g)</label>
-                                  <input type="number" value={newMealCarbs} onChange={e => setNewMealCarbs(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[8px] text-gray-500 uppercase font-black tracking-wider">Fat (g)</label>
-                                  <input type="number" value={newMealFat} onChange={e => setNewMealFat(parseInt(e.target.value) || 0)} className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-blue-500/50 rounded-xl p-2.5 text-xs text-white outline-none text-center font-black font-mono transition-all" />
-                                </div>
-                              </div>
-                              <button onClick={handleAddMealLog} className="w-full bg-blue-600 hover:bg-blue-500 border border-blue-500/20 text-white font-extrabold text-xs uppercase py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer mt-2">Save Meal Entry</button>
-                            </div>
-                          </div>
-
-                          {/* Logged Meals List */}
-                          <div className="lg:col-span-2 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-[22px] p-6 shadow-xl flex flex-col justify-start relative overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
-                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3 flex items-center gap-1.5 leading-none">Meals Logged Timeline</h3>
-                            <div className="divide-y divide-white/[0.04] mt-3 max-h-[320px] overflow-y-auto pr-1 no-scrollbar">
-                              {clientMeals.length === 0 ? (
-                                <p className="text-xs text-gray-500 italic py-16 text-center">No meals recorded for this date.</p>
-                              ) : (
-                                clientMeals.map(meal => {
-                                  const mm = meal.items?.reduce((t: any, i: any) => ({
-                                    kcal: t.kcal + (i.macros?.kcal || 0),
-                                    protein: t.protein + (i.macros?.protein || 0),
-                                    carbs: t.carbs + (i.macros?.carbs || 0),
-                                    fat: t.fat + (i.macros?.fat || 0),
-                                  }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
-                                  const isExpanded = expandedMealId === meal.id;
-                                  return (
-                                    <div key={meal.id} className="py-4 border-b border-white/[0.04] last:border-0 relative group">
-                                      <div className="flex justify-between items-center gap-4">
-                                        <div 
-                                          onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
-                                          className="flex-1 cursor-pointer hover:opacity-85 transition-opacity"
-                                        >
-                                          <div className="flex items-center gap-3">
-                                            <span className="text-sm p-1.5 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">🍽️</span>
+                                    {isExpanded && meal.items && meal.items.length > 0 && (
+                                      <div className="mt-3 pl-4 border-l-2 border-blue-500/20 space-y-2">
+                                        {meal.items.map((item: any, idx: number) => (
+                                          <div key={item.id || idx} className="bg-slate-950/40 border border-white/[0.02] p-3 rounded-xl flex justify-between items-center text-[10px] text-gray-300 hover:border-white/[0.05] transition-all">
                                             <div>
-                                              <div className="flex items-center gap-2">
-                                                <p className="text-xs font-black text-white hover:text-blue-400 transition-colors">{meal.name}</p>
-                                                {meal.items && meal.items.length > 0 && (
-                                                  <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-450 tracking-wider">
-                                                    {meal.items.length} {meal.items.length === 1 ? 'food' : 'foods'}
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <p className="text-[10px] text-gray-400 mt-1 font-mono font-black">
-                                                {Math.round(mm?.kcal || 0)} kcal · P{Math.round(mm?.protein || 0)}g · C{Math.round(mm?.carbs || 0)}g · F{Math.round(mm?.fat || 0)}g
+                                              <p className="font-bold text-gray-200">{item.name}</p>
+                                              <p className="text-[9px] text-gray-500 mt-0.5 font-medium">
+                                                {item.serving_type === 'per_item' 
+                                                  ? (item.grams === 1 ? '1 serving' : `${item.grams} servings`) 
+                                                  : `${item.grams}g`}
+                                              </p>
+                                            </div>
+                                            <div className="text-right shrink-0 font-mono font-black">
+                                              <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
+                                              <p className="text-[8px] text-gray-500 mt-0.5">
+                                                P{Math.round(item.macros?.protein || 0)}g · C{Math.round(item.macros?.carbs || 0)}g · F{Math.round(item.macros?.fat || 0)}g
                                               </p>
                                             </div>
                                           </div>
-                                        </div>
-                                        <button 
-                                          onClick={() => handleDeleteMeal(meal.id)} 
-                                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0 active:scale-95 cursor-pointer"
-                                        >
-                                          <Trash2 size={13} />
-                                        </button>
+                                        ))}
                                       </div>
-
-                                      {isExpanded && meal.items && meal.items.length > 0 && (
-                                        <div className="mt-3 pl-4 border-l-2 border-blue-500/20 space-y-2">
-                                          {meal.items.map((item: any, idx: number) => (
-                                            <div key={item.id || idx} className="bg-slate-950/40 border border-white/[0.02] p-3 rounded-xl flex justify-between items-center text-[10px] text-gray-300 hover:border-white/[0.05] transition-all">
-                                              <div>
-                                                <p className="font-bold text-gray-200">{item.name}</p>
-                                                <p className="text-[9px] text-gray-500 mt-0.5 font-medium">
-                                                  {item.serving_type === 'per_item' 
-                                                    ? (item.grams === 1 ? '1 serving' : `${item.grams} servings`) 
-                                                    : `${item.grams}g`}
-                                                </p>
-                                              </div>
-                                              <div className="text-right shrink-0 font-mono font-black">
-                                                <p className="font-black text-blue-400">{Math.round(item.macros?.kcal || 0)} kcal</p>
-                                                <p className="text-[8px] text-gray-500 mt-0.5">
-                                                  P{Math.round(item.macros?.protein || 0)}g · C{Math.round(item.macros?.carbs || 0)}g · F{Math.round(item.macros?.fat || 0)}g
-                                                </p>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
                           </div>
                         </div>
                       </div>
@@ -6835,9 +6706,11 @@ export default function DesktopCoachPortal() {
 
                         {/* Hydration Goal Status */}
                         <div className="bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] p-6 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 to-sky-500/45" />
+                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/45" />
                           <div className="flex items-center gap-3">
-                            <span className="text-sm p-2 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 shadow-inner">💧</span>
+                            <span className="text-sm p-2 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+                              <Droplet size={14} />
+                            </span>
                             <div>
                               <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Water Consumed Progress</p>
                               <div className="flex items-center gap-1.5 mt-1">
@@ -6857,83 +6730,49 @@ export default function DesktopCoachPortal() {
                                 min="0.1"
                                 value={targetWaterLiters} 
                                 onChange={e => setTargetWaterLiters(parseFloat(e.target.value) || 0)}
-                                className="w-16 bg-slate-900/60 border border-white/[0.05] rounded-lg p-1.5 text-xs text-white text-center font-mono font-black outline-none focus:border-sky-500"
+                                className="w-16 bg-slate-900/60 border border-white/[0.05] rounded-lg p-1.5 text-xs text-white text-center font-mono font-black outline-none focus:border-blue-500"
                               />
                               <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">L</span>
                             </div>
                             <button
                               onClick={handleSaveTargets}
                               disabled={savingTargets}
-                              className="bg-sky-600 hover:bg-sky-500 border border-sky-500/20 disabled:bg-slate-800 text-white font-black text-[9px] uppercase px-3 py-2 rounded-lg active:scale-95 transition-all cursor-pointer shadow-md shadow-sky-500/10"
+                              className="bg-blue-600 hover:bg-blue-500 border border-blue-500/20 disabled:bg-slate-800 text-white font-black text-[9px] uppercase px-3 py-2 rounded-lg active:scale-95 transition-all cursor-pointer shadow-md shadow-blue-500/10"
                             >
                               {savingTargets ? 'Saving...' : 'Save Target'}
                             </button>
                           </div>
 
                           <div className="w-full lg:w-48">
-                            <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#0284c7" />
+                            <ProgressBar value={waterTotalMl} max={targetWaterLiters * 1000} color="#3b82f6" />
                           </div>
                         </div>
 
-                        {/* Logger inputs & timeline logs */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-                          {/* Log Water presets */}
-                          <div className="bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-2xl p-6 shadow-xl space-y-4 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 to-sky-500/35" />
-                            <div className="flex justify-between items-center border-b border-white/[0.05] pb-3">
-                              <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 flex items-center gap-1.5 leading-none">Log Hydration</h3>
-                              {clientWaterLogs.length > 0 && (
-                                <button onClick={handleClearWater} className="text-[9px] font-black uppercase text-red-400 hover:underline cursor-pointer">Clear Day</button>
-                              )}
-                            </div>
-                            <div className="flex gap-2 flex-wrap">
-                              {[250, 330, 500, 750, 1000].map(ml => (
-                                <button 
-                                  key={ml} 
-                                  type="button"
-                                  onClick={() => { 
-                                    setNewWaterAmount(ml); 
-                                    handleAddWater(ml); 
-                                  }}
-                                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all border cursor-pointer ${newWaterAmount === ml ? 'bg-sky-600/10 border-sky-500 text-sky-400 shadow-md shadow-sky-500/5' : 'bg-slate-950/40 border-white/[0.04] text-gray-400 hover:border-sky-500/30'}`}
-                                >
-                                  {ml}ml
-                                </button>
-                              ))}
-                            </div>
-                            <div className="flex flex-col gap-2 mt-2">
-                              <input 
-                                type="number" value={newWaterAmount} onChange={e => setNewWaterAmount(parseInt(e.target.value) || 0)}
-                                className="w-full bg-slate-950/50 border border-white/[0.05] focus:border-sky-500/50 rounded-xl p-2.5 text-xs text-white outline-none focus:shadow-[0_0_12px_rgba(56,189,248,0.08)] transition-all text-center font-black font-mono"
-                              />
-                              <button onClick={() => handleAddWater()} className="w-full bg-sky-600 hover:bg-sky-500 border border-sky-500/20 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all cursor-pointer">+ Log Custom Amount</button>
-                            </div>
-                          </div>
-
-                          {/* Water log timeline */}
-                          <div className="lg:col-span-2 bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-2xl p-6 shadow-xl flex flex-col justify-start relative overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500/20 to-sky-500/35" />
-                            <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3 flex items-center gap-1.5 leading-none">Daily Timeline logs</h3>
-                            <div className="divide-y divide-white/[0.04] mt-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
-                              {clientWaterLogs.length === 0 ? (
-                                <p className="text-xs text-gray-500 italic py-16 text-center">No water logged for this date.</p>
-                              ) : (
-                                clientWaterLogs.map(log => (
-                                  <div key={log.id} className="flex justify-between items-center py-3.5 relative group">
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-sm p-1.5 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">💧</span>
-                                      <div>
-                                        <p className="text-xs font-black text-white">{log.amount_ml} ml</p>
-                                        <p className="text-[9px] text-gray-500 flex items-center gap-1 mt-1 font-semibold font-mono">
-                                          <Clock size={8} /> {log.time?.includes('T') ? new Date(log.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : log.time}
-                                        </p>
-                                      </div>
+                        {/* Water log timeline (Full width, no inputs for coach) */}
+                        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/40 to-slate-950/45 border border-white/[0.04] rounded-2xl p-6 shadow-xl flex flex-col justify-start">
+                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/20 to-blue-500/35" />
+                          <h3 className="text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/[0.05] pb-3 flex items-center gap-1.5 leading-none">Daily Timeline logs</h3>
+                          <div className="divide-y divide-white/[0.04] mt-3 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
+                            {clientWaterLogs.length === 0 ? (
+                              <p className="text-xs text-gray-500 italic py-16 text-center">No water logged for this date.</p>
+                            ) : (
+                              clientWaterLogs.map(log => (
+                                <div key={log.id} className="flex justify-between items-center py-3.5 relative group">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm p-1.5 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                                      <Droplet size={12} />
+                                    </span>
+                                    <div>
+                                      <p className="text-xs font-black text-white">{log.amount_ml} ml</p>
+                                      <p className="text-[9px] text-gray-500 flex items-center gap-1 mt-1 font-semibold font-mono">
+                                        <Clock size={8} /> {log.time?.includes('T') ? new Date(log.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : log.time}
+                                      </p>
                                     </div>
-                                    <button onClick={() => handleDeleteWater(log.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0 active:scale-95 cursor-pointer"><Trash2 size={13} /></button>
                                   </div>
-                                ))
-                              )}
-                            </div>
+                                  <button onClick={() => handleDeleteWater(log.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0 active:scale-95 cursor-pointer"><Trash2 size={13} /></button>
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>
@@ -7005,20 +6844,44 @@ export default function DesktopCoachPortal() {
                                       {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                     </span>
                                   </div>
-                                  <select
-                                    value={dayType}
-                                    onChange={(e) => handleUpdateClientDayType(date, e.target.value)}
-                                    className={`w-full bg-[#0d1220] text-[10px] font-black p-1.5 rounded-lg border outline-none cursor-pointer uppercase ${dayColor(dayType)}`}
-                                  >
-                                    <option value="REST" className="bg-[#0d1220] text-gray-400">REST</option>
-                                    <option value="RUN" className="bg-[#0d1220] text-amber-400">RUN</option>
-                                    <option value="RUN + GYM" className="bg-[#0d1220] text-indigo-400">RUN + GYM</option>
-                                    {clientWorkoutPlans.map(p => (
-                                      <option key={p.id} value={p.plan_type} className="bg-[#0d1220] text-blue-400">
-                                        {p.plan_type}
-                                      </option>
-                                    ))}
-                                  </select>
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveDayDropdownDate(activeDayDropdownDate === date ? null : date)}
+                                      className={`w-full flex items-center justify-between text-left text-[10px] font-black p-2 rounded-lg border outline-none cursor-pointer uppercase transition-all duration-200 ${dayColor(dayType)}`}
+                                    >
+                                      <span>{dayType}</span>
+                                      <ChevronDown size={10} className="opacity-60" />
+                                    </button>
+
+                                    {activeDayDropdownDate === date && (
+                                      <>
+                                        {/* Backdrop to close list when clicking outside */}
+                                        <div className="fixed inset-0 z-40" onClick={() => setActiveDayDropdownDate(null)} />
+                                        
+                                        {/* Glassmorphic Dropdown popup */}
+                                        <div className="absolute left-0 mt-1.5 w-full bg-[#070a13] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-50 backdrop-blur-md max-h-48 overflow-y-auto no-scrollbar">
+                                          {['REST', 'RUN', 'RUN + GYM', ...clientWorkoutPlans.map(p => p.plan_type)].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                handleUpdateClientDayType(date, option);
+                                                setActiveDayDropdownDate(null);
+                                              }}
+                                              className={`w-full text-left px-3 py-2 text-[10px] font-black uppercase transition-all duration-150 cursor-pointer block ${
+                                                dayType === option 
+                                                  ? 'bg-blue-600/15 text-blue-400' 
+                                                  : 'text-gray-400 hover:text-white hover:bg-white/[0.03]'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
