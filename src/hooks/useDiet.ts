@@ -80,9 +80,14 @@ export const useDiet = () => {
       .eq('user_id', session.user.id);
 
     const planTypes = plansData ? plansData.map(p => p.plan_type) : [];
-    const defaultPlans = ['PUSH', 'PULL', 'LEGS'];
-    const customPlans = planTypes.filter(t => !defaultPlans.includes(t));
-    const finalTypes = ['REST', 'RUN', 'RUN + GYM', ...defaultPlans, ...customPlans];
+    // System-wide default non-workout day types
+    const systemDefaults = ['REST', 'RUN', 'RUN + GYM'];
+    // Deduplicate and filter empty values
+    const activeSplits = planTypes.filter(Boolean);
+    // If the user has plans in user_workout_plans, use them. If they have none (e.g. first login), fallback to PUSH/PULL/LEGS
+    const splits = activeSplits.length > 0 ? activeSplits : ['PUSH', 'PULL', 'LEGS'];
+    // Merge system defaults and workout splits uniquely
+    const finalTypes = Array.from(new Set([...systemDefaults, ...splits]));
     
     setAllDayTypes(finalTypes);
 
@@ -108,9 +113,12 @@ export const useDiet = () => {
 
     // 3. Apply active targets for today's scheduled dayType
     const matchedType = finalTypes.find(t => t.toLowerCase().replace(/\s+/g, '') === dayType.toLowerCase().replace(/\s+/g, ''));
+    const fallbackKey = finalTypes.includes(dayType)
+      ? dayType
+      : (finalTypes[3] || finalTypes[0] || 'REST');
     const activeTarget = matchedType 
       ? merged[matchedType] 
-      : (merged['PUSH'] || getDefaultTarget('PUSH', profile?.targets));
+      : (merged[fallbackKey] || getDefaultTarget(dayType, profile?.targets));
       
     setTargets({ ...activeTarget });
   }, [dayType]);
