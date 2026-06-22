@@ -342,8 +342,22 @@ export default function CoachLandingPage() {
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     try {
+      let finalEmail = email.trim();
+      if (!finalEmail.includes('@')) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', finalEmail.toLowerCase())
+          .maybeSingle();
+        if (profile?.email) {
+          finalEmail = profile.email;
+        } else {
+          finalEmail = `${finalEmail.toLowerCase()}@stride.fit`;
+        }
+      }
+
       const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: finalEmail,
         password,
       });
 
@@ -1717,10 +1731,10 @@ export default function CoachLandingPage() {
                   ) : (
                     /* LOGIN VIEW */
                     <form onSubmit={handleLogin} className="space-y-4">
-                      <div className="space-y-1.5 font-sans">
-                        <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Account Email</label>
+                       <div className="space-y-1.5 font-sans">
+                        <label className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold">Username / Email</label>
                         <input 
-                          type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@gym.com"
+                          type="text" required value={email} onChange={e => setEmail(e.target.value)} placeholder="Username or Email"
                           className="w-full bg-zinc-900/60 border border-zinc-900 focus:border-zinc-850 rounded-xl p-3 text-xs text-white outline-none" 
                         />
                       </div>

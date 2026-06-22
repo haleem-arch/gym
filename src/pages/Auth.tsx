@@ -116,7 +116,19 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
 
     try {
       const cleanEmail = email.trim().toLowerCase();
-      const finalEmail = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@stride.fit`;
+      let finalEmail = cleanEmail;
+      if (!cleanEmail.includes('@')) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', cleanEmail)
+          .maybeSingle();
+        if (profile?.email) {
+          finalEmail = profile.email;
+        } else {
+          finalEmail = `${cleanEmail}@stride.fit`;
+        }
+      }
 
       if (isSignUp) {
         if (!cleanEmail.includes('@')) {
@@ -505,14 +517,16 @@ export default function Auth({ onSessionConfigured }: AuthProps) {
             </AnimatePresence>
 
             <div className="space-y-1.5">
-              <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">Email Address</label>
+              <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider">
+                {isSignUp ? 'Email Address' : 'Username / Email'}
+              </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                 <input
-                  type="email"
+                  type={isSignUp ? 'email' : 'text'}
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errorMsg) setErrorMsg(null); }}
-                  placeholder="name@example.com"
+                  placeholder={isSignUp ? 'name@example.com' : 'Username or Email'}
                   maxLength={100}
                   className={`w-full bg-[#181d29] text-white rounded-xl py-3 pl-11 pr-4 border focus:outline-none text-sm transition-all ${
                     attemptedSubmit && !email.trim() ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800 focus:border-blue-500'
